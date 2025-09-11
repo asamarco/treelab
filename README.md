@@ -26,7 +26,7 @@ services:
     treelab:
         ports:
             - 3000:3000
-        image: ghcr.io/asamarco/treelab-private/treelab 
+        image: ghcr.io/asamarco/treelab
         container_name: treelab
         volumes:
             - ./data:/app/data
@@ -38,7 +38,7 @@ services:
     
     mongo:
         container_name: mongodb
-        image: mongo
+        image: mongo:8.0
         restart: unless-stopped
         network_mode: swag
         volumes:
