@@ -4,6 +4,10 @@
 
 Treelab is a Next.js application designed to be a flexible, hierarchical data management tool where users can create and manage data trees with custom-defined templates.
 
+<p align="center">
+<img width="800" height="528" alt="image" src="https://github.com/user-attachments/assets/6cebf4c1-bfaa-4235-ac54-58d7a6b931c8" />
+</p>
+
 ## ✨ Core Features
 
 -   **🕸️ Hierarchical Data**: Organize data in a nested, tree-like structure with full drag-and-drop support for reordering and reparenting nodes.
