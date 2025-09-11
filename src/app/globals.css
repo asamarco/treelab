@@ -1,0 +1,127 @@
+/**
+ * This is the global stylesheet for the application.
+ * It uses Tailwind CSS directives to import base styles, components, and utilities.
+ *
+ * It defines CSS variables for the application's color palette and theme,
+ * including light and dark mode variants. These variables are used by Tailwind
+ * and shadcn/ui components to ensure a consistent look and feel.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 40 33% 96%; /* Lighter beige */
+    --foreground: 195 35% 25%; /* Dark Teal */
+    --card: 40 33% 100%;
+    --card-foreground: 195 35% 25%;
+    --popover: 40 33% 100%;
+    --popover-foreground: 195 35% 25%;
+    --primary: 158 58% 45%; /* Plant Green */
+    --primary-foreground: 40 33% 98%;
+    --secondary: 40 25% 90%;
+    --secondary-foreground: 195 35% 25%;
+    --muted: 40 25% 94%;
+    --muted-foreground: 195 20% 45%;
+    --accent: 40 33% 92%;
+    --accent-foreground: 158 58% 35%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 20% 88%;
+    --input: 40 33% 100%;
+    --ring: 158 58% 45%;
+    --chart-1: 158 58% 45%;
+    --chart-2: 45 90% 65%; /* Node Yellow */
+    --chart-3: 200 85% 55%; /* Node Blue */
+    --chart-4: 15 95% 65%; /* Node Orange */
+    --chart-5: 195 35% 25%;
+    --radius: 0.5rem;
+    --sidebar-background: 40 33% 98%;
+    --sidebar-foreground: 195 35% 25%;
+    --sidebar-primary: 158 58% 45%;
+    --sidebar-primary-foreground: 40 33% 98%;
+    --sidebar-accent: 40 25% 90%;
+    --sidebar-accent-foreground: 158 58% 35%;
+    --sidebar-border: 40 20% 88%;
+    --sidebar-ring: 158 58% 45%;
+  }
+  .dark {
+    --background: 195 25% 12%;
+    --foreground: 40 33% 96%;
+    --card: 195 25% 15%;
+    --card-foreground: 40 33% 96%;
+    --popover: 195 25% 15%;
+    --popover-foreground: 40 33% 96%;
+    --primary: 158 58% 55%;
+    --primary-foreground: 40 33% 98%;
+    --secondary: 195 25% 25%;
+    --secondary-foreground: 40 33% 96%;
+    --muted: 195 25% 20%;
+    --muted-foreground: 40 20% 75%;
+    --accent: 195 25% 22%;
+    --accent-foreground: 158 58% 65%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 195 25% 22%;
+    --input: 195 25% 25%;
+    --ring: 158 58% 55%;
+    --chart-1: 158 58% 55%;
+    --chart-2: 45 90% 65%;
+    --chart-3: 200 85% 55%;
+    --chart-4: 15 95% 65%;
+    --chart-5: 40 33% 96%;
+    --sidebar-background: 195 25% 12%;
+    --sidebar-foreground: 40 33% 96%;
+    --sidebar-primary: 158 58% 55%;
+    --sidebar-primary-foreground: 40 33% 98%;
+    --sidebar-accent: 195 25% 20%;
+    --sidebar-accent-foreground: 158 58% 65%;
+    --sidebar-border: 195 25% 22%;
+    --sidebar-ring: 158 58% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  .printable-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .printable-area [role=dialog] > button {
+    display: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .printable-area .group\/treenode {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

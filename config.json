@@ -1,0 +1,4 @@
+{
+  "REQUIRE_AUTHENTICATION": true,
+  "USERID": "test"
+}

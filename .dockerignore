@@ -1,0 +1,37 @@
+# Docker's Build Context exclusions
+
+# Node
+node_modules
+npm-debug.log
+
+# Next.js
+.next
+next-static
+
+# Build artifacts
+build
+dist
+coverage
+
+# Local data & environment
+data/
+*.zip
+
+# Tests & reports
+playwright-report/
+test-results/
+
+# VCS
+.git
+.github
+.gitignore
+
+# IDE & Editor configs
+.vscode
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db

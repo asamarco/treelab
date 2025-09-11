@@ -1,0 +1,67 @@
+
+/**
+ * @fileoverview
+ * This file defines the context for managing global UI state.
+ * It handles state that affects the overall user interface but is not directly
+ * tied to authentication or tree data, such as dialog visibility or view modes.
+ */
+"use client";
+
+import React, { createContext, useContext, ReactNode, useState } from "react";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { TreeNode } from "@/lib/types";
+
+export interface DialogState {
+    isAddNodeOpen?: boolean;
+    isRenameTreeOpen?: boolean;
+    initialTreeTitle?: string;
+    isCommitOpen?: boolean;
+    isOutOfSyncCommitOpen?: boolean;
+    isHistoryOpen?: boolean;
+    exportNodes?: TreeNode[];
+    exportTitle?: string;
+    exportElementId?: string;
+    isNodePreviewOpen?: boolean;
+    nodeIdsForPreview?: string[];
+    isChangeTemplateMultipleOpen?: boolean;
+}
+
+interface UIContextType {
+  isCompactView: boolean;
+  setIsCompactView: (isCompact: boolean | ((prevState: boolean) => boolean)) => void;
+  showNodeOrder: boolean;
+  setShowNodeOrder: (show: boolean | ((prevState: boolean) => boolean)) => void;
+  dialogState: Partial<DialogState>;
+  setDialogState: (newState: Partial<DialogState>) => void;
+}
+
+export const UIContext = createContext<UIContextType | undefined>(undefined);
+
+export function UIProvider({ children }: { children: ReactNode }) {
+  const [isCompactView, setIsCompactView] = useLocalStorage<boolean>('isCompactView', false);
+  const [showNodeOrder, setShowNodeOrder] = useLocalStorage<boolean>('showNodeOrder', false);
+  const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
+  
+  const setDialogState = (newState: Partial<DialogState>) => {
+    setDialogStateInternal(prev => ({...prev, ...newState}));
+  };
+
+  const value: UIContextType = {
+    isCompactView,
+    setIsCompactView,
+    showNodeOrder,
+    setShowNodeOrder,
+    dialogState,
+    setDialogState,
+  };
+
+  return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
+}
+
+export function useUIContext() {
+  const context = useContext(UIContext);
+  if (context === undefined) {
+    throw new Error("useUIContext must be used within an UIProvider");
+  }
+  return context;
+}

@@ -1,0 +1,18 @@
+#
+# @fileoverview
+# This is the configuration file for Firebase App Hosting.
+# It defines settings for managing and deploying the Next.js application on
+# Firebase's infrastructure.
+#
+# `runConfig.maxInstances`: Controls the maximum number of server instances
+#   that can be spun up to handle traffic, allowing for autoscaling.
+#
+# For more details, see: https://firebase.google.com/docs/app-hosting/configure
+#
+# Settings to manage and configure a Firebase App Hosting backend.
+# https://firebase.google.com/docs/app-hosting/configure
+
+runConfig:
+  # Increase this value if you'd like to automatically spin up
+  # more instances in response to increased traffic.
+  maxInstances: 1

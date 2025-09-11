@@ -1,0 +1,478 @@
+
+{
+  "title": "Treelab Reference Guide",
+  "templates": [
+    {
+      "id": "template_category",
+      "name": "Category",
+      "icon": "Library",
+      "color": "#4f46e5",
+      "fields": [
+        { "id": "field_name_cat", "name": "Name", "type": "text" }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": ""
+    },
+    {
+      "id": "template_operation",
+      "name": "Operation",
+      "icon": "Cog",
+      "color": "#4b5563",
+      "fields": [
+        { "id": "field_name_op", "name": "Name", "type": "text" },
+        { "id": "field_desc", "name": "Description", "type": "textarea" },
+        { "id": "field_context", "name": "Context", "type": "dropdown", "options": ["Manage Roots Page", "Tree Page", "Templates Page", "Node Menu"] }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "Context: {Context}\n\n{Description}"
+    }
+  ],
+  "rootNodeIds": [
+    "cat_root_management",
+    "cat_node_management",
+    "cat_bulk_operations",
+    "cat_template_management"
+  ],
+  "nodes": [
+    {
+      "id": "cat_root_management",
+      "name": "I. Root / Tree Management",
+      "templateId": "template_category",
+      "data": { "field_name_cat": "I. Root / Tree Management" },
+      "parentIds": [],
+      "order": [0]
+    },
+    {
+      "id": "op_create_root",
+      "name": "Create New Root",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Create New Root",
+        "field_desc": "Create a new, empty tree structure.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [0]
+    },
+    {
+      "id": "op_rename_root",
+      "name": "Rename Root",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Rename Root",
+        "field_desc": "Change the title of an existing tree.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [1]
+    },
+    {
+      "id": "op_delete_root",
+      "name": "Delete Root",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Delete Root",
+        "field_desc": "Permanently delete an entire tree and all of its contents.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [2]
+    },
+    {
+      "id": "op_select_root",
+      "name": "Select Active Root",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Select Active Root",
+        "field_desc": "Switch between your different trees to work on them.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [3]
+    },
+    {
+      "id": "op_import_tree",
+      "name": "Import Tree",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Import Tree",
+        "field_desc": "From JSON: Create a new tree by uploading a .json file.\nFrom Archive (.zip): Create a new tree from a ZIP file, including the structure and all file attachments.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [4]
+    },
+     {
+      "id": "op_load_example",
+      "name": "Load Example",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Load Example",
+        "field_desc": "Create a new tree from a pre-defined example template.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [5]
+    },
+    {
+      "id": "op_git_integration",
+      "name": "Git Integration",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Git Integration",
+        "field_desc": "Link to GitHub Repo: Connect an existing tree to a GitHub repository.\nCreate & Link Repo: Create a new repository on GitHub and link the tree to it automatically.\nUnlink Repo: Disconnect a tree from its GitHub repository.\nCommit: Save the current state of the tree as a new version in its linked repository.\nSync: Pull the latest version from the remote repository.\nView History: Browse the commit history of a linked tree.\nRestore to Commit: Revert the tree back to a previous version from the history.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [6]
+    },
+    {
+      "id": "op_sharing",
+      "name": "Sharing",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Sharing",
+        "field_desc": "Share Tree: Grant another registered user access to one of your trees.\nRevoke Share: Remove a user's access to a shared tree.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [7]
+    },
+    {
+      "id": "op_reorder_roots",
+      "name": "Reorder Roots",
+      "templateId": "template_operation",
+      "parentIds": ["cat_root_management"],
+      "data": {
+        "field_name_op": "Reorder Roots",
+        "field_desc": "Drag and drop your trees on the 'Manage Roots' page to change their display order.",
+        "field_context": "Manage Roots Page"
+      },
+      "order": [8]
+    },
+    {
+      "id": "cat_node_management",
+      "name": "II. Node Management (within a Tree)",
+      "templateId": "template_category",
+      "data": { "field_name_cat": "II. Node Management (within a Tree)" },
+      "parentIds": [],
+      "order": [1]
+    },
+    {
+      "id": "op_add_root_node",
+      "name": "Add Root Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Add Root Node",
+        "field_desc": "Add a new node to the top level of the tree.",
+        "field_context": "Tree Page"
+      },
+      "order": [0]
+    },
+    {
+      "id": "op_add_child_node",
+      "name": "Add Child Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Add Child Node",
+        "field_desc": "Add a new node as a child of an existing node.",
+        "field_context": "Node Menu"
+      },
+      "order": [1]
+    },
+    {
+      "id": "op_add_sibling_node",
+      "name": "Add Sibling Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Add Sibling Node",
+        "field_desc": "Add a new node directly after an existing node on the same level.",
+        "field_context": "Node Menu"
+      },
+      "order": [2]
+    },
+    {
+      "id": "op_edit_node",
+      "name": "Edit Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Edit Node",
+        "field_desc": "Open the form to modify a node's data.",
+        "field_context": "Node Menu"
+      },
+      "order": [3]
+    },
+    {
+      "id": "op_delete_node",
+      "name": "Delete Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Delete Node",
+        "field_desc": "Remove a node and all of its descendants.",
+        "field_context": "Node Menu"
+      },
+      "order": [4]
+    },
+    {
+      "id": "op_move_node_dnd",
+      "name": "Move Node (Drag & Drop)",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Move Node (Drag & Drop)",
+        "field_desc": "Reorder: Change the position of a node among its siblings.\nReparent: Move a node to become a child of a different node.",
+        "field_context": "Tree Page"
+      },
+      "order": [5]
+    },
+    {
+      "id": "op_move_node_arrows",
+      "name": "Move Node (Up/Down)",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Move Node (Up/Down)",
+        "field_desc": "Use the arrow buttons to move a node one position up or down among its siblings.",
+        "field_context": "Node Menu"
+      },
+      "order": [6]
+    },
+    {
+      "id": "op_copy_paste",
+      "name": "Copy/Cut/Paste",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Copy/Cut/Paste",
+        "field_desc": "Copy: Copy a node (and all its children) to the clipboard.\nCut: Cut a specific instance of a node to move it elsewhere.\nPaste as Child/Sibling: Paste the copied/cut node relative to another node.\nPaste as Clone: Create a linked copy (a clone) of a node under another parent.",
+        "field_context": "Node Menu"
+      },
+      "order": [7]
+    },
+    {
+      "id": "op_change_template",
+      "name": "Change Template",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Change Template",
+        "field_desc": "Switch a node to use a different template, preserving data from fields with the same name.",
+        "field_context": "Node Menu"
+      },
+      "order": [8]
+    },
+    {
+      "id": "op_star",
+      "name": "Star/Unstar",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Star/Unstar",
+        "field_desc": "Mark a node as a 'favorite' for quick filtering.",
+        "field_context": "Node Menu"
+      },
+      "order": [9]
+    },
+    {
+      "id": "op_expand_collapse",
+      "name": "Expand/Collapse",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Expand/Collapse",
+        "field_desc": "Show or hide a node's children and content.",
+        "field_context": "Node Menu"
+      },
+      "order": [10]
+    },
+    {
+      "id": "op_expand_collapse_all",
+      "name": "Expand/Collapse All",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Expand/Collapse All",
+        "field_desc": "Recursively expand or collapse all descendants of a node.",
+        "field_context": "Node Menu"
+      },
+      "order": [11]
+    },
+    {
+      "id": "op_copy_link",
+      "name": "Copy Node Link",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Copy Node Link",
+        "field_desc": "Copy a special `node://` link to the clipboard for linking nodes together.",
+        "field_context": "Node Menu"
+      },
+      "order": [12]
+    },
+    {
+      "id": "op_preview_node",
+      "name": "Preview Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Preview Node",
+        "field_desc": "Open a dialog to view a node and its children in isolation.",
+        "field_context": "Node Menu"
+      },
+      "order": [13]
+    },
+     {
+      "id": "op_export_node",
+      "name": "Export Node",
+      "templateId": "template_operation",
+      "parentIds": ["cat_node_management"],
+      "data": {
+        "field_name_op": "Export Node",
+        "field_desc": "Export a single node and all its descendants as JSON, HTML, or an Archive (.zip).",
+        "field_context": "Node Menu"
+      },
+      "order": [14]
+    },
+    {
+      "id": "cat_bulk_operations",
+      "name": "III. Bulk Node Operations (Multi-select)",
+      "templateId": "template_category",
+      "data": { "field_name_cat": "III. Bulk Node Operations (Multi-select)" },
+      "parentIds": [],
+      "order": [2]
+    },
+    {
+      "id": "op_delete_selection",
+      "name": "Delete Selection",
+      "templateId": "template_operation",
+      "parentIds": ["cat_bulk_operations"],
+      "data": {
+        "field_name_op": "Delete Selection",
+        "field_desc": "Delete all selected nodes and their children.",
+        "field_context": "Tree Page"
+      },
+      "order": [0]
+    },
+    {
+      "id": "op_copy_cut_selection",
+      "name": "Copy/Cut Selection",
+      "templateId": "template_operation",
+      "parentIds": ["cat_bulk_operations"],
+      "data": {
+        "field_name_op": "Copy/Cut Selection",
+        "field_desc": "Copy or cut all selected top-level nodes.",
+        "field_context": "Tree Page"
+      },
+      "order": [1]
+    },
+    {
+      "id": "op_change_template_selection",
+      "name": "Change Template for Selection",
+      "templateId": "template_operation",
+      "parentIds": ["cat_bulk_operations"],
+      "data": {
+        "field_name_op": "Change Template for Selection",
+        "field_desc": "Apply a new template to all selected nodes simultaneously.",
+        "field_context": "Tree Page"
+      },
+      "order": [2]
+    },
+    {
+      "id": "op_expand_collapse_selection",
+      "name": "Expand/Collapse Selection",
+      "templateId": "template_operation",
+      "parentIds": ["cat_bulk_operations"],
+      "data": {
+        "field_name_op": "Expand/Collapse Selection",
+        "field_desc": "Expand or collapse all selected nodes.",
+        "field_context": "Tree Page"
+      },
+      "order": [3]
+    },
+    {
+      "id": "op_export_selection",
+      "name": "Export Selection",
+      "templateId": "template_operation",
+      "parentIds": ["cat_bulk_operations"],
+      "data": {
+        "field_name_op": "Export Selection",
+        "field_desc": "Export the selected nodes and their descendants as JSON, an HTML file, or a ZIP archive.",
+        "field_context": "Tree Page"
+      },
+      "order": [4]
+    },
+    {
+      "id": "cat_template_management",
+      "name": "IV. Template Management",
+      "templateId": "template_category",
+      "data": { "field_name_cat": "IV. Template Management" },
+      "parentIds": [],
+      "order": [3]
+    },
+    {
+      "id": "op_create_edit_template",
+      "name": "Create/Edit Template",
+      "templateId": "template_operation",
+      "parentIds": ["cat_template_management"],
+      "data": {
+        "field_name_op": "Create/Edit Template",
+        "field_desc": "Design the structure of your nodes, including fields, naming rules, icons, and conditional formatting.",
+        "field_context": "Templates Page"
+      },
+      "order": [0]
+    },
+    {
+      "id": "op_delete_template",
+      "name": "Delete Template",
+      "templateId": "template_operation",
+      "parentIds": ["cat_template_management"],
+      "data": {
+        "field_name_op": "Delete Template",
+        "field_desc": "Remove a template (only possible if no nodes are using it).",
+        "field_context": "Templates Page"
+      },
+      "order": [1]
+    },
+    {
+      "id": "op_reorder_templates",
+      "name": "Reorder Templates",
+      "templateId": "template_operation",
+      "parentIds": ["cat_template_management"],
+      "data": {
+        "field_name_op": "Reorder Templates",
+        "field_desc": "Drag and drop templates to change their display order in selection dialogs.",
+        "field_context": "Templates Page"
+      },
+      "order": [2]
+    },
+    {
+      "id": "op_import_export_template",
+      "name": "Import/Export Template",
+      "templateId": "template_operation",
+      "parentIds": ["cat_template_management"],
+      "data": {
+        "field_name_op": "Import/Export Template",
+        "field_desc": "Save or load a single template definition as a JSON file.",
+        "field_context": "Templates Page"
+      },
+      "order": [3]
+    },
+    {
+      "id": "op_import_export_all_templates",
+      "name": "Import/Export All Templates",
+      "templateId": "template_operation",
+      "parentIds": ["cat_template_management"],
+      "data": {
+        "field_name_op": "Import/Export All Templates",
+        "field_desc": "Save or load all templates for the current tree as a single .zip archive.",
+        "field_context": "Templates Page"
+      },
+      "order": [4]
+    }
+  ]
+}
