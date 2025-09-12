@@ -99,7 +99,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
     if (!activeNodeInfo) return;
 
     if (isCloneOperation) {
-        pasteNodesAsClones(overNodeId, isDroppingOnGap ? 'sibling' : 'child', [activeNodeId]);
+        pasteNodesAsClones(overNodeId, isDroppingOnGap ? 'sibling' : 'child', [activeNodeId], targetContextualParentId);
         return;
     }
 
