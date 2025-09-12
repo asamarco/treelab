@@ -29,6 +29,7 @@ import { generateNodeName, deepCloneNode, generateClientSideId, generateJsonForE
 import {
   saveTreeFile,
   loadTreeFile,
+  loadTreeNodes,
   createTreeFile,
   deleteTreeFile as deleteTreeFileFromDb,
   listExamples as listExamplesFromDataService,
@@ -246,7 +247,7 @@ interface TreeContextType {
   getNodeInstancePaths: (nodeId: string) => string[];
   uploadAttachment: (relativePath: string, dataUri: string, fileName: string, ownerId: string) => Promise<AttachmentInfo | null>;
   moveNodeOrder: (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => Promise<void>;
-  pasteNodesAsClones: (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[]) => Promise<void>;
+  pasteNodesAsClones: (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[], contextualParentId: string | null) => Promise<void>;
   undoLastAction: () => void;
   canUndo: boolean;
   redoLastAction: () => void;
@@ -1150,7 +1151,7 @@ const addNodes = async (
 
     const originalTrees = JSON.parse(JSON.stringify(allTrees));
     
-    const targetNodeInfo = targetNodeId ? findNodeAndParent(targetNodeId) : null;
+    const targetNodeInfo = findNodeAndContextualParent(targetNodeId, contextualParentId);
     
     const parentNode = position === 'child' ? targetNodeInfo?.node : targetNodeInfo?.parent;
     const siblings = parentNode ? parentNode.children : activeTree?.tree;
@@ -1181,7 +1182,7 @@ const addNodes = async (
       const activeTreeDraft = draft.find((t) => t.id === activeTreeId);
       if (!activeTreeDraft) return;
 
-      const parentInfo = parentNode ? findNodeAndParent(parentNode.id, activeTreeDraft.tree) : null;
+      const parentInfo = parentNode ? findNodeAndContextualParent(parentNode.id, contextualParentId, activeTreeDraft.tree) : null;
       const draftSiblings = parentInfo ? parentInfo.node.children : activeTreeDraft.tree;
       
       draftSiblings.splice(insertIndex, 0, newNode);
@@ -1451,12 +1452,12 @@ const addNodes = async (
             const dbUpdatesForThisAction: { id: string; updates: Partial<TreeNode> }[] = [];
 
             for (const move of moves) {
-                const sourceParentInfo = findNodeAndContextualParent(move.nodeId, move.sourceContextualParentId, activeTreeDraft.tree);
-                if (!sourceParentInfo) {
+                const sourceNodeInfo = findNodeAndContextualParent(move.nodeId, move.sourceContextualParentId, activeTreeDraft.tree);
+                if (!sourceNodeInfo) {
                     console.warn(`Could not find source node instance ${move.nodeId}_${move.sourceContextualParentId}`);
                     continue;
                 }
-                const sourceNodeParent = sourceParentInfo.parent;
+                const sourceNodeParent = sourceNodeInfo.parent;
                 const sourceSiblings = sourceNodeParent ? sourceNodeParent.children : activeTreeDraft.tree;
                 
                 const movingNodeIndex = sourceSiblings.findIndex((n) => n.id === move.nodeId);
@@ -1474,9 +1475,19 @@ const addNodes = async (
 
                 const newSiblings = newParentNode ? newParentNode.children : activeTreeDraft.tree;
                 const newParentId = newParentNode ? newParentNode.id : null;
-
-                movingNode.parentIds = newParentId ? [newParentId] : [];
                 
+                // --- Start of Clone Handling Logic ---
+                const oldParentIndex = movingNode.parentIds.indexOf(move.sourceContextualParentId!);
+                if (oldParentIndex > -1) {
+                    movingNode.parentIds.splice(oldParentIndex, 1);
+                    movingNode.order.splice(oldParentIndex, 1);
+                }
+
+                if (newParentId && !movingNode.parentIds.includes(newParentId)) {
+                    movingNode.parentIds.push(newParentId);
+                }
+                // --- End of Clone Handling Logic ---
+
                 let targetNodeIndexInNewSiblings = newSiblings.findIndex(n => n.id === move.targetNodeId);
 
                 if (move.position === 'sibling' && move.isCutOperation) {
@@ -1568,47 +1579,83 @@ const addNodes = async (
     };
   
 
-const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[]) => {
+const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[], contextualParentId: string | null) => {
     if (nodeIdsToClone.length === 0 || !activeTree) return;
 
-    const targetNodeInfo = findNodeAndParent(targetNodeId);
+    const targetNodeInfo = findNodeAndContextualParent(targetNodeId, contextualParentId);
     if (!targetNodeInfo) {
-      toast({ variant: "destructive", title: "Operation Aborted", description: `Target node ${targetNodeId} not found.` });
-      return;
+        toast({ variant: "destructive", title: "Operation Aborted", description: `Target node ${targetNodeId} not found.` });
+        return;
     }
     const { node: targetNode, parent: targetParent } = targetNodeInfo;
 
     const newParent = as === 'child' ? targetNode : targetParent;
     if (!newParent) {
-      toast({ variant: "destructive", title: "Invalid Operation", description: "Cannot clone at the root level as a sibling." });
-      return;
+        toast({ variant: "destructive", title: "Invalid Operation", description: "Cannot clone at the root level as a sibling." });
+        return;
     }
 
-    const dbOperations: Promise<void>[] = [];
+    const siblings = newParent.children || [];
+    const targetNodeIndex = as === 'sibling' ? siblings.findIndex(n => n.id === targetNodeId) : -1;
+    const baseOrder = as === 'sibling' 
+        ? (targetNodeIndex !== -1 ? getContextualOrder(targetNode, siblings, newParent.id) + 1 : siblings.length) 
+        : siblings.length;
     
-    let currentOrder = (newParent.children || []).length;
-    for (const nodeId of nodeIdsToClone) {
-        if (newParent.id === nodeId) {
+    // Step 1: Add parent relationship and calculate order in DB
+    await Promise.all(nodeIdsToClone.map((nodeId, i) => {
+      if (newParent.id === nodeId) {
           toast({ variant: "destructive", title: "Invalid Operation", description: `Cannot clone node as a child of itself.` });
-          continue; // Skip this one
+          return Promise.resolve();
+      }
+      const nodeToClone = findNodeAndParent(nodeId)?.node;
+      if (!nodeToClone) return Promise.resolve();
+      if (nodeToClone.parentIds.includes(newParent.id)) {
+          toast({ title: "Already Exists", description: `Node "${nodeToClone.name}" is already a clone under "${newParent.name}".` });
+          return Promise.resolve();
+      }
+      return addParentToNode(nodeId, newParent.id, baseOrder + i);
+    }));
+
+    // Step 2: Optimistically update UI and prepare DB updates
+    let dbUpdates: { id: string; updates: Partial<TreeNode> }[] = [];
+    
+    performAction(draft => {
+        const activeTreeDraft = draft.find(t => t.id === activeTreeId);
+        if (!activeTreeDraft) return;
+        
+        const parentInfo = findNodeAndContextualParent(newParent.id, findNodeAndParent(newParent.id, activeTreeDraft.tree)?.parent?.id || null, activeTreeDraft.tree);
+        if (!parentInfo) return;
+
+        const draftSiblings = parentInfo.node.children;
+        const draftTargetIndex = draftSiblings.findIndex(n => n.id === targetNodeId);
+        const insertIndex = as === 'sibling' ? (draftTargetIndex !== -1 ? draftTargetIndex + 1 : draftSiblings.length) : draftSiblings.length;
+
+        nodeIdsToClone.forEach((nodeId, i) => {
+            const originalNodeInDraft = findNodeAndParent(nodeId, activeTreeDraft.tree)?.node;
+            if(originalNodeInDraft) {
+                if(!originalNodeInDraft.parentIds.includes(newParent.id)) {
+                    originalNodeInDraft.parentIds.push(newParent.id);
+                    originalNodeInDraft.order.push(baseOrder + i);
+                }
+                
+                if(!draftSiblings.some(c => c.id === originalNodeInDraft.id)) {
+                    draftSiblings.splice(insertIndex + i, 0, originalNodeInDraft);
+                }
+            }
+        });
+        
+        resequenceSiblingsForAdd(draftSiblings, newParent.id);
+        
+        // After re-sequencing, collect all changed orders for this parent
+        dbUpdates = draftSiblings.map(n => ({ id: n.id, updates: { order: n.order, parentIds: n.parentIds } }));
+    });
+    
+    // Step 3: Send collected updates to the DB
+    setTimeout(async () => {
+        if (dbUpdates.length > 0) {
+            await batchUpdateNodes(dbUpdates);
         }
-
-        const nodeToClone = findNodeAndParent(nodeId)?.node;
-        if (!nodeToClone) continue;
-
-        if (nodeToClone.parentIds.includes(newParent.id)) {
-            toast({ title: "Already Exists", description: `Node "${nodeToClone.name}" is already a clone under "${newParent.name}".` });
-            continue;
-        }
-
-        dbOperations.push(addParentToNode(nodeId, newParent.id, currentOrder));
-        currentOrder++;
-    }
-
-    if (dbOperations.length > 0) {
-        await Promise.all(dbOperations);
-        await reloadActiveTree(); 
-    }
+    }, 0);
 };
 
   const updateNodeNamesForTemplate = async (template: Template) => {

@@ -158,7 +158,7 @@ export function TreeNodeHeader({
     if (!clipboard.nodes || clipboard.operation === 'cut') return;
 
     const nodeIdsToClone = clipboard.nodes.map(n => n.id);
-    pasteNodesAsClones(node.id, as, nodeIdsToClone).then(() => {
+    pasteNodesAsClones(node.id, as, nodeIdsToClone, contextualParentId).then(() => {
         toast({ title: `Cloned ${clipboard.nodes?.length} node(s)`, description: `Pasted as clones.` });
         setClipboard({ nodes: null, operation: null });
         setSelectedNodeIds([]);
@@ -201,8 +201,8 @@ export function TreeNodeHeader({
           onDoubleClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}
           onClick={(e) => {
             e.stopPropagation();
-            setExpandedNodeIds(prev => {
-              const newSet = new Set(prev);
+            setExpandedNodeIds((prev) => {
+              const newSet = new Set(prev as string[]);
               if (newSet.has(instanceId)) newSet.delete(instanceId); else newSet.add(instanceId);
               return Array.from(newSet);
             });

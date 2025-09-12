@@ -180,10 +180,10 @@ export function TreeSelectionBar() {
         const targetInstanceId = selectedNodeIds[0];
         if (!targetInstanceId) return;
 
-        const [targetNodeId, _] = targetInstanceId.split('_');
+        const [targetNodeId, contextualParentId] = targetInstanceId.split('_');
         const nodeIdsToClone = clipboard.nodes.map(n => n.id);
 
-        pasteNodesAsClones(targetNodeId, as, nodeIdsToClone).then(() => {
+        pasteNodesAsClones(targetNodeId, as, nodeIdsToClone, contextualParentId === 'root' ? null : contextualParentId).then(() => {
             toast({ title: `Cloned ${clipboard.nodes?.length} node(s)`, description: `Pasted as clones.` });
             setClipboard({ nodes: null, operation: null });
             setSelectedNodeIds([]);
