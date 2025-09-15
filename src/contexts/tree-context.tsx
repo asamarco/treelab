@@ -114,28 +114,40 @@ function getContextualOrder(node: TreeNode, siblings: readonly TreeNode[], conte
  * related to state immutability.
  */
 function resequenceSiblingsForAdd(
-  siblings: WritableDraft<TreeNode>[],
-  contextualParentId: string | null
+    siblings: WritableDraft<TreeNode>[],
+    contextualParentId: string | null
 ): void {
-  siblings.forEach((node, newIndex) => {
-    // figure out which slot in node.order corresponds to this context
-    const parentSlot = contextualParentId
-      ? node.parentIds?.indexOf(contextualParentId) ?? -1
-      : (node.parentIds?.length ?? 0) === 0
-        ? 0
-        : -1;
+    siblings.forEach((node, newIndex) => {
+        let parentSlot = -1;
 
-    if (parentSlot === -1) return;
+        if (contextualParentId) {
+            parentSlot = node.parentIds?.indexOf(contextualParentId) ?? -1;
+            // If the node was just moved to this parent, the parentId might not be there yet.
+            if (parentSlot === -1) {
+                if (!node.parentIds) node.parentIds = [];
+                node.parentIds.push(contextualParentId);
+                parentSlot = node.parentIds.length - 1;
+            }
+        } else {
+            // Root nodes
+            parentSlot = (node.parentIds?.length ?? 0) === 0 ? 0 : -1;
+        }
 
-    // only update if that slot already exists
-    if (node.order?.length > parentSlot) {
-      const current = node.order[parentSlot];
-      if (current !== newIndex) {
-        node.order[parentSlot] = newIndex;
-      }
-    }
-  });
+        if (parentSlot === -1) return;
+
+        // Ensure order array is long enough. This is key for adding clones.
+        if (!node.order) node.order = [];
+        while (node.order.length < node.parentIds.length) {
+            node.order.push(0); 
+        }
+
+        const currentOrder = node.order[parentSlot];
+        if (currentOrder !== newIndex) {
+            node.order[parentSlot] = newIndex;
+        }
+    });
 }
+
 
 async function createNodeSubtreeInDb(
   nodeData: TreeNode,
@@ -1527,7 +1539,7 @@ const addNodes = async (
 
         setTimeout(async () => {
             if (finalDbUpdates.length > 0) {
-                console.log(`INFO: ${finalDbUpdates.length} Nodes updated`)
+                console.log(`INFO: Batch updating ${finalDbUpdates.length} nodes in DB.`);
                 await batchUpdateNodes(finalDbUpdates);
             }
         }, 0);
@@ -1601,7 +1613,6 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
         ? (targetNodeIndex !== -1 ? getContextualOrder(targetNode, siblings, newParent.id) + 1 : siblings.length) 
         : siblings.length;
     
-    // Step 1: Add parent relationship and calculate order in DB
     await Promise.all(nodeIdsToClone.map((nodeId, i) => {
       if (newParent.id === nodeId) {
           toast({ variant: "destructive", title: "Invalid Operation", description: `Cannot clone node as a child of itself.` });
@@ -1616,9 +1627,8 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
       return addParentToNode(nodeId, newParent.id, baseOrder + i);
     }));
 
-    // Step 2: Optimistically update UI and prepare DB updates
-    let dbUpdates: { id: string; updates: Partial<TreeNode> }[] = [];
-    
+    let dbUpdates: { id: string, updates: Partial<TreeNode> }[] = [];
+
     performAction(draft => {
         const activeTreeDraft = draft.find(t => t.id === activeTreeId);
         if (!activeTreeDraft) return;
@@ -1632,13 +1642,12 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
 
         nodeIdsToClone.forEach((nodeId, i) => {
             const originalNodeInDraft = findNodeAndParent(nodeId, activeTreeDraft.tree)?.node;
-            if(originalNodeInDraft) {
-                if(!originalNodeInDraft.parentIds.includes(newParent.id)) {
+            if (originalNodeInDraft) {
+                if (!originalNodeInDraft.parentIds.includes(newParent.id)) {
                     originalNodeInDraft.parentIds.push(newParent.id);
                     originalNodeInDraft.order.push(baseOrder + i);
                 }
-                
-                if(!draftSiblings.some(c => c.id === originalNodeInDraft.id)) {
+                if (!draftSiblings.some(c => c.id === originalNodeInDraft.id)) {
                     draftSiblings.splice(insertIndex + i, 0, originalNodeInDraft);
                 }
             }
@@ -1646,16 +1655,22 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
         
         resequenceSiblingsForAdd(draftSiblings, newParent.id);
         
-        // After re-sequencing, collect all changed orders for this parent
-        dbUpdates = draftSiblings.map(n => ({ id: n.id, updates: { order: n.order, parentIds: n.parentIds } }));
+        // After re-sequencing, collect the order updates for all siblings in the current context
+        dbUpdates = draftSiblings.map(n => ({
+            id: n.id,
+            updates: {
+                parentIds: n.parentIds, // Ensure parentIds are also sent for clones
+                order: n.order
+            }
+        }));
     });
     
-    // Step 3: Send collected updates to the DB
-    setTimeout(async () => {
-        if (dbUpdates.length > 0) {
+    if (dbUpdates.length > 0) {
+        setTimeout(async () => {
             await batchUpdateNodes(dbUpdates);
-        }
-    }, 0);
+            console.log(`INFO: Persisted order for ${dbUpdates.length} siblings after clone paste.`);
+        }, 0);
+    }
 };
 
   const updateNodeNamesForTemplate = async (template: Template) => {
