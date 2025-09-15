@@ -2,7 +2,7 @@
 <img src="./public/favicon.svg" width=20% height=20%>
 </p>
 
-Treelab is a Next.js application designed to be a flexible, hierarchical data management tool where users can create and manage data trees with custom-defined templates.
+Treelab is a Next.js application designed to be a flexible, hierarchical data management tool where users can create and manage data trees with custom-defined templates. Lots of the ideas of this software are taken from the magnific [Treeline](https://github.com/doug-101/TreeLine) desktop software, this web application tries to improve on several aspects by allowing an online workflow from any browser, tree sharing with concurrent editing, versioning with github backend, and a better interface for handling images and attachments into nodes.
 
 <p align="center">
 <img width="800" height="528" alt="image" src="https://github.com/user-attachments/assets/6cebf4c1-bfaa-4235-ac54-58d7a6b931c8" />
