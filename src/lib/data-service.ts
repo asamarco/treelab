@@ -244,59 +244,63 @@ export async function deleteTreeFilesByUserId(userId: string): Promise<void> {
 const buildTreeHierarchy = (nodes: TreeNode[]): TreeNode[] => {
     if (!nodes || nodes.length === 0) return [];
 
-    const nodeMap: { [key: string]: TreeNode } = {};
-    const rootNodes: TreeNode[] = [];
-    const addedRootIds = new Set<string>();
-
+    const nodeMap = new Map<string, TreeNode>();
     nodes.forEach((node: any) => {
         const plainNode = toPlainObject(node);
-        plainNode.children = [];
-        nodeMap[plainNode.id] = plainNode;
+        nodeMap.set(plainNode.id, { ...plainNode, children: [] });
     });
 
-    Object.values(nodeMap).forEach(node => {
-        const parentIds = node.parentIds || [];
-        if (parentIds.length > 0) {
-            let isRoot = true;
-            parentIds.forEach(parentId => {
-                const parentNode = nodeMap[parentId];
+    const rootNodes: TreeNode[] = [];
+    
+    nodeMap.forEach(node => {
+        // Treat an empty parentIds array as equivalent to ['root'] for backward compatibility
+        const parentIds = node.parentIds && node.parentIds.length > 0 ? node.parentIds : ['root'];
+
+        parentIds.forEach((parentId, index) => {
+            const isRootInstance = parentId === 'root';
+            const instanceNode = { ...node }; // Create a distinct object for each instance
+
+            if (isRootInstance) {
+                rootNodes.push(instanceNode);
+            } else {
+                const parentNode = nodeMap.get(parentId);
                 if (parentNode) {
-                    isRoot = false;
-                    if (!parentNode.children.some(child => child.id === node.id)) {
-                        parentNode.children.push(node);
-                    }
-                }
-            });
-            if (isRoot) {
-                if (!addedRootIds.has(node.id)) {
-                    rootNodes.push(node);
-                    addedRootIds.add(node.id);
+                    parentNode.children.push(instanceNode);
                 }
             }
-        } else {
-            // No parentIds means it's a root.
-             if (!addedRootIds.has(node.id)) {
-                rootNodes.push(node);
-                addedRootIds.add(node.id);
+        });
+    });
+
+    const sortChildrenRecursive = (nodesToSort: TreeNode[]) => {
+        nodesToSort.forEach(node => {
+            if (node.children && node.children.length > 1) {
+                node.children.sort((a, b) => {
+                    const parentId = node.id;
+                    const aIndex = (a.parentIds || ['root']).indexOf(parentId);
+                    const bIndex = (b.parentIds || ['root']).indexOf(parentId);
+                    const orderA = aIndex !== -1 && a.order && a.order.length > aIndex ? a.order[aIndex] : 0;
+                    const orderB = bIndex !== -1 && b.order && b.order.length > bIndex ? b.order[bIndex] : 0;
+                    return orderA - orderB;
+                });
+                sortChildrenRecursive(node.children);
             }
-        }
+        });
+    };
+    
+    sortChildrenRecursive(Array.from(nodeMap.values()));
+    
+    rootNodes.sort((a, b) => {
+        const aIndex = (a.parentIds || ['root']).indexOf('root');
+        const bIndex = (b.parentIds || ['root']).indexOf('root');
+        const orderA = aIndex !== -1 && a.order && a.order.length > aIndex ? a.order[aIndex] : 0;
+        const orderB = bIndex !== -1 && b.order && b.order.length > bIndex ? b.order[bIndex] : 0;
+        return orderA - orderB;
     });
 
-    Object.values(nodeMap).forEach(node => {
-        if (node.children && node.children.length > 1) {
-            node.children.sort((a, b) => {
-                const parentIndexA = node.id ? a.parentIds.indexOf(node.id) : -1;
-                const parentIndexB = node.id ? b.parentIds.indexOf(node.id) : -1;
-                const orderA = parentIndexA !== -1 ? (a.order[parentIndexA] ?? 0) : 0;
-                const orderB = parentIndexB !== -1 ? (b.order[parentIndexB] ?? 0) : 0;
-                return orderA - orderB;
-            });
-        }
-    });
-
-    rootNodes.sort((a, b) => (a.order[0] ?? 0) - (b.order[0] ?? 0));
-
-    return rootNodes;
+    // Remove duplicates from rootNodes based on a unique instance identifier (id + parentId)
+    const uniqueRootNodes = Array.from(new Map(rootNodes.map(n => [`${n.id}_root`, n])).values());
+    
+    return uniqueRootNodes;
 };
 
 export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
@@ -314,7 +318,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
 
 export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & { _id?: string, id?: string }): Promise<TreeNode> {
     await connectToDatabase();
-    const { id, name, data, ...rest } = nodeData;
+    const { id, name, data, ...rest } = nodeData as any;
     
     const dataToSave = {
         ...rest,
@@ -340,7 +344,7 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
     await connectToDatabase();
     
     const { name, data, ...restOfUpdates } = updates;
-    const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates };
+    const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: new Date().toISOString() };
     
     if (name) {
         encryptedUpdates.name = await encrypt(name);
@@ -353,22 +357,24 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
 }
 
 const resequenceSiblings = async (parentId: string | null, treeId: string): Promise<void> => {
-    const parentQuery = parentId ? { parentIds: parentId } : { parentIds: { $size: 0 } };
+    const parentQuery = parentId ? { parentIds: parentId } : { $or: [{ parentIds: { $size: 0 } }, { parentIds: ['root'] }] };
     const siblings = await TreeNodeModel.find({ treeId, ...parentQuery }).exec();
 
     if (siblings.length === 0) return;
 
     // Get contextual order for sorting
     const getContextualOrder = (node: TreeNode) => {
-        const pIndex = parentId ? node.parentIds.indexOf(parentId) : -1;
+        const pIndex = parentId ? (node.parentIds || []).indexOf(parentId) : (node.parentIds || []).indexOf('root');
         const fallbackOrder = siblings.findIndex(s => s.id === node.id);
-        return (pIndex !== -1 && node.order && node.order.length > pIndex) ? node.order[pIndex] : fallbackOrder;
+        const finalPIndex = pIndex === -1 ? 0 : pIndex;
+        return (finalPIndex !== -1 && node.order && node.order.length > finalPIndex) ? node.order[finalPIndex] : fallbackOrder;
     };
 
     siblings.sort((a, b) => getContextualOrder(a) - getContextualOrder(b));
 
     const bulkOps = siblings.map((sibling, index) => {
-        const parentIndex = parentId ? sibling.parentIds.indexOf(parentId) : 0;
+        const parentIdToUpdate = parentId || 'root';
+        const parentIndex = (sibling.parentIds || []).indexOf(parentIdToUpdate);
         if (parentIndex !== -1) {
             const newOrder = [...sibling.order];
             newOrder[parentIndex] = index;
@@ -395,16 +401,19 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     if (!node) return [];
 
     const treeId = node.treeId.toString();
+    const effectiveParentIds = node.parentIds.length === 0 ? ['root'] : node.parentIds;
+    const parentId = parentIdToUnlink ?? 'root';
+
 
     // This block handles unlinking one instance of a cloned node.
-    if (node.parentIds.length > 1 && parentIdToUnlink) {
-        const parentIndex = node.parentIds.indexOf(parentIdToUnlink);
-        if (parentIndex !== -1) {
+    if (effectiveParentIds.length > 1) {
+        const parentIndex = node.parentIds.indexOf(parentId);
+        if (parentIndex > -1) {
             node.parentIds.splice(parentIndex, 1);
             node.order.splice(parentIndex, 1);
             await node.save();
             // After unlinking, re-sequence the remaining siblings.
-            await resequenceSiblings(parentIdToUnlink, treeId);
+            await resequenceSiblings(parentId === 'root' ? null : parentId, treeId);
         }
         return [];
     }
@@ -510,18 +519,27 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
     console.log(`INFO: Batch updated ${updates.length} nodes in DB.`);
 }
 
-export async function addParentToNode(nodeId: string, newParentId: string, newOrder: number): Promise<void> {
+export async function addParentToNode(nodeId: string, newParentId: string | null, newOrder: number): Promise<void> {
     await connectToDatabase();
     const node = await TreeNodeModel.findById(nodeId).exec();
     if (!node) {
         throw new Error("Node to clone not found");
     }
 
-    if (!node.parentIds.includes(newParentId)) {
-        node.parentIds.push(newParentId);
+    const parentIdToAdd = newParentId || 'root';
+
+    if (!node.parentIds.includes(parentIdToAdd)) {
+        node.parentIds.push(parentIdToAdd);
         node.order.push(newOrder);
         await node.save();
-        console.log(`INFO: Cloned node ${nodeId} under new parent ${newParentId}`);
+        console.log(`INFO: Cloned node ${nodeId} under new parent ${parentIdToAdd}`);
+    } else {
+        const parentIndex = node.parentIds.indexOf(parentIdToAdd);
+        if (parentIndex !== -1) {
+            node.order[parentIndex] = newOrder;
+            await node.save();
+            console.log(`INFO: Updated order for existing clone ${nodeId} under parent ${parentIdToAdd}`);
+        }
     }
 }
 
@@ -844,4 +862,5 @@ export async function getTreeFromGit(token: string, owner: string, repo: string,
     }
 }
 
+    
     

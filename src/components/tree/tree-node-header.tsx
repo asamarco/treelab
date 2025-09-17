@@ -89,10 +89,14 @@ export function TreeNodeHeader({
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
   const { icon, color } = getConditionalStyle(node, template);
   const nodeHasAttachments = hasAttachments(node, template);
+  
+  // A node is a clone if it has more than one parent.
+  // The parentIds array is now authoritative from the database via buildTreeHierarchy.
   const isClone = Array.isArray(node.parentIds) && node.parentIds.length > 1;
+
   const clonePaths = isClone ? getNodeInstancePaths(node.id) : [];
   
-  const parentIndex = contextualParentId ? node.parentIds.indexOf(contextualParentId) : 0;
+  const parentIndex = contextualParentId ? (node.parentIds || []).indexOf(contextualParentId) : (node.parentIds || []).indexOf('root');
   const contextualOrder = (parentIndex !== -1 && node?.order && (node.order.length > parentIndex))
     ? node.order[parentIndex]
     : siblings.findIndex(s => s.id === node.id);

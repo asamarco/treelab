@@ -2,7 +2,7 @@
   "title": "Welcome to Treelab!",
   "nodes": [
     {
-      "id": "2025-08-23T17:32:43.385Zst72i28",
+      "id": "2025-09-14T16:26:19.975Zshjld0y",
       "name": "Welcome to Treelab!",
       "templateId": "2025-08-19T08:57:55.257Zziy6knj",
       "data": {
@@ -10,9 +10,9 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "This is your first tree, a brief guide to help you get started. You can edit, add to, or delete this entire tree at any time from the <b>Roots</b> page."
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
-      "parentIds": [],
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "parentIds": ["root"],
       "order": [
         0
       ],
@@ -20,7 +20,7 @@
       "updatedAt": "2025-08-08T14:59:05.041Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Zdotodc2",
+      "id": "2025-09-14T16:26:19.975Zmb5afyp",
       "name": "Getting Started",
       "templateId": "2025-08-19T08:57:55.257Zziy6knj",
       "data": {
@@ -28,10 +28,10 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "Here's a quick overview of the basic workflow:\n\n<b>1. Create Templates:</b> Go to the <i>Templates</i> page to define the structure of your data.\n\n<b>2. Build Your Tree:</b> Come back here to add nodes using the templates you created.\n\n<b>3. Organize:</b> Add new nodes as sibling or children, reorder them freely and create nested hierarchies.\n "
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zst72i28"
+        "2025-09-14T16:26:19.975Zshjld0y"
       ],
       "order": [
         0
@@ -40,7 +40,7 @@
       "updatedAt": "2025-08-24T07:09:37.154Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Zku9duu4",
+      "id": "2025-09-14T16:26:19.975Z98zrrhd",
       "name": "Core Features",
       "templateId": "2025-08-19T08:57:55.257Zziy6knj",
       "data": {
@@ -48,10 +48,10 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "Treelab is built around a few key concepts. Here are some of the features you can explore."
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zst72i28"
+        "2025-09-14T16:26:19.975Zshjld0y"
       ],
       "order": [
         1
@@ -60,7 +60,7 @@
       "updatedAt": "2025-08-17T17:56:48.985Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Z1k86i0w",
+      "id": "2025-09-14T16:26:19.975Z443atkn",
       "name": "Templates",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -69,10 +69,10 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zku9duu4"
+        "2025-09-14T16:26:19.975Z98zrrhd"
       ],
       "order": [
         0
@@ -81,7 +81,7 @@
       "updatedAt": "2025-08-24T08:02:54.228Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Zaxgryh4",
+      "id": "2025-09-14T16:26:19.975Zdchf4zy",
       "name": "Hierarchical Nodes",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -90,10 +90,10 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zku9duu4"
+        "2025-09-14T16:26:19.975Z98zrrhd"
       ],
       "order": [
         1
@@ -102,7 +102,7 @@
       "updatedAt": "2025-08-24T07:12:54.223Z"
     },
     {
-      "id": "2025-08-24T07:14:18.464Zlnblphm",
+      "id": "2025-09-14T16:26:19.975Zmwubgyq",
       "name": "Node actions",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -111,10 +111,10 @@
         "2025-08-19T08:57:55.257Z1ddpobd": "\nThe main actions are available directly on the node, just to the right of its name. Hovering every icon with the mouse will reveal its function.\n\n<li>Preview: open a viewer focused on the specific node</li><li>Edit: Allows to change the node fields</li><li>Expand/Collapse all: expand and collapses the node and all its descendants</li><li>Move up and Move down: move the node with respect to its siblings</li><li>Add child and Add sibling: create a new node as child of the node or sibling</li>\nClick the <b>more options</b> icon (the three dots) on any node to see all the other actions you can perform, like changing the node type, cut/copy/paste, and delete the node.\n"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zaxgryh4"
+        "2025-09-14T16:26:19.975Zdchf4zy"
       ],
       "order": [
         0
@@ -123,7 +123,7 @@
       "updatedAt": "2025-08-24T07:32:02.909Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Zatfjwxi",
+      "id": "2025-09-14T16:26:19.975Z0cx8otc",
       "name": "Clones",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -132,11 +132,11 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zaxgryh4",
-        "2025-08-23T17:32:43.385Zmtbfjw0"
+        "2025-09-14T16:26:19.975Zdchf4zy",
+        "2025-09-14T16:26:19.975Zsnjvqeg"
       ],
       "order": [
         2,
@@ -146,7 +146,7 @@
       "updatedAt": "2025-08-24T07:02:14.833Z"
     },
     {
-      "id": "2025-08-24T08:01:37.130Z191a18d",
+      "id": "2025-09-14T16:26:19.975Zmx6n74a",
       "name": "Export",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -155,10 +155,10 @@
         "2025-08-19T08:57:55.257Z1ddpobd": "The entire or any subset of its nodes can be exported as json file, zip archive (with attachments and pictures), or html page.\nThe node preview allows also to print to pdf."
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zku9duu4"
+        "2025-09-14T16:26:19.975Z98zrrhd"
       ],
       "order": [
         2
@@ -167,7 +167,7 @@
       "updatedAt": "2025-08-24T08:01:36.698Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Zmtbfjw0",
+      "id": "2025-09-14T16:26:19.975Zsnjvqeg",
       "name": "Advanced functions",
       "templateId": "2025-08-19T08:57:55.257Zziy6knj",
       "data": {
@@ -175,10 +175,10 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": ""
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zst72i28"
+        "2025-09-14T16:26:19.975Zshjld0y"
       ],
       "order": [
         2
@@ -187,7 +187,7 @@
       "updatedAt": "2025-08-08T14:59:05.236Z"
     },
     {
-      "id": "2025-08-24T07:37:04.154Zdros9ty",
+      "id": "2025-09-14T16:26:19.975Zzkmjn7n",
       "name": "HTML formatting",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -196,10 +196,10 @@
         "2025-08-19T08:57:55.257Z1ddpobd": "Common HTML tags can be used for formatting in text, and text area fields:\n\n<b>Bold</b>, <strong>Strong</strong>, <i>Italic</i>, <em>Emphasized</em>,<mark>Marked</mark>, <small>Smaller</small>, <del>Deleted</del>, <ins>Inserted</ins>, <sub>Subscript</sub>, <sup>Superscript</sup>\n<code>\ncode block\n</code>\n<li>Bullet point</li>\n"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zmtbfjw0"
+        "2025-09-14T16:26:19.975Zsnjvqeg"
       ],
       "order": [
         0
@@ -208,7 +208,7 @@
       "updatedAt": "2025-08-24T07:55:34.837Z"
     },
     {
-      "id": "2025-08-24T07:03:53.346Zuxrxj8j",
+      "id": "2025-09-14T16:26:19.975Zcwcifni",
       "name": "Conditional formatting",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -217,10 +217,10 @@
         "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be customized depending on the value of a certain field by writing conditional formatting rules in the template editor"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zmtbfjw0"
+        "2025-09-14T16:26:19.975Zsnjvqeg"
       ],
       "order": [
         1
@@ -229,19 +229,19 @@
       "updatedAt": "2025-08-24T07:03:57.782Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Zp78ji68",
+      "id": "2025-09-14T16:26:19.975Zbdg6p44",
       "name": "Internal links",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Internal links",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://2025-08-23T17:32:43.385Zmtbfjw0\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://2025-09-14T16:26:19.975Zsnjvqeg\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zmtbfjw0"
+        "2025-09-14T16:26:19.975Zsnjvqeg"
       ],
       "order": [
         3
@@ -250,7 +250,7 @@
       "updatedAt": "2025-08-24T07:56:51.936Z"
     },
     {
-      "id": "2025-08-23T17:32:43.385Z41vpc32",
+      "id": "2025-09-14T16:26:19.975Z1glu3ib",
       "name": "Git Sync",
       "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
       "data": {
@@ -259,10 +259,10 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a9fb395a866b17c663d971",
-      "treeId": "68a9fb3a5a866b17c663d979",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "68c6ecac7c9a7f9bd6bfad51",
       "parentIds": [
-        "2025-08-23T17:32:43.385Zmtbfjw0"
+        "2025-09-14T16:26:19.975Zsnjvqeg"
       ],
       "order": [
         4
@@ -353,6 +353,6 @@
     }
   ],
   "rootNodeIds": [
-    "2025-08-23T17:32:43.385Zst72i28"
+    "2025-09-14T16:26:19.975Zshjld0y"
   ]
 }
