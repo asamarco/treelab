@@ -3,8 +3,8 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { TreeModel } from '@/lib/models';
 import { TreeFile } from '@/lib/types';
 
-export async function GET(request: NextRequest, { params }: any) {
-  const { treeId } = params;
+export async function GET(request: NextRequest, context: { params: any }) {
+  const { treeId } = await context.params;
 
   if (!treeId) {
     return NextResponse.json(
