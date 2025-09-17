@@ -221,7 +221,6 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
             />
           </div>
         ))}
-         <TreeNodeDropZone id={`gap_end_root`} />
       </div>
     </DndContext>
   );

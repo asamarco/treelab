@@ -261,7 +261,6 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
             />
         </div>
       ))}
-       {node.children.length > 0 && <TreeNodeDropZone id={`gap_end_${node.id}`} />}
     </CollapsibleContent>
   );
 }
