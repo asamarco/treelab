@@ -1,11 +1,31 @@
 /**
  * @fileoverview
  * This file defines the `Logo` component for the application.
- * It simply renders the application's logo image (`favicon.svg`) from the public
- * directory. It accepts an optional `className` prop to allow for custom styling.
+ * It renders the application's logo, dynamically switching between a custom
+ * uploaded logo and the default favicon based on global settings.
  */
-import React from 'react';
+"use client";
 
-export const Logo = ({ className }: { className?: string }) => (
-  <img src="/favicon.svg" alt="Treelab Logo" className={className} />
-);
+import React from 'react';
+import { useAuthContext } from '@/contexts/auth-context';
+
+export const Logo = ({ className }: { className?: string }) => {
+  const { globalSettings } = useAuthContext();
+  const logoSrc = globalSettings?.customLogoPath ? `/api/logo?v=${new Date(globalSettings.updatedAt || Date.now()).getTime()}` : '/favicon.svg';
+
+  return (
+    <img 
+        src={logoSrc} 
+        alt="Treelab Logo" 
+        className={className} 
+        onError={(e) => {
+            // If the custom logo fails to load, fall back to the default
+            const target = e.target as HTMLImageElement;
+            if (target.src !== '/favicon.svg') {
+                target.onerror = null; // prevent infinite loop if default also fails
+                target.src = '/favicon.svg';
+            }
+        }}
+    />
+  );
+};

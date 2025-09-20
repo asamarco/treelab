@@ -56,6 +56,7 @@ const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
   _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
   userId: { type: String, required: true, index: true },
   sharedWith: { type: [String], default: [], index: true },
+  isPublic: { type: Boolean, default: false, index: true },
   title: { type: String, required: true },
   templates: [TemplateSchema],
   expandedNodeIds: [String],
@@ -135,6 +136,8 @@ export const UserModel = models.User || model<User>('User', UserSchema);
 // --- GlobalSettings Schema and Model ---
 const GlobalSettingsSchema = new Schema<GlobalSettings>({
   allowPublicRegistration: { type: Boolean, default: true },
+  customLogoPath: { type: String },
+  updatedAt: { type: String, default: () => new Date().toISOString() },
 });
 
 export const GlobalSettingsModel = models.GlobalSettings || model<GlobalSettings>('GlobalSettings', GlobalSettingsSchema);

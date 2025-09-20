@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This file defines the Settings page for the application. It is a protected route.
@@ -10,7 +11,7 @@
  */
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AppHeader } from "@/components/header";
 import {
   Card,
@@ -35,7 +36,7 @@ import { useTreeContext } from "@/contexts/tree-context";
 import { Separator } from "@/components/ui/separator";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Shield, ShieldOff, UserRoundPlus, KeyRound, DatabaseZap, Github } from "lucide-react";
+import { Loader2, Trash2, Shield, ShieldOff, UserRoundPlus, KeyRound, DatabaseZap, Github, Upload, Image } from "lucide-react";
 import { User, StorageInfo } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -60,6 +61,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatBytes } from "@/lib/utils";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 const DATE_FORMATS = [
     { value: "dd/MM/yyyy", label: "DD/MM/YYYY" },
@@ -102,6 +104,63 @@ function SettingsPage() {
   const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [githubPat, setGithubPat] = useState(currentUser?.gitSettings?.githubPat || "");
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(globalSettings?.customLogoPath || null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+
+
+  useEffect(() => {
+    setLogoPreview(globalSettings?.customLogoPath || '/favicon.svg');
+  }, [globalSettings]);
+  
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.type !== "image/svg+xml") {
+        toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload an SVG file for the logo." });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (readEvent) => {
+        setLogoPreview(readEvent.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoUpload = async () => {
+    const file = logoInputRef.current?.files?.[0];
+    if (!file) {
+      toast({ variant: "destructive", title: "No file selected" });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    try {
+      const response = await fetch('/api/upload/logo', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Logo upload failed');
+      }
+
+      const { path } = await response.json();
+      await setGlobalSettings({ ...globalSettings, customLogoPath: path });
+      
+      toast({ title: "Logo Updated", description: "Your new logo has been saved." });
+      
+    } catch (error) {
+      toast({ variant: "destructive", title: "Upload Failed", description: "Could not save the new logo." });
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
 
   const fetchStorageInfo = useCallback(async () => {
     if (!currentUser) return;
@@ -330,6 +389,38 @@ function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {currentUser?.isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Branding</CardTitle>
+                <CardDescription>
+                  Customize the application logo. Use an SVG for best results.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-md border p-2 flex items-center justify-center bg-card">
+                    {logoPreview ? (
+                        <img src={logoPreview} alt="Logo preview" className="max-w-full max-h-full" />
+                    ) : (
+                        <Image className="w-12 h-12 text-muted-foreground"/>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="logo-upload">Custom Logo (SVG)</Label>
+                    <Input id="logo-upload" type="file" accept="image/svg+xml" ref={logoInputRef} onChange={handleLogoFileChange} />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                    <Button onClick={handleLogoUpload} disabled={isUploadingLogo}>
+                        {isUploadingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4"/>}
+                        Upload Logo
+                    </Button>
+                </div>
+              </CardContent>
+            </Card>
+            )}
 
             <Card>
               <CardHeader>

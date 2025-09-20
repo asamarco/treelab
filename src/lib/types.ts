@@ -90,6 +90,7 @@ export interface TreeFile {
     userId: string;
     title: string;
     order: number;
+    isPublic?: boolean;
     // The 'tree' property is now virtual and will be loaded separately
     tree: TreeNode[]; // Still used on the client-side after reconstruction
     templates: Template[];
@@ -149,6 +150,8 @@ export interface User {
 export interface GlobalSettings {
     _id?: any; // Mongoose internal
     allowPublicRegistration: boolean;
+    customLogoPath?: string;
+    updatedAt?: string;
 }
 
 export interface ArchiveData {

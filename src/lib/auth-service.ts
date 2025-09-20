@@ -200,5 +200,12 @@ export async function loadGlobalSettings(): Promise<GlobalSettings | null> {
 
 export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Promise<void> {
   await connectToDatabase();
-  await GlobalSettingsModel.updateOne({}, { $set: settings }, { upsert: true }).exec();
+  // Ensure that customLogoPath is not set to an empty string, but rather removed if empty
+  const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...settings, updatedAt: new Date().toISOString() };
+  if ('customLogoPath' in updateData && !updateData.customLogoPath) {
+    delete updateData.customLogoPath;
+    await GlobalSettingsModel.updateOne({}, { $set: updateData, $unset: { customLogoPath: 1 } }, { upsert: true }).exec();
+  } else {
+    await GlobalSettingsModel.updateOne({}, { $set: updateData }, { upsert: true }).exec();
+  }
 }
