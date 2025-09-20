@@ -12,7 +12,7 @@ import {
     Edit, Download, FileJson, FileText, ChevronDown, Rows, Columns, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
     CheckCircle, AlertCircle, PlusCircle, Undo2, FileCode, Check,
-    Redo2, ListOrdered
+    Redo2, ListOrdered, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -26,7 +26,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +46,7 @@ export function TreePageHeader({
     onSync,
     onCommit
 }: TreePageHeaderProps) {
-    const { currentUser } = useAuthContext();
+    const { currentUser, users } = useAuthContext();
     const {
         canUndo,
         undoLastAction,
@@ -81,6 +80,10 @@ export function TreePageHeader({
             setIsSyncing(false);
         }
     };
+
+    const sharedWithUsers = tree.sharedWith
+        ?.map(userId => users.find(u => u.id === userId)?.username)
+        .filter(Boolean);
     
     return (
         <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
@@ -105,22 +108,34 @@ export function TreePageHeader({
                 <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
                     <Edit className="h-5 w-5" />
                 </Button>
+                {sharedWithUsers && sharedWithUsers.length > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Shared with: {sharedWithUsers.join(', ')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
             </div>
             <div className="flex flex-row flex-wrap gap-2 w-full md:w-auto justify-end">
                <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={undoLastAction} disabled={!canUndo}>
+                            <Button variant="outline" size="icon" disabled>
                                 <Undo2 className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Undo last action (Ctrl+Z)</p>
+                            <p>TODO</p>
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={redoLastAction} disabled={!canRedo}>
+                            <Button variant="outline" size="icon" disabled>
                                 <Redo2 className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
