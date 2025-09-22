@@ -126,6 +126,6 @@ body {
   }
 }
 
-.read-only-view .read-only-control {
+.read-only-view .read-only\:hidden {
   display: none !important;
 }

@@ -253,7 +253,7 @@ export function TreeSelectionBar() {
     };
 
     return (
-        <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-lg z-20 shadow-lg animate-in slide-in-from-bottom-2">
+        <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-lg z-20 shadow-lg animate-in slide-in-from-bottom-2 read-only-control">
             <CardContent className="p-2">
                 <div className="flex items-center gap-4">
                     <p className="text-sm font-medium">{selectedNodeIds.length} node{selectedNodeIds.length !== 1 && 's'} selected</p>

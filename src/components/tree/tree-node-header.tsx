@@ -186,23 +186,27 @@ export function TreeNodeHeader({
             id={`select-${instanceId}`}
             checked={isSelected}
             onCheckedChange={(checked) => onSelect(node.id, !!checked, (window.event as MouseEvent).shiftKey)}
-            className={cn("no-print", isCompactView ? 'h-3 w-3 mt-1' : 'h-4 w-4 mt-2')}
+            className={cn('read-only-control', isCompactView ? 'h-3 w-3 mt-1' : 'h-4 w-4 mt-2')}
           />
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className={cn("cursor-grab shrink-0 no-print", isCompactView ? 'h-6 w-6' : 'h-8 w-8')}
+          className={cn("cursor-grab shrink-0 no-print read-only-control", isCompactView ? 'h-6 w-6' : 'h-8 w-8')}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
           {...dndAttributes}
           {...dndListeners}
         >
-          <GripVertical className={cn("no-print", isCompactView ? 'h-3 w-3' : 'h-4 w-4')} />
+          <GripVertical className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4')} />
         </Button>
         <div
           className="flex-1 cursor-pointer"
-          onDoubleClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}
+          onDoubleClick={(e) => { 
+            if ((e.target as HTMLElement).closest('.read-only-view')) return;
+            e.stopPropagation(); 
+            onOpenModal('edit'); 
+          }}
           onClick={(e) => {
             e.stopPropagation();
             setExpandedNodeIds((prev) => {
@@ -232,7 +236,7 @@ export function TreeNodeHeader({
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger onClick={(e) => e.stopPropagation()}>
-                            <Copy className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />
+                            <Copy className="h-3 w-3 text-muted-foreground ml-1 shrink-0 read-only-control" />
                         </TooltipTrigger>
                         <TooltipContent>
                             <p className="font-bold">This node is a clone. It also exists at:</p>
@@ -244,7 +248,7 @@ export function TreeNodeHeader({
                  </TooltipProvider>
               )}
               {nodeHasAttachments && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />)}
-              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity read-only-control">
                 <TooltipProvider>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
@@ -306,7 +310,7 @@ export function TreeNodeHeader({
             </div>
            )}
         </div>
-        <div className="flex items-center ml-auto" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center ml-auto read-only-control" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
           <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
