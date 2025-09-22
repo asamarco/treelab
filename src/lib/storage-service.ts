@@ -55,15 +55,15 @@ async function getAllReferencedFileNames(userId: string, treeId?: string): Promi
 
 async function listFilesWithSizes(dir: string): Promise<{ name: string, size: number, path: string }[]> {
     try {
-        const files = await fs.readdir(dir, { withFileTypes: true, recursive: true });
+        const fileNames = await fs.readdir(dir);
         const fileDetails = await Promise.all(
-            files.filter(f => f.isFile()).map(async (file) => {
-                const fullPath = path.join(file.path, file.name);
+            fileNames.map(async (name) => {
+                const fullPath = path.join(dir, name);
                 const stats = await fs.stat(fullPath);
-                return { name: file.name, size: stats.size, path: fullPath };
+                return { name, size: stats.size, path: fullPath };
             })
         );
-        return fileDetails;
+        return fileDetails.filter(details => details !== null) as { name: string, size: number, path: string }[];
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
             return [];
