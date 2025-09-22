@@ -70,10 +70,8 @@ TreeFileSchema.pre('save', function (next) {
   if (this.isNew) {
     this._id = this.id;
     this.createdAt = new Date().toISOString();
-    this.updatedAt = new Date().toISOString();
   }
-  // Important: We manually set updatedAt in the context now to avoid this firing unnecessarily.
-  // this.updatedAt = new Date().toISOString(); 
+  this.updatedAt = new Date().toISOString(); 
   next();
 });
 

@@ -164,16 +164,12 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
             }
             
             performAction(prev => {
-                const newTrees = [...prev.filter(t => t.id !== oldTreeId)];
+                const newTrees = prev.filter(t => t.id !== oldTreeId);
                 newTrees.splice(oldIndex >= 0 ? oldIndex : newTrees.length, 0, reloadedNewTree);
                 return newTrees;
             }, false);
 
             setActiveTreeId(newTreeId);
-
-            if (pathname === '/roots') {
-                window.location.reload();
-            }
 
             console.log(`INFO: Sync successful. Replaced tree ${oldTreeId} with new tree ${newTreeId}.`);
             return { success: true, message: "Tree successfully synced from repository." };
@@ -182,7 +178,7 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
             console.error(`ERROR: Sync failed:`, error);
             return { success: false, message: error.message || "An unknown error occurred during sync." };
         }
-    }, [currentUser, importTreeFromJson, replaceTree, setActiveTreeId, performAction, pathname, allTrees]);
+    }, [currentUser, importTreeFromJson, replaceTree, setActiveTreeId, performAction, allTrees]);
     
     const restoreToCommit = useCallback(async (currentTreeId: string, commitSha: string, token: string) => {
         if (!currentUser) throw new Error("User not logged in");
@@ -212,9 +208,10 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
                 lastSyncSha: commitSha,
             },
         };
-        await replaceTree(currentTreeId, newTreeId, metaToKeep);
         
-        setActiveTreeId(newTreeId);
+        const oldIndex = allTrees.findIndex(t => t.id === currentTreeId);
+
+        await replaceTree(currentTreeId, newTreeId, metaToKeep);
 
         const restoredTreeFile = await loadTreeFile(newTreeId);
         if (!restoredTreeFile) {
@@ -228,14 +225,17 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
           console.error(`ERROR: Failed to commit restored version. A manual sync may be required.`);
           throw new Error(result.error || "Failed to commit the restored version.");
         }
-        
-        if (pathname === '/roots') {
-            window.location.reload();
-        } else {
-            await reloadActiveTree(newTreeId);
-        }
 
-    }, [currentUser, allTrees, importTreeFromJson, replaceTree, setActiveTreeId, commitToRepo, reloadActiveTree, pathname]);
+        // Update state without full page reload
+        performAction(prev => {
+            const newTrees = prev.filter(t => t.id !== currentTreeId);
+            newTrees.splice(oldIndex >= 0 ? oldIndex : newTrees.length, 0, restoredTreeFile);
+            return newTrees;
+        }, false);
+        
+        setActiveTreeId(newTreeId);
+
+    }, [currentUser, allTrees, importTreeFromJson, replaceTree, setActiveTreeId, commitToRepo, performAction]);
     
     const resolveConflict = async (resolution: 'local' | 'server') => {
         if (!conflictState || !currentUser) return;

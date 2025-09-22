@@ -10,7 +10,7 @@
  */
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { TreeView } from "@/components/tree/tree-view";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -225,29 +225,37 @@ function TreePage() {
     checkSyncStatus();
   }, [activeTree?.gitSync, currentUser?.gitSettings?.githubPat, checkSyncStatus]);
   
+  const activeTreeRef = useRef(activeTree);
+  useEffect(() => {
+      activeTreeRef.current = activeTree;
+  }, [activeTree]);
+
   // Polling for automatic refresh
   useEffect(() => {
-    if (!activeTree?.id || !currentUser) return;
+    if (!activeTreeRef.current?.id || !currentUser) return;
 
-    const isOwner = activeTree.userId === currentUser.id;
-    const isSharedWithOthers = activeTree.sharedWith && activeTree.sharedWith.length > 0;
+    const isOwner = activeTreeRef.current.userId === currentUser.id;
+    const isSharedWithOthers = activeTreeRef.current.sharedWith && activeTreeRef.current.sharedWith.length > 0;
     const isActuallyShared = !isOwner || isSharedWithOthers;
 
     if (!isActuallyShared) {
-        // Don't poll for trees that are not shared with anyone.
         return;
     }
 
     const intervalId = setInterval(async () => {
+      if (!activeTreeRef.current) return;
       try {
-        const response = await fetch(`/api/tree-status/${activeTree.id}`);
+        const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
         if (response.ok) {
           const { updatedAt: serverUpdatedAt } = await response.json();
-          const localUpdatedAt = activeTree.updatedAt;
+          
+          if (!activeTreeRef.current) return;
+          const localUpdatedAt = activeTreeRef.current.updatedAt;
           
           const serverISO = serverUpdatedAt ? new Date(serverUpdatedAt).toISOString() : null;
           const localISO = localUpdatedAt ? new Date(localUpdatedAt).toISOString() : null;
-
+          //console.log('local', localISO)
+          //console.log('server', serverISO)
           if (serverISO && localISO && serverISO > localISO) {
             console.log("INFO: Newer version detected on server. Automatically refreshing.");
             await reloadActiveTree();
@@ -256,7 +264,7 @@ function TreePage() {
       } catch (error) {
         console.warn("Polling for tree status failed:", error);
       }
-    }, 5000); // Poll every 5 seconds
+    }, 5000); 
 
     return () => clearInterval(intervalId);
   }, [activeTree, currentUser, reloadActiveTree]);

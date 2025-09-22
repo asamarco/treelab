@@ -42,8 +42,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
   DialogClose,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -63,7 +63,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical } from "lucide-react";
+import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ExampleInfo, TreeFile, User } from "@/lib/types";
 import { Octokit } from "octokit";
@@ -115,13 +115,13 @@ function ManageRootsPage() {
   const { currentUser, users } = useAuthContext();
   const {
     allTrees,
-    setAllTrees, // Make sure this is exposed from context
     activeTreeId,
     setActiveTreeId,
     createNewTree,
     deleteTree,
     shareTree,
     revokeShare,
+    setTreePublicStatus,
     listExamples,
     loadExample,
     importTreeArchive,
@@ -157,11 +157,18 @@ function ManageRootsPage() {
   const [renamedTitle, setRenamedTitle] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
+  const [orderedTrees, setOrderedTrees] = useState(allTrees);
+
+  useEffect(() => {
+    setOrderedTrees(allTrees);
+  }, [allTrees]);
+
 
   const filteredTrees = useMemo(() => {
-    if (!searchTerm) return allTrees;
-    return allTrees.filter(tree => tree.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [allTrees, searchTerm]);
+    const trees = orderedTrees || allTrees;
+    if (!searchTerm) return trees;
+    return trees.filter(tree => tree.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [allTrees, orderedTrees, searchTerm]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -171,56 +178,19 @@ function ManageRootsPage() {
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log('handleDragEnd fired', event);
-  
     const { active, over } = event;
-    console.log('active:', active, 'over:', over);
   
     if (over && active.id !== over.id) {
-      console.log('Passed initial if check');
-      const oldIndex = allTrees.findIndex((item) => item.id === active.id);
-      const newIndex = allTrees.findIndex((item) => item.id === over.id);
-      console.log('oldIndex:', oldIndex, 'newIndex:', newIndex);
-  
-      const reorderedTrees = arrayMove(allTrees, oldIndex, newIndex);
-      const updates = reorderedTrees.map((tree, index) => ({ id: tree.id, order: index }));
-      console.log('updates:', updates);
-  
-      updateTreeOrder(updates);
-      setAllTrees(() => reorderedTrees);
+      setOrderedTrees((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        const reorderedTrees = arrayMove(items, oldIndex, newIndex);
+        const updates = reorderedTrees.map((tree, index) => ({ id: tree.id, order: index }));
+        updateTreeOrder(updates);
+        return reorderedTrees;
+      });
     }
   };
-
-
-  const fetchUserRepos = async () => {
-    if (!currentUser?.gitSettings?.githubPat) {
-        toast({ variant: "destructive", title: "GitHub Token Not Set", description: "Please set your GitHub Personal Access Token in Settings." });
-        return;
-    }
-    if (isTokenInvalid) return; // Don't fetch if token is known to be bad
-
-    setIsLoadingRepos(true);
-    try {
-        const octokit = new Octokit({ auth: currentUser.gitSettings.githubPat });
-        const response = await octokit.rest.repos.listForAuthenticatedUser({ type: "owner", per_page: 100 });
-        setUserRepos(response.data);
-        setIsTokenInvalid(false); // Reset on success
-    } catch (error) {
-        if (error instanceof Error && error.message.includes('Bad credentials')) {
-            setIsTokenInvalid(true);
-        }
-        toast({ variant: "destructive", title: "Could not fetch repositories", description: "Please check your token and permissions." });
-        console.error(error);
-    } finally {
-        setIsLoadingRepos(false);
-    }
-  };
-  
-  useEffect(() => {
-    if (isLinkRepoOpen) {
-      fetchUserRepos();
-    }
-  }, [isLinkRepoOpen]);
 
 
   const handleCreateTree = async (e: React.FormEvent) => {
@@ -331,6 +301,31 @@ function ManageRootsPage() {
     }
   };
 
+  useEffect(() => {
+    const fetchRepos = async () => {
+      if (isLinkRepoOpen && currentUser?.gitSettings?.githubPat) {
+        setIsLoadingRepos(true);
+        setIsTokenInvalid(false);
+        try {
+          const octokit = new Octokit({ auth: currentUser.gitSettings.githubPat });
+          const repos = await octokit.rest.repos.listForAuthenticatedUser({
+            type: 'owner',
+            sort: 'updated',
+            per_page: 100,
+          });
+          setUserRepos(repos.data);
+        } catch (error) {
+          console.error("Failed to fetch repositories:", error);
+          setIsTokenInvalid(true);
+          toast({ variant: 'destructive', title: 'Failed to fetch repos', description: 'Your GitHub token might be invalid or expired.' });
+        } finally {
+          setIsLoadingRepos(false);
+        }
+      }
+    };
+    fetchRepos();
+  }, [isLinkRepoOpen, currentUser?.gitSettings?.githubPat, toast]);
+  
   const handleCreateAndLinkRepo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTreeForLink || !newRepoName.trim() || !currentUser?.gitSettings?.githubPat) {
@@ -365,8 +360,20 @@ function ManageRootsPage() {
     }
   };
 
-  const handleRevokeShare = async (treeId: string, userId: string) => {
+  const revokeShareAndClose = async (treeId: string, userId: string) => {
     await revokeShare(treeId, userId);
+  };
+
+  const handlePublicToggle = async (treeId: string, isPublic: boolean) => {
+    await setTreePublicStatus(treeId, isPublic);
+    // Optimistically update local state for immediate feedback in the dialog
+    setSelectedTreeToShare(prev => prev ? { ...prev, isPublic } : null);
+  };
+  
+  const handleCopyPublicLink = (treeId: string) => {
+    const url = `${window.location.origin}/view/${treeId}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link Copied", description: "Public link copied to clipboard." });
   };
   
   const handleRenameTree = (e: React.FormEvent) => {
@@ -451,7 +458,7 @@ function ManageRootsPage() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" disabled={!isOwner || allTrees.length <= 1}>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" disabled={!isOwner && allTrees.length <= 1}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -476,11 +483,17 @@ function ManageRootsPage() {
                       </div>
                   </CardTitle>
                   <CardDescription>
-                    <p>{tree.tree.length} root node{tree.tree.length !== 1 ? "s" : ""}</p>
+                    <p>{tree.tree.length} root node{tree.tree.length !== 1 ? 's' : ''}</p>
                     {!isOwner && owner && <p className="text-xs">Owned by {owner.username}</p>}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-2">
+                   {tree.isPublic && (
+                        <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 flex items-center gap-2">
+                            <Globe className="h-4 w-4 shrink-0" />
+                            <span>Public</span>
+                        </div>
+                    )}
                    {tree.gitSync && (
                       <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 flex items-center justify-between">
                           <div className="flex items-center gap-2 overflow-hidden">
@@ -503,7 +516,7 @@ function ManageRootsPage() {
                       {sharedWithUsers.map(user => (
                         <div key={user.id} className="flex items-center justify-between pl-2">
                           <span>- {user.username}</span>
-                          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => handleRevokeShare(tree.id, user.id)}>
+                          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShare(tree.id, user.id)}>
                               <X className="h-3 w-3" />
                           </Button>
                         </div>
@@ -746,30 +759,73 @@ function ManageRootsPage() {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+          <Dialog open={isShareDialogOpen} onOpenChange={(open) => {
+              if (!open) setSelectedTreeToShare(null);
+              setIsShareDialogOpen(open);
+          }}>
               <DialogContent>
                   <DialogHeader>
                       <DialogTitle>Share "{selectedTreeToShare?.title}"</DialogTitle>
-                      <DialogDescription>
-                        Select a user to grant access to this tree.
-                      </DialogDescription>
                   </DialogHeader>
-                  <div className="py-4 space-y-2">
-                    <Label htmlFor="user-share-select">User</Label>
-                     <Select onValueChange={setSelectedUserToShare}>
-                        <SelectTrigger id="user-share-select">
-                            <SelectValue placeholder="Select a user..."/>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {users.filter(u => u.id !== currentUser?.id && !(selectedTreeToShare?.sharedWith || []).includes(u.id)).map(user => (
-                                <SelectItem key={user.id} value={user.id}>{user.username}</SelectItem>
-                            ))}
-                        </SelectContent>
-                     </Select>
+                  <div className="py-4 space-y-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Private Sharing</h4>
+                      <p className="text-sm text-muted-foreground">Grant edit access to specific users.</p>
+                      <div className="flex gap-2">
+                        <Select onValueChange={setSelectedUserToShare} value={selectedUserToShare}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a user..."/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {users.filter(u => u.id !== currentUser?.id && !(selectedTreeToShare?.sharedWith || []).includes(u.id)).map(user => (
+                                    <SelectItem key={user.id} value={user.id}>{user.username}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button onClick={handleShare} disabled={!selectedUserToShare}>Add User</Button>
+                      </div>
+                      {(selectedTreeToShare?.sharedWith?.length || 0) > 0 && (
+                          <div className="space-y-2 pt-2">
+                              <Label>Current Collaborators</Label>
+                               {(selectedTreeToShare?.sharedWith || []).map(userId => {
+                                   const user = users.find(u => u.id === userId);
+                                   return user ? (
+                                    <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                                        <span>{user.username}</span>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
+                                            <X className="h-4 w-4"/>
+                                        </Button>
+                                    </div>
+                                   ) : null;
+                               })}
+                          </div>
+                      )}
+                    </div>
+                     <div className="space-y-4 pt-4 border-t">
+                      <h4 className="font-medium">Public Sharing</h4>
+                      <div className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="public-switch">Make Public</Label>
+                            <p className="text-xs text-muted-foreground">Anyone with the link can view this tree.</p>
+                        </div>
+                         <Switch
+                            id="public-switch"
+                            checked={selectedTreeToShare?.isPublic || false}
+                            onCheckedChange={(checked) => handlePublicToggle(selectedTreeToShare!.id, checked)}
+                        />
+                      </div>
+                      {selectedTreeToShare?.isPublic && (
+                         <div className="flex gap-2">
+                            <Input readOnly value={`${window.location.origin}/view/${selectedTreeToShare.id}`} />
+                            <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare!.id)}>
+                                <Copy className="mr-2 h-4 w-4" /> Copy Link
+                            </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <DialogFooter>
-                      <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                      <Button onClick={handleShare} disabled={!selectedUserToShare}>Share</Button>
+                      <DialogClose asChild><Button variant="outline">Done</Button></DialogClose>
                   </DialogFooter>
               </DialogContent>
           </Dialog>
@@ -804,5 +860,3 @@ function ManageRootsPage() {
 }
 
 export default ManageRootsPage;
-
-    

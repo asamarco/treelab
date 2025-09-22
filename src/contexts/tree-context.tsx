@@ -30,34 +30,26 @@ import {
   saveTreeFile,
   loadTreeFile,
   loadTreeNodes,
-  createTreeFile,
-  deleteTreeFile as deleteTreeFileFromDb,
-  listExamples as listExamplesFromDataService,
-  loadExampleFromFile,
-  fetchFileAsBuffer,
   createNode as createNodeInDb,
   updateNode as updateNodeInDb,
   deleteNodeWithChildren,
   reorderSiblings,
-  loadAllTreeFiles,
-  replaceTree,
   batchCreateNodes,
   batchUpdateNodes,
   addParentToNode,
-  updateTreeOrder as updateTreeOrderInDb,
 } from "@/lib/data-service";
-import { getStorageInfo, purgeUnusedFiles } from "@/lib/storage-service";
-import { readArchive, createNodesArchive } from "@/lib/archive";
+import { createNodesArchive } from "@/lib/archive";
 import { HtmlExportView } from "@/components/tree/html-export-view";
-import { useRouter } from "next/navigation";
-import path from 'path';
-import { useGitSync } from "@/hooks/useGitSync";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "./auth-context";
 import { useImmer, useImmerReducer } from "use-immer";
-import { saveAs } from 'file-saver';
 import { useDebouncedCallback } from 'use-debounce';
 import type { WritableDraft } from 'immer';
+import { useTreeRoots } from "./tree-roots";
+import path from 'path';
+import { create } from "domain";
+import { fetchFileAsBuffer } from "@/lib/data-service";
+
 
 /* ----------------------------- Helper functions ---------------------------- */
 
@@ -188,12 +180,14 @@ interface TreeContextType {
   updateTreeOrder: (updates: { id: string; order: number }[]) => Promise<void>;
   shareTree: (treeId: string, userId: string) => Promise<void>;
   revokeShare: (treeId: string, userId: string) => Promise<void>;
+  setTreePublicStatus: (treeId: string, isPublic: boolean) => Promise<void>;
   listExamples: () => Promise<ExampleInfo[]>;
   loadExample: (fileName: string) => Promise<string | null>;
   importTreeArchive: (file: File) => Promise<void>;
   importTreeFromJson: (jsonData: any, user?: User, rewriteAttachmentPaths?: boolean) => Promise<string | null>;
   isTreeDataLoading: boolean;
-  reloadActiveTree: () => Promise<void>;
+  reloadAllTrees: () => Promise<void>;
+  reloadActiveTree: (treeIdToLoad?: string) => Promise<void>;
 
   // Export Functions
   exportNodesAsJson: (nodes: TreeNode[], baseName: string) => void;
@@ -237,7 +231,7 @@ interface TreeContextType {
   treeTitle: string;
   setTreeTitle: (treeId: string, title: string) => void;
   expandedNodeIds: string[];
-  setExpandedNodeIds: (updater: (draft: string[]) => void | string[]) => void;
+  setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>) => void;
   expandAllFromNode: (nodeId: string, parentId: string | null) => void;
   collapseAllFromNode: (nodeId: string, parentId: string | null) => void;
   selectedNodeIds: string[];
@@ -285,112 +279,66 @@ interface TreeContextType {
 
 export const TreeContext = createContext<TreeContextType | undefined>(undefined);
 
+interface TreeProviderProps {
+  children: ReactNode;
+  initialTree?: TreeFile;
+}
+
+
 /* --------------------------------- Provider -------------------------------- */
 
-export function TreeProvider({ children }: { children: ReactNode }) {
-  const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser } = useAuthContext();
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [isTreeDataLoading, setIsTreeDataLoading] = useState(true);
-  const router = useRouter();
-  const [allTrees, setAllTrees] = useImmer<TreeFile[]>([]);
-  const [historyStack, setHistoryStack] = useImmer<TreeFile[][]>([]);
-  const [redoStack, setRedoStack] = useImmer<TreeFile[][]>([]);
-  const [activeTreeId, _setActiveTreeId] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
+export function TreeProvider({ children, initialTree }: TreeProviderProps) {
+  const { currentUser } = useAuthContext();
 
   const [clipboard, setClipboard] = useState<ClipboardState>({ nodes: null, operation: null });
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [lastSelectedNodeId, setLastSelectedNodeId] = useState<string | null>(null);
 
   const { toast } = useToast();
-
-  const performAction = useCallback(
-    (updater: (draft: WritableDraft<TreeFile[]>) => void, isUndoable: boolean = true) => {
-      if (isUndoable) {
-        const currentState = JSON.parse(JSON.stringify(allTrees));
-        setHistoryStack((draft) => {
-          draft.push(currentState);
-          if (draft.length > 20) draft.shift();
-        });
-        setRedoStack([]);
-      }
-      setAllTrees(updater);
-      if (isUndoable) setIsDirty(true);
-    },
-    [allTrees, setAllTrees, setHistoryStack, setRedoStack]
-  );
-
-  const activeTree = allTrees.find((t) => t.id === activeTreeId);
-  const canUndo = historyStack.length > 0;
-  const canRedo = redoStack.length > 0;
-
-  const undoLastAction = useCallback(() => {
-    if (historyStack.length > 0) {
-      const currentState = JSON.parse(JSON.stringify(allTrees));
-      const lastState = historyStack[historyStack.length - 1];
-      setRedoStack((draft) => {
-        draft.push(currentState);
-      });
-      setAllTrees(() => lastState); // Directly set to the previous state
-      setHistoryStack((draft) => {
-        draft.pop();
-      });
-      setIsDirty(true);
-      console.log("INFO: Undo action performed.");
-    }
-  }, [historyStack, allTrees, setAllTrees, setHistoryStack, setRedoStack]);
   
-  const redoLastAction = useCallback(() => {
-    if (redoStack.length > 0) {
-      const currentState = JSON.parse(JSON.stringify(allTrees));
-      const nextState = redoStack[redoStack.length - 1];
-      setHistoryStack((draft) => {
-        draft.push(currentState);
-      });
-      setAllTrees(() => nextState);
-      setRedoStack((draft) => {
-        draft.pop();
-      });
-      setIsDirty(true);
-      console.log("INFO: Redo action performed.");
-    }
-  }, [redoStack, allTrees, setAllTrees, setHistoryStack, setRedoStack]);
+  const {
+    allTrees,
+    setAllTrees,
+    activeTree,
+    activeTreeId,
+    isTreeDataLoading,
+    historyStack,
+    redoStack,
+    canUndo,
+    canRedo,
+    setActiveTreeId,
+    undoLastAction,
+    redoLastAction,
+    performAction,
+    updateActiveTree,
+    createNewTree,
+    deleteTree,
+    updateTreeOrder,
+    shareTree,
+    revokeShare,
+    setTreePublicStatus,
+    listExamples,
+    loadExample,
+    importTreeArchive,
+    importTreeFromJson,
+    reloadAllTrees,
+    reloadActiveTree,
+    setTreeTitle,
+    uploadAttachment,
+    linkTreeToRepo,
+    unlinkTreeFromRepo,
+    createAndLinkTreeToRepo,
+    commitToRepo,
+    fetchRepoHistory,
+    syncFromRepo,
+    restoreToCommit,
+    conflictState,
+    resolveConflict,
+    analyzeStorage,
+    purgeStorage,
+  } = useTreeRoots({initialTree});
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeElement = document.activeElement as HTMLElement;
-      if (
-        activeElement &&
-        (activeElement.tagName === 'INPUT' ||
-         activeElement.tagName === 'TEXTAREA' ||
-         activeElement.isContentEditable)
-      ) {
-        return;
-      }
-
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === "z") {
-          e.preventDefault();
-          undoLastAction();
-        } else if (e.key === "y" || (e.key === "Z" && e.shiftKey)) {
-          e.preventDefault();
-          redoLastAction();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [undoLastAction, redoLastAction]);
-
-  const updateActiveTree = (updater: (draft: TreeFile) => void, isUndoable: boolean = true) => {
-    performAction((draft) => {
-      const treeToUpdate = draft.find((t) => t.id === activeTreeId);
-      if (treeToUpdate) {
-        updater(treeToUpdate);
-        treeToUpdate.updatedAt = new Date().toISOString();
-      }
-    }, isUndoable);
-  };
+  /* --------------------------------- Exports -------------------------------- */
 
   const getTemplateById = useCallback(
     (id: string): Template | undefined => {
@@ -410,8 +358,6 @@ export function TreeProvider({ children }: { children: ReactNode }) {
       };
   }, []);
 
-  /* --------------------------------- Exports -------------------------------- */
-
   const exportNodesAsJson = (nodesToExport: TreeNode[], baseName: string) => {
     if (!activeTree || nodesToExport.length === 0) return;
     const dataToExport = generateJsonForExport(baseName, nodesToExport, activeTree.templates);
@@ -429,7 +375,7 @@ export function TreeProvider({ children }: { children: ReactNode }) {
 
   const exportNodesAsArchive = async (nodes: TreeNode[], baseName: string) => {
     if (!activeTree) return;
-    await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath) =>
+    await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath: string) =>
       fetchFileAsBuffer(activeTree.userId, relativePath)
     );
   };
@@ -530,433 +476,7 @@ export function TreeProvider({ children }: { children: ReactNode }) {
     URL.revokeObjectURL(url);
   };
 
-  /* --------------------------------- Import -------------------------------- */
-
-  const importTreeFromJson = useCallback(
-    async (jsonData: any, user?: User, rewriteAttachmentPaths: boolean = false): Promise<string | null> => {
-      const userToImportFor = user || currentUser;
-      if (!userToImportFor) {
-        throw new Error("You must be logged in to import a tree.");
-      }
-
-      const nodes = jsonData.nodes || jsonData.tree;
-      if (!nodes) {
-        throw new Error("JSON file must contain a 'nodes' or 'tree' property.");
-      }
-
-      const idMap = new Map<string, string>();
-      const templates = jsonData.templates || [];
-      const newUserId = userToImportFor.id;
-
-      // First pass: create new IDs and map old to new
-      const nodeDataToCreate: Partial<TreeNode>[] = nodes.map((node: TreeNode) => {
-        const newId = generateClientSideId();
-        idMap.set(node.id, newId);
-        return {
-          ...node,
-          _id: newId,
-          id: newId,
-          children: [], // Children are handled via parentIds
-        };
-      });
-
-      // Regex to find internal links
-      const linkRegex = /node:\/\/([a-zA-Z0-9_.:-]+)/g;
-
-      // Second pass: remap parentIds and internal links
-      nodeDataToCreate.forEach((node) => {
-        // Remap parentIds
-        if (node.parentIds) {
-          node.parentIds = node.parentIds.map((pid) => idMap.get(pid)!).filter(Boolean);
-        }
-
-        // Remap fields in data
-        if (node.data) {
-          const template = templates.find((t: Template) => t.id === node.templateId);
-          if (template) {
-            template.fields.forEach((field: Field) => {
-              if (node.data![field.id]) {
-                const processValue = (value: string): string => {
-                    return value.replace(linkRegex, (match: string, oldId: string) => {
-                        return idMap.get(oldId) ? `node://${idMap.get(oldId)}` : match;
-                    });
-                };
-                
-                if ((field.type === "link" || field.type === "textarea") && typeof node.data![field.id] === 'string') {
-                    node.data![field.id] = processValue(node.data![field.id]);
-                }
-                // Only rewrite attachment paths if explicitly told to (i.e., for ZIP imports)
-                else if (rewriteAttachmentPaths && (field.type === "picture" || field.type === "attachment")) {
-                  const value = node.data![field.id];
-                  const attachmentRegex = /\/attachments\/([^/]+)\/(.+)/;
-
-                  const rewritePath = (item: string | AttachmentInfo) => {
-                    const serverPath = typeof item === "string" ? item : item.path;
-                    const match = serverPath.match(attachmentRegex);
-                    if (!match) return item; // Not a recognized attachment path
-
-                    const newPath = `/attachments/${newUserId}/${match[2]}`;
-                    return typeof item === "string" ? newPath : { ...item, path: newPath };
-                  };
-
-                  if (Array.isArray(value)) {
-                    node.data![field.id] = value.map(rewritePath);
-                  } else if (typeof value === "string" || (typeof value === "object" && (value as any).path)) {
-                    node.data![field.id] = rewritePath(value as any);
-                  }
-                }
-              }
-            });
-          }
-        }
-      });
-
-      const { id, ...restOfTreeFile } = jsonData;
-      const newTreeData = {
-        ...restOfTreeFile,
-        title: jsonData.title || "Imported Tree",
-        userId: userToImportFor.id,
-        templates: jsonData.templates || [],
-        expandedNodeIds: [],
-        order: allTrees.length, // Add to the end by default
-      };
-
-      const createdTree = await createTreeFile(newTreeData, []);
-      const treeId = createdTree.id;
-
-      const nodesForDb = nodeDataToCreate.map((n) => ({ ...n, treeId, userId: userToImportFor.id }));
-
-      if (nodesForDb.length > 0) {
-        await batchCreateNodes(nodesForDb);
-      }
-
-      const finalTree = await loadTreeFile(treeId);
-      if (finalTree) {
-        performAction((draft) => {draft.push(finalTree)}, false);
-        _setActiveTreeId(treeId);
-        return finalTree.id;
-      }
-      return null;
-    },
-    [currentUser, allTrees, performAction]
-  );
-
-  const createNewTree = useCallback(
-    async (title: string, user?: User): Promise<string | null> => {
-      const userToCreateFor = user || currentUser;
-      if (!userToCreateFor) return null;
-      const newOrder = allTrees.length;
-      const { treeFile, initialNodes } = createDefaultTreeFile(title, userToCreateFor.id, newOrder);
-
-      const createdTree = await createTreeFile(
-        treeFile,
-        initialNodes.map((n: Omit<TreeNode, "id" | "children" | "_id">) => ({ ...n, userId: userToCreateFor.id }))
-      );
-
-      const fullCreatedTree = await loadTreeFile(createdTree.id);
-      if (fullCreatedTree) {
-        performAction((draft) => {draft.push(fullCreatedTree)}, false);
-        setActiveTreeId(fullCreatedTree.id);
-        console.log(`INFO: Created and loaded new tree '${title}' (ID: ${fullCreatedTree.id}).`);
-        return fullCreatedTree.id;
-      } else {
-        console.error(`ERROR: Failed to reload created tree with ID: ${createdTree.id}`);
-        return null;
-      }
-    },
-    [currentUser, allTrees, performAction]
-  );
-
-  const reloadActiveTree = useCallback(
-    async (treeIdToLoad?: string) => {
-      const idToLoad = treeIdToLoad || activeTreeId;
-      if (!idToLoad) return;
-      console.log(`INFO: Reloading active tree (${idToLoad}) from server.`);
-      const reloadedTree = await loadTreeFile(idToLoad);
-      if (reloadedTree) {
-        performAction((draft) => {
-            const index = draft.findIndex(t => t.id === idToLoad);
-            if (index > -1) {
-                draft[index] = { ...reloadedTree, expandedNodeIds: draft[index].expandedNodeIds };
-            }
-        }, false);
-      } else {
-        console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
-      }
-    },
-    [activeTreeId, performAction]
-  );
-
-  const loadUserSpecificData = useCallback(
-    async (user: User) => {
-      setIsTreeDataLoading(true);
-      console.log(`INFO: Loading data for user '${user.username}'...`);
-      try {
-        let loadedTrees = await loadAllTreeFiles(user.id);
-        if (loadedTrees.length === 0) {
-          console.log(`INFO: No trees found for user '${user.username}'. Loading welcome guide.`);
-          const welcomeGuideData = await loadExampleFromFile("welcome-guide.json");
-          if (welcomeGuideData) {
-            await importTreeFromJson(welcomeGuideData, user, true);
-            loadedTrees = await loadAllTreeFiles(user.id);
-          } else {
-            console.warn("WARN: welcome-guide.json not found. Creating default tree.");
-            await createNewTree("My First Tree", user);
-            loadedTrees = await loadAllTreeFiles(user.id);
-          }
-        }
-        
-        loadedTrees.sort((a,b) => (a.order || 0) - (b.order || 0));
-
-        setAllTrees(() => loadedTrees);
-        const lastActiveTreeId = user.lastActiveTreeId;
-        if (lastActiveTreeId && loadedTrees.some((t) => t.id === lastActiveTreeId)) {
-          _setActiveTreeId(lastActiveTreeId);
-        } else {
-          _setActiveTreeId(loadedTrees[0]?.id || null);
-        }
-
-        console.log(`INFO: Loaded ${loadedTrees.length} trees for user '${user.username}'.`);
-      } catch (error) {
-        console.error("ERROR: Failed to initialize auth:", error);
-      } finally {
-        setIsDataLoaded(true);
-        setIsTreeDataLoading(false);
-      }
-    },
-    [createNewTree, importTreeFromJson, setAllTrees]
-  );
-
-  useEffect(() => {
-    if (currentUser && !isDataLoaded) {
-      loadUserSpecificData(currentUser);
-    } else if (!currentUser && isDataLoaded) {
-      // Clear data on logout
-      setAllTrees(() => []);
-      _setActiveTreeId(null);
-      setHistoryStack(() => []);
-      setRedoStack(() => []);
-      setClipboard({ nodes: null, operation: null });
-      setSelectedNodeIds([]);
-      setLastSelectedNodeId(null);
-      setIsDataLoaded(false);
-      setIsTreeDataLoading(true);
-      console.log("INFO: User logged out. All tree context state cleared.");
-    }
-  }, [currentUser, isDataLoaded, loadUserSpecificData, setAllTrees, setHistoryStack, setRedoStack]);
-
-  const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
-    if (currentUser) {
-        const { tree, ...metaData } = treeToSave;
-        saveTreeFile(metaData);
-        setIsDirty(false);
-        console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed.`);
-    }
-  }, 1000);
-
-  useEffect(() => {
-    if (isDirty && isDataLoaded && activeTree) {
-      debouncedSave(activeTree);
-    }
-  }, [isDirty, isDataLoaded, activeTree, debouncedSave]);
-
-  const setActiveTreeId = (id: string | null) => {
-    _setActiveTreeId(id);
-    setHistoryStack(() => []);
-    setRedoStack(() => []);
-    setSelectedNodeIds([]);
-    setLastSelectedNodeId(null);
-    setLastActiveTreeIdForUser(id);
-    if (currentUser && id) {
-      const newTreeTitle = allTrees.find((t) => t.id === id)?.title;
-      console.log(`INFO: Switched active tree to '${newTreeTitle}' (ID: ${id}).`);
-    }
-  };
-
-  /* ------------------------------ Tree sharing ------------------------------ */
-
-  const deleteTree = async (id: string) => {
-    if (!currentUser) return;
-    const treeToDelete = allTrees.find((t) => t.id === id);
-    if (!treeToDelete) return;
-
-    try {
-      await deleteTreeFileFromDb(id);
-
-      performAction((draft) => {
-        const index = draft.findIndex(t => t.id === id);
-        if (index > -1) draft.splice(index, 1);
-      }, false);
-
-      if (activeTreeId === id) {
-        const newActiveId = allTrees.length > 1 ? allTrees.find(t => t.id !== id)?.id || null : null;
-        setActiveTreeId(newActiveId);
-        if (newActiveId === null) router.push("/roots");
-      }
-
-      toast({ title: "Tree Deleted", description: `"${treeToDelete.title}" was permanently deleted.` });
-      console.log(`INFO: Deleted tree '${treeToDelete.title}' (ID: ${id}).`);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: `Failed to delete the tree.` });
-      await loadUserSpecificData(currentUser);
-    }
-  };
-
-  const updateTreeOrder = async (updates: { id: string; order: number }[]) => {
-    await updateTreeOrderInDb(updates);
-    performAction(draft => {
-        updates.forEach(({ id, order }) => {
-            const tree = draft.find(t => t.id === id);
-            if (tree) tree.order = order;
-        });
-        draft.sort((a,b) => (a.order || 0) - (b.order || 0));
-    }, false);
-  };
-
-  const shareTree = async (treeId: string, userId: string) => {
-    if (!currentUser) return;
-  
-    const originalTrees = JSON.parse(JSON.stringify(allTrees));
-    let updatedTree: TreeFile | undefined;
-  
-    // Correctly apply the state update first
-    setAllTrees(draft => {
-      const treeToShare = draft.find((t: TreeFile) => t.id === treeId);
-      if (!treeToShare || treeToShare.userId !== currentUser.id) {
-        return;
-      }
-      const sharedWith = treeToShare.sharedWith || [];
-      if (sharedWith.includes(userId)) {
-        return;
-      }
-      treeToShare.sharedWith = [...sharedWith, userId];
-      updatedTree = JSON.parse(JSON.stringify(treeToShare)); // Get a clean copy for the DB
-    });
-  
-    // Now that the state update is queued, proceed with the DB call
-    setTimeout(async () => {
-      if (updatedTree) {
-        const { tree, ...metaData } = updatedTree;
-        try {
-          await saveTreeFile(metaData);
-          toast({ title: "Tree Shared", description: "The tree is now shared with the selected user." });
-        } catch (err) {
-          console.error("Failed to save shared tree:", err);
-          toast({ variant: "destructive", title: "Error", description: "Could not save sharing changes." });
-          setAllTrees(() => originalTrees);
-        }
-      } else {
-        const treeToShare = allTrees.find((t: TreeFile) => t.id === treeId);
-        if (!treeToShare || treeToShare.userId !== currentUser.id) {
-          toast({ variant: "destructive", title: "Error", description: "You can only share trees you own." });
-          return;
-        }
-        if ((treeToShare.sharedWith || []).includes(userId)) {
-          toast({ title: "Already Shared", description: "This tree is already shared with that user." });
-        }
-      }
-    }, 0);
-  };
-  
-  const revokeShare = async (treeId: string, userId: string) => {
-    if (!currentUser) return;
-    
-    const originalTrees = JSON.parse(JSON.stringify(allTrees));
-    let updatedTree: TreeFile | undefined;
-  
-    // Apply state update first
-    setAllTrees(draft => {
-      const treeToUpdate = draft.find((t: TreeFile) => t.id === treeId);
-  
-      if (!treeToUpdate || treeToUpdate.userId !== currentUser.id) {
-        return;
-      }
-      treeToUpdate.sharedWith = (treeToUpdate.sharedWith || []).filter(id => id !== userId);
-      updatedTree = JSON.parse(JSON.stringify(treeToUpdate));
-    });
-  
-    // Defer DB operation
-    setTimeout(async () => {
-      if (updatedTree) {
-        const { tree, ...metaData } = updatedTree;
-        try {
-          await saveTreeFile(metaData);
-          toast({ title: "Access Revoked", description: "The user's access has been revoked." });
-        } catch (err) {
-          console.error("Failed to save revoked share:", err);
-          toast({ variant: "destructive", title: "Error", description: "Could not save sharing changes." });
-          setAllTrees(() => originalTrees);
-        }
-      } else {
-        toast({ variant: "destructive", title: "Error", description: "You can only revoke sharing for trees you own." });
-      }
-    }, 0);
-  };
-
-  const listExamples = async (): Promise<ExampleInfo[]> => {
-    return listExamplesFromDataService();
-  };
-
-  const loadExample = async (fileName: string): Promise<string | null> => {
-    const exampleData = await loadExampleFromFile(fileName);
-    if (exampleData) {
-      const newTreeId = await importTreeFromJson(exampleData, undefined, true);
-      if (newTreeId) {
-        toast({ title: "Example Loaded", description: `The "${(exampleData as any).title}" example has been loaded as a new root.` });
-        router.push("/");
-        return newTreeId;
-      }
-    }
-    toast({ variant: "destructive", title: "Failed to load example", description: `Could not load the example data from ${fileName}.` });
-    return null;
-  };
-
-  /* ------------------------------ Attachments ------------------------------- */
-
-  const uploadAttachment = async (relativePath: string, dataUri: string, fileName: string, ownerId: string): Promise<AttachmentInfo | null> => {
-    if (!ownerId) {
-      console.error("ERROR: ownerId is required to upload an attachment.");
-      return null;
-    }
-    try {
-      const formData = new FormData();
-      formData.append("file", dataUri);
-      formData.append("fileName", fileName);
-      formData.append("relativePath", relativePath);
-      formData.append("userId", ownerId);
-
-      const response = await fetch("/api/upload/attachment", { method: "POST", body: formData });
-
-      if (!response.ok) throw new Error((await response.json()).message || "Upload failed");
-      return (await response.json()).attachmentInfo;
-    } catch (error) {
-      console.error("ERROR: Failed to upload attachment:", error);
-      return null;
-    }
-  };
-
-  const importTreeArchive = async (file: File) => {
-    if (!currentUser) throw new Error("You must be logged in to import an archive.");
-    console.log(`INFO: Starting archive import: ${file.name}`);
-    const { treeFile, files: fileBlobs } = await readArchive(file);
-
-    const uploadPromises = Object.entries(fileBlobs).map(async ([relativePath, blob]) => {
-      try {
-        const dataUri = await blobToDataURI(blob);
-        const originalFileName = path.basename(relativePath);
-        await uploadAttachment(originalFileName, dataUri, originalFileName, currentUser.id);
-      } catch (error) {
-        console.error(`Failed to upload file ${relativePath} from archive`, error);
-      }
-    });
-
-    await Promise.all(uploadPromises);
-    await importTreeFromJson(treeFile, undefined, true);
-    console.log(`INFO: Archive '${file.name}' imported successfully.`);
-  };
-
   /* ------------------------------- Tree state ------------------------------- */
-
   const setTree = (updater: (draft: WritableDraft<TreeNode[]>) => void | TreeNode[]) => {
     updateActiveTree((current) => {
       const result = typeof updater === 'function' ? updater(current.tree) : updater;
@@ -990,15 +510,6 @@ export function TreeProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const setTreeTitle = (treeId: string, title: string) => {
-    const tree = allTrees.find((t) => t.id === treeId);
-    if (!tree || tree.userId !== currentUser?.id) return;
-    performAction((draft) => {
-      const treeToUpdate = draft.find(t => t.id === treeId);
-      if (treeToUpdate) treeToUpdate.title = title;
-    }, false);
-  };
-
   const setExpandedNodeIds = (updater: (draft: string[]) => string[] | void) => {
     updateActiveTree(
       (draft) => {
@@ -1007,8 +518,7 @@ export function TreeProvider({ children }: { children: ReactNode }) {
         if (result !== undefined) { 
             draft.expandedNodeIds = result;
         }
-      },
-      false
+      }
     );
   };
   
@@ -1375,28 +885,52 @@ const addNodes = async (
   };
 
   const deleteNodes = async (instanceIds: string[]) => {
-    if (!activeTree || !currentUser) return;
-    const isOwner = activeTree.userId === currentUser.id;
-    const isSharedUser = activeTree.sharedWith?.includes(currentUser.id) ?? false;
+    if (!currentUser) return;
     
-    if (!isOwner && !isSharedUser) {
-        toast({ variant: 'destructive', title: 'Permission Denied', description: 'You do not have permission to delete nodes from this tree.' });
-        return;
-    }
+    performAction(draft => {
+      const treeToUpdate = draft.find(t => t.id === activeTreeId);
+      if (!treeToUpdate) return;
+      
+      instanceIds.forEach(instanceId => {
+          const [nodeId, parentIdStr] = instanceId.split('_');
+          const parentId = parentIdStr === 'root' ? null : parentIdStr;
+          
+          const nodeInfo = findNodeAndContextualParent(nodeId, parentId, treeToUpdate.tree);
+          if (!nodeInfo) return;
 
-    const dbDeleteOperations: { id: string; parentId: string | null }[] = [];
-    
-    instanceIds.forEach(instanceId => {
-        const [nodeId, parentIdStr] = instanceId.split('_');
-        const parentId = parentIdStr === 'root' ? null : parentIdStr;
-        dbDeleteOperations.push({ id: nodeId, parentId });
+          const { node, parent } = nodeInfo;
+          const siblings = parent ? parent.children : treeToUpdate.tree;
+          const nodeIndex = siblings.findIndex(n => n.id === nodeId);
+
+          if (nodeIndex > -1) {
+              // If it's the last instance, we are deleting the node and its children.
+              if (node.parentIds.length <= 1) {
+                  siblings.splice(nodeIndex, 1);
+              } else {
+                  // It's a clone instance, so just unlink it from this parent
+                  const parentIndex = node.parentIds.indexOf(parentId || 'root');
+                  if (parentIndex > -1) {
+                      node.parentIds.splice(parentIndex, 1);
+                      node.order.splice(parentIndex, 1);
+                  }
+                  // Remove it from the current visual context (children array)
+                  siblings.splice(nodeIndex, 1);
+              }
+              resequenceSiblingsForAdd(siblings, parentId);
+          }
+      });
     });
     
-    if (dbDeleteOperations.length > 0) {
-        console.log('INFO: Attempting to delete nodes from DB:', dbDeleteOperations);
+    setTimeout(async () => {
+      const dbDeleteOperations = instanceIds.map(instanceId => {
+        const [nodeId, parentIdStr] = instanceId.split('_');
+        return { id: nodeId, parentId: parentIdStr === 'root' ? null : parentIdStr };
+      });
+      if (dbDeleteOperations.length > 0) {
+        console.log(`INFO: Deleting ${dbDeleteOperations.length} node(s) in DB.`);
         await Promise.all(dbDeleteOperations.map(({ id, parentId }) => deleteNodeWithChildren(id, parentId)));
-        await reloadActiveTree();
-    }
+      }
+    }, 0);
     setSelectedNodeIds([]);
   };
   
@@ -1500,8 +1034,9 @@ const addNodes = async (
         targetContextualParentId: string | null;
         isCutOperation?: boolean;
     }[]) => {
+        const isUndoable = !moves.some(m => m.isCutOperation);
         let finalDbUpdates: { id: string; updates: Partial<TreeNode> }[] = [];
-
+        
         performAction((draft) => {
             const activeTreeDraft = draft.find((t) => t.id === activeTreeId);
             if (!activeTreeDraft) return;
@@ -1584,7 +1119,7 @@ const addNodes = async (
             }
             finalDbUpdates = JSON.parse(JSON.stringify(dbUpdatesForThisAction));
             console.log("DEBUG: siblings after operation", finalDbUpdates.map(u => ({ id: u.id, order: u.updates.order })));
-        });
+        }, isUndoable);
 
         setTimeout(async () => {
             if (finalDbUpdates.length > 0) {
@@ -1594,49 +1129,39 @@ const addNodes = async (
         }, 0);
     };
 
-    /**
-     * @important
-     * This function's implementation is carefully crafted to work correctly with
-     * the Immer library's draft state and the contextual parent logic. It avoids
-     * direct order swapping and instead uses the robust `moveNodes` function.
-     *
-     * DO NOT MODIFY THIS FUNCTION without a deep understanding of the surrounding
-     * state management, as it can easily re-introduce subtle bugs related to
-     * node reordering and cloned nodes.
-     */
     const moveNodeOrder = async (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => {
-        const parentInfo = findNodeAndContextualParent(contextualParentId, null, activeTree?.tree);
-        const siblings = parentInfo ? parentInfo.node.children : activeTree?.tree;
-        if (!siblings || siblings.length < 2) return;
-    
-        const sortedSiblings = [...siblings].sort((a, b) =>
-            getContextualOrder(a, siblings, contextualParentId) - getContextualOrder(b, siblings, contextualParentId)
-        );
-    
-        const currentIndex = sortedSiblings.findIndex(n => n.id === nodeId);
-        if (currentIndex === -1) return;
-    
-        if (direction === 'up' && currentIndex > 0) {
-            const nodeToMove = sortedSiblings[currentIndex];
-            const targetNode = sortedSiblings[currentIndex - 1];
-            moveNodes([{
-                nodeId: nodeToMove.id,
-                targetNodeId: targetNode.id,
-                position: 'sibling',
-                sourceContextualParentId: contextualParentId,
-                targetContextualParentId: contextualParentId,
-            }]);
-        } else if (direction === 'down' && currentIndex < sortedSiblings.length - 1) {
-            const nodeToMove = sortedSiblings[currentIndex + 1];
-            const targetNode = sortedSiblings[currentIndex];
-            moveNodes([{
-                nodeId: nodeToMove.id,
-                targetNodeId: targetNode.id,
-                position: 'sibling',
-                sourceContextualParentId: contextualParentId,
-                targetContextualParentId: contextualParentId,
-            }]);
-        }
+      const parentInfo = findNodeAndContextualParent(contextualParentId, null, activeTree?.tree);
+      const siblings = parentInfo ? parentInfo.node.children : activeTree?.tree;
+      if (!siblings || siblings.length < 2) return;
+  
+      const sortedSiblings = [...siblings].sort((a, b) =>
+          getContextualOrder(a, siblings, contextualParentId) - getContextualOrder(b, siblings, contextualParentId)
+      );
+  
+      const currentIndex = sortedSiblings.findIndex(n => n.id === nodeId);
+      if (currentIndex === -1) return;
+  
+      if (direction === 'up' && currentIndex > 0) {
+          const nodeToMove = sortedSiblings[currentIndex];
+          const targetNode = sortedSiblings[currentIndex - 1];
+          moveNodes([{
+              nodeId: nodeToMove.id,
+              targetNodeId: targetNode.id,
+              position: 'sibling',
+              sourceContextualParentId: contextualParentId,
+              targetContextualParentId: contextualParentId,
+          }]);
+      } else if (direction === 'down' && currentIndex < sortedSiblings.length - 1) {
+          const nodeToMove = sortedSiblings[currentIndex + 1];
+          const targetNode = sortedSiblings[currentIndex];
+          moveNodes([{
+              nodeId: nodeToMove.id,
+              targetNodeId: targetNode.id,
+              position: 'sibling',
+              sourceContextualParentId: contextualParentId,
+              targetContextualParentId: contextualParentId,
+          }]);
+      }
     };
   
 
@@ -1758,41 +1283,6 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
   };
   
 
-  /* ----------------------------- Storage management ------------------------- */
-
-  const analyzeStorage = async (treeId?: string): Promise<StorageInfo> => {
-    if (!currentUser) throw new Error("User not authenticated");
-    return getStorageInfo(currentUser.id, treeId);
-  };
-
-  const purgeStorage = async (treeId?: string): Promise<PurgeResult | null> => {
-    if (!currentUser) return null;
-    return purgeUnusedFiles(currentUser.id, treeId);
-  };
-
-  /* --------------------------------- Git sync -------------------------------- */
-
-  const {
-    conflictState,
-    resolveConflict,
-    linkTreeToRepo,
-    unlinkTreeFromRepo,
-    createAndLinkTreeToRepo,
-    commitToRepo,
-    fetchRepoHistory,
-    syncFromRepo,
-    restoreToCommit,
-  } = useGitSync({
-    currentUser,
-    allTrees,
-    performAction,
-    importTreeFromJson,
-    deleteTree,
-    reloadActiveTree,
-    setActiveTreeId,
-    replaceTree: replaceTree,
-  });
-
   /* --------------------------------- Context value --------------------------- */
 
   const value: TreeContextType = {
@@ -1806,15 +1296,14 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
     updateTreeOrder,
     shareTree,
     revokeShare,
+    setTreePublicStatus,
     listExamples,
     loadExample,
     importTreeArchive,
     importTreeFromJson,
-    exportNodesAsJson,
-    exportNodesAsArchive,
-    exportNodesAsHtml,
-    isTreeDataLoading,
+    reloadAllTrees,
     reloadActiveTree,
+    isTreeDataLoading,
     templates: activeTree?.templates ?? [],
     setTemplates,
     importTemplates,
@@ -1855,6 +1344,9 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
     redoLastAction,
     canRedo,
     getSiblingOrderRange,
+    exportNodesAsJson,
+    exportNodesAsArchive,
+    exportNodesAsHtml,
     conflictState,
     resolveConflict,
     linkTreeToRepo,
@@ -1880,3 +1372,5 @@ export function useTreeContext() {
   }
   return context;
 }
+
+    

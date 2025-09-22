@@ -147,6 +147,24 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
   return plainDoc;
 }
 
+export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | null> {
+  await connectToDatabase();
+  const treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
+  if (!treeFileDoc) return null;
+
+  const nodes = await loadTreeNodes(treeId);
+  const plainDoc: TreeFile = { 
+      ...(treeFileDoc as any), 
+      id: treeFileDoc._id.toString(),
+      tree: nodes 
+  };
+  delete (plainDoc as any)._id;
+  delete (plainDoc as any).__v;
+  
+  return plainDoc;
+}
+
+
 export async function loadAllTreeFiles(userId: string): Promise<TreeFile[]> {
   await connectToDatabase();
   const treeFileDocs = await TreeModel.find({ 
@@ -184,6 +202,7 @@ export async function loadAllTreeFiles(userId: string): Promise<TreeFile[]> {
       userId: doc.userId,
       sharedWith: doc.sharedWith,
       title: doc.title,
+      isPublic: doc.isPublic,
       templates: doc.templates,
       expandedNodeIds: doc.expandedNodeIds,
       gitSync: doc.gitSync,
@@ -212,13 +231,6 @@ export async function deleteTreeFile(treeId: string): Promise<void> {
     }
 }
 
-export async function replaceTree(oldTreeId: string, newTreeId: string, metaToKeep: Partial<TreeFile>) {
-    await connectToDatabase();
-    const { id, _id, tree, nodes, rootNodeIds, ...metaToUpdate } = metaToKeep as any;
-    await TreeModel.findByIdAndUpdate(newTreeId, metaToUpdate);
-    await deleteTreeFile(oldTreeId);
-    console.log(`INFO: Replaced old tree ${oldTreeId} with new tree ${newTreeId}`);
-}
 
 export async function deleteTreeFilesByUserId(userId: string): Promise<void> {
     await connectToDatabase();
@@ -331,6 +343,8 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
     const newNode = new TreeNodeModel(documentToSave);
     await newNode.save();
     
+    await TreeModel.findByIdAndUpdate(newNode.treeId, { updatedAt: new Date().toISOString() });
+    
     const plainNode = toPlainObject(newNode);
     
     // Decrypt for returning to the client
@@ -343,6 +357,9 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
 export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode, 'id' | 'children'>>): Promise<void> {
     await connectToDatabase();
     
+    const node = await TreeNodeModel.findById(nodeId).select('treeId').lean<TreeNode>();
+    if (!node) return;
+
     const { name, data, ...restOfUpdates } = updates;
     const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: new Date().toISOString() };
     
@@ -353,7 +370,8 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
         encryptedUpdates.data = await encrypt(data as any);
       }
 
-    await TreeNodeModel.findByIdAndUpdate(nodeId, { ...encryptedUpdates, updatedAt: new Date().toISOString() }).exec();
+    await TreeNodeModel.findByIdAndUpdate(nodeId, encryptedUpdates).exec();
+    await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: new Date().toISOString() });
 }
 
 const resequenceSiblings = async (parentId: string | null, treeId: string): Promise<void> => {
@@ -412,6 +430,7 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
             node.parentIds.splice(parentIndex, 1);
             node.order.splice(parentIndex, 1);
             await node.save();
+            await TreeModel.findByIdAndUpdate(treeId, { updatedAt: new Date().toISOString() });
             // After unlinking, re-sequence the remaining siblings.
             await resequenceSiblings(parentId === 'root' ? null : parentId, treeId);
         }
@@ -447,9 +466,10 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     await findChildrenRecursive(nodeId);
 
     await TreeNodeModel.deleteMany({ _id: { $in: deletedIds } }).exec();
+    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: new Date().toISOString() });
     
     // Resequence siblings in all original parent contexts
-    const resequencePromises = Array.from(new Set(nodesToResequenceParents)).map(pid => resequenceSiblings(pid, treeId));
+    const resequencePromises = Array.from(new Set(nodesToResequenceParents)).map(pid => resequenceSiblings(pid === 'root' ? null : pid, treeId));
     await Promise.all(resequencePromises);
     
     return deletedIds;
@@ -473,6 +493,9 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
   
     if (nodes.length === 0) return [];
   
+    const treeId = nodes[0]?.treeId; // Assume all nodes are for the same tree
+    if (!treeId) throw new Error("Batch create requires nodes to have a treeId.");
+
     const nodesToInsert = await Promise.all(nodes.map(async (n) => {
       const { id, _id, name, data, ...rest } = n as any;
       console.log("DB DEBUG: Preparing node for insert", { _id: _id || id, name, data });
@@ -488,6 +511,8 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
   
     const createdDocs = await TreeNodeModel.insertMany(nodesToInsert);
     console.log("DB DEBUG: Mongo insert success, created", createdDocs.length, "docs");
+    
+    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: new Date().toISOString() });
   
     const decryptedDocs = await Promise.all(createdDocs.map(async (doc) => {
       const plainDoc = toPlainObject(doc);
@@ -502,6 +527,17 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
 export async function batchUpdateNodes(updates: { id: string; updates: Partial<TreeNode> }[]): Promise<void> {
     if (updates.length === 0) return;
     await connectToDatabase();
+
+    const firstNodeId = updates[0].id;
+    if (!firstNodeId) return;
+
+    const firstNode = await TreeNodeModel.findById(firstNodeId).select('treeId').lean<TreeNode>();
+    if (!firstNode) {
+        console.warn(`batchUpdateNodes: Could not find node with ID ${firstNodeId} to determine treeId.`);
+        return;
+    };
+    const treeId = firstNode.treeId;
+
     const bulkOps = await Promise.all(updates.map(async ({ id, updates }) => {
         const { name, data, ...restOfUpdates } = updates;
         const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: new Date().toISOString() };
@@ -516,6 +552,7 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
         };
     }));
     await TreeNodeModel.bulkWrite(bulkOps);
+    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: new Date().toISOString() });
     console.log(`INFO: Batch updated ${updates.length} nodes in DB.`);
 }
 
@@ -532,12 +569,14 @@ export async function addParentToNode(nodeId: string, newParentId: string | null
         node.parentIds.push(parentIdToAdd);
         node.order.push(newOrder);
         await node.save();
+        await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: new Date().toISOString() });
         console.log(`INFO: Cloned node ${nodeId} under new parent ${parentIdToAdd}`);
     } else {
         const parentIndex = node.parentIds.indexOf(parentIdToAdd);
         if (parentIndex !== -1) {
             node.order[parentIndex] = newOrder;
             await node.save();
+            await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: new Date().toISOString() });
             console.log(`INFO: Updated order for existing clone ${nodeId} under parent ${parentIdToAdd}`);
         }
     }
@@ -861,6 +900,3 @@ export async function getTreeFromGit(token: string, owner: string, repo: string,
         throw error;
     }
 }
-
-    
-    
