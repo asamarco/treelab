@@ -251,14 +251,16 @@ function TreePage() {
           
           if (!activeTreeRef.current) return;
           const localUpdatedAt = activeTreeRef.current.updatedAt;
-          
-          const serverISO = serverUpdatedAt ? new Date(serverUpdatedAt).toISOString() : null;
-          const localISO = localUpdatedAt ? new Date(localUpdatedAt).toISOString() : null;
-          //console.log('local', localISO)
-          //console.log('server', serverISO)
-          if (serverISO && localISO && serverISO > localISO) {
-            console.log("INFO: Newer version detected on server. Automatically refreshing.");
-            await reloadActiveTree();
+
+          if (serverUpdatedAt && localUpdatedAt) {
+            const serverTime = new Date(serverUpdatedAt).getTime();
+            const localTime = new Date(localUpdatedAt).getTime();
+            
+            // Add a 1-second buffer to prevent reloads from minor, near-simultaneous updates
+            if (serverTime > localTime + 1000) {
+                console.log("INFO: Newer version detected on server. Automatically refreshing.");
+                await reloadActiveTree();
+            }
           }
         }
       } catch (error) {
@@ -513,3 +515,4 @@ function TreePage() {
 }
 
 export default TreePage;
+

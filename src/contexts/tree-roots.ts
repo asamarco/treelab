@@ -77,6 +77,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
   const [redoStack, setRedoStack] = useImmer<TreeFile[][]>([]);
   const [activeTreeId, _setActiveTreeId] = useState<string | null>(initialTree ? initialTree.id : null);
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [conflictState, setConflictState] = useState<{ localTree: TreeFile, serverTree: TreeFile } | null>(null);
 
@@ -108,8 +109,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
         if (activeTreeToUpdate) {
             const index = draft.findIndex(t => t.id === activeTreeId);
             if (index !== -1) {
-                // Create a new object to ensure Immer detects the change.
-                draft[index] = { ...activeTreeToUpdate, updatedAt: new Date().toISOString() };
+                // Do not update the timestamp here; let the caller decide when to do it.
             }
         }
       };
@@ -170,17 +170,18 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
       console.log(`INFO: Reloading active tree (${idToLoad}) from server.`);
       const reloadedTree = await loadTreeFile(idToLoad);
       if (reloadedTree) {
-        performAction((draft) => {
+        setAllTrees((draft) => {
             const index = draft.findIndex(t => t.id === idToLoad);
             if (index > -1) {
+                // Preserve expanded state while updating everything else
                 draft[index] = { ...reloadedTree, expandedNodeIds: draft[index].expandedNodeIds };
             }
-        }, false);
+        });
       } else {
         console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
       }
     },
-    [activeTreeId, performAction]
+    [activeTreeId, setAllTrees]
   );
 
   const createNewTree = useCallback(
@@ -503,19 +504,34 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
   };
   
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
-    if (currentUser) {
-        const { tree, ...metaData } = treeToSave;
-        saveTreeFile(metaData);
+    if (currentUser && !isSaving) {
+      setIsSaving(true);
+      const newUpdatedAt = new Date().toISOString();
+      const { tree, ...metaData } = { ...treeToSave, updatedAt: newUpdatedAt };
+  
+      saveTreeFile(metaData).then(() => {
+        // After successful save, update the local state with the new timestamp
+        setAllTrees((draft) => {
+          const treeInDraft = draft.find((t) => t.id === treeToSave.id);
+          if (treeInDraft) {
+            treeInDraft.updatedAt = newUpdatedAt;
+          }
+        });
         setIsDirty(false);
-        console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed.`);
+        setIsSaving(false);
+        console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
+      }).catch(error => {
+        console.error("ERROR: Debounced save failed:", error);
+        setIsSaving(false);
+      });
     }
   }, 1000);
 
   useEffect(() => {
-    if (isDirty && activeTree) {
+    if (isDirty && activeTree && !isSaving) {
       debouncedSave(activeTree);
     }
-  }, [isDirty, activeTree, debouncedSave]);
+  }, [isDirty, activeTree, debouncedSave, isSaving]);
 
   const updateActiveTree = (updater: (draft: TreeFile) => void) => {
     performAction((draft) => {

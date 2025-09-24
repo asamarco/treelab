@@ -1120,7 +1120,6 @@ const addNodes = async (
                 });
             }
             finalDbUpdates = JSON.parse(JSON.stringify(dbUpdatesForThisAction));
-            console.log("DEBUG: siblings after operation", finalDbUpdates.map(u => ({ id: u.id, order: u.updates.order })));
         }, isUndoable);
 
         setTimeout(async () => {
