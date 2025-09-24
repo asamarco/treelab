@@ -38,10 +38,11 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      onClick={(e) => e.stopPropagation()}
       onInteractOutside={(e) => {
-        const target = e.target as HTMLElement;
+        const target = e.target as HTMLElement
         if (target.closest('[cmdk-root], [role="menu"]')) {
-          e.preventDefault();
+          e.preventDefault()
         }
       }}
       className={cn(

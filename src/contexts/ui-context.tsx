@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This file defines the context for managing global UI state.
@@ -24,6 +25,10 @@ export interface DialogState {
     isNodePreviewOpen?: boolean;
     nodeIdsForPreview?: string[];
     isChangeTemplateMultipleOpen?: boolean;
+    isNodeEditOpen?: boolean;
+    isAddChildOpen?: boolean;
+    isAddSiblingOpen?: boolean;
+    nodeInstanceIdForAction?: string;
 }
 
 interface UIContextType {
@@ -33,14 +38,17 @@ interface UIContextType {
   setShowNodeOrder: (show: boolean | ((prevState: boolean) => boolean)) => void;
   dialogState: Partial<DialogState>;
   setDialogState: (newState: Partial<DialogState>) => void;
+  ignoreClicksUntil: number;
+  setIgnoreClicksUntil: (timestamp: number) => void;
 }
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
 
-export function UIProvider({ children }: { children: ReactNode }) {
+export function UIProvider({ children }: { children: React.ReactNode }) {
   const [isCompactView, setIsCompactView] = useLocalStorage<boolean>('isCompactView', false);
   const [showNodeOrder, setShowNodeOrder] = useLocalStorage<boolean>('showNodeOrder', false);
   const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
+  const [ignoreClicksUntil, setIgnoreClicksUntil] = useState(0);
   
   const setDialogState = (newState: Partial<DialogState>) => {
     setDialogStateInternal(prev => ({...prev, ...newState}));
@@ -53,6 +61,8 @@ export function UIProvider({ children }: { children: ReactNode }) {
     setShowNodeOrder,
     dialogState,
     setDialogState,
+    ignoreClicksUntil,
+    setIgnoreClicksUntil,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

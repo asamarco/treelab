@@ -13,7 +13,7 @@
  */
 "use client";
 
-import { useMemo, useState, useEffect, SetStateAction } from "react";
+import { useMemo, useState, useEffect, SetStateAction, useCallback } from "react";
 import { TreeNode } from "@/lib/types";
 import { TreeNodeComponent } from "./tree-node";
 import { useTreeContext } from "@/contexts/tree-context";
@@ -29,6 +29,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { TreeNodeDropZone } from "./tree-node-dropzone";
 import type { WritableDraft } from "immer";
+import { useUIContext } from "@/contexts/ui-context";
+import { getContextualOrder } from "@/lib/utils";
 
 interface TreeViewProps {
   nodes: TreeNode[];
@@ -39,6 +41,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
   const { 
       tree, 
       moveNodes, 
+      selectedNodeIds,
       setSelectedNodeIds,
       lastSelectedNodeId,
       setLastSelectedNodeId,
@@ -47,7 +50,11 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       pasteNodesAsClones,
       findNodeAndParent,
       pasteNodes,
+      expandAllFromNode,
+      collapseAllFromNode,
+      moveNodeOrder,
   } = useTreeContext();
+  const { setDialogState } = useUIContext();
   
   const [localExpandedNodeIds, setLocalExpandedNodeIds] = useState<string[]>([]);
   
@@ -150,24 +157,24 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
   );
   
   const flattenedInstances = useMemo(() => {
-    const result: { instanceId: string, node: TreeNode }[] = [];
-    const visited = new Set<string>(); // Keep track of visited node IDs to prevent cycles in data
+    const result: { instanceId: string; node: TreeNode }[] = [];
+    const expandedIdSet = new Set(expandedNodeIds);
 
     const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
         for (const node of nodesToTraverse) {
             const instanceId = `${node.id}_${parentId || 'root'}`;
             result.push({ instanceId, node });
 
-            if (node.children) {
+            if (expandedIdSet.has(instanceId) && node.children) {
                 traverse(node.children, node.id);
             }
         }
     };
     traverse(nodes, null);
     return result;
-  }, [nodes]);
+  }, [nodes, expandedNodeIds]);
 
-  const handleSelect = (instanceId: string, isChecked: boolean, isShiftClick: boolean) => {
+  const handleSelect = (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => {
     if (isShiftClick && lastSelectedNodeId) {
       const lastIndex = flattenedInstances.findIndex(i => i.instanceId === lastSelectedNodeId);
       const currentIndex = flattenedInstances.findIndex(i => i.instanceId === instanceId);
@@ -176,29 +183,188 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
         const start = Math.min(lastIndex, currentIndex);
         const end = Math.max(lastIndex, currentIndex);
         const rangeInstanceIds = flattenedInstances.slice(start, end + 1).map(i => i.instanceId);
-        
-        setSelectedNodeIds(prev => {
-          const newSelection = new Set(prev);
-          rangeInstanceIds.forEach(id => {
-            if (isChecked) newSelection.add(id);
-            else newSelection.delete(id);
-          });
-          return Array.from(newSelection);
-        });
+        setSelectedNodeIds(rangeInstanceIds);
       }
-    } else {
+    } else if (isCtrlClick) {
       setSelectedNodeIds(prev => {
         const newSelection = new Set(prev);
-        if (isChecked) {
-          newSelection.add(instanceId);
-        } else {
+        if (newSelection.has(instanceId)) {
           newSelection.delete(instanceId);
+        } else {
+          newSelection.add(instanceId);
         }
+        setLastSelectedNodeId(instanceId);
         return Array.from(newSelection);
       });
+    } else {
+        const isAlreadySelected = selectedNodeIds.includes(instanceId);
+        if (isAlreadySelected && selectedNodeIds.length === 1) {
+            setSelectedNodeIds([]); // Deselect if it's the only one selected
+        } else {
+            setSelectedNodeIds([instanceId]); // Select only this one
+        }
+        setLastSelectedNodeId(instanceId);
     }
-    setLastSelectedNodeId(instanceId);
   };
+  
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    const activeElement = document.activeElement as HTMLElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
+      return;
+    }
+    
+    if (event.key === 'Escape') {
+      if (selectedNodeIds.length > 0) {
+        event.preventDefault();
+        setSelectedNodeIds([]);
+      }
+      return;
+    }
+
+    if (selectedNodeIds.length === 1) {
+        const instanceId = selectedNodeIds[0];
+        const [nodeId, parentIdStr] = instanceId.split('_');
+        const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;
+
+        if (event.key === 'e') {
+            event.preventDefault();
+            setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
+            return;
+        }
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
+            return;
+        }
+        if (event.key === '+') {
+            event.preventDefault();
+            setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
+            return;
+        }
+        if (event.key === 'i') {
+            event.preventDefault();
+            moveNodeOrder(nodeId, 'up', contextualParentId);
+            return;
+        }
+        if (event.key === 'k') {
+            event.preventDefault();
+            moveNodeOrder(nodeId, 'down', contextualParentId);
+            return;
+        }
+    }
+
+    let nextInstanceId: string | null = null;
+    
+    if (selectedNodeIds.length === 0) {
+      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && flattenedInstances.length > 0) {
+        event.preventDefault();
+        nextInstanceId = flattenedInstances[0].instanceId;
+        setSelectedNodeIds([nextInstanceId]);
+        setLastSelectedNodeId(nextInstanceId);
+      }
+    } else if (selectedNodeIds.length > 0) {
+        const isCtrlPressed = event.ctrlKey || event.metaKey;
+        const currentInstanceId = lastSelectedNodeId || selectedNodeIds[selectedNodeIds.length - 1];
+        const [currentNodeId, currentParentIdStr] = currentInstanceId.split('_');
+        const currentContextualParentId = currentParentIdStr === 'root' ? null : currentParentIdStr;
+
+        switch (event.key) {
+            case 'ArrowUp':
+            case 'ArrowDown':
+                event.preventDefault();
+                if (isCtrlPressed) { // Sibling navigation
+                    if (selectedNodeIds.length !== 1) break;
+                    
+                    const parentInfo = currentContextualParentId ? findNodeAndParent(currentContextualParentId, tree) : null;
+                    const siblings = parentInfo ? parentInfo.node.children : tree;
+
+                    if (!siblings || siblings.length < 2) break;
+                    
+                    const sortedSiblings = [...siblings].sort((a,b) => getContextualOrder(a, siblings, currentContextualParentId) - getContextualOrder(b, siblings, currentContextualParentId));
+                    const currentIndex = sortedSiblings.findIndex(s => s.id === currentNodeId);
+                    
+                    const nextIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+                    if (nextIndex >= 0 && nextIndex < sortedSiblings.length) {
+                        nextInstanceId = `${sortedSiblings[nextIndex].id}_${currentContextualParentId || 'root'}`;
+                        setSelectedNodeIds([nextInstanceId]);
+                        setLastSelectedNodeId(nextInstanceId);
+                    }
+
+                } else { // Standard/Shift navigation
+                    const currentIndex = flattenedInstances.findIndex(i => i.instanceId === currentInstanceId);
+                    if (currentIndex === -1) break;
+
+                    const nextIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+                    if (nextIndex >= 0 && nextIndex < flattenedInstances.length) {
+                        nextInstanceId = flattenedInstances[nextIndex].instanceId;
+                        if (event.shiftKey) {
+                            setSelectedNodeIds(prev => {
+                                const newSelection = new Set(prev);
+                                if (newSelection.has(nextInstanceId!)) {
+                                    newSelection.delete(currentInstanceId);
+                                } else {
+                                    newSelection.add(nextInstanceId!);
+                                }
+                                return Array.from(newSelection);
+                            });
+                        } else {
+                            setSelectedNodeIds([nextInstanceId]);
+                        }
+                        setLastSelectedNodeId(nextInstanceId);
+                    }
+                }
+                break;
+            case 'ArrowRight':
+                event.preventDefault();
+                if (isCtrlPressed) {
+                    selectedNodeIds.forEach(instanceId => {
+                        const [nodeId, parentId] = instanceId.split('_');
+                        expandAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+                    });
+                } else if (selectedNodeIds.length === 1) {
+                    setExpandedNodeIds(draft => {
+                        if (!draft.includes(currentInstanceId)) {
+                            draft.push(currentInstanceId);
+                        }
+                    });
+                }
+                break;
+            case 'ArrowLeft':
+                event.preventDefault();
+                if (isCtrlPressed) {
+                    selectedNodeIds.forEach(instanceId => {
+                        const [nodeId, parentId] = instanceId.split('_');
+                        collapseAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+                    });
+                } else if (selectedNodeIds.length === 1) {
+                    setExpandedNodeIds(draft => {
+                        const index = draft.indexOf(currentInstanceId);
+                        if (index > -1) {
+                            draft.splice(index, 1);
+                        }
+                    });
+                }
+                break;
+        }
+    }
+
+
+    if (nextInstanceId) {
+      // Use requestAnimationFrame to ensure the DOM has updated with the new selection
+      requestAnimationFrame(() => {
+        const element = document.getElementById(`node-card-${nextInstanceId}`);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
 
   return (
     <DndContext
@@ -221,6 +387,8 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
             />
           </div>
         ))}
+        {/* Add a final drop zone at the end of the root list */}
+        <TreeNodeDropZone id={`gap_end_root`} className="h-4"/> 
       </div>
     </DndContext>
   );

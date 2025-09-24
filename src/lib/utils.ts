@@ -163,3 +163,11 @@ export const generateJsonForExport = (
         rootNodeIds: nodesToExport.map(n => n.id)
     };
 };
+
+export const getContextualOrder = (node: TreeNode, siblings: readonly TreeNode[], contextualParentId: string | null): number => {
+  const pIndex = contextualParentId ? (node.parentIds || []).indexOf(contextualParentId) : (node.parentIds || []).indexOf('root');
+  const fallbackOrder = siblings.findIndex(s => s.id === node.id);
+  // Ensure we don't get -1 if the parentId is not found (which can happen during some state transitions)
+  const finalPIndex = pIndex === -1 ? 0 : pIndex; 
+  return (finalPIndex !== -1 && node.order && node.order.length > finalPIndex) ? node.order[finalPIndex] : (fallbackOrder !== -1 ? fallbackOrder : 0);
+}

@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This file defines the `NodeForm` component, which is a dynamic form used for
@@ -475,6 +476,7 @@ export const NodeForm = ({
             onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })} 
           />
           <Button 
+            type="button"
             variant="outline" 
             size="sm"
             disabled={!linkedNodeInfo}
@@ -554,7 +556,7 @@ export const NodeForm = ({
                   <div className="space-y-2 mb-2">
                     {currentAttachments.map((att: AttachmentInfo, index: number) => (
                       <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                        <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="flex items-center gap-3 overflow-hidden">
                             <FileIcon className="h-5 w-5 text-muted-foreground shrink-0"/>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm font-medium truncate">{att.name}</p>
@@ -621,6 +623,14 @@ export const NodeForm = ({
             return null;
     }
   }
+
+  const { setIgnoreClicksUntil } = useUIContext();
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIgnoreClicksUntil(Date.now() + 100);
+    onClose();
+  };
 
   return (
     <form onSubmit={handleSubmit}>
@@ -735,7 +745,7 @@ export const NodeForm = ({
       
       <DialogFooter className="mt-4">
         <DialogClose asChild>
-          <Button type="button" variant="ghost" onClick={onClose}>
+          <Button type="button" variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
         </DialogClose>

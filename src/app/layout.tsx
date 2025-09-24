@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This is the root layout for the entire application. It's a server component

@@ -23,7 +23,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { CollapsibleTrigger } from "../ui/collapsible";
-import { Checkbox } from "../ui/checkbox";
 import { Icon } from "../icon";
 import { icons } from "lucide-react";
 import {
@@ -51,11 +50,14 @@ interface TreeNodeHeaderProps {
   isExpanded: boolean;
   isSelected: boolean;
   siblings: TreeNode[];
-  onSelect: (nodeId: string, isChecked: boolean, isShiftClick: boolean) => void;
+  onSelect: (nodeId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
   onOpenModal: (modal: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => void;
   dndAttributes: any;
   dndListeners: any;
   contextualParentId: string | null;
+  isMenuOpen: boolean;
+  onMenuOpenChange: (open: boolean) => void;
+  contextMenuPosition: { x: number; y: number } | null;
 }
 
 export function TreeNodeHeader({
@@ -69,6 +71,9 @@ export function TreeNodeHeader({
   dndAttributes,
   dndListeners,
   contextualParentId,
+  isMenuOpen,
+  onMenuOpenChange,
+  contextMenuPosition,
 }: TreeNodeHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -180,19 +185,101 @@ export function TreeNodeHeader({
   
   return (
     <>
-      <div className="flex items-start gap-1 group">
-        <div className="flex items-center no-print" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            id={`select-${instanceId}`}
-            checked={isSelected}
-            onCheckedChange={(checked) => onSelect(node.id, !!checked, (window.event as MouseEvent).shiftKey)}
-            className={cn('read-only-control', isCompactView ? 'h-3 w-3 mt-1' : 'h-4 w-4 mt-2')}
-          />
-        </div>
+      <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
+        <DropdownMenuTrigger
+          className="fixed"
+          style={{
+            left: contextMenuPosition?.x,
+            top: contextMenuPosition?.y,
+          }}
+        />
+        <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onSelect={() => router.push(`/templates?edit=${template.id}`)}>
+              <Edit className="mr-2 h-4 w-4" /> Edit Template
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onOpenModal('changeTemplate')}>
+              <RefreshCcw className="mr-2 h-4 w-4" /> Change Template
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                    <Download className="mr-2 h-4 w-4" />
+                    <span>Export As...</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                        <DropdownMenuItem onSelect={() => exportNodesAsJson([node], node.name)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleHtmlExport}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => exportNodesAsArchive([node], `${node.name}_archive`)}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+            </DropdownMenuSub>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={handleCopy}>
+              <Copy className="mr-2 h-4 w-4" /> Copy
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleCut}>
+              <Scissors className="mr-2 h-4 w-4" /> Cut
+            </DropdownMenuItem>
+             <DropdownMenuItem onSelect={handleCopyLink}>
+              <LinkIcon className="mr-2 h-4 w-4" /> Copy Link
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger disabled={!clipboard.nodes}>
+                <ClipboardPaste className="mr-2 h-4 w-4" />
+                <span>Paste</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onSelect={() => handlePaste('child')} disabled={!clipboard.nodes}>
+                    <ClipboardPlus className="mr-2 h-4 w-4" /> Paste as child
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => handlePaste('sibling')} disabled={!clipboard.nodes}>
+                    <ClipboardList className="mr-2 h-4 w-4" /> Paste as sibling
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator/>
+                   <DropdownMenuItem onSelect={() => handlePasteAsClone('child')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
+                    <ClipboardPlus className="mr-2 h-4 w-4 text-primary" /> Paste as clone (child)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => handlePasteAsClone('sibling')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
+                    <ClipboardList className="mr-2 h-4 w-4 text-primary" /> Paste as clone (sibling)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator/>
+                  <DropdownMenuItem onSelect={() => onOpenModal('pasteTemplate')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
+                    <Sheet className="mr-2 h-4 w-4" /> Paste Template
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>This action will permanently delete this instance of the "{node.name}" node. If this is the last instance, the node and all its children will be deleted.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => deleteNode(node.id, contextualParentId)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="flex items-start gap-1 group/treenode">
         <Button
           variant="ghost"
           size="icon"
-          className={cn("cursor-grab shrink-0 no-print read-only-control", isCompactView ? 'h-6 w-6' : 'h-8 w-8')}
+          className={cn(
+            "cursor-grab shrink-0 no-print read-only-control transition-opacity opacity-0 group-hover/treenode:opacity-100", 
+            isCompactView ? 'h-6 w-6' : 'h-8 w-8',
+          )}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
           {...dndAttributes}
@@ -201,25 +288,19 @@ export function TreeNodeHeader({
           <GripVertical className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4')} />
         </Button>
         <div
-          className="flex-1 cursor-pointer"
-          onDoubleClick={(e) => { 
-            if ((e.target as HTMLElement).closest('.read-only-view')) return;
-            e.stopPropagation(); 
-            onOpenModal('edit'); 
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpandedNodeIds((prev) => {
-              const newSet = new Set(prev as string[]);
-              if (newSet.has(instanceId)) newSet.delete(instanceId); else newSet.add(instanceId);
-              return Array.from(newSet);
-            });
-          }}
+          className="flex-1"
         >
           <div className="flex items-center gap-1">
             <CollapsibleTrigger asChild>
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedNodeIds((prev) => {
+                      const newSet = new Set(prev as string[]);
+                      if (newSet.has(instanceId)) newSet.delete(instanceId); else newSet.add(instanceId);
+                      return Array.from(newSet);
+                    });
+                }}
                 aria-label="Toggle node"
                 className={cn("p-1 rounded-md hover:bg-accent no-print", isCompactView && 'p-0.5', !hasContentToToggle && "invisible")}
               >
@@ -248,45 +329,45 @@ export function TreeNodeHeader({
                  </TooltipProvider>
               )}
               {nodeHasAttachments && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />)}
-              <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity read-only-control">
+              <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control">
                 <TooltipProvider>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
                             <Eye className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>Preview Node</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>Preview Node (v)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
                             <Edit className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>Edit Node</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode(node.id, contextualParentId); } else { expandAllFromNode(node.id, contextualParentId); } }} disabled={node.children.length === 0}>
                             <ChevronsUpDown className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All' : 'Expand All'}</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
                             <ArrowUp className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>Move Up</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>Move Up (i)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
                             <ArrowDown className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>Move Down</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>Move Down (k)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
                             <CornerDownRight className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>Add Child</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>Add Child (Enter)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
                             <Plus className="h-3 w-3" />
                         </Button>
-                    </TooltipTrigger><TooltipContent><p>Add Sibling</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>Add Sibling (+)</p></TooltipContent></Tooltip>
                 </TooltipProvider>
               </div>
             </div>
@@ -318,95 +399,9 @@ export function TreeNodeHeader({
                         <Star className={cn("h-4 w-4 no-print", node.isStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground/50 hover:text-muted-foreground")} />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent><p>{node.isStarred ? 'Unstar' : 'Star'}</p></TooltipContent>
+                <TooltipContent><p>{node.isStarred ? 'Unstar' : 'Star'} (*)</p></TooltipContent>
               </Tooltip>
           </TooltipProvider>
-          <div className="flex items-center opacity-0 transition-opacity group-hover:opacity-100 no-print">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className={cn(isCompactView && 'h-6 w-6')}>
-                  <MoreHorizontal className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4')} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem onSelect={() => router.push(`/templates?edit=${template.id}`)}>
-                  <Edit className="mr-2 h-4 w-4" /> Edit Template
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onOpenModal('changeTemplate')}>
-                  <RefreshCcw className="mr-2 h-4 w-4" /> Change Template
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <Download className="mr-2 h-4 w-4" />
-                        <span>Export As...</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                            <DropdownMenuItem onSelect={() => exportNodesAsJson([node], node.name)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={handleHtmlExport}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => exportNodesAsArchive([node], `${node.name}_archive`)}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                </DropdownMenuSub>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={handleCopy}>
-                  <Copy className="mr-2 h-4 w-4" /> Copy
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={handleCut}>
-                  <Scissors className="mr-2 h-4 w-4" /> Cut
-                </DropdownMenuItem>
-                 <DropdownMenuItem onSelect={handleCopyLink}>
-                  <LinkIcon className="mr-2 h-4 w-4" /> Copy Link
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger disabled={!clipboard.nodes}>
-                    <ClipboardPaste className="mr-2 h-4 w-4" />
-                    <span>Paste</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onSelect={() => handlePaste('child')} disabled={!clipboard.nodes}>
-                        <ClipboardPlus className="mr-2 h-4 w-4" /> Paste as child
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handlePaste('sibling')} disabled={!clipboard.nodes}>
-                        <ClipboardList className="mr-2 h-4 w-4" /> Paste as sibling
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator/>
-                       <DropdownMenuItem onSelect={() => handlePasteAsClone('child')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
-                        <ClipboardPlus className="mr-2 h-4 w-4 text-red-500" /> Paste as clone (child)
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handlePasteAsClone('sibling')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
-                        <ClipboardList className="mr-2 h-4 w-4  text-red-500" /> Paste as clone (sibling)
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator/>
-                      <DropdownMenuItem onSelect={() => onOpenModal('pasteTemplate')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
-                        <Sheet className="mr-2 h-4 w-4" /> Paste Template
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>This action will permanently delete this instance of the "{node.name}" node. If this is the last instance, the node and all its children will be deleted.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteNode(node.id, contextualParentId)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </div>
       {nodesForHtmlExport && (

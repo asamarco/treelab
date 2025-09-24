@@ -52,9 +52,10 @@ interface TreeNodeModalsProps {
 }
 
 export function TreeNodeModals({ node, template, openModal, onOpenChange, contextualParentId }: TreeNodeModalsProps) {
-  const { templates, getTemplateById, addChildNode, addSiblingNode, updateNode, changeNodeTemplate, clipboard, activeTree } = useTreeContext();
+  const { templates, getTemplateById, addChildNode, addSiblingNode, updateNode, changeNodeTemplate, clipboard, activeTree, setSelectedNodeIds } = useTreeContext();
   const { currentUser } = useAuthContext();
   const { toast } = useToast();
+  const { setIgnoreClicksUntil } = useUIContext();
 
   const [selectedTemplateForNewNode, setSelectedTemplateForNewNode] = useState<Template | null>(null);
   const [selectedNewTemplateId, setSelectedNewTemplateId] = useState<string | null>(null);
@@ -78,7 +79,15 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
     onOpenChange(null);
     setSelectedTemplateForNewNode(null);
     setSelectedNewTemplateId(null);
-  }
+    setSelectedNodeIds([]);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setIgnoreClicksUntil(Date.now() + 500);
+      handleClose();
+    }
+  };
 
   const handleSaveNewChild = (childNodeData: TreeNode) => {
     const { id, children, ...rest } = childNodeData;
@@ -133,7 +142,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
   return (
     <>
       {/* Add Child / Paste Template Dialog */}
-      <Dialog open={openModal === 'addChild' || openModal === 'pasteTemplate'} onOpenChange={(open) => !open && handleClose()}>
+      <Dialog open={openModal === 'addChild' || openModal === 'pasteTemplate'} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader><DialogTitle><CornerDownRight className="inline-block mr-2 h-5 w-5" />Add New Node to "{node.name}"</DialogTitle></DialogHeader>
           {renderAddDialogContent(handleSaveNewChild)}
@@ -141,7 +150,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
       </Dialog>
 
       {/* Add Sibling Dialog */}
-      <Dialog open={openModal === 'addSibling'} onOpenChange={(open) => !open && handleClose()}>
+      <Dialog open={openModal === 'addSibling'} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader><DialogTitle><ListPlus className="inline-block mr-2 h-5 w-5" />Add Sibling After "{node.name}"</DialogTitle></DialogHeader>
           {renderAddDialogContent(handleSaveNewSibling)}
@@ -149,7 +158,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
       </Dialog>
 
       {/* Edit Node Dialog */}
-      <Dialog open={openModal === 'edit'} onOpenChange={(open) => !open && handleClose()}>
+      <Dialog open={openModal === 'edit'} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Edit Node: {node.name}</DialogTitle></DialogHeader>
           <NodeForm node={node} template={template} onSave={handleSaveUpdate} onClose={handleClose} contextualParentId={contextualParentId} />
@@ -157,7 +166,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
       </Dialog>
 
       {/* Change Template Dialog */}
-      <Dialog open={openModal === 'changeTemplate'} onOpenChange={(open) => !open && handleClose()}>
+      <Dialog open={openModal === 'changeTemplate'} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Change Template for "{node.name}"</DialogTitle>

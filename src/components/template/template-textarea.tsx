@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This component, `TemplateTextarea`, is a specialized textarea for creating
@@ -117,7 +116,7 @@ export function TemplateTextarea({
   }, [value, fields]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab" && suggestion) {
+    if (e.key === "ArrowRight" && suggestion && e.currentTarget.selectionStart === value.length) {
       e.preventDefault();
       const cursorPosition = e.currentTarget.selectionStart ?? 0;
       const textUpToCursor = value.substring(0, cursorPosition);

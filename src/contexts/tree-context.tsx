@@ -238,6 +238,8 @@ interface TreeContextType {
   setSelectedNodeIds: (updater: React.SetStateAction<string[]>) => void;
   lastSelectedNodeId: string | null;
   setLastSelectedNodeId: (id: string | null) => void;
+  toggleStarredForSelectedNodes: () => Promise<void>;
+
 
   // Utility
   getTemplateById: (id: string) => Template | undefined;
@@ -1281,6 +1283,44 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
       console.log(`INFO: Updated ${toUpdate.length} node names in the database.`);
     }
   };
+
+  const toggleStarredForSelectedNodes = async () => {
+    if (!activeTree || selectedNodeIds.length === 0) return;
+
+    const firstSelectedInstanceId = selectedNodeIds[0];
+    const firstNodeId = firstSelectedInstanceId.split('_')[0];
+    const firstNode = findNodeAndParent(firstNodeId)?.node;
+    if (!firstNode) return;
+
+    // Determine the new starred state based on the first selected node
+    const newIsStarred = !firstNode.isStarred;
+
+    const updates = selectedNodeIds.map(instanceId => {
+        const nodeId = instanceId.split('_')[0];
+        return { id: nodeId, updates: { isStarred: newIsStarred } };
+    });
+    
+    // De-duplicate updates by node ID
+    const uniqueUpdates = Array.from(new Map(updates.map(u => [u.id, u])).values());
+
+    performAction(draft => {
+        const activeTreeDraft = draft.find(t => t.id === activeTreeId);
+        if (!activeTreeDraft) return;
+
+        const selectedNodeIdsSet = new Set(uniqueUpdates.map(u => u.id));
+        traverseTree(activeTreeDraft.tree, (node) => {
+            if (selectedNodeIdsSet.has(node.id)) {
+                node.isStarred = newIsStarred;
+            }
+        });
+    });
+
+    await batchUpdateNodes(uniqueUpdates);
+    toast({
+        title: newIsStarred ? "Added to Favorites" : "Removed from Favorites",
+        description: `${uniqueUpdates.length} node(s) updated.`
+    });
+  };
   
 
   /* --------------------------------- Context value --------------------------- */
@@ -1358,6 +1398,7 @@ const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling',
     restoreToCommit,
     analyzeStorage,
     purgeStorage,
+    toggleStarredForSelectedNodes,
   };
 
   return <TreeContext.Provider value={value}>{children}</TreeContext.Provider>;

@@ -31,7 +31,7 @@ interface TreeNodeProps {
   node: TreeNode;
   level: number;
   siblings: TreeNode[];
-  onSelect: (instanceId: string, isChecked: boolean, isShiftClick: boolean) => void;
+  onSelect: (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
   // This helps identify which parent this instance belongs to in the UI
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
@@ -49,7 +49,10 @@ export function TreeNodeComponent({
 }: TreeNodeProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<null | 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate'>(null);
-  const { setDialogState } = useUIContext();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+
+  const { dialogState, setDialogState, ignoreClicksUntil } = useUIContext();
   const nodeCardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -66,6 +69,29 @@ export function TreeNodeComponent({
   const { isCompactView } = useUIContext();
 
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
+
+  // Handle opening dialogs via global state from keyboard shortcuts
+  useEffect(() => {
+    if (dialogState.isNodeEditOpen && dialogState.nodeInstanceIdForAction === instanceId) {
+      setIsModalOpen('edit');
+      setDialogState({ isNodeEditOpen: false, nodeInstanceIdForAction: undefined });
+    }
+    if (dialogState.isAddChildOpen && dialogState.nodeInstanceIdForAction === instanceId) {
+      setIsModalOpen('addChild');
+      setDialogState({ isAddChildOpen: false, nodeInstanceIdForAction: undefined });
+    }
+    if (dialogState.isAddSiblingOpen && dialogState.nodeInstanceIdForAction === instanceId) {
+      setIsModalOpen('addSibling');
+      setDialogState({ isAddSiblingOpen: false, nodeInstanceIdForAction: undefined });
+    }
+  }, [
+    dialogState.isNodeEditOpen,
+    dialogState.isAddChildOpen,
+    dialogState.isAddSiblingOpen,
+    dialogState.nodeInstanceIdForAction, 
+    instanceId, 
+    setDialogState
+  ]);
   
   const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
   const setExpandedNodeIds = onExpandedChange || setGlobalExpandedNodeIds;
@@ -108,6 +134,14 @@ export function TreeNodeComponent({
   const isCut = clipboard.operation === 'cut' && !!clipboard.nodes?.some(
     n => n.id === node.id && n.parentIds.includes(contextualParentId!)
   );
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.read-only-view')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setIsMenuOpen(true);
+  };
   
   if (!template) {
     return (
@@ -126,6 +160,7 @@ export function TreeNodeComponent({
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
+      onContextMenu={handleContextMenu}
     >
       <div
         className={cn(
@@ -140,38 +175,48 @@ export function TreeNodeComponent({
         ref={setNodeRef}
         style={style}
         className={cn(
-          "bg-card/60 transition-all my-1 group/treenode",
+          "bg-card/60 transition-all my-1 cursor-pointer",
           isSelected && "border-primary ring-2 ring-primary ring-offset-2",
           isDragging && "shadow-xl opacity-80",
           isOver && "outline-2 outline-dashed outline-primary"
         )}
+        onClick={(e) => {
+            if (Date.now() < ignoreClicksUntil) {
+              e.stopPropagation();
+              return;
+            }
+            e.stopPropagation();
+            onSelect(instanceId, e.shiftKey, e.ctrlKey || e.metaKey);
+        }}
+        onDoubleClick={(e) => {
+          if ((e.target as HTMLElement).closest('.read-only-view')) return;
+          e.stopPropagation();
+          setIsModalOpen('edit');
+        }}
       >
         <CardContent className="p-1">
-          <Collapsible open={isExpanded} onOpenChange={(open) => {
-            setExpandedNodeIds((prev) => {
-              const newSet = new Set(prev as string[]);
-              if (newSet.has(instanceId)) newSet.delete(instanceId); else newSet.add(instanceId);
-              return Array.from(newSet);
-            });
-          }}>
+          <Collapsible open={isExpanded}>
             <TreeNodeHeader
               node={node}
               template={template}
               isExpanded={isExpanded}
               isSelected={isSelected}
               siblings={siblings}
-              onSelect={(nodeId, isChecked, isShiftClick) => onSelect(instanceId, isChecked, isShiftClick)}
+              onSelect={onSelect}
               onOpenModal={setIsModalOpen}
               dndAttributes={attributes}
               dndListeners={listeners}
               contextualParentId={contextualParentId}
+              isMenuOpen={isMenuOpen}
+              onMenuOpenChange={setIsMenuOpen}
+              contextMenuPosition={contextMenuPosition}
             />
             <TreeNodeContent 
               node={node} 
               template={template} 
               isExpanded={isExpanded}
               level={level}
-              onSelect={(childInstanceId, isChecked, isShiftClick) => onSelect(childInstanceId, isChecked, isShiftClick)}
+              onSelect={onSelect}
               contextualParentId={node.id}
               overrideExpandedIds={overrideExpandedIds}
               onExpandedChange={onExpandedChange as any}

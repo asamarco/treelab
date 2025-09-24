@@ -49,14 +49,17 @@ export function TreeSelectionBar() {
         findNodeAndParent,
         setClipboard,
         deleteNodes,
-        expandAllFromNode,
-        collapseAllFromNode,
         exportNodesAsArchive,
         exportNodesAsHtml,
         exportNodesAsJson,
         getTemplateById,
         clipboard,
+        pasteNodes,
+        moveNodes,
         pasteNodesAsClones,
+        expandAllFromNode,
+        collapseAllFromNode,
+        toggleStarredForSelectedNodes,
     } = useTreeContext();
     const { setDialogState } = useUIContext();
     const { currentUser } = useAuthContext();
@@ -143,26 +146,97 @@ export function TreeSelectionBar() {
         }
     }, [getSelectedTopLevelNodes, setClipboard, toast]);
     
+    const handlePreviewSelection = useCallback(() => {
+        const topLevelIds = getSelectedTopLevelNodes().map(n => n.node.id);
+        if (topLevelIds.length > 0) {
+            setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: topLevelIds });
+        } else {
+            toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not find any top-level nodes in your selection to preview.' });
+        }
+    }, [getSelectedTopLevelNodes, setDialogState, toast]);
+
+    const handleExpandAllSelection = useCallback(() => {
+        selectedNodeIds.forEach(instanceId => {
+            const [nodeId, parentId] = instanceId.split('_');
+            expandAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+        });
+    }, [selectedNodeIds, expandAllFromNode]);
+
+    const handleCollapseAllSelection = useCallback(() => {
+        selectedNodeIds.forEach(instanceId => {
+            const [nodeId, parentId] = instanceId.split('_');
+            collapseAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+        });
+    }, [selectedNodeIds, collapseAllFromNode]);
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-          if (selectedNodeIds.length === 0) return;
-    
           const activeElement = document.activeElement as HTMLElement;
           if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
             return;
           }
 
+          if (event.key === '*') {
+            if (selectedNodeIds.length === 0) return;
+            event.preventDefault();
+            toggleStarredForSelectedNodes();
+            return;
+          }
+
           if (event.ctrlKey || event.metaKey) {
             if (event.key === 'c') {
+              if (selectedNodeIds.length === 0) return;
               event.preventDefault();
               handleCopySelection();
             } else if (event.key === 'x') {
+              if (selectedNodeIds.length === 0) return;
               event.preventDefault();
               handleCutSelection();
-            }
+            } else if (event.key === 'v') {
+              event.preventDefault();
+              if (selectedNodeIds.length !== 1 || !clipboard.nodes) return;
+              
+              const targetInstanceId = selectedNodeIds[0];
+              const [targetNodeId, contextualParentId] = targetInstanceId.split('_');
+              
+              if (event.altKey) { // Paste as Clone: CTRL+ALT+V
+                if (clipboard.operation === 'cut') return;
+                const nodeIdsToClone = clipboard.nodes.map(n => n.id);
+                pasteNodesAsClones(targetNodeId, 'child', nodeIdsToClone, contextualParentId === 'root' ? null : contextualParentId).then(() => {
+                    toast({ title: `Cloned ${clipboard.nodes?.length} node(s)`, description: `Pasted as clones.` });
+                    setClipboard({ nodes: null, operation: null });
+                    setSelectedNodeIds([]);
+                });
+              } else { // Standard Paste: CTRL+V
+                  if (clipboard.operation === 'cut') {
+                    const moves = clipboard.nodes.map(sourceNode => ({
+                        nodeId: sourceNode.id,
+                        targetNodeId: targetNodeId,
+                        position: 'child' as 'child' | 'sibling',
+                        sourceContextualParentId: sourceNode.parentIds[0] ?? null,
+                        targetContextualParentId: contextualParentId === 'root' ? null : contextualParentId,
+                        isCutOperation: true,
+                    }));
+                    moveNodes(moves);
+                  } else {
+                    pasteNodes(targetNodeId, 'child', contextualParentId === 'root' ? null : contextualParentId);
+                  }
+                  setClipboard({ nodes: null, operation: null });
+                  setSelectedNodeIds([]);
+              }
+            } 
           } else if (event.key === 'Delete' || event.key === 'Backspace') {
+            if (selectedNodeIds.length === 0) return;
             event.preventDefault();
             deleteTriggerRef.current?.click();
+          } else if (event.key === 'v') {
+              if (selectedNodeIds.length === 0) return;
+              event.preventDefault();
+              handlePreviewSelection();
+          } else if (event.key === 't' || event.key === 'T') {
+              if (selectedNodeIds.length === 0) return;
+              event.preventDefault();
+              setDialogState({ isChangeTemplateMultipleOpen: true });
           }
         };
     
@@ -170,26 +244,7 @@ export function TreeSelectionBar() {
         return () => {
           window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [selectedNodeIds.length, handleCopySelection, handleCutSelection]);
-
-    const handlePasteAsClone = (as: 'child' | 'sibling') => {
-        if (!clipboard.nodes || clipboard.operation === 'cut') return;
-        
-        // This relies on the fact that for selection actions, there's usually a "last selected" or single target.
-        // We'll use the first selected item as the target for this context menu action.
-        const targetInstanceId = selectedNodeIds[0];
-        if (!targetInstanceId) return;
-
-        const [targetNodeId, contextualParentId] = targetInstanceId.split('_');
-        const nodeIdsToClone = clipboard.nodes.map(n => n.id);
-
-        pasteNodesAsClones(targetNodeId, as, nodeIdsToClone, contextualParentId === 'root' ? null : contextualParentId).then(() => {
-            toast({ title: `Cloned ${clipboard.nodes?.length} node(s)`, description: `Pasted as clones.` });
-            setClipboard({ nodes: null, operation: null });
-            setSelectedNodeIds([]);
-        });
-    };
-
+    }, [selectedNodeIds, clipboard, handleCopySelection, handleCutSelection, pasteNodes, moveNodes, pasteNodesAsClones, setClipboard, setSelectedNodeIds, toast, handlePreviewSelection, setDialogState, handleExpandAllSelection, handleCollapseAllSelection, toggleStarredForSelectedNodes]);
 
     if (selectedNodeIds.length === 0) {
         return null;
@@ -201,29 +256,6 @@ export function TreeSelectionBar() {
         toast({ title: 'Deleted', description: `${selectedNodeIds.length} node instance(s) deleted.` });
     };
     
-    const handleExpandAllSelection = () => {
-        selectedNodeIds.forEach(instanceId => {
-            const [nodeId, parentId] = instanceId.split('_');
-            expandAllFromNode(nodeId, parentId === 'root' ? null : parentId);
-        });
-    };
-    
-    const handleCollapseAllSelection = () => {
-        selectedNodeIds.forEach(instanceId => {
-            const [nodeId, parentId] = instanceId.split('_');
-            collapseAllFromNode(nodeId, parentId === 'root' ? null : parentId);
-        });
-    };
-    
-    const handlePreviewSelection = () => {
-        const topLevelIds = getSelectedTopLevelNodes().map(n => n.node.id);
-        if (topLevelIds.length > 0) {
-            setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: topLevelIds });
-        } else {
-            toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not find any top-level nodes in your selection to preview.' });
-        }
-    };
-
     const handleExport = (format: 'json' | 'archive' | 'html') => {
         const nodes = getSelectedTopLevelNodes().map(item => item.node);
         if (nodes.length === 0) {
@@ -260,20 +292,12 @@ export function TreeSelectionBar() {
                     <div className="flex-grow border-l pl-2 flex items-center gap-1">
                         <TooltipProvider>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExpandAllSelection}><ChevronsUpDown/></Button></TooltipTrigger>
-                                <TooltipContent><p>Expand All</p></TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCollapseAllSelection}><ChevronsDownUp/></Button></TooltipTrigger>
-                                <TooltipContent><p>Collapse All</p></TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePreviewSelection}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
-                                <TooltipContent><p>Preview Selection</p></TooltipContent>
+                                <TooltipContent><p>Preview Selection (v)</p></TooltipContent>
                             </Tooltip>
                              <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDialogState({ isChangeTemplateMultipleOpen: true })}><RefreshCcw className="h-4 w-4"/></Button></TooltipTrigger>
-                                <TooltipContent><p>Change Template</p></TooltipContent>
+                                <TooltipContent><p>Change Template (t)</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopySelection}><Copy className="h-4 w-4"/></Button></TooltipTrigger>
@@ -282,6 +306,14 @@ export function TreeSelectionBar() {
                             <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCutSelection}><Scissors className="h-4 w-4"/></Button></TooltipTrigger>
                                 <TooltipContent><p>Cut (Ctrl+X)</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExpandAllSelection}><ChevronsDownUp className="h-4 w-4"/></Button></TooltipTrigger>
+                                <TooltipContent><p>Expand All</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCollapseAllSelection}><ChevronsUpDown className="h-4 w-4"/></Button></TooltipTrigger>
+                                <TooltipContent><p>Collapse All</p></TooltipContent>
                             </Tooltip>
                              <DropdownMenu>
                                 <Tooltip>
