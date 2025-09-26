@@ -1,0 +1,17 @@
+v0.2.1
+
+Improvement: Polished interface
+Improvement: Keyboard navigation
+Improvement: Reload tree, with keyboard shortcut 'r', added
+Bugfix: automatic tree reload only on changes of another shared user
+
+Known issues:
+
+Undo needs proper command pattern implementation to work well with the database and has been disabled
+Descendants of clones are updated only in their first instance until page is refreshed
+
+v0.2
+Feat: share read-only trees publicly with a link
+Feat: custom logo setting in the admin panel
+Improvement: Shared trees are visually identified
+Bugfixes
