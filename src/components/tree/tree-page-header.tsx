@@ -12,7 +12,7 @@ import {
     Edit, Download, FileJson, FileText, ChevronDown, Rows, Columns, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
     CheckCircle, AlertCircle, PlusCircle, Undo2, FileCode, Check,
-    Redo2, ListOrdered, Users
+    Redo2, ListOrdered, Users, RefreshCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -36,6 +36,7 @@ interface TreePageHeaderProps {
     onTitleSave: (newTitle: string) => void;
     onSync: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
     onCommit: () => void;
+    onReload: () => void;
 }
 
 export function TreePageHeader({ 
@@ -44,7 +45,8 @@ export function TreePageHeader({
     remoteSha,
     onTitleSave,
     onSync,
-    onCommit
+    onCommit,
+    onReload
 }: TreePageHeaderProps) {
     const { currentUser, users } = useAuthContext();
     const {
@@ -152,6 +154,14 @@ export function TreePageHeader({
                         <TooltipContent>
                             <p>Show numbering (o)</p>
                         </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={onReload}>
+                                <RefreshCcw className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Reload Tree (r)</p></TooltipContent>
                     </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>

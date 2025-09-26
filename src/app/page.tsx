@@ -129,7 +129,6 @@ function TreePage() {
   const { currentUser } = useAuthContext();
   const { 
     activeTree,
-    templates, 
     getTemplateById, 
     setTreeTitle,
     syncFromRepo,
@@ -172,6 +171,8 @@ function TreePage() {
   }, [showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter]);
 
   const areFiltersActive = activeFilterCount > 0;
+
+  const templates = activeTree?.templates || [];
 
   useEffect(() => {
     setIsClient(true);
@@ -299,6 +300,10 @@ function TreePage() {
           event.preventDefault();
           setShowNodeOrder(prev => !prev);
           break;
+        case 'r':
+          event.preventDefault();
+          reloadActiveTree();
+          break;
       }
     };
 
@@ -306,7 +311,7 @@ function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree]);
 
   const filteredTree = useMemo(() => {
       try {
@@ -413,6 +418,7 @@ function TreePage() {
             onTitleSave={handleTitleSave}
             onSync={syncFromRepo}
             onCommit={checkSyncStatus}
+            onReload={() => reloadActiveTree()}
           />
          
           <div className="relative mb-6 flex gap-4 items-center">
@@ -515,4 +521,5 @@ function TreePage() {
 }
 
 export default TreePage;
+
 
