@@ -54,6 +54,8 @@ export function TreePageHeader({
         undoLastAction,
         canRedo,
         redoLastAction,
+        undoActionDescription,
+        redoActionDescription,
         exportNodesAsArchive,
         exportNodesAsHtml,
         exportNodesAsJson,
@@ -107,7 +109,7 @@ export function TreePageHeader({
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity read-only-hidden" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
                     <Edit className="h-5 w-5" />
                 </Button>
                 {sharedWithUsers && sharedWithUsers.length > 0 && (
@@ -127,22 +129,22 @@ export function TreePageHeader({
                <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" disabled>
+                            <Button variant="outline" size="icon" onClick={undoLastAction} disabled={!canUndo} className="read-only-hidden">
                                 <Undo2 className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>TODO</p>
+                            <p>{undoActionDescription || 'Undo'} (Ctrl+Z)</p>
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" disabled>
+                            <Button variant="outline" size="icon" onClick={redoLastAction} disabled={!canRedo} className="read-only-hidden">
                                 <Redo2 className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Redo last action (Ctrl+Y)</p>
+                            <p>{redoActionDescription || 'Redo'} (Ctrl+Y)</p>
                         </TooltipContent>
                     </Tooltip>
                     <Tooltip>
@@ -198,7 +200,7 @@ export function TreePageHeader({
               </DropdownMenu>
 
                {tree.gitSync && (
-                 <div className="flex gap-2">
+                 <div className="flex gap-2 read-only-hidden">
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -238,7 +240,7 @@ export function TreePageHeader({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button onClick={() => setDialogState({ isAddNodeOpen: true })}>
+                    <Button onClick={() => setDialogState({ isAddNodeOpen: true })} className="read-only-hidden">
                       <PlusCircle className="mr-2 h-4 w-4" /> Add Node
                     </Button>
                   </TooltipTrigger>

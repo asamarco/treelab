@@ -7,6 +7,7 @@
  * the data structures, such as templates, tree nodes, users, and settings.
  * This improves code maintainability and type safety across the project.
  */
+import type { WritableDraft } from 'immer';
 
 export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment";
 export type Theme = "light" | "dark" | "system";
@@ -171,4 +172,115 @@ export interface PurgeResult {
     purgedCount: number;
 }
 
+// --- Command Pattern Types ---
+interface BaseCommand {
+  type: string;
+  execute: (draft: WritableDraft<TreeFile[]>) => any;
+  undo: () => Promise<void>;
+  redo?: (finalTreeFile?: TreeFile) => Promise<void>;
+  post?: (finalTreeFile?: TreeFile) => Promise<void>;
+  getUndoState?: (draft: WritableDraft<TreeFile[]>, command: Command) => void;
+}
+
+export interface AddNodesCommand extends BaseCommand {
+    type: 'ADD_NODES';
+    payload: {
+        nodes: TreeNode[];
+    };
+    originalState: {
+        siblingOrders: { id: string, order: number[] }[];
+    };
+}
+
+export interface DeleteNodesCommand extends BaseCommand {
+    type: 'DELETE_NODES';
+    payload: {
+        nodes: { nodeId: string; parentId: string | null }[];
+    };
+    originalState: { node: TreeNode, parent: TreeNode | null, originalSiblings: TreeNode[] }[];
+}
+
+export interface MoveNodesCommand extends BaseCommand {
+    type: 'MOVE_NODES';
+    payload: {
+        moves: {
+            nodeId: string;
+            targetNodeId: string;
+            position: 'child' | 'sibling' | 'child-bottom';
+            sourceContextualParentId: string | null;
+            targetContextualParentId: string | null;
+        }[];
+    };
+    originalState: { tree: TreeNode[] };
+}
+
+export interface UpdateNodesCommand extends BaseCommand {
+    type: 'UPDATE_NODES';
+    payload: { nodeId: string, updates: Partial<TreeNode>, originalData: Partial<TreeNode> }[];
+}
+
+export interface ReorderNodesCommand extends BaseCommand {
+    type: 'REORDER_NODES';
+    payload: { nodeId: string, updates: Partial<TreeNode>, originalData: Partial<TreeNode> }[];
+}
+
+export interface PasteAsClonesCommand extends BaseCommand {
+    type: 'PASTE_AS_CLONES';
+    payload: {
+        clones: {
+            nodeId: string;
+            newParentId: string | null;
+            newOrder: number;
+        }[];
+    };
+    originalState: {};
+}
+
+export interface UpdateTreeFileCommand extends BaseCommand {
+    type: 'UPDATE_TREE_FILE';
+    payload: {
+        treeId: string;
+        updates: Partial<Omit<TreeFile, 'id' | 'tree'>>;
+    };
+    originalState: Partial<Omit<TreeFile, 'id' | 'tree'>>;
+}
+
+export interface ExpandCollapseCommand extends BaseCommand {
+    type: 'EXPAND_COLLAPSE_NODES';
+    payload: {
+        treeId: string;
+        newIds: string[];
+    };
+    originalState: {
+        expandedNodeIds: string[];
+    }
+}
+
+
+export type Command = AddNodesCommand | DeleteNodesCommand | MoveNodesCommand | UpdateNodesCommand | UpdateTreeFileCommand | ExpandCollapseCommand | ReorderNodesCommand | PasteAsClonesCommand;
+
+export interface ClipboardState {
+    nodes: TreeNode[] | null;
+    operation: 'copy' | 'cut' | null;
+}
+
+export interface ActionContext {
+  activeTree?: TreeFile;
+  currentUser?: User | null;
+  activeTreeId?: string | null;
+  executeCommand: (command: Command, isUndoable?: boolean) => any;
+  findNodeAndParent: (nodeId: string, nodes?: TreeNode[]) => { node: TreeNode; parent: TreeNode | null } | null;
+  findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[]) => { node: TreeNode, parent: TreeNode | null } | null;
+  allTrees: TreeFile[];
+  isCloneOrDescendant?: (nodeId: string, nodes?: TreeNode[]) => boolean;
+  reloadActiveTree?: () => Promise<void>;
+  clipboard?: ClipboardState;
+  toast?: ReturnType<typeof import('@/hooks/use-toast').useToast>['toast'];
+  getSiblingOrderRange?: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
+  selectedNodeIds?: string[];
+}
     
+    
+
+    
+

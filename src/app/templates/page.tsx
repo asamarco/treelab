@@ -215,7 +215,8 @@ function TemplatesPage() {
       );
     } else {
       setTemplates((draft) => {
-        draft.push(updatedTemplate)
+        draft.push(updatedTemplate);
+        return draft;
       });
     }
 

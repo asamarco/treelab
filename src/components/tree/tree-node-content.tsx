@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -35,7 +34,7 @@ interface TreeNodeContentProps {
   onSelect: (instanceId: string, isChecked: boolean, isShiftClick: boolean) => void;
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
-  onExpandedChange?: (updater: SetStateAction<string[]> | ((draft: WritableDraft<string[]>) => void | WritableDraft<string[]>)) => void;
+  onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 }
 
 export function TreeNodeContent({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange }: TreeNodeContentProps) {
@@ -247,20 +246,24 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
           </div>
         )}
       </div>
-      {node.children.length > 0 && node.children.map((childNode, childIndex) => (
-        <div key={`${childNode.id}_${node.id}`}>
-            <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />
-            <TreeNodeComponent
-              node={childNode}
-              level={level + 1}
-              siblings={node.children}
-              onSelect={onSelect}
-              contextualParentId={node.id}
-              overrideExpandedIds={overrideExpandedIds}
-              onExpandedChange={onExpandedChange as any}
-            />
+      {node.children && node.children.length > 0 && (
+        <div className="children-container">
+            {node.children.map((childNode) => (
+              <div key={`${childNode.id}_${node.id}`}>
+                <TreeNodeComponent
+                  node={childNode}
+                  level={level + 1}
+                  siblings={node.children}
+                  onSelect={onSelect}
+                  contextualParentId={node.id}
+                  overrideExpandedIds={overrideExpandedIds}
+                  onExpandedChange={onExpandedChange}
+                />
+                <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />
+              </div>
+            ))}
         </div>
-      ))}
+      )}
     </CollapsibleContent>
   );
 }

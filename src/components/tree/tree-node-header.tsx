@@ -109,7 +109,7 @@ export function TreeNodeHeader({
   const { minOrder, maxOrder } = getSiblingOrderRange(siblings, contextualParentId);
 
 
-  const hasContentToToggle = node.children.length > 0 || 
+  const hasContentToToggle = (node.children && node.children.length > 0) || 
     (!isCompactView && (
       nodeHasAttachments ||
       template.fields.some(f => f.type === 'picture') ||
@@ -145,16 +145,21 @@ export function TreeNodeHeader({
     if (!clipboard.nodes) return;
   
     if (clipboard.operation === 'cut') {
-        const moves = clipboard.nodes.map(sourceNode => ({
-            nodeId: sourceNode.id,
-            targetNodeId: node.id,
-            position: as,
-            sourceContextualParentId: sourceNode.parentIds[0] ?? null,
-            targetContextualParentId: contextualParentId,
-            isCutOperation: true,
-        }));
-        await moveNodes(moves);
-    } else { // copy
+      let moves = clipboard.nodes.map(sourceNode => ({
+        nodeId: sourceNode.id,
+        targetNodeId: node.id,
+        position: as,
+        sourceContextualParentId: sourceNode.parentIds[0] ?? null,
+        targetContextualParentId: contextualParentId,
+        isCutOperation: true,
+      }));
+  
+      if (as === 'sibling') {
+        moves = moves.reverse();
+      }
+  
+      await moveNodes(moves);
+    } else {
       await pasteNodes(node.id, as, contextualParentId);
     }
   
@@ -162,6 +167,8 @@ export function TreeNodeHeader({
     setClipboard({ nodes: null, operation: null });
     setSelectedNodeIds([]);
   };
+  
+  
 
   const handlePasteAsClone = (as: 'child' | 'sibling') => {
     if (!clipboard.nodes || clipboard.operation === 'cut') return;
@@ -343,7 +350,7 @@ export function TreeNodeHeader({
                     </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode(node.id, contextualParentId); } else { expandAllFromNode(node.id, contextualParentId); } }} disabled={node.children.length === 0}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode(node.id, contextualParentId); } else { expandAllFromNode(node.id, contextualParentId); } }} disabled={!node.children || node.children.length === 0}>
                             <ChevronsUpDown className="h-3 w-3" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>
@@ -372,14 +379,14 @@ export function TreeNodeHeader({
               </div>
             </div>
           </div>
-          {!isExpanded && node.children.length > 0 && !isCompactView && (
+          {!isExpanded && node.children && node.children.length > 0 && !isCompactView && (
             <div className="pl-6 pt-1 flex items-center gap-2 overflow-hidden text-muted-foreground text-xs">
-                {node.children.slice(0, 5).map(child => {
+                {node.children.slice(0, 5).map((child, index) => {
                     const childTemplate = getTemplateById(child.templateId);
                     const { icon: childIcon, color: childColor } = getConditionalStyle(child, childTemplate);
                     if (!childTemplate) return null;
                     return (
-                        <div key={child.id} className="flex items-center gap-1 shrink-0">
+                        <div key={`${child.id}-${index}`} className="flex items-center gap-1 shrink-0">
                            <Icon name={childIcon as keyof typeof icons || 'FileText'} className="h-3 w-3" style={{ color: childColor || 'hsl(var(--foreground))' }} />
                            <span>{child.name}</span>
                         </div>

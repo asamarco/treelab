@@ -28,7 +28,7 @@ import {
 } from "@dnd-kit/core";
 import { useToast } from "@/hooks/use-toast";
 import { TreeNodeDropZone } from "./tree-node-dropzone";
-import type { WritableDraft } from "immer";
+import { WritableDraft } from "immer";
 import { useUIContext } from "@/contexts/ui-context";
 import { getContextualOrder } from "@/lib/utils";
 
@@ -53,6 +53,8 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       expandAllFromNode,
       collapseAllFromNode,
       moveNodeOrder,
+      undoLastAction,
+      redoLastAction,
   } = useTreeContext();
   const { setDialogState } = useUIContext();
   
@@ -62,7 +64,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
   
   const setExpandedNodeIds = (isLocal
     ? setLocalExpandedNodeIds
-    : setGlobalExpandedNodeIds) as (updater: SetStateAction<string[]> | ((draft: WritableDraft<string[]>) => void | WritableDraft<string[]>)) => void;
+    : setGlobalExpandedNodeIds) as unknown as (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 
   const expandedNodeIds = isLocal ? localExpandedNodeIds : globalExpandedNodeIds;
 
@@ -118,11 +120,6 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
         return;
     }
     
-    if (sourceContextualParentId === overNodeId && !isDroppingOnGap) {
-        moveNodes([{ nodeId: activeId, targetNodeId: overNodeId, position: 'child-bottom', sourceContextualParentId: sourceContextualParentId, targetContextualParentId: sourceContextualParentId }]);
-        return;
-    }
-
     const findNodeAndParentInTree = (nodeId: string, searchNodes: TreeNode[]): { node: TreeNode, parent: TreeNode | null } | null => {
         for(const node of searchNodes) {
             if (node.id === nodeId) return { node, parent: null };
@@ -144,7 +141,13 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       return;
     }
     
-    moveNodes([{ nodeId: activeId, targetNodeId: overNodeId, position: isDroppingOnGap ? 'sibling' : 'child', sourceContextualParentId: sourceContextualParentId, targetContextualParentId: targetContextualParentId }]);
+    moveNodes([{ 
+        nodeId: activeId, 
+        targetNodeId: overNodeId, 
+        position: isDroppingOnGap ? 'sibling' : 'child-bottom', 
+        sourceContextualParentId: sourceContextualParentId,
+        targetContextualParentId: targetContextualParentId,
+    }]);
   };
 
   const sensors = useSensors(
@@ -211,6 +214,19 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
       return;
+    }
+
+    if (event.ctrlKey || event.metaKey) {
+        if (event.key === 'z') {
+            event.preventDefault();
+            undoLastAction();
+            return;
+        }
+        if (event.key === 'y' || (event.key === 'Z' && event.shiftKey)) {
+            event.preventDefault();
+            redoLastAction();
+            return;
+        }
     }
     
     if (event.key === 'Escape') {
@@ -322,7 +338,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
                         expandAllFromNode(nodeId, parentId === 'root' ? null : parentId);
                     });
                 } else if (selectedNodeIds.length === 1) {
-                    setExpandedNodeIds(draft => {
+                    setExpandedNodeIds((draft) => {
                         if (!draft.includes(currentInstanceId)) {
                             draft.push(currentInstanceId);
                         }
@@ -337,7 +353,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
                         collapseAllFromNode(nodeId, parentId === 'root' ? null : parentId);
                     });
                 } else if (selectedNodeIds.length === 1) {
-                    setExpandedNodeIds(draft => {
+                    setExpandedNodeIds((draft) => {
                         const index = draft.indexOf(currentInstanceId);
                         if (index > -1) {
                             draft.splice(index, 1);
@@ -356,7 +372,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
         element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
-  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree]);
+  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -375,7 +391,6 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       <div id="tree-view-container">
         {nodes.map((node, index) => (
           <div key={`${node.id}-root-wrapper`}>
-            <TreeNodeDropZone id={`gap_${node.id}_root`} />
             <TreeNodeComponent
               node={node}
               level={0}
@@ -385,6 +400,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
               overrideExpandedIds={expandedNodeIds}
               onExpandedChange={setExpandedNodeIds}
             />
+            <TreeNodeDropZone id={`gap_${node.id}_root`} />
           </div>
         ))}
         {/* Add a final drop zone at the end of the root list */}
@@ -393,3 +409,5 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
     </DndContext>
   );
 }
+
+    

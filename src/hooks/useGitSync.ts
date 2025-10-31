@@ -4,12 +4,13 @@ import { useState, useCallback } from 'react';
 import { TreeFile, User, GitSettings, GitSync, GitCommit, TreeNode } from '@/lib/types';
 import {
     createRepo,
-    commitTreeFileToRepo,
+    commitTreeFileToRepo as commitTreeFileToRepoOnServer,
     getRepoCommits,
     getLatestCommitSha,
     getTreeFromGit,
     loadTreeFile,
     saveTreeFile,
+    deleteTreeFile as deleteTreeFileFromDb,
 } from '@/lib/data-service';
 import { usePathname } from 'next/navigation';
 
@@ -96,7 +97,7 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
 
         console.log(`INFO: Committing changes for tree '${treeFile.title}' to repo '${treeFile.gitSync.repoName}'.`);
         try {
-            const result = await commitTreeFileToRepo(token, treeId, message, treeFile);
+            const result = await commitTreeFileToRepoOnServer(token, treeId, message, treeFile);
             if (result.success && result.commitSha) {
                 performAction(prev => {
                     const updatedGitSync: GitSync = { 
@@ -261,5 +262,8 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
         syncFromRepo,
         restoreToCommit,
         resolveConflict,
+        replaceTree,
     };
 }
+
+    

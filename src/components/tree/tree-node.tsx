@@ -35,7 +35,7 @@ interface TreeNodeProps {
   // This helps identify which parent this instance belongs to in the UI
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
-  onExpandedChange?: (updater: SetStateAction<string[]> | ((draft: WritableDraft<string[]>) => void | WritableDraft<string[]>)) => void;
+  onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 }
 
 export function TreeNodeComponent({
@@ -166,7 +166,7 @@ export function TreeNodeComponent({
         className={cn(
             "absolute left-0 top-[2.5rem] h-[calc(100%-2.5rem)] w-px bg-border -translate-x-3",
             "group-last/treenode:hidden",
-            (isExpanded || node.children.length === 0) && "hidden",
+            (isExpanded || !node.children || node.children.length === 0) && "hidden",
             isCompactView && "hidden"
         )}
       />
@@ -219,7 +219,7 @@ export function TreeNodeComponent({
               onSelect={onSelect}
               contextualParentId={node.id}
               overrideExpandedIds={overrideExpandedIds}
-              onExpandedChange={onExpandedChange as any}
+              onExpandedChange={setExpandedNodeIds}
             />
           </Collapsible>
         </CardContent>
