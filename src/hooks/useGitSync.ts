@@ -21,11 +21,12 @@ interface UseGitSyncProps {
     importTreeFromJson: (jsonData: any, user?: User, rewriteAttachmentPaths?: boolean) => Promise<string | null>;
     deleteTree: (treeId: string) => Promise<void>;
     reloadActiveTree: (treeId?: string) => Promise<void>;
+    reloadAllTrees: () => Promise<void>;
     setActiveTreeId: (id: string | null) => void;
     replaceTree: (oldTreeId: string, newTreeId: string, metaToKeep: Partial<TreeFile>) => Promise<void>;
 }
 
-export function useGitSync({ currentUser, allTrees, performAction, importTreeFromJson, deleteTree, reloadActiveTree, setActiveTreeId, replaceTree }: UseGitSyncProps) {
+export function useGitSync({ currentUser, allTrees, performAction, importTreeFromJson, deleteTree, reloadActiveTree, setActiveTreeId, replaceTree, reloadAllTrees }: UseGitSyncProps) {
     const [conflictState, setConflictState] = useState<{ localTree: TreeFile, serverTree: TreeFile } | null>(null);
     const pathname = usePathname();
 
@@ -154,22 +155,9 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
                 sharedWith: treeFile.sharedWith,
                 gitSync: { ...treeFile.gitSync, lastSync: new Date().toISOString(), lastSyncSha: latestSha },
             };
-            
-            const oldIndex = allTrees.findIndex(t => t.id === oldTreeId);
 
             await replaceTree(oldTreeId, newTreeId, metaToKeep);
-            
-            const reloadedNewTree = await loadTreeFile(newTreeId);
-            if (!reloadedNewTree) {
-                throw new Error("Failed to reload the new tree after sync.");
-            }
-            
-            performAction(prev => {
-                const newTrees = prev.filter(t => t.id !== oldTreeId);
-                newTrees.splice(oldIndex >= 0 ? oldIndex : newTrees.length, 0, reloadedNewTree);
-                return newTrees;
-            }, false);
-
+            await reloadAllTrees();
             setActiveTreeId(newTreeId);
 
             console.log(`INFO: Sync successful. Replaced tree ${oldTreeId} with new tree ${newTreeId}.`);
@@ -179,7 +167,7 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
             console.error(`ERROR: Sync failed:`, error);
             return { success: false, message: error.message || "An unknown error occurred during sync." };
         }
-    }, [currentUser, importTreeFromJson, replaceTree, setActiveTreeId, performAction, allTrees]);
+    }, [currentUser, importTreeFromJson, replaceTree, setActiveTreeId, reloadAllTrees]);
     
     const restoreToCommit = useCallback(async (currentTreeId: string, commitSha: string, token: string) => {
         if (!currentUser) throw new Error("User not logged in");
@@ -210,8 +198,6 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
             },
         };
         
-        const oldIndex = allTrees.findIndex(t => t.id === currentTreeId);
-
         await replaceTree(currentTreeId, newTreeId, metaToKeep);
 
         const restoredTreeFile = await loadTreeFile(newTreeId);
@@ -227,16 +213,10 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
           throw new Error(result.error || "Failed to commit the restored version.");
         }
 
-        // Update state without full page reload
-        performAction(prev => {
-            const newTrees = prev.filter(t => t.id !== currentTreeId);
-            newTrees.splice(oldIndex >= 0 ? oldIndex : newTrees.length, 0, restoredTreeFile);
-            return newTrees;
-        }, false);
-        
+        await reloadAllTrees();
         setActiveTreeId(newTreeId);
 
-    }, [currentUser, allTrees, importTreeFromJson, replaceTree, setActiveTreeId, commitToRepo, performAction]);
+    }, [currentUser, allTrees, importTreeFromJson, replaceTree, setActiveTreeId, commitToRepo, reloadAllTrees]);
     
     const resolveConflict = async (resolution: 'local' | 'server') => {
         if (!conflictState || !currentUser) return;
