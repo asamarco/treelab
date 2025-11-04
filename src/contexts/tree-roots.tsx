@@ -91,7 +91,7 @@ import {
     moveNodeOrderAction,
     pasteNodesAsClonesAction,
     toggleStarredForSelectedNodesAction,
-} from "@/lib/node-actions";
+} from '@/lib/node-actions';
 import ReactDOMServer from "react-dom/server";
 
 
@@ -266,7 +266,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
       });
 
       // Regex to find internal links
-      const linkRegex = /node:\/\/([a-zA-Z0-9_.:-]+)/g;
+      const linkRegex = /node:\/\/([\w.:-]+)/g;
 
       // Second pass: remap parentIds and internal links
       nodeDataToCreate.forEach((node) => {
@@ -408,6 +408,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     deleteTree,
     reloadActiveTree,
     setActiveTreeId,
+    reloadAllTrees,
     replaceTree: async (oldTreeId: string, newTreeId: string, metaToKeep: Partial<TreeFile>) => {
         await deleteTreeFileFromDb(oldTreeId);
         const { tree, ...rest } = metaToKeep as any;
@@ -645,8 +646,17 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
         payload: { treeId, updates: { title } },
         originalState: { title: currentTitle },
         execute: (draft: WritableDraft<TreeFile[]>) => { const t = draft.find((t: TreeFile) => t.id === treeId); if (t) t.title = title; },
-        post: async () => {}, // No post-op needed for this simple update
-        undo: async () => {},
+        post: async (finalTreeFile?: TreeFile) => {
+            if (finalTreeFile) {
+                await saveTreeFile({ id: finalTreeFile.id, title: finalTreeFile.title });
+            }
+        },
+        undo: async () => {
+            const originalTitle = command.originalState.title;
+            if (originalTitle) {
+                await saveTreeFile({ id: treeId, title: originalTitle });
+            }
+        },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
           const t = draft.find(t => t.id === treeId);
           if (t && (command as UpdateTreeFileCommand).originalState.title) {
@@ -890,43 +900,3 @@ new Promise((resolve, reject) => {
   reader.onerror = reject;
   reader.readAsDataURL(blob);
 });
-    
-    
-
-
-
-
-  
-
-
-
-
-    
-
-
-
-  
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    
-
-    
-
-    
-
-
-
-    
-
-
