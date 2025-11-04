@@ -29,8 +29,7 @@ interface RenderWithLinksProps {
 }
 
 // Regex to find standard URLs or our custom node:// links.
-// For node://, it specifically looks for a 31-character ID to avoid capturing trailing punctuation.
-const URL_REGEX = /(https?:\/\/[^\s"'<>`]+)|(node:\/\/[\w.:-]{31})/g;
+const URL_REGEX = /(https?:\/\/[^\s"'<>`]+)|(node:\/\/[\w.:-]+)/g;
 
 
 export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) {
