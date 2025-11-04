@@ -343,7 +343,7 @@ export function TreeSelectionBar() {
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>This will permanently delete {selectedNodeIds.length} selected node(s) and all their children. This action cannot be undone.</AlertDialogDescription>
+                                        <AlertDialogDescription>This will delete {selectedNodeIds.length} selected node(s) and all their children.</AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
