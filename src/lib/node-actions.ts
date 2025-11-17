@@ -843,64 +843,97 @@ export async function copyNodesAction(
   contextualParentId: string | null,
   nodes?: TreeNode[]
 ) {
-    const { clipboard, toast, activeTree, findNodeAndContextualParent } = ctx;
-    let nodesToProcess = nodes || clipboard?.nodes;
-    if (!nodesToProcess || !activeTree) return;
+  const { clipboard, toast, activeTree, findNodeAndContextualParent } = ctx;
+  let nodesToProcess = nodes || clipboard?.nodes;
+  if (!nodesToProcess || !activeTree) return;
 
-    if (nodesToProcess.some(n => n.id === targetNodeId)) {
-        toast?.({ variant: "destructive", title: "Invalid Operation", description: "Cannot paste a node into itself." });
-        return;
+  if (nodesToProcess.some(n => n.id === targetNodeId)) {
+    toast?.({
+      variant: "destructive",
+      title: "Invalid Operation",
+      description: "Cannot paste a node into itself."
+    });
+    return;
+  }
+
+  // Sort nodes for consistent order
+  const parentInfoForSort = findNodeAndContextualParent(
+    nodesToProcess[0].id,
+    nodesToProcess[0].parentIds?.[0] ?? null,
+    activeTree.tree
+  );
+  const siblingsForSort = parentInfoForSort?.parent
+    ? parentInfoForSort.parent.children
+    : activeTree.tree;
+  const sortedNodesToProcess = [...nodesToProcess].sort(
+    (a, b) =>
+      getContextualOrder(a, siblingsForSort, a.parentIds?.[0]) -
+      getContextualOrder(b, siblingsForSort, b.parentIds?.[0])
+  );
+
+  const allNewNodes: (Omit<TreeNode, 'id' | 'children'> & {
+    id: string;
+    _id: string;
+    children: any[];
+  })[] = [];
+
+  // Always reference the original target node
+  const parentInfo = findNodeAndContextualParent(
+    targetNodeId,
+    contextualParentId,
+    activeTree.tree
+  );
+  const targetNode = parentInfo?.node;
+  if (!targetNode) return;
+
+  for (const nodeToClone of sortedNodesToProcess) {
+    const clonedNode = deepCloneNode(nodeToClone);
+
+    let newOrderValue;
+    if (position === 'child' || position === 'child-bottom') {
+      const children = targetNode.children || [];
+      const maxOrder =
+        children.length > 0
+          ? Math.max(
+              ...children.map(c =>
+                getContextualOrder(c, children, targetNodeId)
+              )
+            )
+          : -1;
+      newOrderValue = maxOrder + 1;
+    } else {
+      const siblings = parentInfo?.parent
+        ? parentInfo.parent.children
+        : activeTree.tree;
+      const targetOrder = getContextualOrder(
+        targetNode,
+        siblings,
+        contextualParentId
+      );
+      newOrderValue = targetOrder + 1;
     }
-    
-    const parentInfoForSort = findNodeAndContextualParent(nodesToProcess[0].id, nodesToProcess[0].parentIds?.[0] ?? null, activeTree.tree);
-    const siblingsForSort = parentInfoForSort?.parent ? parentInfoForSort.parent.children : activeTree.tree;
-    const sortedNodesToProcess = [...nodesToProcess].sort((a,b) => getContextualOrder(a, siblingsForSort, a.parentIds?.[0]) - getContextualOrder(b, siblingsForSort, b.parentIds?.[0]));
 
-    const allNewNodes: (Omit<TreeNode, 'id' | 'children'> & { id: string; _id: string; children: any[] })[] = [];
-    
-    let lastTargetNodeId = targetNodeId;
-    let lastPosition = position;
-    let lastContextualParentId = contextualParentId;
+    const { id, children, ...rest } = clonedNode;
 
-    for (const nodeToClone of sortedNodesToProcess) {
-        const clonedNode = deepCloneNode(nodeToClone);
-        
-        const parentInfo = findNodeAndContextualParent(lastTargetNodeId, lastContextualParentId, activeTree.tree);
-        const targetNode = parentInfo?.node;
-        if (!targetNode) continue;
-        
-        let newOrderValue;
-        if (lastPosition === 'child' || lastPosition === 'child-bottom') {
-            const children = targetNode.children || [];
-            const maxOrder = children.length > 0 ? Math.max(...children.map(c => getContextualOrder(c, children, lastTargetNodeId))) : -1;
-            newOrderValue = maxOrder + 1;
-        } else { // 'sibling'
-            const siblings = parentInfo?.parent ? parentInfo.parent.children : activeTree.tree;
-            const targetOrder = getContextualOrder(targetNode, siblings, lastContextualParentId);
-            newOrderValue = targetOrder + 1;
-        }
+    const newNode = {
+      ...rest,
+      id,
+      _id: id,
+      parentIds: [
+        position === 'child' || position === 'child-bottom'
+          ? targetNodeId
+          : contextualParentId || 'root'
+      ],
+      order: [newOrderValue],
+      children
+    };
 
-        const { id, children, ...rest } = clonedNode;
-        
-        const newNode = {
-          ...rest,
-          id: id,
-          _id: id,
-          parentIds: [(lastPosition === 'child' || lastPosition === 'child-bottom') ? lastTargetNodeId : (lastContextualParentId || 'root')],
-          order: [newOrderValue],
-          children: children,
-        };
+    allNewNodes.push(newNode);
+  }
 
-        allNewNodes.push(newNode);
-        
-        lastTargetNodeId = id;
-        lastPosition = 'sibling';
-        lastContextualParentId = (newNode.parentIds[0] === 'root') ? null : newNode.parentIds[0];
-    }
-    
-    if (allNewNodes.length > 0) {
-        await addNodesAction(ctx, allNewNodes);
-    }
+  if (allNewNodes.length > 0) {
+    await addNodesAction(ctx, allNewNodes);
+  }
 }
 
 

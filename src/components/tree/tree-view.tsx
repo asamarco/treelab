@@ -335,7 +335,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
                 if (isCtrlPressed) {
                     selectedNodeIds.forEach(instanceId => {
                         const [nodeId, parentId] = instanceId.split('_');
-                        expandAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+                        expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
                     });
                 } else if (selectedNodeIds.length === 1) {
                     setExpandedNodeIds((draft) => {
@@ -350,7 +350,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
                 if (isCtrlPressed) {
                     selectedNodeIds.forEach(instanceId => {
                         const [nodeId, parentId] = instanceId.split('_');
-                        collapseAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+                        collapseAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
                     });
                 } else if (selectedNodeIds.length === 1) {
                     setExpandedNodeIds((draft) => {

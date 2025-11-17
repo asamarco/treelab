@@ -123,8 +123,8 @@ interface TreeContextType {
   setTreeTitle: (treeId: string, title: string) => void;
   expandedNodeIds: string[];
   setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
-  expandAllFromNode: (nodeId: string, parentId: string | null) => void;
-  collapseAllFromNode: (nodeId: string, parentId: string | null) => void;
+  expandAllFromNode: (nodes: { nodeId: string, parentId: string | null }[]) => void;
+  collapseAllFromNode: (nodes: { nodeId: string, parentId: string | null }[]) => void;
   selectedNodeIds: string[];
   setSelectedNodeIds: (updater: React.SetStateAction<string[]>) => void;
   lastSelectedNodeId: string | null;
@@ -328,40 +328,69 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
     });
   };
   
-  const expandAllFromNode = (nodeId: string, parentId: string | null) => {
-    if (!treeRootsHook.activeTree) return;
-    const result = treeRootsHook.findNodeAndParent(nodeId, treeRootsHook.activeTree.tree);
-    if (!result) return;
-    const { node } = result;
-    const ids: string[] = [];
-    traverseTree([node], (n, p) => {
-      ids.push(`${n.id}_${(p?.id ?? parentId) || "root"}`);
-    });
-    treeRootsHook.setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-        const idSet = new Set(currentIds);
-        ids.forEach(id => idSet.add(id));
-        // Return a new array from the set to satisfy Immer's expectations
-        return Array.from(idSet);
-    }, true);
+  const expandAllFromNode = (nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
+    if (!treeRootsHook.activeTree || nodesToExpand.length === 0) return;
+    
+    const allIdsToAdd = new Set<string>();
+
+    for (const { nodeId, parentId } of nodesToExpand) {
+        const result = treeRootsHook.findNodeAndParent(nodeId, treeRootsHook.activeTree.tree);
+        if (!result) continue;
+        const { node } = result;
+
+        traverseTree([node], (n, p) => {
+            const currentParentContext = p?.id ?? parentId;
+            allIdsToAdd.add(`${n.id}_${currentParentContext || "root"}`);
+            // Also add paths for other parents if it's a clone
+            (n.parentIds || []).forEach(pId => {
+                if (pId !== (currentParentContext || 'root')) {
+                    allIdsToAdd.add(`${n.id}_${pId}`);
+                }
+            });
+        });
+    }
+
+    if (allIdsToAdd.size > 0) {
+        treeRootsHook.setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+            const idSet = new Set(currentIds);
+            allIdsToAdd.forEach(id => idSet.add(id));
+            return Array.from(idSet);
+        }, true);
+    }
   };
 
-  const collapseAllFromNode = (nodeId: string, parentId: string | null) => {
-    if (!treeRootsHook.activeTree) return;
-    const result = treeRootsHook.findNodeAndParent(nodeId, treeRootsHook.activeTree.tree);
-    if (!result) return;
-    const { node } = result;
-    const ids = new Set<string>();
-    traverseTree([node], (n, p) => {
-      ids.add(`${n.id}_${(p?.id ?? parentId) || "root"}`);
-    });
-    treeRootsHook.setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-      // Directly mutate the draft array
-      for (let i = currentIds.length - 1; i >= 0; i--) {
-        if (ids.has(currentIds[i])) {
-          currentIds.splice(i, 1);
+  const collapseAllFromNode = (nodesToCollapse: { nodeId: string, parentId: string | null }[]) => {
+    if (!treeRootsHook.activeTree || nodesToCollapse.length === 0) return;
+    
+    const allIdsToRemove = new Set<string>();
+
+    for (const { nodeId, parentId } of nodesToCollapse) {
+        const result = treeRootsHook.findNodeAndParent(nodeId, treeRootsHook.activeTree.tree);
+        if (!result) continue;
+        const { node } = result;
+
+        traverseTree([node], (n, p) => {
+            const currentParentContext = p?.id ?? parentId;
+            allIdsToRemove.add(`${n.id}_${currentParentContext || "root"}`);
+             // Also remove paths for other parents if it's a clone
+            (n.parentIds || []).forEach(pId => {
+                if (pId !== (currentParentContext || 'root')) {
+                    allIdsToRemove.add(`${n.id}_${pId}`);
+                }
+            });
+        });
+    }
+    
+    if (allIdsToRemove.size > 0) {
+      treeRootsHook.setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+        // Mutate draft directly for performance with Immer
+        for (let i = currentIds.length - 1; i >= 0; i--) {
+          if (allIdsToRemove.has(currentIds[i])) {
+            currentIds.splice(i, 1);
+          }
         }
-      }
-    }, true);
+      }, true);
+    }
   };
 
 

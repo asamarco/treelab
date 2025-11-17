@@ -350,7 +350,7 @@ export function TreeNodeHeader({
                     </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode(node.id, contextualParentId); } else { expandAllFromNode(node.id, contextualParentId); } }} disabled={!node.children || node.children.length === 0}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } else { expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } }} disabled={!node.children || node.children.length === 0}>
                             <ChevronsUpDown className="h-3 w-3" />
                         </Button>
                     </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>

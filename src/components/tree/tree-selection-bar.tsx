@@ -156,17 +156,23 @@ export function TreeSelectionBar() {
     }, [getSelectedTopLevelNodes, setDialogState, toast]);
 
     const handleExpandAllSelection = useCallback(() => {
-        selectedNodeIds.forEach(instanceId => {
+        const nodesToExpand = selectedNodeIds.map(instanceId => {
             const [nodeId, parentId] = instanceId.split('_');
-            expandAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+            return { nodeId, parentId: parentId === 'root' ? null : parentId };
         });
+        if (nodesToExpand.length > 0) {
+            expandAllFromNode(nodesToExpand);
+        }
     }, [selectedNodeIds, expandAllFromNode]);
 
     const handleCollapseAllSelection = useCallback(() => {
-        selectedNodeIds.forEach(instanceId => {
+        const nodesToCollapse = selectedNodeIds.map(instanceId => {
             const [nodeId, parentId] = instanceId.split('_');
-            collapseAllFromNode(nodeId, parentId === 'root' ? null : parentId);
+            return { nodeId, parentId: parentId === 'root' ? null : parentId };
         });
+        if (nodesToCollapse.length > 0) {
+            collapseAllFromNode(nodesToCollapse);
+        }
     }, [selectedNodeIds, collapseAllFromNode]);
 
     useEffect(() => {
@@ -308,11 +314,11 @@ export function TreeSelectionBar() {
                                 <TooltipContent><p>Cut (Ctrl+X)</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExpandAllSelection}><ChevronsDownUp className="h-4 w-4"/></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExpandAllSelection}><ChevronsUpDown className="h-4 w-4"/></Button></TooltipTrigger>
                                 <TooltipContent><p>Expand All</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCollapseAllSelection}><ChevronsUpDown className="h-4 w-4"/></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCollapseAllSelection}><ChevronsDownUp className="h-4 w-4"/></Button></TooltipTrigger>
                                 <TooltipContent><p>Collapse All</p></TooltipContent>
                             </Tooltip>
                              <DropdownMenu>
