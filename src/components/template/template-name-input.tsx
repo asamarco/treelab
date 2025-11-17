@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This component, `TemplateNameInput`, is a specialized input field for creating
@@ -10,7 +11,7 @@
  */
 "use client";
 
-import React, { useState, useEffect, useRef, KeyboardEvent } from "react";
+import React, { useState, useEffect, useRef, KeyboardEvent, useMemo } from "react";
 import { Field } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,9 @@ export function TemplateNameInput({
 }: TemplateNameInputProps) {
   const [suggestion, setSuggestion] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Memoize the field names to prevent unnecessary re-renders of the effect.
+  const fieldNames = useMemo(() => fields.map(f => f.name), [fields]);
 
   useEffect(() => {
     const input = inputRef.current;
@@ -48,14 +52,14 @@ export function TemplateNameInput({
          return;
       }
       
-      const matchedField = fields.find(field => 
-        field.name.toLowerCase().startsWith(searchTerm.toLowerCase())
+      // Use the memoized fieldNames for stability
+      const matchedFieldName = fieldNames.find(name => 
+        name.toLowerCase().startsWith(searchTerm.toLowerCase())
       );
 
-      if (matchedField && searchTerm.length > 0) {
-        // Use the original casing from matchedField.name
-        const originalCasePrefix = matchedField.name.substring(0, searchTerm.length);
-        const remaining = matchedField.name.substring(searchTerm.length);
+      if (matchedFieldName && searchTerm.length > 0) {
+        const originalCasePrefix = matchedFieldName.substring(0, searchTerm.length);
+        const remaining = matchedFieldName.substring(searchTerm.length);
         const correctedValue = textUpToCursor.substring(0, openBraceIndex + 1) + originalCasePrefix;
         
         setSuggestion(remaining);
@@ -78,7 +82,8 @@ export function TemplateNameInput({
     } else {
       setSuggestion("");
     }
-  }, [value, fields]);
+    // The effect should only re-run when the text value itself changes.
+  }, [value, fieldNames]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowRight" && suggestion && e.currentTarget.selectionStart === value.length) {
@@ -89,18 +94,18 @@ export function TemplateNameInput({
 
       if (openBraceIndex !== -1) {
           const searchTerm = textUpToCursor.substring(openBraceIndex + 1);
-          const matchedField = fields.find(field =>
-              field.name.toLowerCase().startsWith(searchTerm.toLowerCase())
+          const matchedFieldName = fieldNames.find(name =>
+              name.toLowerCase().startsWith(searchTerm.toLowerCase())
           );
-          if (matchedField) {
+          if (matchedFieldName) {
               const prefix = textUpToCursor.substring(0, openBraceIndex + 1);
               const suffix = value.substring(cursorPosition);
-              const newValue = `${prefix}${matchedField.name}}${suffix}`;
+              const newValue = `${prefix}${matchedFieldName}}${suffix}`;
               onChange(newValue);
               
               setTimeout(() => {
                   inputRef.current?.focus();
-                  const newCursorPos = `${prefix}${matchedField.name}}`.length;
+                  const newCursorPos = `${prefix}${matchedFieldName}}`.length;
                   inputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
               }, 0);
           }

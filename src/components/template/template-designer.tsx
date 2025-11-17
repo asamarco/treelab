@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This component, `TemplateDesigner`, is the core UI for creating and editing templates.
@@ -53,7 +54,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { IconPicker } from "../icon-picker";
 import {
   DndContext,
@@ -65,6 +66,7 @@ import {
   DragEndEvent,
 } from "@dnd-kit/core";
 import {
+  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -75,6 +77,17 @@ import { TemplateNameInput } from "./template-name-input";
 import { TemplateTextarea } from "./template-textarea";
 import { cn } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useTreeContext } from "@/contexts/tree-context";
 
 
 const fieldSchema = z.object({
@@ -179,21 +192,22 @@ export function TemplateDesigner({
   onCancel,
 }: TemplateDesignerProps) {
   const { toast } = useToast();
+  const { updateNodeNamesForTemplate } = useTreeContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [templateForNodeUpdate, setTemplateForNodeUpdate] = useState<Template | null>(null);
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
-    defaultValues: {
-      id: template.id || new Date().toISOString(),
-      name: template.name || "",
-      icon: template.icon || "FileText",
-      color: template.color || "#64748b",
-      fields: template.fields || [],
-      nameTemplate: template.nameTemplate || "",
-      bodyTemplate: template.bodyTemplate || "",
-      conditionalRules: template.conditionalRules || [],
-    },
+    defaultValues: template,
   });
+
+  useEffect(() => {
+    // Only reset the form if the template ID actually changes.
+    // This prevents the form from resetting on saves that trigger re-renders.
+    if (template && template.id !== form.getValues('id')) {
+        form.reset(template);
+    }
+  }, [template, form]);
 
   const { fields, append, remove, move } = useFieldArray({
     control: form.control,
@@ -227,11 +241,20 @@ export function TemplateDesigner({
   };
 
   const onSubmit = (data: TemplateFormValues) => {
+    const isNew = template.id?.startsWith('new_');
+    // Find the state of the template before this save.
+    const oldTemplate = isNew ? null : allTemplates.find(t => t.id === template.id);
+    const nameTemplateChanged = oldTemplate && oldTemplate.nameTemplate !== data.nameTemplate;
+
     onSave(data as Template);
     toast({
       title: "Template saved!",
       description: `The "${data.name}" template has been successfully saved.`,
     });
+
+    if (nameTemplateChanged) {
+        setTemplateForNodeUpdate(data as Template);
+    }
   };
 
   const handleExport = () => {
@@ -324,7 +347,19 @@ export function TemplateDesigner({
     }
   };
 
+  const handleConfirmNodeUpdate = () => {
+    if (templateForNodeUpdate) {
+        updateNodeNamesForTemplate(templateForNodeUpdate);
+        toast({
+            title: "Node Names Updated",
+            description: `All nodes using the "${templateForNodeUpdate.name}" template will be updated.`
+        });
+        setTemplateForNodeUpdate(null);
+    }
+  };
+
   return (
+    <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Card>
@@ -832,5 +867,21 @@ export function TemplateDesigner({
         </Card>
       </form>
     </Form>
+    <AlertDialog open={!!templateForNodeUpdate} onOpenChange={(open) => !open && setTemplateForNodeUpdate(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Update Existing Nodes?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    The "Node Name Template" has changed. Would you like to apply this new naming rule to all existing nodes that use the "{templateForNodeUpdate?.name}" template?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setTemplateForNodeUpdate(null)}>Leave Them</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmNodeUpdate}>Update Nodes</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
+  

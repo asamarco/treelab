@@ -67,6 +67,7 @@ import {
     addParentToNode,
     removeParentFromNode,
     batchUpdateNodes,
+    findNodeById,
 } from '@/lib/data-service';
 import { getStorageInfo, purgeUnusedFiles } from '@/lib/storage-service';
 import { readArchive } from "@/lib/archive";
@@ -160,7 +161,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
         setCommandHistory(() => newHistory);
         setHistoryIndex(newHistory.length - 1);
     }
-    setIsDirty(true);
+    // We don't set dirty here because the command.post should handle persistence.
+    // setIsDirty(true); 
 
   }, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, setIsDirty]);
   
@@ -408,12 +410,12 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     deleteTree,
     reloadActiveTree,
     setActiveTreeId,
-    reloadAllTrees,
     replaceTree: async (oldTreeId: string, newTreeId: string, metaToKeep: Partial<TreeFile>) => {
         await deleteTreeFileFromDb(oldTreeId);
         const { tree, ...rest } = metaToKeep as any;
         await saveTreeFile({ ...rest, id: newTreeId });
     },
+    reloadAllTrees,
   });
 
   const undoLastAction = useCallback(async () => {
@@ -640,22 +642,23 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
   }, [currentUser, performAction, reloadAllTrees, toast]);
 
   const setTreeTitle = (treeId: string, title: string) => {
-    const currentTitle = allTrees.find(t=>t.id === treeId)?.title;
+    const currentTree = allTrees.find(t=>t.id === treeId);
+    if (!currentTree) return;
+    const originalTitle = currentTree.title;
+
     const command: UpdateTreeFileCommand = {
         type: 'UPDATE_TREE_FILE',
         payload: { treeId, updates: { title } },
-        originalState: { title: currentTitle },
-        execute: (draft: WritableDraft<TreeFile[]>) => { const t = draft.find((t: TreeFile) => t.id === treeId); if (t) t.title = title; },
+        originalState: { title: originalTitle },
+        execute: (draft: WritableDraft<TreeFile[]>) => { 
+            const t = draft.find((t: TreeFile) => t.id === treeId); 
+            if (t) t.title = title; 
+        },
         post: async (finalTreeFile?: TreeFile) => {
-            if (finalTreeFile) {
-                await saveTreeFile({ id: finalTreeFile.id, title: finalTreeFile.title });
-            }
+            await saveTreeFile({ id: treeId, title });
         },
         undo: async () => {
-            const originalTitle = command.originalState.title;
-            if (originalTitle) {
-                await saveTreeFile({ id: treeId, title: originalTitle });
-            }
+            await saveTreeFile({ id: treeId, title: originalTitle });
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
           const t = draft.find(t => t.id === treeId);
@@ -668,22 +671,54 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
   };
   
   const setTemplatesInRoots = useCallback((updater: Template[] | ((current: Template[]) => Template[])) => {
-    performAction((draft: WritableDraft<TreeFile[]>) => {
-        const tree = draft.find(t => t.id === activeTreeId);
-        if (tree) {
-            if (typeof updater === 'function') {
-                tree.templates = updater(tree.templates as Template[]);
-            } else {
-                tree.templates = updater;
+    if (!activeTreeId) return;
+    const currentTree = allTrees.find(t => t.id === activeTreeId);
+    if (!currentTree) return;
+
+    const originalTemplates = currentTree.templates;
+    const newTemplates = typeof updater === 'function' ? updater(originalTemplates) : updater;
+
+    const command: UpdateTreeFileCommand = {
+        type: 'UPDATE_TREE_FILE',
+        payload: { treeId: activeTreeId, updates: { templates: newTemplates } },
+        originalState: { templates: originalTemplates },
+        execute: (draft: WritableDraft<TreeFile[]>) => {
+            if (!activeTreeId) return;
+            const tree = draft.find(t => t.id === activeTreeId);
+            if (tree) {
+                // Apply the updater to the draft state correctly
+                tree.templates = typeof updater === 'function' 
+                    ? produce(tree.templates, updater as (draft: WritableDraft<Template[]>) => void) 
+                    : updater;
             }
-        }
-    }, true); // Make template changes undoable
-  }, [activeTreeId, performAction]);
+        },
+        post: async (finalTreeFile?: TreeFile) => {
+            if (finalTreeFile && activeTreeId) {
+                await saveTreeFile({ id: activeTreeId, templates: finalTreeFile.templates });
+            }
+        },
+        undo: async () => {
+            if (activeTreeId) {
+                await saveTreeFile({ id: activeTreeId, templates: originalTemplates });
+            }
+        },
+        getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
+            if (!activeTreeId) return;
+            const tree = draft.find(t => t.id === activeTreeId);
+            const originalState = (cmd as UpdateTreeFileCommand).originalState;
+            if (tree && originalState.templates) {
+                tree.templates = originalState.templates;
+            }
+        },
+    };
+    executeCommand(command, true);
+  }, [activeTreeId, allTrees, executeCommand]);
   
   const setExpandedNodeIdsInRoots = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
       const newExpandedIds = produce(activeTree?.expandedNodeIds || [], updater as any);
       
       performAction((draft) => {
+          if (!activeTreeId) return;
           const tree = draft.find(t => t.id === activeTreeId);
           if (tree) {
               tree.expandedNodeIds = newExpandedIds;
@@ -900,3 +935,8 @@ new Promise((resolve, reject) => {
   reader.onerror = reject;
   reader.readAsDataURL(blob);
 });
+    
+    
+
+
+

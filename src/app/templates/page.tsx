@@ -15,7 +15,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Template, TreeNode } from "@/lib/types";
+import { Template, TreeNode, Field } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
 import { TemplateDesigner } from "@/components/template/template-designer";
 import { AppHeader } from "@/components/header";
@@ -128,17 +128,31 @@ function TemplatesPage() {
     importTemplates,
     updateNodeNamesForTemplate
   } = useTreeContext();
-  const [selectedTemplate, setSelectedTemplate] = useState<Partial<Template> | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [templateForNodeUpdate, setTemplateForNodeUpdate] = useState<Template | null>(null);
 
-  useEffect(() => {
-    if (!activeTree) {
-        router.replace('/roots');
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId) return null;
+    if (selectedTemplateId.startsWith('new_')) {
+      const newFieldId = new Date().toISOString() + Math.random();
+      return {
+        id: selectedTemplateId,
+        name: "",
+        fields: [{ id: newFieldId, name: "Name", type: "text" }] as Field[],
+        nameTemplate: "{Name}",
+        bodyTemplate: "",
+        icon: "FileText",
+        color: "#64748b",
+        conditionalRules: [],
+      };
     }
-  }, [activeTree, router]);
+    return templates.find(t => t.id === selectedTemplateId) || null;
+  }, [selectedTemplateId, templates]);
+
 
   const countTemplateUsage = useCallback((templateId: string): number => {
     let count = 0;
@@ -197,68 +211,55 @@ function TemplatesPage() {
   useEffect(() => {
     const templateIdToEdit = searchParams.get('edit');
     if (templateIdToEdit) {
-      const template = getTemplateById(templateIdToEdit);
-      if (template) {
-        setSelectedTemplate(template);
-      }
+      setSelectedTemplateId(templateIdToEdit);
     }
-  }, [searchParams, getTemplateById]);
+  }, [searchParams]);
 
   const handleSaveTemplate = (updatedTemplate: Template) => {
-    const oldTemplate = getTemplateById(updatedTemplate.id);
+    const isNew = updatedTemplate.id.startsWith('new_');
+    const oldTemplate = isNew ? null : templates.find(t => t.id === updatedTemplate.id);
     const nameTemplateChanged = oldTemplate && oldTemplate.nameTemplate !== updatedTemplate.nameTemplate;
 
-    const exists = templates.some((t) => t.id === updatedTemplate.id);
-    if (exists) {
-      setTemplates((draft) => 
-        draft.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t))
-      );
+    if (isNew) {
+        setTemplates(currentTemplates => [...currentTemplates, updatedTemplate]);
     } else {
-      setTemplates((draft) => {
-        draft.push(updatedTemplate);
-        return draft;
-      });
+      setTemplates((currentTemplates) =>
+        currentTemplates.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t))
+      );
     }
-
-    // IMPORTANT: This block is critical for data consistency.
-    // It checks if the node naming rule has changed. If it has, it iterates
-    // through the entire tree and updates the names of all nodes that use this
-    // template to reflect the new format. Do not remove this functionality.
+    
+    setSelectedTemplateId(updatedTemplate.id);
+    
     if (nameTemplateChanged) {
-      updateNodeNamesForTemplate(updatedTemplate);
-      toast({
-        title: "Node Names Updated",
-        description: `All nodes using the "${updatedTemplate.name}" template have been updated.`
-      });
+        setTemplateForNodeUpdate(updatedTemplate);
     }
-
-    setSelectedTemplate(null);
   };
   
   const handleSelectTemplate = (template: Template) => {
-    setSelectedTemplate(template);
+    setSelectedTemplateId(template.id);
   }
   
   const handleCreateNew = () => {
-    const newFieldId = new Date().toISOString() + Math.random();
-    setSelectedTemplate({
-      id: `new_${new Date().toISOString()}`,
-      name: "",
-      fields: [{ id: newFieldId, name: "Name", type: "text" }],
-      nameTemplate: "{Name}",
-      bodyTemplate: "",
-      icon: "FileText",
-      color: "#64748b",
-      conditionalRules: [],
-    });
+    setSelectedTemplateId(`new_${new Date().toISOString()}`);
   }
 
   const handleDeleteTemplate = (templateId: string) => {
     setTemplates(draft => draft.filter(t => t.id !== templateId));
-    if(selectedTemplate?.id === templateId) {
-      setSelectedTemplate(null);
+    if(selectedTemplateId === templateId) {
+      setSelectedTemplateId(null);
     }
   }
+  
+  const handleConfirmNodeUpdate = () => {
+    if (templateForNodeUpdate) {
+        updateNodeNamesForTemplate(templateForNodeUpdate);
+        toast({
+            title: "Node Names Updated",
+            description: `All nodes using the "${templateForNodeUpdate.name}" template will be updated.`
+        });
+        setTemplateForNodeUpdate(null);
+    }
+  };
 
   const handleExportAll = async () => {
     if (!activeTree || templates.length === 0) return;
@@ -516,10 +517,11 @@ function TemplatesPage() {
             <div className="md:col-span-3 lg:col-span-2">
               {selectedTemplate ? (
                 <TemplateDesigner
+                  key={selectedTemplate.id}
                   template={selectedTemplate}
                   allTemplates={templates}
                   onSave={handleSaveTemplate}
-                  onCancel={() => setSelectedTemplate(null)}
+                  onCancel={() => setSelectedTemplateId(null)}
                 />
               ) : (
                 <Card className="flex flex-col items-center justify-center h-96 border-dashed">
@@ -533,6 +535,20 @@ function TemplatesPage() {
           </div>
           </TooltipProvider>
         </main>
+         <AlertDialog open={!!templateForNodeUpdate} onOpenChange={(open) => !open && setTemplateForNodeUpdate(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Update Existing Nodes?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The "Node Name Template" has changed. Would you like to apply this new naming rule to all existing nodes that use the "{templateForNodeUpdate?.name}" template?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setTemplateForNodeUpdate(null)}>Leave Them</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirmNodeUpdate}>Update Nodes</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ProtectedRoute>
   );
