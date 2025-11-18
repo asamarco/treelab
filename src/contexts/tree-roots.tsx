@@ -683,7 +683,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
         payload: { treeId: activeTreeId, updates: { templates: newTemplates } },
         originalState: { templates: originalTemplates },
         execute: (draft: WritableDraft<TreeFile[]>) => {
-            if (!activeTreeId) return;
             const tree = draft.find(t => t.id === activeTreeId);
             if (tree) {
                 // Apply the updater to the draft state correctly
@@ -878,7 +877,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     reloadAllTrees,
     reloadActiveTree,
     setTreeTitle,
-    setTemplates: setTemplatesInRoots,
+    setTemplatesInRoots,
     setExpandedNodeIds: setExpandedNodeIdsInRoots,
     addRootNode: addRootNode as (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
     addChildNode: addChildNode as (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
@@ -937,6 +936,7 @@ new Promise((resolve, reject) => {
 });
     
     
+
 
 
 

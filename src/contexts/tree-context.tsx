@@ -307,12 +307,12 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
   /* --------------------------------- Tree state ------------------------------- */
   
   const setTemplates = (updater: Template[] | ((current: Template[]) => Template[])) => {
-    treeRootsHook.setTemplates(updater);
+    treeRootsHook.setTemplatesInRoots(updater);
   };
   
 
   const importTemplates = (newTemplates: Template[]) => {
-    treeRootsHook.setTemplates((currentTemplates: Template[]) => {
+    treeRootsHook.setTemplatesInRoots((currentTemplates: Template[]) => {
       const existingIds = new Set(currentTemplates.map((t) => t.id));
       let importedCount = 0;
       const templatesToAdd = [];
