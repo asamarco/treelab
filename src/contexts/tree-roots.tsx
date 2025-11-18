@@ -670,7 +670,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     executeCommand(command);
   };
   
-  const setTemplatesInRoots = useCallback((updater: Template[] | ((current: Template[]) => Template[])) => {
+  const setTemplates = useCallback((updater: Template[] | ((current: Template[]) => Template[])) => {
     if (!activeTreeId) return;
     const currentTree = allTrees.find(t => t.id === activeTreeId);
     if (!currentTree) return;
@@ -713,7 +713,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     executeCommand(command, true);
   }, [activeTreeId, allTrees, executeCommand]);
   
-  const setExpandedNodeIdsInRoots = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
+  const setExpandedNodeIds = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
       const newExpandedIds = produce(activeTree?.expandedNodeIds || [], updater as any);
       
       performAction((draft) => {
@@ -821,6 +821,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
   
   return {
     allTrees,
+    setAllTrees,
     activeTree,
     activeTreeId,
     isTreeDataLoading,
@@ -877,8 +878,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     reloadAllTrees,
     reloadActiveTree,
     setTreeTitle,
-    setTemplatesInRoots,
-    setExpandedNodeIds: setExpandedNodeIdsInRoots,
+    setTemplates,
+    setExpandedNodeIds,
     addRootNode: addRootNode as (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
     addChildNode: addChildNode as (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
     addSiblingNode: addSiblingNode as (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
@@ -920,6 +921,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     linkTreeToRepo,
     unlinkTreeFromRepo,
     createAndLinkTreeToRepo,
+    updateActiveTree: (updater: (draft: TreeFile) => void) => {
+        performAction(draft => {
+            const treeIndex = draft.findIndex(t => t.id === activeTreeId);
+            if (treeIndex !== -1) {
+                draft[treeIndex] = produce(draft[treeIndex], updater);
+            }
+        });
+    }
   };
 }
 
@@ -936,6 +945,9 @@ new Promise((resolve, reject) => {
 });
     
     
+
+
+
 
 
 
