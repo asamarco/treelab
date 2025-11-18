@@ -88,7 +88,7 @@ interface TreeContextType {
 
   // Active tree properties
   templates: Template[];
-  setTemplates: (templatesOrUpdater: Template[] | ((current: Template[]) => Template[])) => void;
+  setTemplates: (updater: Template[] | ((current: Template[]) => Template[])) => void;
   importTemplates: (newTemplates: Template[]) => void;
   tree: TreeNode[];
 
