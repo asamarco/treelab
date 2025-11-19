@@ -38,6 +38,7 @@ import {
     ActionContext,
     PasteAsClonesCommand,
     Command,
+    UseTreeRootsResult,
 } from '@/lib/types';
 import { generateJsonForExport, getContextualOrder, generateClientSideId } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
@@ -106,7 +107,7 @@ interface UseTreeRootsProps {
     initialTree?: TreeFile;
 }
 
-export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
+export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRootsResult {
   const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser } = useAuthContext();
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isTreeDataLoading, setIsTreeDataLoading] = useState(isDataLoaded === false);
@@ -733,6 +734,84 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
 
   }, [activeTreeId, performAction, activeTree]);
 
+  const expandAllFromNode = useCallback((nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
+    if (!activeTree || nodesToExpand.length === 0) return;
+    
+    const allIdsToAdd = new Set<string>();
+
+    const traverse = (nodes: TreeNode[], parentId: string | null) => {
+        for (const node of nodes) {
+            allIdsToAdd.add(`${node.id}_${parentId || "root"}`);
+            // Also add paths for other parents if it's a clone
+            (node.parentIds || []).forEach(pId => {
+                if (pId !== (parentId || 'root')) {
+                    allIdsToAdd.add(`${node.id}_${pId}`);
+                }
+            });
+            if (node.children) {
+                traverse(node.children, node.id);
+            }
+        }
+    };
+    
+    for (const { nodeId } of nodesToExpand) {
+        const result = findNodeAndParent(nodeId, activeTree.tree);
+        if (!result) continue;
+        const { node } = result;
+
+        traverse([node], nodeId);
+    }
+
+
+    if (allIdsToAdd.size > 0) {
+        setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+            const idSet = new Set(currentIds);
+            allIdsToAdd.forEach(id => idSet.add(id));
+            return Array.from(idSet);
+        }, true);
+    }
+  }, [activeTree, findNodeAndParent, setExpandedNodeIds]);
+
+  const collapseAllFromNode = useCallback((nodesToCollapse: { nodeId: string, parentId: string | null }[]) => {
+    if (!activeTree || nodesToCollapse.length === 0) return;
+    
+    const allIdsToRemove = new Set<string>();
+
+    const traverse = (nodes: TreeNode[], parentId: string | null) => {
+      for (const node of nodes) {
+          allIdsToRemove.add(`${node.id}_${parentId || "root"}`);
+           // Also remove paths for other parents if it's a clone
+          (node.parentIds || []).forEach(pId => {
+              if (pId !== (parentId || 'root')) {
+                  allIdsToRemove.add(`${node.id}_${pId}`);
+              }
+          });
+          if (node.children) {
+              traverse(node.children, node.id);
+          }
+      }
+    };
+
+    for (const { nodeId, parentId } of nodesToCollapse) {
+        const result = findNodeAndParent(nodeId, activeTree.tree);
+        if (!result) continue;
+        const { node } = result;
+
+        traverse([node], parentId);
+    }
+    
+    if (allIdsToRemove.size > 0) {
+      setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+        // Mutate draft directly for performance with Immer
+        for (let i = currentIds.length - 1; i >= 0; i--) {
+          if (allIdsToRemove.has(currentIds[i])) {
+            currentIds.splice(i, 1);
+          }
+        }
+      }, true);
+    }
+  }, [activeTree, findNodeAndParent, setExpandedNodeIds]);
+
   const actionContext: ActionContext = useMemo(() => ({
     activeTree,
     currentUser,
@@ -880,6 +959,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     setTreeTitle,
     setTemplates,
     setExpandedNodeIds,
+    expandAllFromNode,
+    collapseAllFromNode,
     addRootNode: addRootNode as (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
     addChildNode: addChildNode as (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
     addSiblingNode: addSiblingNode as (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
@@ -890,7 +971,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}) {
     deleteNode: deleteNode as (nodeId: string, contextualParentId: string | null) => Promise<void>,
     deleteNodes: deleteNodes as (instanceIds: string[]) => Promise<void>,
     pasteNodes,
-    moveNodes: moveNodes as (moves: { nodeId: string; targetNodeId: string; position: 'child' | 'sibling' | 'child-bottom'; sourceContextualParentId: string | null; targetContextualParentId: string | null;}[]) => Promise<void>,
+    moveNodes: moveNodes as (moves: { nodeId: string; targetNodeId: string; position: "child" | "sibling" | "child-bottom"; sourceContextualParentId: string | null; targetContextualParentId: string | null; }[]) => Promise<void>,
     moveNodeOrder: moveNodeOrder as (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => Promise<void>,
     pasteNodesAsClones: pasteNodesAsClones as (targetNodeId: string, as: "child" | "sibling", nodeIdsToClone: string[], contextualParentId: string | null) => Promise<void>,
     undoLastAction,
@@ -945,6 +1026,8 @@ new Promise((resolve, reject) => {
 });
     
     
+
+
 
 
 

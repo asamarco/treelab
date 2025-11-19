@@ -32,6 +32,7 @@ import {
   ExpandCollapseCommand,
   ClipboardState,
   ReorderNodesCommand,
+  UseTreeRootsResult,
 } from '@/lib/types';
 import { generateJsonForExport } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
@@ -61,26 +62,9 @@ const traverseTree = (
 
 /* -------------------------------- Interfaces ------------------------------- */
 
-interface TreeContextType {
+interface TreeContextType extends UseTreeRootsResult {
   // Tree management
-  allTrees: TreeFile[];
-  activeTreeId: string | null;
-  activeTree: TreeFile | undefined;
-  setActiveTreeId: (id: string | null) => void;
-  createNewTree: (title: string, user?: User) => Promise<string | null>;
-  deleteTree: (id: string) => Promise<void>;
-  updateTreeOrder: (updates: { id: string; order: number }[]) => Promise<void>;
-  shareTree: (treeId: string, userId: string) => Promise<void>;
-  revokeShare: (treeId: string, userId: string) => Promise<void>;
-  setTreePublicStatus: (treeId: string, isPublic: boolean) => Promise<void>;
-  listExamples: () => Promise<ExampleInfo[]>;
-  loadExample: (fileName: string) => Promise<string | null>;
-  importTreeArchive: (file: File) => Promise<void>;
-  importTreeFromJson: (jsonData: any, user?: User, rewriteAttachmentPaths?: boolean) => Promise<string | null>;
-  isTreeDataLoading: boolean;
-  reloadAllTrees: () => Promise<void>;
-  reloadActiveTree: (treeIdToLoad?: string) => Promise<void>;
-
+  importTemplates: (newTemplates: Template[]) => void;
   // Export Functions
   exportNodesAsJson: (nodes: TreeNode[], baseName: string) => void;
   exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
@@ -89,87 +73,18 @@ interface TreeContextType {
   // Active tree properties
   templates: Template[];
   setTemplates: (updater: Template[] | ((current: Template[]) => Template[])) => void;
-  importTemplates: (newTemplates: Template[]) => void;
   tree: TreeNode[];
-
-  // Node CRUD and transforms
-  addRootNode: (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
-  addChildNode: (
-    parentNodeId: string,
-    childNodeData: Partial<Omit<TreeNode, "id" | "children">>,
-    contextualParentId: string | null
-  ) => Promise<void>;
-  addSiblingNode: (
-    siblingNodeId: string,
-    nodeToAddData: Partial<Omit<TreeNode, "id" | "children">>,
-    contextualParentId: string | null
-  ) => Promise<void>;
-  updateNode: (nodeId: string, newNodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
-  updateNodeNamesForTemplate: (template: Template) => Promise<void>;
-  changeNodeTemplate: (nodeId: string, newTemplateId: string) => Promise<void>;
-  changeMultipleNodesTemplate: (instanceIds: string[], newTemplateId: string) => Promise<void>;
-  deleteNode: (nodeId: string, contextualParentId: string | null) => Promise<void>;
-  deleteNodes: (instanceIds: string[]) => Promise<void>;
-  pasteNodes: (
-    targetNodeId: string,
-    position: 'child' | 'sibling',
-    contextualParentId: string | null,
-    nodes?: TreeNode[]
-  ) => Promise<void>;
-  moveNodes: (moves: { nodeId: string; targetNodeId: string; position: 'child' | 'sibling' | 'child-bottom'; sourceContextualParentId: string | null; targetContextualParentId: string | null; }[]) => Promise<void>;
 
   // Tree meta/UI
   treeTitle: string;
-  setTreeTitle: (treeId: string, title: string) => void;
   expandedNodeIds: string[];
-  setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
-  expandAllFromNode: (nodes: { nodeId: string, parentId: string | null }[]) => void;
-  collapseAllFromNode: (nodes: { nodeId: string, parentId: string | null }[]) => void;
-  selectedNodeIds: string[];
-  setSelectedNodeIds: (updater: React.SetStateAction<string[]>) => void;
-  lastSelectedNodeId: string | null;
-  setLastSelectedNodeId: (id: string | null) => void;
-  toggleStarredForSelectedNodes: () => Promise<void>;
+  
+  expandAllFromNode: (nodes: { nodeId: string; parentId: string | null }[]) => void;
+  collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null }[]) => void;
 
 
   // Utility
   getTemplateById: (id: string) => Template | undefined;
-  clipboard: ClipboardState;
-  setClipboard: (clipboardState: ClipboardState) => void;
-  findNodeAndParent: (nodeId: string, nodes?: TreeNode[]) => { node: TreeNode; parent: TreeNode | null } | null;
-  findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[]) => { node: TreeNode, parent: TreeNode | null } | null;
-  getNodeInstancePaths: (nodeId: string) => string[];
-  uploadAttachment: (relativePath: string, dataUri: string, fileName: string, ownerId: string) => Promise<AttachmentInfo | null>;
-  moveNodeOrder: (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => Promise<void>;
-  pasteNodesAsClones: (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[], contextualParentId: string | null) => Promise<void>;
-  undoLastAction: () => void;
-  canUndo: boolean;
-  redoLastAction: () => void;
-  canRedo: boolean;
-  undoActionDescription: string | null;
-  redoActionDescription: string | null;
-  getSiblingOrderRange: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
-
-  // Git Sync
-  linkTreeToRepo: (treeId: string, repoOwner: string, repoName: string, branch: string, token: string) => Promise<void>;
-  unlinkTreeFromRepo: (treeId: string) => void;
-  createAndLinkTreeToRepo: (treeId: string, repoName: string, isPrivate: boolean, token: string) => Promise<void>;
-  commitToRepo: (
-    treeId: string,
-    message: string,
-    token: string,
-    force?: boolean,
-    treeFileToCommit?: TreeFile
-  ) => Promise<{ success: boolean; error?: string; commitSha?: string }>;
-  fetchRepoHistory: (treeFile: TreeFile, token: string) => Promise<GitCommit[]>;
-  syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string }>;
-  restoreToCommit: (currentTreeId: string, commitSha: string, token: string) => Promise<void>;
-  conflictState: { localTree: TreeFile; serverTree: TreeFile } | null;
-  resolveConflict: (resolution: "local" | "server") => Promise<void>;
-
-  // Storage Management
-  analyzeStorage: (treeId?: string) => Promise<StorageInfo>;
-  purgeStorage: (treeId?: string) => Promise<PurgeResult | null>;
 }
 
 export const TreeContext = createContext<TreeContextType | undefined>(undefined);
@@ -329,68 +244,11 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
   };
   
   const expandAllFromNode = (nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
-    if (!treeRootsHook.activeTree || nodesToExpand.length === 0) return;
-    
-    const allIdsToAdd = new Set<string>();
-
-    for (const { nodeId, parentId } of nodesToExpand) {
-        const result = treeRootsHook.findNodeAndParent(nodeId, treeRootsHook.activeTree.tree);
-        if (!result) continue;
-        const { node } = result;
-
-        traverseTree([node], (n, p) => {
-            const currentParentContext = p?.id ?? parentId;
-            allIdsToAdd.add(`${n.id}_${currentParentContext || "root"}`);
-            // Also add paths for other parents if it's a clone
-            (n.parentIds || []).forEach(pId => {
-                if (pId !== (currentParentContext || 'root')) {
-                    allIdsToAdd.add(`${n.id}_${pId}`);
-                }
-            });
-        });
-    }
-
-    if (allIdsToAdd.size > 0) {
-        treeRootsHook.setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-            const idSet = new Set(currentIds);
-            allIdsToAdd.forEach(id => idSet.add(id));
-            return Array.from(idSet);
-        }, true);
-    }
+    treeRootsHook.expandAllFromNode(nodesToExpand);
   };
 
   const collapseAllFromNode = (nodesToCollapse: { nodeId: string, parentId: string | null }[]) => {
-    if (!treeRootsHook.activeTree || nodesToCollapse.length === 0) return;
-    
-    const allIdsToRemove = new Set<string>();
-
-    for (const { nodeId, parentId } of nodesToCollapse) {
-        const result = treeRootsHook.findNodeAndParent(nodeId, treeRootsHook.activeTree.tree);
-        if (!result) continue;
-        const { node } = result;
-
-        traverseTree([node], (n, p) => {
-            const currentParentContext = p?.id ?? parentId;
-            allIdsToRemove.add(`${n.id}_${currentParentContext || "root"}`);
-             // Also remove paths for other parents if it's a clone
-            (n.parentIds || []).forEach(pId => {
-                if (pId !== (currentParentContext || 'root')) {
-                    allIdsToRemove.add(`${n.id}_${pId}`);
-                }
-            });
-        });
-    }
-    
-    if (allIdsToRemove.size > 0) {
-      treeRootsHook.setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-        // Mutate draft directly for performance with Immer
-        for (let i = currentIds.length - 1; i >= 0; i--) {
-          if (allIdsToRemove.has(currentIds[i])) {
-            currentIds.splice(i, 1);
-          }
-        }
-      }, true);
-    }
+    treeRootsHook.collapseAllFromNode(nodesToCollapse);
   };
 
 
@@ -410,7 +268,6 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
     exportNodesAsHtml,
     expandAllFromNode,
     collapseAllFromNode,
-    canRedo: treeRootsHook.canRedo,
   };
 
   return <TreeContext.Provider value={value}>{children}</TreeContext.Provider>;
