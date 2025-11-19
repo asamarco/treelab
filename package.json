@@ -47,6 +47,7 @@
     "file-saver": "^2.0.5",
     "firebase": "^11.9.1",
     "html-react-parser": "^5.1.12",
+    "immer": "^10.1.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.523.0",
     "mime-types": "^2.1.35",
