@@ -17,21 +17,8 @@ import {
   TreeFile,
   Template,
   TreeNode,
-  User,
   ExampleInfo,
   AttachmentInfo,
-  GitCommit,
-  StorageInfo,
-  PurgeResult,
-  Command,
-  AddNodesCommand,
-  DeleteNodesCommand,
-  MoveNodesCommand,
-  UpdateNodesCommand,
-  UpdateTreeFileCommand,
-  ExpandCollapseCommand,
-  ClipboardState,
-  ReorderNodesCommand,
   UseTreeRootsResult,
 } from '@/lib/types';
 import { generateJsonForExport } from '@/lib/utils';
@@ -42,7 +29,6 @@ import { useAuthContext } from "./auth-context";
 import { useTreeRoots } from "./tree-roots";
 import { fetchFileAsBuffer } from "@/lib/data-service";
 import path from 'path';
-import { WritableDraft } from "immer";
 
 /* --------------------------------- Helper functions --------------------------------- */
 
@@ -63,8 +49,6 @@ const traverseTree = (
 /* -------------------------------- Interfaces ------------------------------- */
 
 interface TreeContextType extends UseTreeRootsResult {
-  // Tree management
-  importTemplates: (newTemplates: Template[]) => void;
   // Export Functions
   exportNodesAsJson: (nodes: TreeNode[], baseName: string) => void;
   exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
@@ -72,17 +56,11 @@ interface TreeContextType extends UseTreeRootsResult {
 
   // Active tree properties
   templates: Template[];
-  setTemplates: (updater: Template[] | ((current: Template[]) => Template[])) => void;
   tree: TreeNode[];
 
   // Tree meta/UI
   treeTitle: string;
-  expandedNodeIds: string[];
   
-  expandAllFromNode: (nodes: { nodeId: string; parentId: string | null }[]) => void;
-  collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null }[]) => void;
-
-
   // Utility
   getTemplateById: (id: string) => Template | undefined;
 }
@@ -218,39 +196,7 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  /* --------------------------------- Tree state ------------------------------- */
   
-  const setTemplates = (updater: Template[] | ((current: Template[]) => Template[])) => {
-    treeRootsHook.setTemplates(updater);
-  };
-  
-
-  const importTemplates = (newTemplates: Template[]) => {
-    treeRootsHook.setTemplates((currentTemplates: Template[]) => {
-      const existingIds = new Set(currentTemplates.map((t) => t.id));
-      let importedCount = 0;
-      const templatesToAdd = [];
-      for (const t of newTemplates) {
-        if (!existingIds.has(t.id)) {
-          templatesToAdd.push(t);
-          existingIds.add(t.id);
-          importedCount++;
-        }
-      }
-      console.log(`INFO: Imported ${importedCount} new templates.`);
-      return [...currentTemplates, ...templatesToAdd];
-    });
-  };
-  
-  const expandAllFromNode = (nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
-    treeRootsHook.expandAllFromNode(nodesToExpand);
-  };
-
-  const collapseAllFromNode = (nodesToCollapse: { nodeId: string, parentId: string | null }[]) => {
-    treeRootsHook.collapseAllFromNode(nodesToCollapse);
-  };
-
 
   /* --------------------------------- Context value --------------------------- */
 
@@ -259,15 +205,10 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
     templates: treeRootsHook.activeTree?.templates ?? [],
     tree: treeRootsHook.activeTree?.tree ?? [],
     treeTitle: treeRootsHook.activeTree?.title ?? "",
-    expandedNodeIds: treeRootsHook.activeTree?.expandedNodeIds ?? [],
-    setTemplates,
-    importTemplates,
     getTemplateById,
     exportNodesAsJson,
     exportNodesAsArchive,
     exportNodesAsHtml,
-    expandAllFromNode,
-    collapseAllFromNode,
   };
 
   return <TreeContext.Provider value={value}>{children}</TreeContext.Provider>;

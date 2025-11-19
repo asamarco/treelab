@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This file defines the core TypeScript types and interfaces used throughout the application.
@@ -302,6 +303,8 @@ export interface UseTreeRootsResult {
   reloadActiveTree: (treeIdToLoad?: string) => Promise<void>;
   setTreeTitle: (treeId: string, title: string) => void;
   setTemplates: (updater: Template[] | ((current: Template[]) => Template[])) => void;
+  importTemplates: (newTemplates: Template[]) => void;
+  expandedNodeIds: string[];
   setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
   expandAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
   collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;

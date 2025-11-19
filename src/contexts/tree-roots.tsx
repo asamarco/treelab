@@ -714,6 +714,23 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     executeCommand(command, true);
   }, [activeTreeId, allTrees, executeCommand]);
   
+  const importTemplates = useCallback((newTemplates: Template[]) => {
+    setTemplates((currentTemplates: Template[]) => {
+      const existingIds = new Set(currentTemplates.map((t) => t.id));
+      let importedCount = 0;
+      const templatesToAdd = [];
+      for (const t of newTemplates) {
+        if (!existingIds.has(t.id)) {
+          templatesToAdd.push(t);
+          existingIds.add(t.id);
+          importedCount++;
+        }
+      }
+      console.log(`INFO: Imported ${importedCount} new templates.`);
+      return [...currentTemplates, ...templatesToAdd];
+    });
+  }, [setTemplates]);
+
   const setExpandedNodeIds = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
       const newExpandedIds = produce(activeTree?.expandedNodeIds || [], updater as any);
       
@@ -958,6 +975,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     reloadActiveTree,
     setTreeTitle,
     setTemplates,
+    importTemplates,
+    expandedNodeIds: activeTree?.expandedNodeIds ?? [],
     setExpandedNodeIds,
     expandAllFromNode,
     collapseAllFromNode,
@@ -1026,6 +1045,8 @@ new Promise((resolve, reject) => {
 });
     
     
+
+
 
 
 
