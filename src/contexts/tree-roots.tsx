@@ -899,7 +899,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     await moveNodesAction(actionContext, moves);
   }, [actionContext]);
 
-  const moveNodeOrder = useCallback(async (nodeId: string, direction: 'up' | 'down', contextualParentId: string | null) => {
+  const moveNodeOrder = useCallback(async (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => {
     await moveNodeOrderAction(actionContext, nodeId, direction, contextualParentId);
   }, [actionContext]);
   
@@ -914,6 +914,129 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const addRootNode = async (nodeData: Omit<TreeNode, 'id' | 'children' | 'treeId' | 'userId' | 'parentIds' | 'order'>) => {
     await addRootNodeAction(actionContext, nodeData);
   }
+
+  const getTemplateById = useCallback(
+    (id: string): Template | undefined => {
+      return activeTree?.templates?.find((t) => t.id === id);
+    },
+    [activeTree]
+  );
+  
+  const exportNodesAsJson = (nodesToExport: TreeNode[], baseName: string) => {
+    if (!activeTree || nodesToExport.length === 0) return;
+    const dataToExport = generateJsonForExport(baseName, nodesToExport, activeTree.templates);
+    const data = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${baseName.replace(/\s/g, "_")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportNodesAsArchive = async (nodes: TreeNode[], baseName: string) => {
+    if (!activeTree) return;
+    await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath: string) =>
+      fetchFileAsBuffer(activeTree!.userId, relativePath)
+    );
+  };
+
+  const exportNodesAsHtml = async (elementId: string, nodes: TreeNode[], title: string) => {
+    if (!activeTree) return;
+
+    toast({ title: "Generating HTML...", description: "This may take a moment." });
+
+    const cssResponse = await fetch("/globals.css");
+    const cssText = await cssResponse.text();
+
+    const imagePromises: Promise<{ path: string; dataUri: string }>[] = [];
+    const attachmentsMap = new Map<string, string>();
+
+    const traverseTree = (nodes: TreeNode[], cb: (node: TreeNode) => void) => {
+      for (const node of nodes) {
+        cb(node);
+        if (node.children && node.children.length > 0) {
+          traverseTree(node.children, cb);
+        }
+      }
+    };
+
+    traverseTree(nodes, (node) => {
+      const template = getTemplateById(node.templateId);
+      if (!template) return;
+      for (const field of template.fields) {
+        const value = (node.data || {})[field.id];
+        if (!value) continue;
+
+        const processItem = (fileOrPath: string | AttachmentInfo) => {
+          const serverPath = typeof fileOrPath === "string" ? fileOrPath : fileOrPath.path;
+          if (typeof serverPath === 'string' && serverPath.startsWith('/attachments/')) {
+            const originalFileName = typeof fileOrPath === "string" ? path.basename(serverPath) : fileOrPath.name;
+            attachmentsMap.set(serverPath, originalFileName);
+            const promise = fetch(serverPath)
+              .then((res) => res.blob())
+              .then(blobToDataURI)
+              .then((dataUri) => ({ path: serverPath, dataUri }));
+            imagePromises.push(promise);
+          }
+        };
+
+        if (field.type === "picture" || field.type === "attachment") {
+          (Array.isArray(value) ? value : [value]).forEach(processItem);
+        }
+      }
+    });
+
+    const imageResults = await Promise.all(imagePromises);
+    const imageMap = new Map(imageResults.map((r) => [r.path, r.dataUri]));
+
+    const staticHtml = ReactDOMServer.renderToStaticMarkup(
+      <HtmlExportView
+        nodes={nodes}
+        title={title}
+        getTemplateById={getTemplateById}
+        imageMap={imageMap}
+        attachmentsMap={attachmentsMap}
+        currentUser={currentUser}
+      />
+    );
+
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>${title}</title>
+          <style>${cssText}</style>
+          <style>
+            body { padding: 2rem; }
+            .tree-node-card { border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 8px; }
+            .tree-node-header { padding: 8px; display: flex; align-items: center; gap: 8px; }
+            .tree-node-content { padding-left: 24px; padding-bottom: 8px; padding-right: 8px; }
+            .attachment-link { display: block; margin-top: 4px; }
+            img { max-width: 100%; height: auto; border-radius: 0.375rem; }
+          </style>
+        </head>
+        <body class="font-body antialiased">
+          ${staticHtml}
+        </body>
+      </html>
+    `;
+
+    const blob = new Blob([fullHtml], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/\s/g, "_")}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
   
   return {
     allTrees,
@@ -981,7 +1104,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     expandAllFromNode,
     collapseAllFromNode,
     addRootNode: addRootNode as (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
-    addChildNode: addChildNode as (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
+    addChildNode: addChildNode as (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, "id" | "children">>, contextualParentId: string | null) => Promise<void>,
     addSiblingNode: addSiblingNode as (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
     updateNode: updateNode as (nodeId: string, newNodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
     updateNodeNamesForTemplate: updateNodeNamesForTemplate as (template: Template) => Promise<void>,
@@ -1028,7 +1151,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
                 draft[treeIndex] = produce(draft[treeIndex], updater);
             }
         });
-    }
+    },
+    templates: activeTree?.templates ?? [],
+    tree: activeTree?.tree ?? [],
+    treeTitle: activeTree?.title ?? "",
+    getTemplateById,
+    exportNodesAsJson,
+    exportNodesAsArchive,
+    exportNodesAsHtml,
   };
 }
 
@@ -1043,16 +1173,3 @@ new Promise((resolve, reject) => {
   reader.onerror = reject;
   reader.readAsDataURL(blob);
 });
-    
-    
-
-
-
-
-
-
-
-
-
-
-

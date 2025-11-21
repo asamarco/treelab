@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the core TypeScript types and interfaces used throughout the application.
@@ -350,4 +348,14 @@ export interface UseTreeRootsResult {
   unlinkTreeFromRepo: (treeId: string) => void;
   createAndLinkTreeToRepo: (treeId: string, repoName: string, isPrivate: boolean, token: string) => Promise<void>;
   updateActiveTree: (updater: (draft: TreeFile) => void) => void;
+  // Properties that were missing from TreeContextType
+  templates: Template[];
+  tree: TreeNode[];
+  treeTitle: string;
+  getTemplateById: (id: string) => Template | undefined;
+  exportNodesAsJson: (nodesToExport: TreeNode[], baseName: string) => void;
+  exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
+  exportNodesAsHtml: (elementId: string, nodes: TreeNode[], title: string) => void;
 }
+
+export type TreeContextType = UseTreeRootsResult;
