@@ -6,6 +6,8 @@ WORKDIR /app
 # Install all deps (build needs dev)
 COPY package.json package-lock.json ./
 RUN npm ci && npm cache clean --force
+RUN npx tsc --version
+RUN npm ls typescript @types/react @types/node
 
 # Copy source
 COPY . .
