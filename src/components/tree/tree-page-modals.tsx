@@ -445,7 +445,7 @@ export function TreePageModals({
             <Dialog open={dialogState.isOutOfSyncCommitOpen || false} onOpenChange={(open) => setDialogState({ isOutOfSyncCommitOpen: open })}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/> Remote Changes Detected</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Remote Changes Detected</DialogTitle>
                         <DialogDescription>
                             Your local version is out of sync with the remote repository. To avoid losing data, please choose an option below.
                         </DialogDescription>
