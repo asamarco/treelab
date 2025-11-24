@@ -1,36 +1,19 @@
 /**
  * @fileoverview
- * Optimized Tree Context for managing tree data and actions.
- * Key improvements:
- * - Unified single/multi-node operations (delete, template changes).
- * - Extracted reusable tree traversal and ordering helpers.
- * - Batched DB writes where possible.
- * - Simplified optimistic updates with targeted mutations.
+ * This file defines the context for managing all tree-related state.
+ * It is responsible for creating the context and exporting the consumer hook.
+ * The core logic and provider component are located in `tree-roots.tsx`.
  */
 "use client";
 
-import React, { createContext, useContext, ReactNode } from "react";
-import {
-  TreeFile,
-  TreeContextType,
-} from '@/lib/types';
-import { useTreeRoots } from "./tree-roots";
+import React, { createContext, useContext } from "react";
+import { TreeContextType } from '@/lib/types';
+
+
+/* --------------------------------- Context --------------------------------- */
 
 export const TreeContext = createContext<TreeContextType | undefined>(undefined);
 
-interface TreeProviderProps {
-  children: ReactNode;
-  initialTree?: TreeFile;
-}
-
-
-/* --------------------------------- Provider -------------------------------- */
-
-export function TreeProvider({ children, initialTree }: TreeProviderProps) {
-  const treeRootsHook = useTreeRoots({initialTree});
-
-  return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
-}
 
 /* ---------------------------------- Hook ----------------------------------- */
 

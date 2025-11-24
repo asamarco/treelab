@@ -1,13 +1,8 @@
-
-
 /**
  * @fileoverview
- * Optimized Tree Context for managing tree data and actions.
- * Key improvements:
- * - Unified single/multi-node operations (delete, template changes).
- * - Extracted reusable tree traversal and ordering helpers.
- * - Batched DB writes where possible.
- * - Simplified optimistic updates with targeted mutations.
+ * This file is the single source of truth for all tree-related state management.
+ * It defines the context, the provider component, the main state hook (`useTreeRoots`),
+ * and the consumer hook (`useTreeContext`).
  */
 "use client";
 
@@ -39,6 +34,7 @@ import {
     PasteAsClonesCommand,
     Command,
     UseTreeRootsResult,
+    TreeContextType,
 } from '@/lib/types';
 import { generateJsonForExport, getContextualOrder, generateClientSideId } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
@@ -95,6 +91,7 @@ import {
     toggleStarredForSelectedNodesAction,
 } from '@/lib/node-actions';
 import ReactDOMServer from "react-dom/server";
+import { TreeContext } from './tree-context';
 
 
 // Helper to create a default tree structure
@@ -911,8 +908,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     await toggleStarredForSelectedNodesAction(actionContext);
   }, [actionContext]);
   
-  const addRootNode = async (nodeData: Omit<TreeNode, 'id' | 'children' | 'treeId' | 'userId' | 'parentIds' | 'order'>) => {
-    await addRootNodeAction(actionContext, nodeData);
+  const addRootNode = async (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => {
+    await addRootNodeAction(actionContext, nodeData as Omit<TreeNode, 'id' | 'children' | 'treeId' | 'userId' | 'parentIds' | 'order'>);
   }
 
   const getTemplateById = useCallback(
@@ -1038,6 +1035,15 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     URL.revokeObjectURL(url);
   };
   
+  const updateActiveTree = (updater: (draft: TreeFile) => void) => {
+    performAction(draft => {
+        const treeIndex = draft.findIndex(t => t.id === activeTreeId);
+        if (treeIndex !== -1) {
+            draft[treeIndex] = produce(draft[treeIndex], updater);
+        }
+    });
+  };
+
   return {
     allTrees,
     setAllTrees,
@@ -1103,19 +1109,19 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     setExpandedNodeIds,
     expandAllFromNode,
     collapseAllFromNode,
-    addRootNode: addRootNode as (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
-    addChildNode: addChildNode as (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, "id" | "children">>, contextualParentId: string | null) => Promise<void>,
-    addSiblingNode: addSiblingNode as (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>,
-    updateNode: updateNode as (nodeId: string, newNodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>,
-    updateNodeNamesForTemplate: updateNodeNamesForTemplate as (template: Template) => Promise<void>,
-    changeNodeTemplate: changeNodeTemplate as (nodeId: string, newTemplateId: string) => Promise<void>,
-    changeMultipleNodesTemplate: changeMultipleNodesTemplate as (instanceIds: string[], newTemplateId: string) => Promise<void>,
-    deleteNode: deleteNode as (nodeId: string, contextualParentId: string | null) => Promise<void>,
-    deleteNodes: deleteNodes as (instanceIds: string[]) => Promise<void>,
+    addRootNode,
+    addChildNode,
+    addSiblingNode,
+    updateNode,
+    updateNodeNamesForTemplate,
+    changeNodeTemplate,
+    changeMultipleNodesTemplate,
+    deleteNode,
+    deleteNodes,
     pasteNodes,
-    moveNodes: moveNodes as (moves: { nodeId: string; targetNodeId: string; position: "child" | "sibling" | "child-bottom"; sourceContextualParentId: string | null; targetContextualParentId: string | null; }[]) => Promise<void>,
-    moveNodeOrder: moveNodeOrder as (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => Promise<void>,
-    pasteNodesAsClones: pasteNodesAsClones as (targetNodeId: string, as: "child" | "sibling", nodeIdsToClone: string[], contextualParentId: string | null) => Promise<void>,
+    moveNodes,
+    moveNodeOrder,
+    pasteNodesAsClones,
     undoLastAction,
     canUndo,
     redoLastAction,
@@ -1144,14 +1150,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     linkTreeToRepo,
     unlinkTreeFromRepo,
     createAndLinkTreeToRepo,
-    updateActiveTree: (updater: (draft: TreeFile) => void) => {
-        performAction(draft => {
-            const treeIndex = draft.findIndex(t => t.id === activeTreeId);
-            if (treeIndex !== -1) {
-                draft[treeIndex] = produce(draft[treeIndex], updater);
-            }
-        });
-    },
+    updateActiveTree,
     templates: activeTree?.templates ?? [],
     tree: activeTree?.tree ?? [],
     treeTitle: activeTree?.title ?? "",
@@ -1173,3 +1172,16 @@ new Promise((resolve, reject) => {
   reader.onerror = reject;
   reader.readAsDataURL(blob);
 });
+
+/* -------------------------------- Provider --------------------------------- */
+
+interface TreeProviderProps {
+  children: React.ReactNode;
+  initialTree?: TreeFile;
+}
+
+export function TreeProvider({ children, initialTree }: TreeProviderProps) {
+  const treeRootsHook = useTreeRoots({initialTree});
+
+  return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
+}

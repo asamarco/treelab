@@ -12,7 +12,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
-import { TreeProvider } from "@/contexts/tree-context";
+import { TreeProvider } from "@/contexts/tree-roots";
 import { UIProvider } from "@/contexts/ui-context";
 import { Toaster } from "@/components/ui/toaster";
 import { unstable_noStore as noStore } from 'next/cache';

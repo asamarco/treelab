@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the public, read-only view page for a shared tree.
@@ -10,7 +8,7 @@ import { loadPublicTreeFile } from "@/lib/data-service";
 import { TreeView } from "@/components/tree/tree-view";
 import { AppHeader } from "@/components/header";
 import { AuthProvider } from "@/contexts/auth-context";
-import { TreeProvider } from "@/contexts/tree-context";
+import { TreeProvider } from "@/contexts/tree-roots";
 import { UIProvider } from "@/contexts/ui-context";
 import { Toaster } from "@/components/ui/toaster";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -110,4 +108,3 @@ export default async function PublicTreeViewPage(
     </div>
   );
 }
-
