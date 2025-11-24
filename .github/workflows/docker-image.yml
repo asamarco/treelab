@@ -44,6 +44,7 @@ jobs:
         file: Dockerfile
         platforms: linux/amd64,linux/arm64
         push: true
+        no-cache: true
         tags: |
           ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.version }}
         #cache-from: type=gha
