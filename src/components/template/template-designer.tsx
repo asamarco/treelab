@@ -201,13 +201,35 @@ export function TemplateDesigner({
     defaultValues: template,
   });
 
+  const previousNameTemplateRef = useRef<string | undefined>(template.nameTemplate);
+
   useEffect(() => {
     // Only reset the form if the template ID actually changes.
     // This prevents the form from resetting on saves that trigger re-renders.
     if (template && template.id !== form.getValues('id')) {
         form.reset(template);
+        previousNameTemplateRef.current = template.nameTemplate;
     }
   }, [template, form]);
+  
+  // This effect specifically watches for the nameTemplate to change *after* a save.
+  useEffect(() => {
+    // Don't trigger for new, unsaved templates.
+    if (!template.id || template.id.startsWith('new_')) {
+      return;
+    }
+  
+    // Check if the template prop from the context has a different nameTemplate
+    // than what we last recorded.
+    if (template.nameTemplate !== previousNameTemplateRef.current) {
+      // If it changed, show the dialog.
+      setTemplateForNodeUpdate(template as Template);
+      // Update our reference to the new value so we don't ask again on the next render.
+      previousNameTemplateRef.current = template.nameTemplate;
+    }
+    // Depend only on the `template` prop passed in.
+  }, [template]);
+
 
   const { fields, append, remove, move } = useFieldArray({
     control: form.control,
@@ -240,22 +262,18 @@ export function TemplateDesigner({
     }
   };
 
-  const onSubmit = (data: TemplateFormValues) => {
-    const isNew = template.id?.startsWith('new_');
-    // Find the state of the template before this save.
-    const oldTemplate = isNew ? null : allTemplates.find(t => t.id === template.id);
-    const nameTemplateChanged = oldTemplate && oldTemplate.nameTemplate !== data.nameTemplate;
 
-    onSave(data as Template);
+  const onSubmit = (data: TemplateFormValues) => {
     toast({
       title: "Template saved!",
       description: `The "${data.name}" template has been successfully saved.`,
     });
+    onSave(data as Template);
+    previousNameTemplateRef.current = data.nameTemplate;
+};
 
-    if (nameTemplateChanged) {
-        setTemplateForNodeUpdate(data as Template);
-    }
-  };
+
+
 
   const handleExport = () => {
     const data = JSON.stringify(form.getValues(), null, 2);
