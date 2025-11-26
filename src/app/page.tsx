@@ -141,7 +141,7 @@ function TreePage() {
     tree,
     isTreeDataLoading,
   } = useTreeContext();
-  const { setDialogState, setIsCompactView, setShowNodeOrder } = useUIContext();
+  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState } = useUIContext();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showStarred, setShowStarred] = useState(false);
@@ -286,6 +286,12 @@ function TreePage() {
         return;
       }
       
+      // Check if any modal is open before processing shortcuts
+      const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
+      if (isAnyModalOpen) {
+        return;
+      }
+      
       switch (event.key) {
         case ' ':
           event.preventDefault();
@@ -311,7 +317,7 @@ function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, dialogState]);
 
   const filteredTree = useMemo(() => {
       try {

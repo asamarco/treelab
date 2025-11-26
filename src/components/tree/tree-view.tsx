@@ -56,7 +56,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       undoLastAction,
       redoLastAction,
   } = useTreeContext();
-  const { setDialogState } = useUIContext();
+  const { dialogState, setDialogState } = useUIContext();
   
   const [localExpandedNodeIds, setLocalExpandedNodeIds] = useState<string[]>([]);
   
@@ -216,6 +216,12 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       return;
     }
 
+    // Check if any modal is open before processing shortcuts
+    const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
+    if (isAnyModalOpen) {
+      return;
+    }
+
     if (event.ctrlKey || event.metaKey) {
         if (event.key === 'z') {
             event.preventDefault();
@@ -372,7 +378,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
         element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
-  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction]);
+  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, dialogState]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
