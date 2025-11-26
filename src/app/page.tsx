@@ -235,14 +235,6 @@ function TreePage() {
   useEffect(() => {
     if (!activeTreeRef.current?.id || !currentUser) return;
 
-    const isOwner = activeTreeRef.current.userId === currentUser.id;
-    const isSharedWithOthers = activeTreeRef.current.sharedWith && activeTreeRef.current.sharedWith.length > 0;
-    const isActuallyShared = !isOwner || isSharedWithOthers;
-
-    if (!isActuallyShared) {
-        return;
-    }
-
     const intervalId = setInterval(async () => {
       if (!activeTreeRef.current) return;
       try {
