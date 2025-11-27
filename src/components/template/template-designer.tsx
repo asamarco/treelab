@@ -130,6 +130,7 @@ interface TemplateDesignerProps {
   allTemplates: Template[];
   onSave: (data: Template) => void;
   onCancel: () => void;
+  onSelect: (template: Template) => void;
 }
 
 function DraggableFieldWrapper({
@@ -172,6 +173,47 @@ function DraggableFieldWrapper({
   );
 }
 
+function DraggableRuleWrapper({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 100 : "auto",
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-start gap-1.5">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="cursor-grab shrink-0 mt-8"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-5 w-5" />
+      </Button>
+      <div className="w-full">{children}</div>
+    </div>
+  );
+}
+
+
 const operatorLabels: Record<ConditionalRuleOperator, string> = {
   equals: 'Equals',
   not_equals: 'Not Equals',
@@ -190,6 +232,7 @@ export function TemplateDesigner({
   allTemplates,
   onSave,
   onCancel,
+  onSelect,
 }: TemplateDesignerProps) {
   const { toast } = useToast();
   const { updateNodeNamesForTemplate } = useTreeContext();
@@ -201,42 +244,12 @@ export function TemplateDesigner({
     defaultValues: template,
   });
 
-  const previousNameTemplateRef = useRef<string | undefined>(template.nameTemplate);
-
-  useEffect(() => {
-    // Only reset the form if the template ID actually changes.
-    // This prevents the form from resetting on saves that trigger re-renders.
-    if (template && template.id !== form.getValues('id')) {
-        form.reset(template);
-        previousNameTemplateRef.current = template.nameTemplate;
-    }
-  }, [template, form]);
-  
-  // This effect specifically watches for the nameTemplate to change *after* a save.
-  useEffect(() => {
-    // Don't trigger for new, unsaved templates.
-    if (!template.id || template.id.startsWith('new_')) {
-      return;
-    }
-  
-    // Check if the template prop from the context has a different nameTemplate
-    // than what we last recorded.
-    if (template.nameTemplate !== previousNameTemplateRef.current) {
-      // If it changed, show the dialog.
-      setTemplateForNodeUpdate(template as Template);
-      // Update our reference to the new value so we don't ask again on the next render.
-      previousNameTemplateRef.current = template.nameTemplate;
-    }
-    // Depend only on the `template` prop passed in.
-  }, [template]);
-
-
   const { fields, append, remove, move } = useFieldArray({
     control: form.control,
     name: "fields",
   });
   
-  const { fields: conditionalRules, append: appendRule, remove: removeRule } = useFieldArray({
+  const { fields: conditionalRules, append: appendRule, remove: removeRule, move: moveRule } = useFieldArray({
     control: form.control,
     name: "conditionalRules",
   });
@@ -250,7 +263,7 @@ export function TemplateDesigner({
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleFieldDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -262,18 +275,37 @@ export function TemplateDesigner({
     }
   };
 
+  const handleRuleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
+    if (over && active.id !== over.id) {
+      const oldIndex = conditionalRules.findIndex((rule) => rule.id === active.id);
+      const newIndex = conditionalRules.findIndex((rule) => rule.id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        moveRule(oldIndex, newIndex);
+      }
+    }
+  };
+
+  const initialNameTemplateRef = useRef(template.nameTemplate);
+  
+  useEffect(() => {
+    // This effect now only handles the logic for prompting to update existing nodes.
+    // The form data loading is handled by the `key` prop on the component.
+    const isNew = template.id?.startsWith('new_');
+    if (!isNew && template.nameTemplate !== initialNameTemplateRef.current && initialNameTemplateRef.current !== undefined) {
+      setTemplateForNodeUpdate(template as Template);
+    }
+    initialNameTemplateRef.current = template.nameTemplate;
+  }, [template.nameTemplate, template.id]);
+  
   const onSubmit = (data: TemplateFormValues) => {
     toast({
       title: "Template saved!",
       description: `The "${data.name}" template has been successfully saved.`,
     });
     onSave(data as Template);
-    previousNameTemplateRef.current = data.nameTemplate;
-};
-
-
-
+  };
 
   const handleExport = () => {
     const data = JSON.stringify(form.getValues(), null, 2);
@@ -298,51 +330,23 @@ export function TemplateDesigner({
           if (typeof content !== "string")
             throw new Error("File content is not valid");
           const importedData = JSON.parse(content);
+          
           const validation = templateSchema.safeParse(importedData);
           if (validation.success) {
-            let dataToLoad = validation.data;
+            const dataToLoad = validation.data;
+            // Preserve the ID of the template being edited, but load all other data.
+            const currentId = form.getValues('id');
+            form.reset({
+              ...dataToLoad,
+              id: currentId,
+            });
             
-            const isEditingNewTemplate = template.id?.startsWith('new_');
-
-            if (isEditingNewTemplate) {
-              // If creating a NEW template, check for ID conflict and generate new if needed.
-              if (allTemplates.some(t => t.id === dataToLoad.id)) {
-                const oldIdMap: Record<string, string> = {};
-                
-                const oldTemplateId = dataToLoad.id;
-                dataToLoad.id = `new_${new Date().toISOString()}`;
-                oldIdMap[oldTemplateId] = dataToLoad.id;
-
-                dataToLoad.fields = dataToLoad.fields.map(field => {
-                  const oldFieldId = field.id;
-                  const newFieldId = new Date().toISOString() + Math.random();
-                  oldIdMap[oldFieldId] = newFieldId;
-                  return { ...field, id: newFieldId };
-                });
-                
-                if (dataToLoad.conditionalRules) {
-                  dataToLoad.conditionalRules = dataToLoad.conditionalRules.map(rule => ({
-                    ...rule,
-                    id: new Date().toISOString() + Math.random(),
-                    fieldId: oldIdMap[rule.fieldId] || rule.fieldId,
-                  }));
-                }
-                 toast({
-                  title: "Template ID Conflict",
-                  description: `A new ID was generated for the imported template to avoid conflicts.`,
-                });
-              }
-            } else {
-              // If editing an EXISTING template, overwrite it but keep its original ID.
-              dataToLoad.id = template.id!;
-            }
-
-            form.reset(dataToLoad);
             toast({
-              title: "Template Imported",
-              description: `Template "${dataToLoad.name}" loaded into the designer.`,
+              title: "Template Loaded",
+              description: `Data from "${dataToLoad.name}" has been loaded into the designer. Click Save to apply.`,
             });
           } else {
+            console.error("Template validation failed:", validation.error);
             toast({
               variant: "destructive",
               title: "Import Failed",
@@ -528,7 +532,7 @@ export function TemplateDesigner({
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+                onDragEnd={handleFieldDragEnd}
               >
                 <SortableContext
                   items={fields.map((f) => f.id)}
@@ -769,101 +773,114 @@ export function TemplateDesigner({
             <Separator />
             <div>
               <h3 className="text-lg font-medium mb-4">Conditional Formatting</h3>
-              <div className="space-y-4">
-                {conditionalRules.map((rule, index) => (
-                  <Card key={rule.id} className="bg-muted/50 p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                       <FormField
-                          control={form.control}
-                          name={`conditionalRules.${index}.fieldId`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Field</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger><SelectValue placeholder="Select a field..." /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {watchedFields.map(f => (
-                                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                       <FormField
-                          control={form.control}
-                          name={`conditionalRules.${index}.operator`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Operator</FormLabel>
-                               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger><SelectValue placeholder="Select an operator..." /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {Object.entries(operatorLabels).map(([op, label]) => (
-                                    <SelectItem key={op} value={op}>{label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                       <FormField
-                          control={form.control}
-                          name={`conditionalRules.${index}.value`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Value</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Value to check" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                    </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                       <FormField
-                          control={form.control}
-                          name={`conditionalRules.${index}.icon`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>New Icon</FormLabel>
-                              <FormControl>
-                                <IconPicker value={field.value} onChange={field.onChange} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                       <FormField
-                          control={form.control}
-                          name={`conditionalRules.${index}.color`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>New Color</FormLabel>
-                               <FormControl>
-                                <div className="flex items-center gap-2">
-                                  <Input type="color" {...field} className="h-10 w-12 p-1"/>
-                                  <Input type="text" placeholder="#RRGGBB" {...field} />
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                    </div>
-                     <Button type="button" variant="destructive" size="sm" className="mt-4" onClick={() => removeRule(index)}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Remove Rule
-                    </Button>
-                  </Card>
-                ))}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleRuleDragEnd}
+              >
+                <SortableContext
+                  items={conditionalRules.map((rule) => rule.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-4">
+                    {conditionalRules.map((rule, index) => (
+                      <DraggableRuleWrapper key={rule.id} id={rule.id}>
+                        <Card className="bg-muted/50 p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <FormField
+                                control={form.control}
+                                name={`conditionalRules.${index}.fieldId`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Field</FormLabel>
+                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Select a field..." /></SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {watchedFields.map(f => (
+                                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            <FormField
+                                control={form.control}
+                                name={`conditionalRules.${index}.operator`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Operator</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Select an operator..." /></SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {Object.entries(operatorLabels).map(([op, label]) => (
+                                          <SelectItem key={op} value={op}>{label}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            <FormField
+                                control={form.control}
+                                name={`conditionalRules.${index}.value`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Value</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="Value to check" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <FormField
+                                control={form.control}
+                                name={`conditionalRules.${index}.icon`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>New Icon</FormLabel>
+                                    <FormControl>
+                                      <IconPicker value={field.value} onChange={field.onChange} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            <FormField
+                                control={form.control}
+                                name={`conditionalRules.${index}.color`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>New Color</FormLabel>
+                                    <FormControl>
+                                      <div className="flex items-center gap-2">
+                                        <Input type="color" {...field} className="h-10 w-12 p-1"/>
+                                        <Input type="text" placeholder="#RRGGBB" {...field} />
+                                      </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                          </div>
+                          <Button type="button" variant="destructive" size="sm" className="mt-4" onClick={() => removeRule(index)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Remove Rule
+                          </Button>
+                        </Card>
+                      </DraggableRuleWrapper>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
               <Button type="button" variant="outline" className="mt-4" onClick={() => appendRule({
                   id: new Date().toISOString() + Math.random(),
                   fieldId: '',

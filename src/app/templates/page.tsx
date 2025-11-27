@@ -133,7 +133,6 @@ function TemplatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [templateForNodeUpdate, setTemplateForNodeUpdate] = useState<Template | null>(null);
 
   const selectedTemplate = useMemo(() => {
     if (!selectedTemplateId) return null;
@@ -217,21 +216,17 @@ function TemplatesPage() {
 
   const handleSaveTemplate = (updatedTemplate: Template) => {
     const isNew = updatedTemplate.id.startsWith('new_');
-    const oldTemplate = isNew ? null : templates.find(t => t.id === updatedTemplate.id);
-    const nameTemplateChanged = oldTemplate && oldTemplate.nameTemplate !== updatedTemplate.nameTemplate;
+    const existingIndex = templates.findIndex(t => t.id === updatedTemplate.id);
 
-    if (isNew) {
-        setTemplates(currentTemplates => [...currentTemplates, updatedTemplate]);
+    if (isNew || existingIndex === -1) {
+        const finalTemplate = { ...updatedTemplate, id: updatedTemplate.id.startsWith('new_') ? new Date().toISOString() : updatedTemplate.id };
+        setTemplates(currentTemplates => [...currentTemplates, finalTemplate]);
+        setSelectedTemplateId(finalTemplate.id); 
     } else {
       setTemplates((currentTemplates) =>
         currentTemplates.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t))
       );
-    }
-    
-    setSelectedTemplateId(updatedTemplate.id);
-    
-    if (nameTemplateChanged) {
-        setTemplateForNodeUpdate(updatedTemplate);
+      setSelectedTemplateId(updatedTemplate.id);
     }
   };
   
@@ -249,17 +244,6 @@ function TemplatesPage() {
       setSelectedTemplateId(null);
     }
   }
-  
-  const handleConfirmNodeUpdate = () => {
-    if (templateForNodeUpdate) {
-        updateNodeNamesForTemplate(templateForNodeUpdate);
-        toast({
-            title: "Node Names Updated",
-            description: `All nodes using the "${templateForNodeUpdate.name}" template will be updated.`
-        });
-        setTemplateForNodeUpdate(null);
-    }
-  };
 
   const handleExportAll = async () => {
     if (!activeTree || templates.length === 0) return;
@@ -522,6 +506,7 @@ function TemplatesPage() {
                   allTemplates={templates}
                   onSave={handleSaveTemplate}
                   onCancel={() => setSelectedTemplateId(null)}
+                  onSelect={handleSelectTemplate}
                 />
               ) : (
                 <Card className="flex flex-col items-center justify-center h-96 border-dashed">
@@ -535,20 +520,6 @@ function TemplatesPage() {
           </div>
           </TooltipProvider>
         </main>
-         <AlertDialog open={!!templateForNodeUpdate} onOpenChange={(open) => !open && setTemplateForNodeUpdate(null)}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Update Existing Nodes?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        The "Node Name Template" has changed. Would you like to apply this new naming rule to all existing nodes that use the "{templateForNodeUpdate?.name}" template?
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setTemplateForNodeUpdate(null)}>Leave Them</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirmNodeUpdate}>Update Nodes</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
       </div>
     </ProtectedRoute>
   );
