@@ -175,9 +175,9 @@ export interface PurgeResult {
 interface BaseCommand {
   type: string;
   execute: (draft: WritableDraft<TreeFile[]>) => any;
-  undo: () => Promise<void>;
-  redo?: (finalTreeFile?: TreeFile) => Promise<void>;
-  post?: (finalTreeFile?: TreeFile) => Promise<void>;
+  undo: (timestamp?: string) => Promise<void>;
+  redo?: (finalTreeFile?: TreeFile, timestamp?: string) => Promise<void>;
+  post?: (finalTreeFile?: TreeFile, timestamp?: string) => Promise<void>;
   getUndoState?: (draft: WritableDraft<TreeFile[]>, command: Command) => void;
 }
 
@@ -196,7 +196,12 @@ export interface DeleteNodesCommand extends BaseCommand {
     payload: {
         nodes: { nodeId: string; parentId: string | null }[];
     };
-    originalState: { node: TreeNode, parent: TreeNode | null, originalSiblings: TreeNode[] }[];
+    originalState: { 
+        node: TreeNode, 
+        parent: TreeNode | null, 
+        originalSiblings: TreeNode[],
+        allDeletedNodes: TreeNode[],
+    }[];
 }
 
 export interface MoveNodesCommand extends BaseCommand {

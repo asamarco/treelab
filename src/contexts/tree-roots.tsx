@@ -137,14 +137,23 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     const originalTreeFile = allTrees.find(t => t.id === activeTreeId);
     if (!originalTreeFile) return;
+
+    const newTimestamp = new Date().toISOString();
     
     // Create the "after" state in memory *before* updating the UI state
-    const finalTreeSnapshot = produce(allTrees, command.execute as (draft: WritableDraft<TreeFile[]>) => void);
+    const finalTreeSnapshot = produce(allTrees, draft => {
+        const treeToUpdate = draft.find(t => t.id === activeTreeId);
+        if (treeToUpdate) {
+            command.execute(draft);
+            treeToUpdate.updatedAt = newTimestamp;
+        }
+    });
+    
     const finalTreeFile = finalTreeSnapshot.find(t => t.id === activeTreeId);
 
-    // Now, call the post function with the clean final state
+    // Now, call the post function with the clean final state and timestamp
     if (command.post && finalTreeFile) {
-        await command.post(finalTreeFile);
+        await command.post(finalTreeFile, newTimestamp);
     }
 
     // Finally, update the UI
@@ -159,10 +168,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         setCommandHistory(() => newHistory);
         setHistoryIndex(newHistory.length - 1);
     }
-    // We don't set dirty here because the command.post should handle persistence.
-    // setIsDirty(true); 
+    // No setIsDirty call here, as server updates are handled by post/redo with a timestamp
 
-  }, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, setIsDirty]);
+  }, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory]);
   
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < commandHistory.length - 1;
@@ -421,14 +429,20 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     const commandToUndo = commandHistory[historyIndex];
     if (!commandToUndo) return;
   
-    setAllTrees((draft: WritableDraft<TreeFile[]>) => {
-      if (commandToUndo.getUndoState) {
-        commandToUndo.getUndoState(draft, commandToUndo);
-      }
+    const newTimestamp = new Date().toISOString();
+  
+    const undoSnapshot = produce(allTrees, draft => {
+        if (commandToUndo.getUndoState) {
+            commandToUndo.getUndoState(draft, commandToUndo);
+        }
+        const treeToUpdate = draft.find(t => t.id === activeTreeId);
+        if (treeToUpdate) {
+            treeToUpdate.updatedAt = newTimestamp;
+        }
     });
-    
-    await commandToUndo.undo();
-    
+
+    await commandToUndo.undo(newTimestamp);
+    setAllTrees(() => undoSnapshot);
     setHistoryIndex((prev) => prev - 1);
   
     toast({
@@ -436,8 +450,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       description: `Reversed action: ${getActionDescription(commandToUndo)}`,
     });
   
-    setIsDirty(true);
-  }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast]);
+  }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast, allTrees, activeTreeId]);
   
   const redoLastAction = useCallback(async () => {
     const newIndex = historyIndex + 1;
@@ -446,11 +459,19 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     const commandToRedo = commandHistory[newIndex];
     if (!commandToRedo) return;
     
-    const afterState = produce(allTrees, commandToRedo.execute as (draft: WritableDraft<TreeFile[]>) => void);
+    const newTimestamp = new Date().toISOString();
+
+    const afterState = produce(allTrees, draft => {
+        const treeToUpdate = draft.find(t => t.id === activeTreeId);
+        if (treeToUpdate) {
+            commandToRedo.execute(draft);
+            treeToUpdate.updatedAt = newTimestamp;
+        }
+    });
+    
     const finalTreeFile = afterState.find(t => t.id === activeTreeId);
 
     setAllTrees(() => afterState);
-
     setHistoryIndex(newIndex);
     
     toast({
@@ -459,12 +480,10 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     });
     
     if (commandToRedo.redo) {
-        await commandToRedo.redo(finalTreeFile);
+        await commandToRedo.redo(finalTreeFile, newTimestamp);
     } else if (commandToRedo.post && finalTreeFile) {
-        await commandToRedo.post(finalTreeFile);
+        await commandToRedo.post(finalTreeFile, newTimestamp);
     }
-    
-    setIsDirty(true);
 }, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast]);
 
 
@@ -535,24 +554,24 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
     if (currentUser && !isSaving) {
+      const newTimestamp = new Date().toISOString();
+      const updatedTree = { ...treeToSave, updatedAt: newTimestamp };
+
+      // Optimistically update local state with the new timestamp immediately
+      setAllTrees((draft) => {
+        const treeIndex = draft.findIndex((t: TreeFile) => t.id === treeToSave.id);
+        if (treeIndex > -1) {
+          draft[treeIndex].updatedAt = newTimestamp;
+        }
+      });
+      setIsDirty(false); // Mark as clean now that we have the timestamp
       setIsSaving(true);
-      const newUpdatedAt = new Date().toISOString();
-      const { tree, ...metaData } = { ...treeToSave, updatedAt: newUpdatedAt };
+      
+      const { tree, ...metaData } = updatedTree;
   
-      saveTreeFile(metaData).then(() => {
-        // After successful save, update the local state with the new timestamp
-        setAllTrees((draft) => {
-          const treeInDraft = draft.find((t: TreeFile) => t.id === treeToSave.id);
-          if (treeInDraft) {
-            treeInDraft.updatedAt = newUpdatedAt;
-          }
-        });
-        setIsDirty(false);
+      saveTreeFile(metaData, newTimestamp).finally(() => {
         setIsSaving(false);
         console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
-      }).catch(error => {
-        console.error("ERROR: Debounced save failed:", error);
-        setIsSaving(false);
       });
     }
   }, 1000);
@@ -652,11 +671,11 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
             const t = draft.find((t: TreeFile) => t.id === treeId); 
             if (t) t.title = title; 
         },
-        post: async (finalTreeFile?: TreeFile) => {
-            await saveTreeFile({ id: treeId, title });
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+            await saveTreeFile({ id: treeId, title }, timestamp);
         },
-        undo: async () => {
-            await saveTreeFile({ id: treeId, title: originalTitle });
+        undo: async (timestamp?: string) => {
+            await saveTreeFile({ id: treeId, title: originalTitle }, timestamp);
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
           const t = draft.find(t => t.id === treeId);
@@ -689,14 +708,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
                     : updater;
             }
         },
-        post: async (finalTreeFile?: TreeFile) => {
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
             if (finalTreeFile && activeTreeId) {
-                await saveTreeFile({ id: activeTreeId, templates: finalTreeFile.templates });
+                await saveTreeFile({ id: activeTreeId, templates: finalTreeFile.templates }, timestamp);
             }
         },
-        undo: async () => {
+        undo: async (timestamp?: string) => {
             if (activeTreeId) {
-                await saveTreeFile({ id: activeTreeId, templates: originalTemplates });
+                await saveTreeFile({ id: activeTreeId, templates: originalTemplates }, timestamp);
             }
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
@@ -741,12 +760,10 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       
       // Save to DB immediately, but without blocking the UI
       if (activeTree) {
-        saveTreeFile({ id: activeTree.id, expandedNodeIds: newExpandedIds }).catch(error => {
-            console.error("Failed to save expanded nodes state:", error);
-        });
+        debouncedSave({ ...activeTree, expandedNodeIds: newExpandedIds });
       }
 
-  }, [activeTreeId, performAction, activeTree]);
+  }, [activeTreeId, performAction, activeTree, debouncedSave]);
 
   const expandAllFromNode = useCallback((nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
     if (!activeTree || nodesToExpand.length === 0) return;

@@ -93,17 +93,21 @@ const reconstructTree = (nodes: (TreeNode | WritableDraft<TreeNode>)[]): Writabl
   });
   
   const sortChildrenRecursive = (nodesToSort: WritableDraft<TreeNode>[], parentId: string | null) => {
-    if (!nodesToSort) return;
+    if (!nodesToSort || nodesToSort.length === 0) return;
     nodesToSort.sort((a, b) => getContextualOrder(a, nodesToSort, parentId) - getContextualOrder(b, nodesToSort, parentId));
     nodesToSort.forEach(node => {
-        if (node.children && node.children.length > 1) {
+        if (node.children && node.children.length > 0) {
             sortChildrenRecursive(node.children, node.id);
         }
     });
   };
   
   // Sort all children at every level
-  nodeMap.forEach(node => sortChildrenRecursive(node.children, node.id));
+  nodeMap.forEach(node => {
+      if (node.children) {
+          sortChildrenRecursive(node.children, node.id);
+      }
+  });
   sortChildrenRecursive(rootNodes, null);
   
   return rootNodes;
@@ -154,7 +158,7 @@ export async function addNodesAction(
     const firstNode = nodesWithIds[0];
     const parentIdForSequencing = firstNode.parentIds?.[0] || 'root';
     const parentNode = parentIdForSequencing === 'root' ? null : findNodeAndParent(parentIdForSequencing, activeTree.tree)?.node;
-    const siblings = parentNode ? parentNode.children : activeTree.tree;
+    const siblings = parentNode ? parentNode.children : (activeTree.tree || []);
     
     const order = getContextualOrder(firstNode as any, siblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
 
@@ -164,7 +168,7 @@ export async function addNodesAction(
         return { ...n, order: orderArray };
     });
 
-    const originalSiblingOrders = siblings
+    const originalSiblingOrders = (siblings || [])
         .filter(s => getContextualOrder(s, siblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing) >= order)
         .map(s => ({ id: s.id, order: [...s.order] }));
       
@@ -227,11 +231,11 @@ export async function addNodesAction(
               }
           });
       },
-      post: async (finalTreeFile?: TreeFile) => {
-          await reorderSiblingsForAdd(activeTree.id, parentIdForSequencing === 'root' ? null : parentIdForSequencing, order);
-          await batchCreateNodes([...flattenedNodesForDb].reverse());
+      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+          await reorderSiblingsForAdd(activeTree.id, parentIdForSequencing === 'root' ? null : parentIdForSequencing, order, timestamp);
+          await batchCreateNodes([...flattenedNodesForDb].reverse(), timestamp);
       },
-      undo: async () => {
+      undo: async (timestamp?: string) => {
         const undoUpdates: {id: string, updates: Partial<TreeNode>}[] = [];
         command.originalState.siblingOrders.forEach(sibling => {
             undoUpdates.push({id: sibling.id, updates: { order: sibling.order }});
@@ -241,24 +245,24 @@ export async function addNodesAction(
             batchDeleteNodes(command.payload.nodes.map(node => ({
                 nodeId: node.id,
                 parentIdToUnlink: null // The entire node is deleted on undo
-            }))),
-            batchUpdateNodes(undoUpdates)
+            })), timestamp),
+            batchUpdateNodes(undoUpdates, timestamp)
         ]);
       },
-      redo: async (finalTreeFile?: TreeFile) => {
+      redo: async (finalTreeFile?: TreeFile, timestamp?: string) => {
         const parentId = command.payload.nodes[0].parentIds?.[0] || 'root';
         const parentNodeForRedo = parentId === 'root' ? null : findNodeAndParent(parentId, finalTreeFile?.tree || [])?.node;
         const siblingsForRedo = parentNodeForRedo ? parentNodeForRedo.children : finalTreeFile?.tree || [];
         const baseOrder = command.payload.nodes[0].order[0];
     
-        await reorderSiblingsForAdd(activeTree.id, parentId === 'root' ? null : parentId, baseOrder);
-        await batchCreateNodes([...flattenedNodesForDb].reverse());
+        await reorderSiblingsForAdd(activeTree.id, parentId === 'root' ? null : parentId, baseOrder, timestamp);
+        await batchCreateNodes([...flattenedNodesForDb].reverse(), timestamp);
     
         if (finalTreeFile) {
           const finalParentNode = parentId === 'root' ? null : findNodeAndParent(parentId, finalTreeFile.tree)?.node;
           const finalSiblings = finalParentNode ? finalParentNode.children : finalTreeFile.tree;
     
-          const siblingOrderUpdates = finalSiblings
+          const siblingOrderUpdates = (finalSiblings || [])
             .map((sibling) => {
               const contextualOrder = getContextualOrder(sibling, finalSiblings, parentId === 'root' ? null : parentId);
               const parentIndex = (sibling.parentIds || []).indexOf(parentId || "root");
@@ -275,7 +279,7 @@ export async function addNodesAction(
             .filter((u): u is { id: string; updates: { order: number[] } } => u !== null);
     
           if (siblingOrderUpdates.length > 0) {
-            await batchUpdateNodes(siblingOrderUpdates);
+            await batchUpdateNodes(siblingOrderUpdates, timestamp);
           }
         }
       },
@@ -324,7 +328,7 @@ export async function addRootNodeAction(
       treeId: activeTree.id,
       userId: currentUser.id,
       parentIds: ['root'],
-      order: [activeTree.tree.length],
+      order: [(activeTree.tree || []).length],
     } as Omit<TreeNode, 'id' | 'children' >;
 
     await addNodesAction(ctx, [fullNodeData]);
@@ -367,7 +371,7 @@ export async function addSiblingNodeAction(
     if (!activeTree || !currentUser) return;
     const parentInfo = findNodeAndContextualParent(siblingNodeId, contextualParentId, activeTree.tree);
     const parentNode = parentInfo?.parent;
-    const siblings = parentNode ? parentNode.children : activeTree.tree;
+    const siblings = parentNode ? parentNode.children : (activeTree.tree || []);
     const siblingNode = siblings.find(s => s.id === siblingNodeId);
 
     if (!siblingNode) return;
@@ -415,12 +419,12 @@ export async function updateNodeAction(
             };
             updateAllInstances(tree);
         },
-        post: async (finalTreeFile?: TreeFile) => {
-            await updateNodeInDb(nodeId, newNodeData);
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+            await updateNodeInDb(nodeId, newNodeData, timestamp);
         },
-        undo: async () => {
+        undo: async (timestamp?: string) => {
             const { originalData } = command.payload[0];
-            await updateNodeInDb(nodeId, originalData);
+            await updateNodeInDb(nodeId, originalData, timestamp);
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
             const { nodeId, originalData } = (command as UpdateNodesCommand).payload[0];
@@ -479,15 +483,15 @@ export async function updateNodeNamesForTemplateAction(ctx: ActionContext, templ
                     }
                 });
             },
-            post: async (finalTreeFile?: TreeFile) => {
-                await batchUpdateNodes(updates);
+            post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+                await batchUpdateNodes(updates, timestamp);
             },
-            undo: async () => {
+            undo: async (timestamp?: string) => {
                 const undoUpdates: {id: string, updates: Partial<TreeNode>}[] = [];
                 updates.forEach(({ id }) => {
                     undoUpdates.push({ id, updates: originalNodes[id] });
                 });
-                await batchUpdateNodes(undoUpdates);
+                await batchUpdateNodes(undoUpdates, timestamp);
             },
             getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
                 const tree = draft.find((t: TreeFile) => t.id === activeTreeId)?.tree;
@@ -537,12 +541,12 @@ export async function changeNodeTemplateAction(ctx: ActionContext, nodeId: strin
             const nodeToUpdate = findNodeAndParentInDraft(nodeId, tree)?.node;
             if (nodeToUpdate) Object.assign(nodeToUpdate, updates);
         },
-        post: async (finalTreeFile?: TreeFile) => {
-             await updateNodeInDb(nodeId, updates);
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+             await updateNodeInDb(nodeId, updates, timestamp);
         },
-        undo: async () => {
+        undo: async (timestamp?: string) => {
             const originalData = { templateId: originalNode.templateId, data: originalNode.data };
-            await updateNodeInDb(nodeId, originalData);
+            await updateNodeInDb(nodeId, originalData, timestamp);
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
             const originalData = { templateId: originalNode.templateId, data: originalNode.data };
@@ -613,15 +617,15 @@ export async function changeMultipleNodesTemplateAction(
                 if (node) Object.assign(node, updates);
             });
         },
-        post: async (finalTreeFile?: TreeFile) => {
-            await batchUpdateNodes(updatesPayload.map(p => ({ id: p.nodeId, updates: p.updates })));
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+            await batchUpdateNodes(updatesPayload.map(p => ({ id: p.nodeId, updates: p.updates })), timestamp);
         },
-        undo: async () => {
+        undo: async (timestamp?: string) => {
             const undoUpdates: {id: string, updates: Partial<TreeNode>}[] = [];
             updatesPayload.forEach(({ nodeId, originalData }) => {
                 undoUpdates.push({id: nodeId, updates: originalData});
             });
-            await batchUpdateNodes(undoUpdates);
+            await batchUpdateNodes(undoUpdates, timestamp);
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
             const tree = draft.find((t: TreeFile) => t.id === activeTreeId)?.tree;
@@ -652,22 +656,23 @@ export async function deleteNodesAction(
     });
 
     const originalState: DeleteNodesCommand['originalState'] = [];
-    const nodeIdsToProcess = new Set<string>();
 
     for (const { nodeId, parentId } of nodesToDelete) {
-        if (!nodeIdsToProcess.has(nodeId)) {
-            const nodeInfo = findNodeAndParent(nodeId, treeToSearch);
-            if (nodeInfo) {
-                const parentInfo = findNodeAndParent(parentId || '', treeToSearch);
-                const siblings = parentInfo?.node?.children || treeToSearch;
-                
-                originalState.push({ 
-                    node: JSON.parse(JSON.stringify(nodeInfo.node)), 
-                    parent: parentInfo ? JSON.parse(JSON.stringify(parentInfo.node)) : null,
-                    originalSiblings: JSON.parse(JSON.stringify(siblings))
-                });
-                nodeIdsToProcess.add(nodeId);
-            }
+        const nodeInfo = findNodeAndParent(nodeId, treeToSearch);
+        if (nodeInfo) {
+            const allDescendantsAndSelf: TreeNode[] = [];
+            const collect = (n: TreeNode) => {
+                allDescendantsAndSelf.push(JSON.parse(JSON.stringify(n)));
+                if (n.children) n.children.forEach(collect);
+            };
+            collect(nodeInfo.node);
+
+            originalState.push({
+                node: JSON.parse(JSON.stringify(nodeInfo.node)), // The top-level deleted node
+                parent: nodeInfo.parent ? JSON.parse(JSON.stringify(nodeInfo.parent)) : null,
+                originalSiblings: JSON.parse(JSON.stringify(nodeInfo.parent ? nodeInfo.parent.children : treeToSearch)),
+                allDeletedNodes: allDescendantsAndSelf, // All nodes in the branch
+            });
         }
     }
     
@@ -677,8 +682,8 @@ export async function deleteNodesAction(
         type: 'DELETE_NODES',
         payload: { nodes: nodesToDelete },
         originalState: originalState,
-        post: async () => {
-            await batchDeleteNodes(nodesToDelete.map(n => ({ nodeId: n.nodeId, parentIdToUnlink: n.parentId })));
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+            await batchDeleteNodes(nodesToDelete.map(n => ({ nodeId: n.nodeId, parentIdToUnlink: n.parentId })), timestamp);
         },
         execute: (draft: WritableDraft<TreeFile[]>) => {
             const treeToUpdate = draft.find((t: TreeFile) => t.id === activeTreeId);
@@ -738,60 +743,36 @@ export async function deleteNodesAction(
               const siblings = parentNode ? parentNode.children : treeToUpdate.tree;
               if (siblings) {
                 resequenceSiblingsInDraft(siblings, pId);
-        
-                // After re-sequencing, find all clones of the affected siblings and update them too
-                siblings.forEach(updatedSibling => {
-                  const allInstances = Array.from(allNodesMap.values()).filter(n => n.id === updatedSibling.id);
-                  allInstances.forEach(instance => {
-                    // Update all instances of the node, not just the one that was a direct sibling
-                    instance.order = [...updatedSibling.order];
-                  });
-                });
               }
             });
         
             treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
         },
-        undo: async () => {
-            const nodesToUpdate: { id: string; updates: Partial<TreeNode> }[] = [];
+        undo: async (timestamp?: string) => {
             const nodesToRecreate: Partial<TreeNode>[] = [];
+            const nodesToUpdate: { id: string; updates: Partial<TreeNode> }[] = [];
 
-            for (const original of command.originalState) {
-                const { node: originalNode, originalSiblings } = original;
-                
-                const existingNode = await findNodeById(originalNode.id);
-
-                if (existingNode) {
-                    // This is an UNDO of an UNLINK. Update the existing node.
-                    nodesToUpdate.push({
-                        id: originalNode.id,
-                        updates: {
-                            parentIds: originalNode.parentIds,
-                            order: originalNode.order,
-                        },
-                    });
-                } else {
-                    // This is an UNDO of a DELETE. Recreate the node.
-                    nodesToRecreate.push(originalNode);
-                }
-                
-                // Collect all sibling order updates
-                originalSiblings.forEach((sibling) => {
-                    const existingUpdate = nodesToUpdate.find((u) => u.id === sibling.id);
-                    if (!existingUpdate) {
-                        nodesToUpdate.push({
-                            id: sibling.id,
-                            updates: { order: sibling.order },
-                        });
+            for (const { allDeletedNodes } of command.originalState) {
+                for (const originalNode of allDeletedNodes) {
+                    const existingNode = await findNodeById(originalNode.id);
+                    if (existingNode) {
+                        const existingUpdate = nodesToUpdate.find(u => u.id === originalNode.id);
+                        if (existingUpdate) {
+                            existingUpdate.updates.parentIds = originalNode.parentIds;
+                            existingUpdate.updates.order = originalNode.order;
+                        } else {
+                            nodesToUpdate.push({ id: originalNode.id, updates: { parentIds: originalNode.parentIds, order: originalNode.order } });
+                        }
+                    } else {
+                        nodesToRecreate.push(originalNode);
                     }
-                });
+                }
             }
-
             if (nodesToRecreate.length > 0) {
-                await batchCreateNodes(nodesToRecreate);
+                await batchCreateNodes(nodesToRecreate, timestamp);
             }
             if (nodesToUpdate.length > 0) {
-                await batchUpdateNodes(nodesToUpdate);
+                await batchUpdateNodes(nodesToUpdate, timestamp);
             }
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
@@ -806,24 +787,13 @@ export async function deleteNodesAction(
                 };
                 flatten(treeToUpdate.tree);
         
-                const nodesToRestore = (cmd as DeleteNodesCommand).originalState.map(o => o.node);
-        
-                nodesToRestore.forEach(node => {
-                    // Create a mutable copy for Immer
-                    const mutableNode = JSON.parse(JSON.stringify(node));
-                    allCurrentNodes.set(node.id, mutableNode);
-                });
-                
-                (cmd as DeleteNodesCommand).originalState.forEach(original => {
-                    original.originalSiblings.forEach(sibling => {
-                        const nodeInMap = allCurrentNodes.get(sibling.id);
-                        if (nodeInMap) {
-                            // Ensure you are creating a new array for the order property
-                            (nodeInMap as WritableDraft<TreeNode>).order = [...sibling.order];
-                        }
+                (cmd as DeleteNodesCommand).originalState.forEach(({ allDeletedNodes }) => {
+                    allDeletedNodes.forEach(node => {
+                        const mutableNode = JSON.parse(JSON.stringify(node));
+                        allCurrentNodes.set(node.id, mutableNode);
                     });
                 });
-        
+                
                 treeToUpdate.tree = reconstructTree(Array.from(allCurrentNodes.values()));
             }
         },
@@ -864,7 +834,7 @@ export async function copyNodesAction(
   );
   const siblingsForSort = parentInfoForSort?.parent
     ? parentInfoForSort.parent.children
-    : activeTree.tree;
+    : (activeTree.tree || []);
   const sortedNodesToProcess = [...nodesToProcess].sort(
     (a, b) =>
       getContextualOrder(a, siblingsForSort, a.parentIds?.[0]) -
@@ -904,7 +874,7 @@ export async function copyNodesAction(
     } else {
       const siblings = parentInfo?.parent
         ? parentInfo.parent.children
-        : activeTree.tree;
+        : (activeTree.tree || []);
       const targetOrder = getContextualOrder(
         targetNode,
         siblings,
@@ -958,7 +928,7 @@ export async function moveNodesAction(
       payload: { moves },
       originalState: { tree: originalTreeState },
   
-      post: async (finalTreeFile?: TreeFile) => {
+      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
         if (!finalTreeFile) {
           console.warn("MoveNodes Post-op failed: Missing tree file states.");
           return;
@@ -998,7 +968,7 @@ export async function moveNodesAction(
   
         if (updates.length > 0) {
           console.log(`INFO: Found ${updates.length} nodes with changed order/parentage. Batch updating DB.`);
-          await batchUpdateNodes(updates);
+          await batchUpdateNodes(updates, timestamp);
         } else {
           console.warn("WARN: No changes detected between original and final tree states. No DB update performed.");
         }
@@ -1108,7 +1078,7 @@ export async function moveNodesAction(
         });
       },
   
-      undo: async () => {
+      undo: async (timestamp?: string) => {
         const updates: { id: string; updates: Partial<TreeNode> }[] = [];
         const originalTree = command.originalState.tree;
         const allNodesFromOriginal: TreeNode[] = [];
@@ -1132,7 +1102,7 @@ export async function moveNodesAction(
         }
   
         if (updates.length > 0) {
-          await batchUpdateNodes(updates);
+          await batchUpdateNodes(updates, timestamp);
         }
       },
   
@@ -1158,7 +1128,7 @@ export async function moveNodeOrderAction(
 
     const parentInfo = findNodeAndContextualParent(nodeId, contextualParentId, activeTree.tree);
     const parentNode = parentInfo?.parent;
-    const siblings = parentNode ? parentNode.children : activeTree.tree;
+    const siblings = parentNode ? parentNode.children : (activeTree.tree || []);
 
     if (!siblings || siblings.length < 2) return;
     
@@ -1214,7 +1184,7 @@ export async function pasteNodesAsClonesAction(
     
     const newParentId = as === 'child' ? targetNodeId : parentInfo?.parent?.id || null;
     const parentNodeForSiblings = newParentId ? findNodeAndParent(newParentId, activeTree.tree)?.node : null;
-    const siblings = parentNodeForSiblings ? parentNodeForSiblings.children : activeTree.tree;
+    const siblings = parentNodeForSiblings ? parentNodeForSiblings.children : (activeTree.tree || []);
     
     let newOrder;
     if (as === 'child') {
@@ -1254,11 +1224,11 @@ export async function pasteNodesAsClonesAction(
 
             tree.tree = reconstructTree(Array.from(allNodesMap.values()));
         },
-        post: async (finalTreeFile?: TreeFile) => {
-            await Promise.all(updates.map(u => addParentToNode(u.nodeId, u.newParentId, u.newOrder)));
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+            await Promise.all(updates.map(u => addParentToNode(u.nodeId, u.newParentId, u.newOrder, timestamp)));
         },
-        undo: async () => {
-             await Promise.all(updates.map(u => removeParentFromNode(u.nodeId, u.newParentId!)));
+        undo: async (timestamp?: string) => {
+             await Promise.all(updates.map(u => removeParentFromNode(u.nodeId, u.newParentId!, timestamp)));
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
             const tree = draft.find((t: TreeFile) => t.id === activeTreeId);
@@ -1316,15 +1286,15 @@ export async function toggleStarredForSelectedNodesAction(ctx: ActionContext) {
                 if (node) Object.assign(node, updates);
             });
         },
-        post: async (finalTreeFile?: TreeFile) => {
-            await batchUpdateNodes(updates);
+        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+            await batchUpdateNodes(updates, timestamp);
         },
-        undo: async () => {
+        undo: async (timestamp?: string) => {
              const undoUpdates: {id: string, updates: Partial<TreeNode>}[] = [];
             originalData.forEach(({ nodeId, originalData }) => {
                 undoUpdates.push({id: nodeId, updates: originalData});
             });
-            await batchUpdateNodes(undoUpdates);
+            await batchUpdateNodes(undoUpdates, timestamp);
         },
         getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
             const tree = draft.find((t: TreeFile) => t.id === activeTree.id)?.tree;
@@ -1340,3 +1310,4 @@ export async function toggleStarredForSelectedNodesAction(ctx: ActionContext) {
     
     await executeCommand(command);
 }
+
