@@ -65,6 +65,9 @@ MONGODB_URI="mongodb://..."
 # A 32-character secret key used for encrypting sensitive data in the database.
 # You can generate one using an online tool or command line (e.g., openssl rand -base64 24).
 ENCRYPTION_KEY="your_32_character_secret_encryption_key"
+
+# A 32-character secret key used for signing authentication sessions
+JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_chars
 ```
 
 ### Application Config (`config.json`)
