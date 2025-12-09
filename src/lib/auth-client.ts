@@ -1,63 +1,61 @@
-
 /**
  * @fileoverview
  * This file contains client-side functions for interacting with the authentication service.
  * These functions are safe to call from client components (like hooks and pages) and
- * will invoke the corresponding server actions.
+ * will invoke the corresponding API routes.
  */
 "use client";
 
-import { User, GlobalSettings, GitSettings } from './types';
-import { 
-    validateLogin, 
-    registerUser, 
-    fetchUsers, 
-    updateUserAdminStatus as updateUserAdminStatusOnServer,
-    deleteUser as deleteUserOnServer,
-    addUser as addUserOnServer,
-    changeUserPassword,
-    resetUserPasswordByAdmin,
-    saveGlobalSettings as saveGlobalSettingsOnServer,
-    updateUserSettings as updateUserSettingsOnServer,
-} from './auth-service';
-
+import { User } from './types';
 
 export const login = async (identifier: string, password: string): Promise<User | null> => {
-    return validateLogin(identifier, password);
+    const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password }),
+    });
+
+    if (response.ok) {
+        return await response.json();
+    }
+    return null;
 };
 
 export const register = async (username: string, password: string): Promise<User | null> => {
+    // The register server action will handle both registration and login (session creation)
+    const { registerUser } = await import('./auth-service');
     return registerUser(username, password);
 };
 
-export const fetchAllUsers = async (): Promise<User[]> => {
-    return fetchUsers();
+export const logout = async (): Promise<void> => {
+    await fetch('/api/auth/logout', { method: 'POST' });
 };
 
-export const addUserByAdmin = async (username: string, password: string, isAdmin: boolean): Promise<User | null> => {
-    return addUserOnServer({ username, password, isAdmin });
+export const getSessionUser = async (): Promise<User | null> => {
+    try {
+        const response = await fetch('/api/auth/session', {
+            headers: {
+                'Cache-Control': 'no-cache',
+            },
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to fetch session:", error);
+        return null;
+    }
 };
 
-export const updateUserAdminStatus = async (userId: string, isAdmin: boolean): Promise<void> => {
-    return updateUserAdminStatusOnServer(userId, isAdmin);
-};
-
-export const deleteUser = async (userId: string): Promise<void> => {
-    return deleteUserOnServer(userId);
-};
-
-export const changePassword = async (userId: string, currentPassword: string, newPassword: string): Promise<boolean> => {
-    return changeUserPassword(userId, currentPassword, newPassword);
-};
-
-export const resetPasswordByAdmin = async (userId: string, newPassword: string): Promise<void> => {
-    return resetUserPasswordByAdmin(userId, newPassword);
-};
-
-export const saveGlobalSettings = async (settings: GlobalSettings): Promise<void> => {
-    return saveGlobalSettingsOnServer(settings);
-};
-
-export const updateUserSettings = async (userId: string, settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat'>>): Promise<void> => {
-    return updateUserSettingsOnServer(userId, settings);
-};
+// Functions that still call server actions directly (admin actions, etc.)
+export { 
+    fetchUsers, 
+    addUser as addUserByAdmin,
+    updateUserAdminStatus,
+    deleteUser,
+    changeUserPassword,
+    resetUserPasswordByAdmin,
+    saveGlobalSettings,
+    updateUserSettings,
+} from './auth-service';

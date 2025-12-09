@@ -1,18 +1,21 @@
 
-
 import { useState, useEffect, useCallback } from "react";
 import { User, GlobalSettings, GitSettings } from "@/lib/types";
-import { 
-    fetchAllUsers, 
-    login, 
-    register, 
-    addUserByAdmin as addUserByAdminOnClient,
-    updateUserAdminStatus as updateUserAdminStatusOnClient,
+import {
+    fetchUsers,
+    addUser as addUserOnServer,
+    updateUserAdminStatus as updateUserAdminStatusOnServer,
     deleteUser as deleteUserOnClient,
-    changePassword as changePasswordOnClient,
-    resetPasswordByAdmin as resetPasswordByAdminOnClient,
+    changeUserPassword,
+    resetUserPasswordByAdmin,
     saveGlobalSettings,
     updateUserSettings,
+} from '@/lib/auth-service';
+import {
+    login as loginOnClient,
+    logout as logoutOnClient,
+    getSessionUser,
+    register as registerOnClient
 } from '@/lib/auth-client';
 import { loadGlobalSettings } from "@/lib/auth-service";
 
@@ -48,26 +51,28 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
 
     try {
-      // Settings can be loaded on the client if needed, but users should be fetched via a server action
-      const [loadedUsers, loadedSettings] = await Promise.all([
-        fetchAllUsers(),
-        loadGlobalSettings(),
+      const [userFromSession, loadedSettings] = await Promise.all([
+          getSessionUser(),
+          loadGlobalSettings()
       ]);
-
-      setUsers(loadedUsers);
+      
       if (loadedSettings) {
         setAppSettings(loadedSettings);
       }
-
-      const storedUserJson = sessionStorage.getItem("currentUser");
-      if (storedUserJson) {
-        const userFromSession = JSON.parse(storedUserJson);
-        const freshUser = loadedUsers.find(u => u.id === userFromSession.id);
-        if (freshUser) {
-            setCurrentUser(freshUser);
-            console.log(`INFO: Restored user '${freshUser.username}' from session.`);
-        }
+      
+      if (userFromSession) {
+        setCurrentUser(userFromSession);
+        console.log(`INFO: Restored user '${userFromSession.username}' from session.`);
       }
+
+      // Fetch all users if current user is admin
+      if (userFromSession?.isAdmin) {
+          const allUsers = await fetchUsers();
+          setUsers(allUsers);
+      } else if (userFromSession) {
+          setUsers([userFromSession]);
+      }
+
     } catch (error) {
       console.error("ERROR: Failed to initialize auth:", error);
     } finally {
@@ -93,39 +98,36 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
 
 
   const handleLogin = async (identifier: string, password: string): Promise<boolean> => {
-    const user = await login(identifier, password);
+    const user = await loginOnClient(identifier, password);
     if (user) {
         setCurrentUser(user);
-        sessionStorage.setItem("currentUser", JSON.stringify(user));
         return true;
     }
     return false;
   };
 
-  const registerUser = async (username: string, password: string): Promise<boolean> => {
+  const handleRegister = async (username: string, password: string): Promise<boolean> => {
     if (!globalSettings.allowPublicRegistration) {
         console.error("ERROR: Registration attempt failed: Public registration is disabled.");
         return false;
     }
-    const newUser = await register(username, password);
+    const newUser = await registerOnClient(username, password);
     if (newUser) {
         setUsers(prev => [...prev, newUser]);
         setCurrentUser(newUser);
-        sessionStorage.setItem("currentUser", JSON.stringify(newUser));
-        console.log(`INFO: User '${username}' registered and logged in. First user? ${newUser.isAdmin}`);
+        console.log(`INFO: User '${username}' registered and logged in.`);
         window.location.href = '/';
         return true;
     }
     return false;
   };
 
-  const logout = () => {
+  const handleLogout = async () => {
     if (currentUser) {
         console.log(`INFO: User '${currentUser.username}' logged out.`);
     }
+    await logoutOnClient();
     setCurrentUser(null);
-    sessionStorage.removeItem("currentUser");
-    localStorage.removeItem(`lastActiveTreeId_${currentUser?.id}`);
   };
 
   const addUserByAdmin = async (username: string, password: string, isAdmin: boolean): Promise<boolean> => {
@@ -137,7 +139,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       console.warn(`WARN: Admin failed to create user. Username '${username}' already exists.`);
       return false; 
     }
-    const newUser = await addUserByAdminOnClient(username, password, isAdmin);
+    const newUser = await addUserOnServer({ username, password, isAdmin });
     if (newUser) {
         setUsers([...users, newUser]);
         console.log(`INFO: Admin '${currentUser.username}' created new user '${username}'.`);
@@ -148,7 +150,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
 
   const updateUserAdminStatus = async (userId: string, isAdmin: boolean) => {
     if (!currentUser?.isAdmin) return;
-    await updateUserAdminStatusOnClient(userId, isAdmin);
+    await updateUserAdminStatusOnServer(userId, isAdmin);
     const updatedUsers = users.map(user =>
       user.id === userId ? { ...user, isAdmin } : user
     );
@@ -163,12 +165,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
-    return await changePasswordOnClient(currentUser.id, currentPassword, newPassword);
+    return await changeUserPassword(currentUser.id, currentPassword, newPassword);
   };
   
   const resetPasswordByAdmin = async (userId: string, newPassword: string): Promise<void> => {
     if (!currentUser?.isAdmin) return;
-    await resetPasswordByAdminOnClient(userId, newPassword);
+    await resetPasswordByAdmin(userId, newPassword);
   };
 
   const setTheme = (newTheme: Theme) => {
@@ -204,8 +206,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     globalSettings,
     setAppSettings: setGlobalSettingsState,
     login: handleLogin,
-    register: registerUser,
-    logout,
+    register: handleRegister,
+    logout: handleLogout,
     addUserByAdmin,
     updateUserAdminStatus,
     deleteUser,

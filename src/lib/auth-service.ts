@@ -10,9 +10,8 @@ import { connectToDatabase } from './mongodb';
 import { UserModel, GlobalSettingsModel, TreeModel, TreeNodeModel } from './models';
 import { User, GlobalSettings } from './types';
 import { encrypt, decrypt } from './encryption';
-import { generateClientSideId } from './utils';
+import { createSessionInServerAction } from './session';
 import crypto from 'crypto';
-
 
 // --- Password Hashing (Server-Side only) ---
 const hashPassword = (password: string, salt: string): Promise<string> => {
@@ -107,6 +106,10 @@ export async function registerUser(username: string, password: string): Promise<
     
     const createdUser = await new UserModel(newUserDoc).save();
     const { passwordHash: savedHash, salt: savedSalt, ...userToReturn } = toPlainObject(createdUser);
+
+    // After successful registration, immediately create a session for the user.
+    await createSessionInServerAction(userToReturn.id);
+    
     return userToReturn;
 }
 
