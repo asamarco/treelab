@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from "react";
 import { User, GlobalSettings, GitSettings } from "@/lib/types";
 import {
@@ -7,7 +8,7 @@ import {
     updateUserAdminStatus as updateUserAdminStatusOnServer,
     deleteUser as deleteUserOnClient,
     changeUserPassword,
-    resetUserPasswordByAdmin,
+    resetUserPasswordByAdmin as resetPasswordByAdminOnServer,
     saveGlobalSettings,
     updateUserSettings,
 } from '@/lib/auth-service';
@@ -46,6 +47,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
             dateFormat: 'dd/MM/yyyy',
         };
         setCurrentUser(dummyUser);
+        setUsers([dummyUser]);
         setIsAuthLoading(false);
         return;
     }
@@ -60,17 +62,15 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
         setAppSettings(loadedSettings);
       }
       
-      if (userFromSession) {
-        setCurrentUser(userFromSession);
-        console.log(`INFO: Restored user '${userFromSession.username}' from session.`);
-      }
-
-      // Fetch all users if current user is admin
+      setCurrentUser(userFromSession);
+      
       if (userFromSession?.isAdmin) {
           const allUsers = await fetchUsers();
           setUsers(allUsers);
+          console.log(`INFO: Restored admin user '${userFromSession.username}' and fetched all users.`);
       } else if (userFromSession) {
           setUsers([userFromSession]);
+          console.log(`INFO: Restored user '${userFromSession.username}' from session.`);
       }
 
     } catch (error) {
@@ -79,10 +79,11 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       setIsAuthLoading(false);
     }
   }, [isAuthRequired, defaultUserId]);
-
+  
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
 
   // Persist user profile changes
   useEffect(() => {
@@ -101,6 +102,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     const user = await loginOnClient(identifier, password);
     if (user) {
         setCurrentUser(user);
+        if (user.isAdmin) {
+            const allUsers = await fetchUsers();
+            setUsers(allUsers);
+        } else {
+            setUsers([user]);
+        }
         return true;
     }
     return false;
@@ -113,8 +120,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
     const newUser = await registerOnClient(username, password);
     if (newUser) {
-        setUsers(prev => [...prev, newUser]);
         setCurrentUser(newUser);
+        setUsers([newUser]); // On fresh registration, user is not admin yet usually
         console.log(`INFO: User '${username}' registered and logged in.`);
         window.location.href = '/';
         return true;
@@ -128,6 +135,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
     await logoutOnClient();
     setCurrentUser(null);
+    setUsers([]); // Clear users on logout
   };
 
   const addUserByAdmin = async (username: string, password: string, isAdmin: boolean): Promise<boolean> => {
@@ -170,7 +178,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   
   const resetPasswordByAdmin = async (userId: string, newPassword: string): Promise<void> => {
     if (!currentUser?.isAdmin) return;
-    await resetPasswordByAdmin(userId, newPassword);
+    await resetPasswordByAdminOnServer(userId, newPassword);
   };
 
   const setTheme = (newTheme: Theme) => {
