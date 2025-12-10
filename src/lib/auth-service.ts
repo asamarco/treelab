@@ -12,6 +12,7 @@ import { User, GlobalSettings } from './types';
 import { encrypt, decrypt } from './encryption';
 import { createSessionInServerAction } from './session';
 import crypto from 'crypto';
+import { unstable_noStore as noStore } from 'next/cache';
 
 // --- Password Hashing (Server-Side only) ---
 const hashPassword = (password: string, salt: string): Promise<string> => {
@@ -40,6 +41,9 @@ const toPlainObject = (doc: any): any => {
 // --- User Functions ---
 
 export async function fetchUsers(): Promise<User[]> {
+  // This is critical to prevent Next.js from caching the user list across different user sessions.
+  noStore();
+  
   await connectToDatabase();
   const users = await UserModel.find().lean<User[]>().exec();
   const decryptedUsers = await Promise.all(
