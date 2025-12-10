@@ -45,7 +45,7 @@ export async function fetchUsers(): Promise<User[]> {
   noStore();
   
   await connectToDatabase();
-  const users = await UserModel.find().lean<User[]>().exec();
+  const users = await UserModel.find().select('-passwordHash -salt').lean<User[]>().exec();
   const decryptedUsers = await Promise.all(
     users.map(async (u: any) => {
       const plainUser = toPlainObject(u);

@@ -53,9 +53,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
 
     try {
-      const [userFromSession, loadedSettings] = await Promise.all([
+      const [userFromSession, loadedSettings, allUsers] = await Promise.all([
           getSessionUser(),
-          loadGlobalSettings()
+          loadGlobalSettings(),
+          fetchUsers() // Always fetch all users
       ]);
       
       if (loadedSettings) {
@@ -63,14 +64,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       }
       
       setCurrentUser(userFromSession);
-      
-      if (userFromSession?.isAdmin) {
-          const allUsers = await fetchUsers();
-          setUsers(allUsers);
-          console.log(`INFO: Restored admin user '${userFromSession.username}' and fetched all users.`);
-      } else if (userFromSession) {
-          setUsers([userFromSession]);
-          console.log(`INFO: Restored user '${userFromSession.username}' from session.`);
+      setUsers(allUsers); // Always set all users
+
+      if (userFromSession) {
+          console.log(`INFO: Restored user '${userFromSession.username}' and fetched all users.`);
       }
 
     } catch (error) {
@@ -102,12 +99,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     const user = await loginOnClient(identifier, password);
     if (user) {
         setCurrentUser(user);
-        if (user.isAdmin) {
-            const allUsers = await fetchUsers();
-            setUsers(allUsers);
-        } else {
-            setUsers([user]);
-        }
+        const allUsers = await fetchUsers(); // Fetch all users on login
+        setUsers(allUsers);
         return true;
     }
     return false;
@@ -121,7 +114,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     const newUser = await registerOnClient(username, password);
     if (newUser) {
         setCurrentUser(newUser);
-        setUsers([newUser]); // On fresh registration, user is not admin yet usually
+        const allUsers = await fetchUsers(); // Fetch all users on register
+        setUsers(allUsers);
         console.log(`INFO: User '${username}' registered and logged in.`);
         window.location.href = '/';
         return true;

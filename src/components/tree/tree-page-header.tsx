@@ -70,7 +70,18 @@ export function TreePageHeader({
     const [isSyncing, setIsSyncing] = useState(false);
 
     const isOutOfSync = remoteSha && tree.gitSync?.lastSyncSha !== remoteSha;
+    const isOwner = tree.userId === currentUser?.id;
+    
+    const owner = users.find(u => u.id === tree.userId);
+    const collaboratorNames = tree.sharedWith
+        ?.map(userId => users.find(u => u.id === userId)?.username)
+        .filter((name): name is string => !!name);
 
+    const allParticipants = [
+        owner ? `${owner.username} (Owner)` : 'Unknown Owner',
+        ...(collaboratorNames || [])
+    ];
+    
     const handleSync = async () => {
         if (!tree || !currentUser?.gitSettings?.githubPat) return;
         setIsSyncing(true);
@@ -84,10 +95,6 @@ export function TreePageHeader({
             setIsSyncing(false);
         }
     };
-
-    const sharedWithUsers = tree.sharedWith
-        ?.map(userId => users.find(u => u.id === userId)?.username)
-        .filter(Boolean);
     
     return (
         <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
@@ -109,17 +116,22 @@ export function TreePageHeader({
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity read-only-hidden" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
-                    <Edit className="h-5 w-5" />
-                </Button>
-                {sharedWithUsers && sharedWithUsers.length > 0 && (
+                {isOwner && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity read-only-hidden" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
+                        <Edit className="h-5 w-5" />
+                    </Button>
+                )}
+                {collaboratorNames && collaboratorNames.length > 0 && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
                         <Users className="h-5 w-5 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Shared with: {sharedWithUsers.join(', ')}</p>
+                        <p className="font-bold">Shared with:</p>
+                        <ul className="list-disc pl-4 mt-1">
+                            {allParticipants.map(name => <li key={name}>{name}</li>)}
+                        </ul>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

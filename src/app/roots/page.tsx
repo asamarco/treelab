@@ -73,6 +73,9 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { generateJsonForExport } from "@/lib/utils";
 
 
 function DraggableTreeCard({ tree, children }: { tree: TreeFile, children: React.ReactNode }) {
@@ -484,7 +487,7 @@ function ManageRootsPage() {
                   </CardTitle>
                   <CardDescription>
                     <p>{tree.tree.length} root node{tree.tree.length !== 1 ? 's' : ''}</p>
-                    {!isOwner && owner && <p className="text-xs">Owned by {owner.username}</p>}
+                    {!isOwner && owner && <p className="text-xs text-muted-foreground">Owned by {owner.username}</p>}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-2">
@@ -792,7 +795,7 @@ function ManageRootsPage() {
                                    return user ? (
                                     <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
                                         <span>{user.username}</span>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
+                                        <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
                                             <X className="h-4 w-4"/>
                                         </Button>
                                     </div>
