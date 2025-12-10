@@ -48,7 +48,6 @@ export function TreeNodeComponent({
   onExpandedChange,
 }: TreeNodeProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState<null | 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate'>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
@@ -69,30 +68,39 @@ export function TreeNodeComponent({
   const { isCompactView } = useUIContext();
 
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
-
-  // Handle opening dialogs via global state from keyboard shortcuts
-  useEffect(() => {
-    if (dialogState.isNodeEditOpen && dialogState.nodeInstanceIdForAction === instanceId) {
-      setIsModalOpen('edit');
-      setDialogState({ isNodeEditOpen: false, nodeInstanceIdForAction: undefined });
-    }
-    if (dialogState.isAddChildOpen && dialogState.nodeInstanceIdForAction === instanceId) {
-      setIsModalOpen('addChild');
-      setDialogState({ isAddChildOpen: false, nodeInstanceIdForAction: undefined });
-    }
-    if (dialogState.isAddSiblingOpen && dialogState.nodeInstanceIdForAction === instanceId) {
-      setIsModalOpen('addSibling');
-      setDialogState({ isAddSiblingOpen: false, nodeInstanceIdForAction: undefined });
-    }
-  }, [
-    dialogState.isNodeEditOpen,
-    dialogState.isAddChildOpen,
-    dialogState.isAddSiblingOpen,
-    dialogState.nodeInstanceIdForAction, 
-    instanceId, 
-    setDialogState
-  ]);
   
+  const getActiveModal = (): null | 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate' => {
+    if (dialogState.nodeInstanceIdForAction !== instanceId) return null;
+    if (dialogState.isNodeEditOpen) return 'edit';
+    if (dialogState.isAddChildOpen) return 'addChild';
+    if (dialogState.isAddSiblingOpen) return 'addSibling';
+    if (dialogState.isChangeTemplateOpen) return 'changeTemplate';
+    if (dialogState.isPasteTemplateOpen) return 'pasteTemplate';
+    return null;
+  };
+  
+  const activeModal = getActiveModal();
+
+  const setModalOpen = (modal: null | 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => {
+    if (modal === 'edit') setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
+    else if (modal === 'addChild') setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
+    else if (modal === 'addSibling') setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
+    else if (modal === 'changeTemplate') setDialogState({ isChangeTemplateOpen: true, nodeInstanceIdForAction: instanceId });
+    else if (modal === 'pasteTemplate') setDialogState({ isPasteTemplateOpen: true, nodeInstanceIdForAction: instanceId });
+    else {
+        // Close all modals associated with this instance
+        setDialogState({ 
+            isNodeEditOpen: false, 
+            isAddChildOpen: false, 
+            isAddSiblingOpen: false,
+            isChangeTemplateOpen: false,
+            isPasteTemplateOpen: false,
+            nodeInstanceIdForAction: undefined 
+        });
+    }
+  };
+
+
   const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
   const setExpandedNodeIds = onExpandedChange || setGlobalExpandedNodeIds;
 
@@ -190,8 +198,14 @@ export function TreeNodeComponent({
         }}
         onDoubleClick={(e) => {
           if ((e.target as HTMLElement).closest('.read-only-view')) return;
+          
+          const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
+          if (isAnyModalOpen) {
+            return;
+          }
+
           e.stopPropagation();
-          setIsModalOpen('edit');
+          setModalOpen('edit');
         }}
       >
         <CardContent className="p-1">
@@ -203,7 +217,7 @@ export function TreeNodeComponent({
               isSelected={isSelected}
               siblings={siblings}
               onSelect={onSelect}
-              onOpenModal={setIsModalOpen}
+              onOpenModal={setModalOpen}
               dndAttributes={attributes}
               dndListeners={listeners}
               contextualParentId={contextualParentId}
@@ -227,8 +241,8 @@ export function TreeNodeComponent({
       <TreeNodeModals
         node={node}
         template={template}
-        openModal={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        openModal={activeModal}
+        onOpenChange={setModalOpen}
         contextualParentId={contextualParentId}
       />
     </div>

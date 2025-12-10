@@ -55,7 +55,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
   const { templates, getTemplateById, addChildNode, addSiblingNode, updateNode, changeNodeTemplate, clipboard, activeTree, setSelectedNodeIds } = useTreeContext();
   const { currentUser } = useAuthContext();
   const { toast } = useToast();
-  const { setIgnoreClicksUntil } = useUIContext();
+  const { setIgnoreClicksUntil, setDialogState } = useUIContext();
 
   const [selectedTemplateForNewNode, setSelectedTemplateForNewNode] = useState<Template | null>(null);
   const [selectedNewTemplateId, setSelectedNewTemplateId] = useState<string | null>(null);
@@ -86,6 +86,9 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
     if (!open) {
       setIgnoreClicksUntil(Date.now() + 500);
       handleClose();
+    } else {
+        if (openModal === 'edit') setDialogState({ isNodeEditOpen: true });
+        // Handle other modals if needed
     }
   };
 

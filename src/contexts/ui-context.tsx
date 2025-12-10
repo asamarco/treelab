@@ -28,6 +28,8 @@ export interface DialogState {
     isNodeEditOpen?: boolean;
     isAddChildOpen?: boolean;
     isAddSiblingOpen?: boolean;
+    isChangeTemplateOpen?: boolean;
+    isPasteTemplateOpen?: boolean;
     nodeInstanceIdForAction?: string;
 }
 
