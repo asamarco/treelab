@@ -2,7 +2,7 @@
 /**
  * @fileoverview
  * This API route handles all file uploads from the client (both pictures and attachments).
- * It receives form data containing the file as a data URI, saves it to the user's
+ * It receives form data containing the file, saves it to the user's
  * private `attachments` directory, and returns the web-accessible path and metadata.
  * It now includes logic to convert TIFF images to PNG format upon upload.
  */
@@ -14,39 +14,38 @@ import path from 'path';
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
-        const dataUri = formData.get('file') as string;
-        const relativePath = formData.get('relativePath') as string;
+        const file = formData.get('file') as File | null;
+        const uniqueFileName = formData.get('uniqueFileName') as string;
         const userId = formData.get('userId') as string;
         const originalFileName = formData.get('fileName') as string;
 
-        if (!dataUri || !relativePath || !userId || !originalFileName) {
+        if (!file || !uniqueFileName || !userId || !originalFileName) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
         
-        let finalDataUri = dataUri;
-        let finalRelativePath = relativePath;
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        let finalDataUri: string;
+        let finalRelativePath = uniqueFileName;
         let finalOriginalFileName = originalFileName;
 
         const isTiff = originalFileName.toLowerCase().endsWith('.tif') || originalFileName.toLowerCase().endsWith('.tiff');
 
         if (isTiff) {
             try {
-                const matches = dataUri.match(/^data:(.*);base64,(.*)$/);
-                if (matches) {
-                    const buffer = Buffer.from(matches[2], 'base64');
-                    // Add failOnError: false to prevent sharp from throwing on unsupported formats
-                    const pngBuffer = await sharp(buffer, { failOnError: false }).png().toBuffer();
-                    finalDataUri = `data:image/png;base64,${pngBuffer.toString('base64')}`;
-                    
-                    const parsedPath = path.parse(relativePath);
-                    finalRelativePath = `${parsedPath.name}.png`;
-                    finalOriginalFileName = `${path.parse(originalFileName).name}.png`;
-                }
+                const pngBuffer = await sharp(buffer, { failOnError: false }).png().toBuffer();
+                finalDataUri = `data:image/png;base64,${pngBuffer.toString('base64')}`;
+                
+                const parsedPath = path.parse(uniqueFileName);
+                finalRelativePath = `${parsedPath.name}.png`;
+                finalOriginalFileName = `${path.parse(originalFileName).name}.png`;
             } catch(conversionError) {
                 console.warn(`Could not convert ${originalFileName} to PNG, saving original file instead. Error:`, conversionError);
-                // If conversion fails, we just fall back to using the original data.
-                // The final* variables are already set to the original values.
+                finalDataUri = `data:${file.type};base64,${buffer.toString('base64')}`;
             }
+        } else {
+             finalDataUri = `data:${file.type};base64,${buffer.toString('base64')}`;
         }
         
         const attachmentInfo = await saveAttachment(userId, finalRelativePath, finalDataUri, finalOriginalFileName);

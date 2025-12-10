@@ -187,7 +187,7 @@ export const NodeForm = ({
   }, [tree]);
 
   const handleFileUpload = async (file: File, field: Field) => {
-    if (!activeTree) return;
+    if (!activeTree || !currentUser) return;
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
             variant: "destructive",
@@ -211,22 +211,26 @@ export const NodeForm = ({
 
     setUploadingStates(prev => ({...prev, [field.id]: true}));
     
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async (readEvent) => {
-        const dataUriResult = readEvent.target?.result as string;
-        if (!dataUriResult) {
-          setUploadingStates(prev => ({...prev, [field.id]: false}));
-          return;
-        };
+    const uniqueFileName = `${new Date().toISOString()}-${Math.random().toString(36).substring(2, 11)}-${file.name}`;
         
-        // Ensure the correct mime type is in the data URI
-        const base64Data = dataUriResult.split(',')[1];
-        const dataUri = `data:${file.type || 'application/octet-stream'};base64,${base64Data}`;
-        
-        const uniqueFileName = `${new Date().toISOString()}-${Math.random().toString(36).substring(2, 11)}-${file.name}`;
-        
-        const attachmentInfo = await uploadAttachment(uniqueFileName, dataUri, file.name, activeTree.userId);
+    const formDataPayload = new FormData();
+    formDataPayload.append('file', file);
+    formDataPayload.append('userId', currentUser.id);
+    formDataPayload.append('uniqueFileName', uniqueFileName);
+    formDataPayload.append('fileName', file.name);
+
+    try {
+        const response = await fetch('/api/upload/attachment', {
+            method: 'POST',
+            body: formDataPayload,
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json();
+            throw new Error(errorBody.message || 'Server error');
+        }
+
+        const { attachmentInfo } = await response.json();
         
         if (attachmentInfo) {
             if (field.type === 'picture') {
@@ -242,19 +246,11 @@ export const NodeForm = ({
               });
               toast({ title: "Attachment Uploaded", description: `File "${file.name}" has been saved.` });
             }
-        } else {
-             toast({ variant: "destructive", title: "Upload Failed", description: "Could not save the file to the server." });
         }
-        
+    } catch(error) {
+        toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message || "Could not save the file to the server." });
+    } finally {
         setUploadingStates(prev => ({...prev, [field.id]: false}));
-    };
-    reader.onerror = () => {
-       toast({
-        variant: "destructive",
-        title: "Read error",
-        description: "Could not read the selected file.",
-      });
-      setUploadingStates(prev => ({...prev, [field.id]: false}));
     }
   };
   
