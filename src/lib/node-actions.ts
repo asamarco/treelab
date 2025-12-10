@@ -24,6 +24,8 @@ import {
   ReorderNodesCommand,
   ActionContext,
   PasteAsClonesCommand,
+  UseTreeRootsResult,
+  TreeContextType,
 } from '@/lib/types';
 import {
   createNode as createNodeInDb,
@@ -196,40 +198,42 @@ export async function addNodesAction(
       execute: (draft: WritableDraft<TreeFile[]>) => {
           const treeToUpdate = draft.find((t: TreeFile) => t.id === activeTree.id);
           if (!treeToUpdate) return;
-          
-          const findAllNodesById = (nodes: WritableDraft<TreeNode>[], id: string): WritableDraft<TreeNode>[] => {
-              let results: WritableDraft<TreeNode>[] = [];
-              for (const node of nodes) {
-                  if (node.id === id) results.push(node);
-                  if (node.children) results = results.concat(findAllNodesById(node.children, id));
-              }
-              return results;
-          };
 
-          const parentInstances = parentIdForSequencing === 'root' ? [null] : findAllNodesById(treeToUpdate.tree, parentIdForSequencing);
-  
-          parentInstances.forEach((parent, index) => {
-              const targetSiblings = parent ? parent.children : treeToUpdate.tree;
-              if (targetSiblings) {
-                  targetSiblings.forEach(sibling => {
-                      const contextualOrder = getContextualOrder(sibling, targetSiblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
-                      if (contextualOrder >= order) {
-                          const parentIndex = (sibling.parentIds || []).indexOf(parentIdForSequencing);
-                          if (parentIndex !== -1) {
-                              const newOrderArray = [...sibling.order];
-                              newOrderArray[parentIndex] += newNodesWithFinalOrder.length;
-                              (sibling as WritableDraft<TreeNode>).order = newOrderArray;
-                          }
+          const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
+          const flattenAndMap = (nodes: WritableDraft<TreeNode>[]) => {
+            nodes.forEach(node => {
+                allNodesMap.set(node.id, node);
+                if (node.children) flattenAndMap(node.children);
+            });
+          };
+          flattenAndMap(treeToUpdate.tree);
+          
+          const parent = parentIdForSequencing === 'root' ? null : allNodesMap.get(parentIdForSequencing);
+          
+          // Determine the correct sibling list
+          const targetSiblings = parent ? parent.children : treeToUpdate.tree;
+          
+          // Ensure parent has a children array if it doesn't already
+          if (parent && !parent.children) {
+              parent.children = [];
+          }
+
+          // Handle sibling order update
+          if (targetSiblings) {
+              targetSiblings.forEach(sibling => {
+                  const contextualOrder = getContextualOrder(sibling, targetSiblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
+                  if (contextualOrder >= order) {
+                      const parentIndex = (sibling.parentIds || []).indexOf(parentIdForSequencing);
+                      if (parentIndex !== -1) {
+                          const newOrderArray = [...sibling.order];
+                          newOrderArray[parentIndex] += newNodesWithFinalOrder.length;
+                          (sibling as WritableDraft<TreeNode>).order = newOrderArray;
                       }
-                  });
-                  
-                  const nodesToInsert = index > 0 
-                      ? JSON.parse(JSON.stringify(newNodesWithFinalOrder)) 
-                      : newNodesWithFinalOrder;
-                  
-                  targetSiblings.splice(order, 0, ...nodesToInsert);
-              }
-          });
+                  }
+              });
+              
+              targetSiblings.splice(order, 0, ...newNodesWithFinalOrder.map(n => ({...n, children: []})));
+          }
       },
       post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
           await reorderSiblingsForAdd(activeTree.id, parentIdForSequencing === 'root' ? null : parentIdForSequencing, order, timestamp);
@@ -1311,3 +1315,4 @@ export async function toggleStarredForSelectedNodesAction(ctx: ActionContext) {
     await executeCommand(command);
 }
 
+    
