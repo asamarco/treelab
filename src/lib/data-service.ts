@@ -18,6 +18,7 @@ import { UserModel, TreeModel, TreeNodeModel } from './models';
 import { encrypt, decrypt } from './encryption';
 import mongoose from 'mongoose';
 import { generateJsonForExport, generateNodeName, getContextualOrder } from './utils';
+import { unstable_noStore as noStore } from 'next/cache';
 
 
 export async function hashPassword(password: string): Promise<string> {
@@ -168,6 +169,7 @@ export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | nul
 
 
 export async function loadAllTreeFiles(userId: string): Promise<TreeFile[]> {
+  noStore();
   await connectToDatabase();
   const treeFileDocs = await TreeModel.find({ 
     $or: [
