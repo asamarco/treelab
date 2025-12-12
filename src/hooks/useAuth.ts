@@ -33,7 +33,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [globalSettings, setAppSettings] = useState<GlobalSettings>({ allowPublicRegistration: true });
 
-  const initializeAuth = useCallback(async () => {
+  const initializeAuth = async () => {
     console.log("INFO: Initializing auth state...");
     
     if (!isAuthRequired) {
@@ -75,11 +75,11 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     } finally {
       setIsAuthLoading(false);
     }
-  }, [isAuthRequired, defaultUserId]);
+  };
   
   useEffect(() => {
     initializeAuth();
-  }, [initializeAuth]);
+  }, [isAuthRequired, defaultUserId]);
 
 
   // Persist user profile changes
