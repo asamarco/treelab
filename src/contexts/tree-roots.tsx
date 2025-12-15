@@ -183,7 +183,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const undoActionDescription = useMemo(() => getActionDescription(commandHistory[historyIndex]), [commandHistory, historyIndex]);
   const redoActionDescription = useMemo(() => getActionDescription(commandHistory[historyIndex + 1]), [commandHistory, historyIndex]);
 
-  const activeTree = allTrees.find((t) => t.id === activeTreeId);
+  // Client-side security filter. Only show trees the user has access to.
+  const visibleTrees = useMemo(() => {
+    if (!currentUser) return [];
+    return allTrees.filter(tree => 
+        tree.userId === currentUser.id || 
+        (tree.sharedWith && tree.sharedWith.includes(currentUser.id))
+    );
+  }, [allTrees, currentUser]);
+
+  const activeTree = visibleTrees.find((t) => t.id === activeTreeId);
 
   const reloadAllTrees = useCallback(async () => {
     if (!currentUser) return;
@@ -849,7 +858,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     activeTreeId,
     executeCommand,
     findNodeAndParent,
-    allTrees,
+    allTrees: visibleTrees,
     findNodeAndContextualParent,
     reloadActiveTree,
     isCloneOrDescendant,
@@ -857,7 +866,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     toast,
     getSiblingOrderRange,
     selectedNodeIds,
-  }), [activeTree, currentUser, activeTreeId, executeCommand, findNodeAndParent, allTrees, findNodeAndContextualParent, reloadActiveTree, isCloneOrDescendant, clipboard, toast, getSiblingOrderRange, selectedNodeIds]);
+  }), [activeTree, currentUser, activeTreeId, executeCommand, findNodeAndParent, visibleTrees, findNodeAndContextualParent, reloadActiveTree, isCloneOrDescendant, clipboard, toast, getSiblingOrderRange, selectedNodeIds]);
 
 
   const addChildNode = useCallback(async (
@@ -1062,7 +1071,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   };
 
   return {
-    allTrees,
+    allTrees: visibleTrees,
     setAllTrees,
     activeTree,
     activeTreeId,
@@ -1168,6 +1177,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     unlinkTreeFromRepo,
     createAndLinkTreeToRepo,
     updateActiveTree,
+    // Properties that were missing from TreeContextType
     templates: activeTree?.templates ?? [],
     tree: activeTree?.tree ?? [],
     treeTitle: activeTree?.title ?? "",
