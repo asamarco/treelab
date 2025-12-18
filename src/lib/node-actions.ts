@@ -821,15 +821,6 @@ export async function copyNodesAction(
   let nodesToProcess = nodes || clipboard?.nodes;
   if (!nodesToProcess || !activeTree) return;
 
-  if (nodesToProcess.some(n => n.id === targetNodeId)) {
-    toast?.({
-      variant: "destructive",
-      title: "Invalid Operation",
-      description: "Cannot paste a node into itself."
-    });
-    return;
-  }
-
   // Sort nodes for consistent order
   const parentInfoForSort = findNodeAndContextualParent(
     nodesToProcess[0].id,
