@@ -536,26 +536,6 @@ export function TreePageModals({
                 </div>
             )}
 
-            {/* Conflict Resolution Dialog */}
-             <Dialog open={!!conflictState} onOpenChange={(open) => !open && onConflictResolve('server')}>
-                <DialogContent>
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Out of Sync</DialogTitle>
-                    <DialogDescription>
-                    This tree has been updated in another browser tab or session. How would you like to proceed?
-                    </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onConflictResolve('server')}>
-                    Discard my changes and load the latest version
-                    </Button>
-                    <Button variant="destructive" onClick={() => onConflictResolve('local')}>
-                    Overwrite with my changes
-                    </Button>
-                </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
             {/* Change Multiple Templates Dialog */}
             <Dialog open={dialogState.isChangeTemplateMultipleOpen || false} onOpenChange={(open) => { setDialogState({ isChangeTemplateMultipleOpen: open }); if (!open) setTargetTemplateId(null); }}>
                 <DialogContent>

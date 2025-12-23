@@ -236,28 +236,26 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         const idToLoad = treeIdToLoad || activeTreeId;
         if (!idToLoad) return;
         
-        const reloadedTree = await loadTreeFile(idToLoad);
-
-        if (reloadedTree) {
+        // Fetch only the latest timestamp from the server.
+        const response = await fetch(`/api/tree-status/${idToLoad}`);
+        if (response.ok) {
+            const { updatedAt: serverUpdatedAt } = await response.json();
+            
+            // Update only the timestamp in the local state, preserving local data and history.
             performAction((draft) => {
-                const index = draft.findIndex(t => t.id === idToLoad);
-                if (index > -1) {
-                    const oldExpanded = draft[index].expandedNodeIds;
-                    draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
+                const treeIndex = draft.findIndex(t => t.id === idToLoad);
+                if (treeIndex > -1) {
+                    draft[treeIndex].updatedAt = serverUpdatedAt;
                 }
             }, false); // Not an undoable action
-            
-            // This is an external change, so the local undo history is no longer valid.
-            setCommandHistory(() => []);
-            setHistoryIndex(-1);
-            setIsDirty(false);
-            
-            toast({ title: "Refreshed", description: "Tree data has been reloaded from the server." });
+
+            setIsDirty(false); // Mark as clean since we're now in sync with the server's time.
+            toast({ title: "Refreshed", description: "Tree is now up-to-date with the server." });
         } else {
-            toast({ variant: 'destructive', title: 'Refresh Failed', description: `Could not reload tree with ID ${idToLoad}.`});
+            toast({ variant: 'destructive', title: 'Refresh Failed', description: `Could not check tree status.`});
         }
     },
-    [activeTreeId, performAction, toast, setCommandHistory, setHistoryIndex]
+    [activeTreeId, performAction, toast]
   );
   
   const createNewTree = useCallback(
@@ -567,41 +565,48 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   }, [activeTree]);
 
   useEffect(() => {
-      if (initialTree || !currentUser) return;
-  
-      const intervalId = setInterval(async () => {
-        if (!activeTreeRef.current) return;
-        try {
-          const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
-          if (response.ok) {
-            const { updatedAt: serverUpdatedAt } = await response.json();
-  
-            if (!activeTreeRef.current) return;
-            const localUpdatedAt = activeTreeRef.current.updatedAt;
-  
-            if (serverUpdatedAt && localUpdatedAt) {
-              const serverTime = new Date(serverUpdatedAt).getTime();
-              const localTime = new Date(localUpdatedAt).getTime();
-              
-              if (serverTime > localTime + 1000) {
-                  // Only reload if no local changes are pending.
-                  if (!isDirty) {
-                      console.log("INFO: Newer version detected on server. Automatically refreshing.");
-                      await reloadActiveTree();
-                  } else {
-                      console.warn("INFO: Newer version detected on server, but local changes are present. Skipping auto-refresh.");
-                      setConflictState({ localTree: activeTreeRef.current, serverTree: (await loadTreeFile(activeTreeRef.current.id))! });
-                  }
+    if (initialTree || !currentUser) return;
+
+    const intervalId = setInterval(async () => {
+      if (!activeTreeRef.current) return;
+      try {
+        const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
+        if (response.ok) {
+          const { updatedAt: serverUpdatedAt } = await response.json();
+
+          if (!activeTreeRef.current) return;
+          const localUpdatedAt = activeTreeRef.current.updatedAt;
+
+          if (serverUpdatedAt && localUpdatedAt) {
+            const serverTime = new Date(serverUpdatedAt).getTime();
+            const localTime = new Date(localUpdatedAt).getTime();
+            
+            if (serverTime > localTime + 1000) {
+              console.log("INFO: Newer version detected on server. Automatically refreshing.");
+              const idToLoad = activeTreeRef.current.id;
+              const reloadedTree = await loadTreeFile(idToLoad);
+              if (reloadedTree) {
+                  performAction((draft) => {
+                      const index = draft.findIndex(t => t.id === idToLoad);
+                      if (index > -1) {
+                          const oldExpanded = draft[index].expandedNodeIds;
+                          draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
+                      }
+                  }, false);
+                  setCommandHistory(() => []);
+                  setHistoryIndex(-1);
+                  setIsDirty(false);
               }
             }
           }
-        } catch (error) {
-          console.warn("Polling for tree status failed:", error);
         }
-      }, 5000); 
-  
-      return () => clearInterval(intervalId);
-    }, [initialTree, currentUser, reloadActiveTree, isDirty, setConflictState]);
+      } catch (error) {
+        console.warn("Polling for tree status failed:", error);
+      }
+    }, 5000); 
+
+    return () => clearInterval(intervalId);
+  }, [initialTree, currentUser, reloadActiveTree, performAction, setCommandHistory, setHistoryIndex]);
 
 
   useEffect(() => {
@@ -624,13 +629,10 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   
   const commitToRepo = useCallback(
     (treeId: string, message: string, token: string, force: boolean = false, treeFileToCommit?: TreeFile): Promise<{ success: boolean; error?: string, commitSha?: string }> => {
-        // Clear history on commit to prevent complex state issues
-        setCommandHistory(() => []);
-        setHistoryIndex(-1);
-        setIsDirty(false);
+        // We no longer clear history on every commit. The user can manually refresh if needed.
         return commitToRepoViaSync(treeId, message, token, force, treeFileToCommit);
     },
-    [commitToRepoViaSync, setCommandHistory, setHistoryIndex]
+    [commitToRepoViaSync]
   );
 
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
@@ -1281,3 +1283,5 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
 
   return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
 }
+
+    
