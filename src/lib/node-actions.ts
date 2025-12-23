@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview
  * This module contains all the functions for performing actions on tree nodes.
@@ -142,183 +141,183 @@ const resequenceSiblingsInDraft = (
 
 // Internal helper for node creation
 export async function addNodesAction(
-    ctx: ActionContext,
-    nodesToAdd: (Omit<TreeNode, 'id' | 'children'> & { _id?: string; id?: string, children?: any[] })[]
-  ): Promise<void> {
-    const { activeTree, currentUser, executeCommand, findNodeAndParent } = ctx;
-    if (!nodesToAdd.length || !activeTree?.id || !currentUser) return;
+  ctx: ActionContext,
+  nodesToAdd: (Omit<TreeNode, 'id' | 'children'> & { _id?: string; id?: string, children?: any[] })[]
+): Promise<void> {
+  const { activeTree, currentUser, executeCommand, findNodeAndParent } = ctx;
+  if (!nodesToAdd.length || !activeTree?.id || !currentUser) return;
 
-    const nodesWithIds = nodesToAdd.map(n => {
-        const newId = n.id || generateClientSideId();
-        return {
-            ...n,
-            id: newId,
-            _id: newId,
+  const nodesWithIds = nodesToAdd.map(n => {
+      const newId = n.id || generateClientSideId();
+      return {
+          ...n,
+          id: newId,
+          _id: newId,
+      };
+  });
+  
+  const firstNode = nodesWithIds[0];
+  const parentIdForSequencing = firstNode.parentIds?.[0] || 'root';
+  const parentNode = parentIdForSequencing === 'root' ? null : findNodeAndParent(parentIdForSequencing, activeTree.tree)?.node;
+  const siblings = parentNode ? parentNode.children : (activeTree.tree || []);
+  
+  const order = getContextualOrder(firstNode as any, siblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
+
+  const newNodesWithFinalOrder = nodesWithIds.map((n, i) => {
+      const orderArray = [...(n.order || [])];
+      orderArray[0] = order + i;
+      return { ...n, order: orderArray };
+  });
+
+  const originalSiblingOrders = (siblings || [])
+      .filter(s => getContextualOrder(s, siblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing) >= order)
+      .map(s => ({ id: s.id, order: [...s.order] }));
+    
+  const flattenedNodesForDb: any[] = [];
+  const flattenAndPrep = (nodes: any[], parentId: string | null) => {
+      nodes.forEach(node => {
+          const { children, ...rest } = node;
+          flattenedNodesForDb.push({
+              ...rest,
+              order: node.order, 
+              treeId: activeTree.id,
+              userId: currentUser.id,
+          });
+          if (children) {
+              flattenAndPrep(children, node.id);
+          }
+      });
+  };
+  flattenAndPrep(newNodesWithFinalOrder, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
+  
+  const command: AddNodesCommand = {
+    type: 'ADD_NODES',
+    payload: { nodes: newNodesWithFinalOrder as TreeNode[] },
+    originalState: { siblingOrders: originalSiblingOrders },
+    execute: (draft: WritableDraft<TreeFile[]>) => {
+        const treeToUpdate = draft.find((t: TreeFile) => t.id === activeTree.id);
+        if (!treeToUpdate) return;
+
+        const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
+        const flattenAndMap = (nodes: WritableDraft<TreeNode>[]) => {
+          nodes.forEach(node => {
+              allNodesMap.set(node.id, node);
+              if (node.children) flattenAndMap(node.children);
+          });
         };
-    });
-    
-    const firstNode = nodesWithIds[0];
-    const parentIdForSequencing = firstNode.parentIds?.[0] || 'root';
-    const parentNode = parentIdForSequencing === 'root' ? null : findNodeAndParent(parentIdForSequencing, activeTree.tree)?.node;
-    const siblings = parentNode ? parentNode.children : (activeTree.tree || []);
-    
-    const order = getContextualOrder(firstNode as any, siblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
-
-    const newNodesWithFinalOrder = nodesWithIds.map((n, i) => {
-        const orderArray = [...(n.order || [])];
-        orderArray[0] = order + i;
-        return { ...n, order: orderArray };
-    });
-
-    const originalSiblingOrders = (siblings || [])
-        .filter(s => getContextualOrder(s, siblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing) >= order)
-        .map(s => ({ id: s.id, order: [...s.order] }));
-      
-    const flattenedNodesForDb: any[] = [];
-    const flattenAndPrep = (nodes: any[], parentId: string | null) => {
-        nodes.forEach(node => {
-            const { children, ...rest } = node;
-            flattenedNodesForDb.push({
-                ...rest,
-                order: node.order, 
-                treeId: activeTree.id,
-                userId: currentUser.id,
-            });
-            if (children) {
-                flattenAndPrep(children, node.id);
-            }
-        });
-    };
-    flattenAndPrep(newNodesWithFinalOrder, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
-    
-    const command: AddNodesCommand = {
-      type: 'ADD_NODES',
-      payload: { nodes: newNodesWithFinalOrder as TreeNode[] },
-      originalState: { siblingOrders: originalSiblingOrders },
-      execute: (draft: WritableDraft<TreeFile[]>) => {
-          const treeToUpdate = draft.find((t: TreeFile) => t.id === activeTree.id);
-          if (!treeToUpdate) return;
-
-          const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
-          const flattenAndMap = (nodes: WritableDraft<TreeNode>[]) => {
-            nodes.forEach(node => {
-                allNodesMap.set(node.id, node);
-                if (node.children) flattenAndMap(node.children);
-            });
-          };
-          flattenAndMap(treeToUpdate.tree);
-          
-          const parent = parentIdForSequencing === 'root' ? null : allNodesMap.get(parentIdForSequencing);
-          
-          // Determine the correct sibling list
-          const targetSiblings = parent ? parent.children : treeToUpdate.tree;
-          
-          // Ensure parent has a children array if it doesn't already
-          if (parent && !parent.children) {
-              parent.children = [];
-          }
-
-          // Handle sibling order update
-          if (targetSiblings) {
-              targetSiblings.forEach(sibling => {
-                  const contextualOrder = getContextualOrder(sibling, targetSiblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
-                  if (contextualOrder >= order) {
-                      const parentIndex = (sibling.parentIds || []).indexOf(parentIdForSequencing);
-                      if (parentIndex !== -1) {
-                          const newOrderArray = [...sibling.order];
-                          newOrderArray[parentIndex] += newNodesWithFinalOrder.length;
-                          (sibling as WritableDraft<TreeNode>).order = newOrderArray;
-                      }
-                  }
-              });
-              
-              targetSiblings.splice(order, 0, ...newNodesWithFinalOrder.map(n => ({...n, children: []})));
-          }
-      },
-      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
-          await reorderSiblingsForAdd(activeTree.id, parentIdForSequencing === 'root' ? null : parentIdForSequencing, order, timestamp);
-          await batchCreateNodes([...flattenedNodesForDb].reverse(), timestamp);
-      },
-      undo: async (timestamp?: string) => {
-        const undoUpdates: {id: string, updates: Partial<TreeNode>}[] = [];
-        command.originalState.siblingOrders.forEach(sibling => {
-            undoUpdates.push({id: sibling.id, updates: { order: sibling.order }});
-        });
-
-        await Promise.all([
-            batchDeleteNodes(command.payload.nodes.map(node => ({
-                nodeId: node.id,
-                parentIdToUnlink: null // The entire node is deleted on undo
-            })), timestamp),
-            batchUpdateNodes(undoUpdates, timestamp)
-        ]);
-      },
-      redo: async (finalTreeFile?: TreeFile, timestamp?: string) => {
-        const parentId = command.payload.nodes[0].parentIds?.[0] || 'root';
-        const parentNodeForRedo = parentId === 'root' ? null : findNodeAndParent(parentId, finalTreeFile?.tree || [])?.node;
-        const siblingsForRedo = parentNodeForRedo ? parentNodeForRedo.children : finalTreeFile?.tree || [];
-        const baseOrder = command.payload.nodes[0].order[0];
-    
-        await reorderSiblingsForAdd(activeTree.id, parentId === 'root' ? null : parentId, baseOrder, timestamp);
-        await batchCreateNodes([...flattenedNodesForDb].reverse(), timestamp);
-    
-        if (finalTreeFile) {
-          const finalParentNode = parentId === 'root' ? null : findNodeAndParent(parentId, finalTreeFile.tree)?.node;
-          const finalSiblings = finalParentNode ? finalParentNode.children : finalTreeFile.tree;
-    
-          const siblingOrderUpdates = (finalSiblings || [])
-            .map((sibling) => {
-              const contextualOrder = getContextualOrder(sibling, finalSiblings, parentId === 'root' ? null : parentId);
-              const parentIndex = (sibling.parentIds || []).indexOf(parentId || "root");
-              if (parentIndex === -1) return null;
-              
-              const newOrder = [...sibling.order];
-              newOrder[parentIndex] = contextualOrder;
-    
-              if (JSON.stringify(sibling.order) !== JSON.stringify(newOrder)) {
-                return { id: sibling.id, updates: { order: newOrder } };
-              }
-              return null;
-            })
-            .filter((u): u is { id: string; updates: { order: number[] } } => u !== null);
-    
-          if (siblingOrderUpdates.length > 0) {
-            await batchUpdateNodes(siblingOrderUpdates, timestamp);
-          }
+        flattenAndMap(treeToUpdate.tree);
+        
+        const parent = parentIdForSequencing === 'root' ? null : allNodesMap.get(parentIdForSequencing);
+        
+        // Determine the correct sibling list
+        const targetSiblings = parent ? parent.children : treeToUpdate.tree;
+        
+        // Ensure parent has a children array if it doesn't already
+        if (parent && !parent.children) {
+            parent.children = [];
         }
-      },
-      getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
-          const { activeTreeId } = ctx;
-          const treeToUpdate = draft.find((t) => t.id === activeTreeId);
-          if (treeToUpdate) {
-              const nodesToRemove = new Set((command as AddNodesCommand).payload.nodes.map(n => n.id));
-              
-              const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
 
-              const flattenAndMap = (nodes: WritableDraft<TreeNode>[]) => {
-                  nodes.forEach(n => {
-                      allNodesMap.set(n.id, n);
-                      if (n.children) flattenAndMap(n.children);
-                  });
-              };
-              flattenAndMap(treeToUpdate.tree);
-              
-              // Restore sibling order
-              (command as AddNodesCommand).originalState.siblingOrders.forEach(siblingOrder => {
-                const nodeInMap = allNodesMap.get(siblingOrder.id);
-                if (nodeInMap) {
-                    (nodeInMap as WritableDraft<TreeNode>).order = [...siblingOrder.order];
+        // Handle sibling order update
+        if (targetSiblings) {
+            targetSiblings.forEach(sibling => {
+                const contextualOrder = getContextualOrder(sibling, targetSiblings, parentIdForSequencing === 'root' ? null : parentIdForSequencing);
+                if (contextualOrder >= order) {
+                    const parentIndex = (sibling.parentIds || []).indexOf(parentIdForSequencing);
+                    if (parentIndex !== -1) {
+                        const newOrderArray = [...sibling.order];
+                        newOrderArray[parentIndex] += newNodesWithFinalOrder.length;
+                        (sibling as WritableDraft<TreeNode>).order = newOrderArray;
+                    }
                 }
-              });
+            });
+            
+            targetSiblings.splice(order, 0, ...newNodesWithFinalOrder.map(n => ({...n, children: []})));
+        }
+    },
+    post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+        await reorderSiblingsForAdd(activeTree.id, parentIdForSequencing === 'root' ? null : parentIdForSequencing, order, timestamp);
+        await batchCreateNodes([...flattenedNodesForDb].reverse(), timestamp);
+    },
+    undo: async (timestamp?: string) => {
+      const undoUpdates: {id: string, updates: Partial<TreeNode>}[] = [];
+      command.originalState.siblingOrders.forEach(sibling => {
+          undoUpdates.push({id: sibling.id, updates: { order: sibling.order }});
+      });
 
-              const remainingNodes = Array.from(allNodesMap.values()).filter(n => !nodesToRemove.has(n.id));
-              treeToUpdate.tree = reconstructTree(remainingNodes);
-          }
-      },
-    };
-    
-    await executeCommand(command, true);
-  }
+      await Promise.all([
+          batchDeleteNodes(command.payload.nodes.map(node => ({
+              nodeId: node.id,
+              parentIdToUnlink: null // The entire node is deleted on undo
+          })), timestamp),
+          batchUpdateNodes(undoUpdates, timestamp)
+      ]);
+    },
+    redo: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+      const parentId = command.payload.nodes[0].parentIds?.[0] || 'root';
+      const parentNodeForRedo = parentId === 'root' ? null : findNodeAndParent(parentId, finalTreeFile?.tree || [])?.node;
+      const siblingsForRedo = parentNodeForRedo ? parentNodeForRedo.children : finalTreeFile?.tree || [];
+      const baseOrder = command.payload.nodes[0].order[0];
+  
+      await reorderSiblingsForAdd(activeTree.id, parentId === 'root' ? null : parentId, baseOrder, timestamp);
+      await batchCreateNodes([...flattenedNodesForDb].reverse(), timestamp);
+  
+      if (finalTreeFile) {
+        const finalParentNode = parentId === 'root' ? null : findNodeAndParent(parentId, finalTreeFile.tree)?.node;
+        const finalSiblings = finalParentNode ? finalParentNode.children : finalTreeFile.tree;
+  
+        const siblingOrderUpdates = (finalSiblings || [])
+          .map((sibling) => {
+            const contextualOrder = getContextualOrder(sibling, finalSiblings, parentId === 'root' ? null : parentId);
+            const parentIndex = (sibling.parentIds || []).indexOf(parentId || "root");
+            if (parentIndex === -1) return null;
+            
+            const newOrder = [...sibling.order];
+            newOrder[parentIndex] = contextualOrder;
+  
+            if (JSON.stringify(sibling.order) !== JSON.stringify(newOrder)) {
+              return { id: sibling.id, updates: { order: newOrder } };
+            }
+            return null;
+          })
+          .filter((u): u is { id: string; updates: { order: number[] } } => u !== null);
+  
+        if (siblingOrderUpdates.length > 0) {
+          await batchUpdateNodes(siblingOrderUpdates, timestamp);
+        }
+      }
+    },
+    getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
+        const { activeTreeId } = ctx;
+        const treeToUpdate = draft.find((t) => t.id === activeTreeId);
+        if (treeToUpdate) {
+            const nodesToRemove = new Set((command as AddNodesCommand).payload.nodes.map(n => n.id));
+            
+            const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
+
+            const flattenAndMap = (nodes: WritableDraft<TreeNode>[]) => {
+                nodes.forEach(n => {
+                    allNodesMap.set(n.id, n);
+                    if (n.children) flattenAndMap(n.children);
+                });
+            };
+            flattenAndMap(treeToUpdate.tree);
+            
+            // Restore sibling order
+            (command as AddNodesCommand).originalState.siblingOrders.forEach(siblingOrder => {
+              const nodeInMap = allNodesMap.get(siblingOrder.id);
+              if (nodeInMap) {
+                  (nodeInMap as WritableDraft<TreeNode>).order = [...siblingOrder.order];
+              }
+            });
+
+            const remainingNodes = Array.from(allNodesMap.values()).filter(n => !nodesToRemove.has(n.id));
+            treeToUpdate.tree = reconstructTree(remainingNodes);
+        }
+    },
+  };
+  
+  await executeCommand(command, true);
+}
 
 export async function addRootNodeAction(
   ctx: ActionContext,
@@ -817,90 +816,88 @@ export async function copyNodesAction(
   contextualParentId: string | null,
   nodes?: TreeNode[]
 ) {
-  const { clipboard, toast, activeTree, findNodeAndContextualParent } = ctx;
+  const { clipboard, toast, activeTree, findNodeAndContextualParent, executeCommand } = ctx;
   let nodesToProcess = nodes || clipboard?.nodes;
   if (!nodesToProcess || !activeTree) return;
-
-  // Sort nodes for consistent order
-  const parentInfoForSort = findNodeAndContextualParent(
-    nodesToProcess[0].id,
-    nodesToProcess[0].parentIds?.[0] ?? null,
-    activeTree.tree
-  );
-  const siblingsForSort = parentInfoForSort?.parent
-    ? parentInfoForSort.parent.children
-    : (activeTree.tree || []);
-  const sortedNodesToProcess = [...nodesToProcess].sort(
-    (a, b) =>
-      getContextualOrder(a, siblingsForSort, a.parentIds?.[0]) -
-      getContextualOrder(b, siblingsForSort, b.parentIds?.[0])
-  );
 
   const allNewNodes: (Omit<TreeNode, 'id' | 'children'> & {
     id: string;
     _id: string;
-    children: any[];
   })[] = [];
 
-  // Always reference the original target node
+  const idMap = new Map<string, string>();
+
+  // 1. Traverse the nodes to be cloned, create new IDs, and build the ID map and a flat list.
+  const traverseAndClone = (originalNodes: TreeNode[]) => {
+    originalNodes.forEach(originalNode => {
+      const newId = generateClientSideId();
+      idMap.set(originalNode.id, newId);
+      
+      const { children, ...rest } = originalNode;
+      allNewNodes.push({ ...rest, id: newId, _id: newId });
+
+      if (children && children.length > 0) {
+        traverseAndClone(children);
+      }
+    });
+  };
+  traverseAndClone(nodesToProcess);
+
+  // 2. Determine destination and starting order
   const parentInfo = findNodeAndContextualParent(
     targetNodeId,
     contextualParentId,
     activeTree.tree
   );
-  const targetNode = parentInfo?.node;
-  if (!targetNode) return;
+  if (!parentInfo) return; // Target not found
+  const { node: targetNode, parent: targetParent } = parentInfo;
 
-  for (const nodeToClone of sortedNodesToProcess) {
-    const clonedNode = deepCloneNode(nodeToClone);
+  const isChildDrop = position === 'child' || position === 'child-bottom';
+  const newParentId = isChildDrop ? targetNodeId : (targetParent?.id || null);
+  
+  const siblingsForOrderCalc = newParentId 
+    ? (ctx.findNodeAndParent(newParentId)?.node.children || [])
+    : (activeTree.tree || []);
 
-    let newOrderValue;
-    if (position === 'child' || position === 'child-bottom') {
-      const children = targetNode.children || [];
-      const maxOrder =
-        children.length > 0
-          ? Math.max(
-              ...children.map(c =>
-                getContextualOrder(c, children, targetNodeId)
-              )
-            )
-          : -1;
-      newOrderValue = maxOrder + 1;
+  const baseOrder = isChildDrop
+    ? siblingsForOrderCalc.length
+    : getContextualOrder(targetNode, siblingsForOrderCalc, newParentId) + 1;
+
+  // 3. Re-link parentIds and assign order for the entire cloned structure
+  const finalNodesToAdd: (Omit<TreeNode, 'id' | 'children'>)[] = [];
+  
+  allNewNodes.forEach(clonedNode => {
+    // Find the original node that this clone was made from
+    const originalId = Array.from(idMap.entries()).find(([_, newId]) => newId === clonedNode.id)?.[0];
+    if (!originalId) return;
+    
+    // Check if this node was a top-level node in the original selection
+    if (nodesToProcess!.some(n => n.id === originalId)) {
+        // This is a top-level node of the paste, its parent is the new destination
+        const originalIndex = nodesToProcess!.findIndex(n => n.id === originalId);
+        finalNodesToAdd.push({
+            ...clonedNode,
+            parentIds: [newParentId || 'root'],
+            order: [baseOrder + originalIndex]
+        });
     } else {
-      const siblings = parentInfo?.parent
-        ? parentInfo.parent.children
-        : (activeTree.tree || []);
-      const targetOrder = getContextualOrder(
-        targetNode,
-        siblings,
-        contextualParentId
-      );
-      newOrderValue = targetOrder + 1;
+        // This is a descendant, remap its original parents to new cloned parents
+        const originalParentIds = (ctx.findNodeAndParent(originalId)?.node.parentIds) || [];
+        const newParentIds = originalParentIds.map(pid => idMap.get(pid!)).filter((id): id is string => !!id);
+        
+        finalNodesToAdd.push({
+            ...clonedNode,
+            parentIds: newParentIds,
+            // Order will be determined by position within parent's children array, so we can init to 0
+            order: newParentIds.map(() => 0), 
+        });
     }
+  });
 
-    const { id, children, ...rest } = clonedNode;
-
-    const newNode = {
-      ...rest,
-      id,
-      _id: id,
-      parentIds: [
-        position === 'child' || position === 'child-bottom'
-          ? targetNodeId
-          : contextualParentId || 'root'
-      ],
-      order: [newOrderValue],
-      children
-    };
-
-    allNewNodes.push(newNode);
-  }
-
-  if (allNewNodes.length > 0) {
-    await addNodesAction(ctx, allNewNodes);
+  if (finalNodesToAdd.length > 0) {
+    await addNodesAction(ctx, finalNodesToAdd);
   }
 }
-
 
 export async function moveNodesAction(
     ctx: ActionContext,
@@ -1307,3 +1304,4 @@ export async function toggleStarredForSelectedNodesAction(ctx: ActionContext) {
 }
 
     
+
