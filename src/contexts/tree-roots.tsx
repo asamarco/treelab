@@ -180,7 +180,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
 
     // Update the UI state with the already-computed final snapshot
-    setAllTrees(() => finalTreeSnapshot as WritableDraft<TreeFile[]>);
+    performAction(() => finalTreeSnapshot as WritableDraft<TreeFile[]>, isUndoable);
     
     if (isUndoable) {
         const newHistory = commandHistory.slice(0, historyIndex + 1);
@@ -192,7 +192,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         setHistoryIndex(newHistory.length - 1);
     }
 
-}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory]);
+}, [allTrees, activeTreeId, commandHistory, historyIndex, performAction, setCommandHistory]);
   
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < commandHistory.length - 1;
@@ -233,27 +233,31 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const reloadActiveTree = useCallback(
     async (treeIdToLoad?: string) => {
-      const idToLoad = treeIdToLoad || activeTreeId;
-      if (!idToLoad) return;
-      
-      const reloadedTree = await loadTreeFile(idToLoad);
-      if (reloadedTree) {
-        setAllTrees((draft: WritableDraft<TreeFile[]>) => {
-            const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
-            if (index > -1) {
-                // Preserve expanded state while updating everything else
-                const oldExpanded = draft[index].expandedNodeIds;
-                draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
-            }
-        });
-        setCommandHistory(() => []);
-        setHistoryIndex(-1);
-        console.log('INFO: Reloaded tree and cleared history due to external change.')
-      } else {
-        console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
-      }
+        const idToLoad = treeIdToLoad || activeTreeId;
+        if (!idToLoad) return;
+        
+        const reloadedTree = await loadTreeFile(idToLoad);
+
+        if (reloadedTree) {
+            performAction((draft) => {
+                const index = draft.findIndex(t => t.id === idToLoad);
+                if (index > -1) {
+                    const oldExpanded = draft[index].expandedNodeIds;
+                    draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
+                }
+            }, false); // Not an undoable action
+            
+            // This is an external change, so the local undo history is no longer valid.
+            setCommandHistory(() => []);
+            setHistoryIndex(-1);
+            setIsDirty(false);
+            
+            toast({ title: "Refreshed", description: "Tree data has been reloaded from the server." });
+        } else {
+            toast({ variant: 'destructive', title: 'Refresh Failed', description: `Could not reload tree with ID ${idToLoad}.`});
+        }
     },
-    [activeTreeId, setAllTrees, setCommandHistory, setHistoryIndex]
+    [activeTreeId, performAction, toast, setCommandHistory, setHistoryIndex]
   );
   
   const createNewTree = useCallback(
@@ -571,7 +575,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
           const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
           if (response.ok) {
             const { updatedAt: serverUpdatedAt } = await response.json();
-            
+  
             if (!activeTreeRef.current) return;
             const localUpdatedAt = activeTreeRef.current.updatedAt;
   
@@ -580,8 +584,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
               const localTime = new Date(localUpdatedAt).getTime();
               
               if (serverTime > localTime + 1000) {
-                  console.log("INFO: Newer version detected on server. Automatically refreshing.");
-                  await reloadActiveTree();
+                  // Only reload if no local changes are pending.
+                  if (!isDirty) {
+                      console.log("INFO: Newer version detected on server. Automatically refreshing.");
+                      await reloadActiveTree();
+                  } else {
+                      console.warn("INFO: Newer version detected on server, but local changes are present. Skipping auto-refresh.");
+                      setConflictState({ localTree: activeTreeRef.current, serverTree: (await loadTreeFile(activeTreeRef.current.id))! });
+                  }
               }
             }
           }
@@ -591,7 +601,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       }, 5000); 
   
       return () => clearInterval(intervalId);
-    }, [initialTree, currentUser, reloadActiveTree]);
+    }, [initialTree, currentUser, reloadActiveTree, isDirty, setConflictState]);
 
 
   useEffect(() => {
@@ -625,24 +635,21 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
     if (currentUser && !isSaving) {
-      const newTimestamp = new Date().toISOString();
-      const updatedTree = { ...treeToSave, updatedAt: newTimestamp };
-
-      // Optimistically update local state with the new timestamp immediately
-      setAllTrees((draft) => {
-        const treeIndex = draft.findIndex((t: TreeFile) => t.id === treeToSave.id);
-        if (treeIndex > -1) {
-          draft[treeIndex].updatedAt = newTimestamp;
-        }
-      });
-      setIsDirty(false); // Mark as clean now that we have the timestamp
       setIsSaving(true);
       
-      const { tree, ...metaData } = updatedTree;
+      const { tree, ...metaData } = treeToSave;
   
-      saveTreeFile(metaData, newTimestamp).finally(() => {
-        setIsSaving(false);
-        console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
+      saveTreeFile(metaData).then(serverTimestamp => {
+          performAction((draft) => {
+            const treeIndex = draft.findIndex((t: TreeFile) => t.id === treeToSave.id);
+            if (treeIndex > -1) {
+              draft[treeIndex].updatedAt = serverTimestamp;
+            }
+          }, false); // Timestamp bump isn't undoable
+          setIsDirty(false); // Mark clean *after* successful save and state update
+          console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
+      }).finally(() => {
+          setIsSaving(false);
       });
     }
   }, 1000);
