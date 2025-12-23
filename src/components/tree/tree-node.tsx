@@ -25,6 +25,19 @@ import { TreeNodeContent } from "./tree-node-content";
 import { TreeNodeModals } from "./tree-node-modals";
 import { TreeNodeDropZone } from "./tree-node-dropzone";
 import type { WritableDraft } from "immer";
+import { AlertTriangle, Trash2, RefreshCcw } from "lucide-react";
+import { Button } from "../ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 interface TreeNodeProps {
@@ -64,6 +77,7 @@ export function TreeNodeComponent({
     expandedNodeIds: globalExpandedNodeIds,
     setExpandedNodeIds: setGlobalExpandedNodeIds,
     selectedNodeIds,
+    deleteNode,
   } = useTreeContext();
   const { isCompactView } = useUIContext();
 
@@ -153,8 +167,56 @@ export function TreeNodeComponent({
   
   if (!template) {
     return (
-      <div style={{ paddingLeft: `${level * 1.5}rem` }} className="flex items-center text-muted-foreground h-10">
-        Loading node... ({node.id} / {node.templateId})
+      <div style={{ paddingLeft: `${level * 1.5}rem` }} className="pl-6 my-1">
+        <Card className="border-destructive/50 bg-destructive/10 w-full">
+          <CardContent className="p-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div className="text-sm">
+                <p className="font-semibold text-destructive">{node.name}</p>
+                <p className="text-destructive/80">Template missing or deleted.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setModalOpen('changeTemplate')}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Change Template
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this node and all its children.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteNode(node.id, contextualParentId)}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
+        <TreeNodeModals
+          node={node}
+          template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} // Dummy template
+          openModal={activeModal}
+          onOpenChange={setModalOpen}
+          contextualParentId={contextualParentId}
+        />
       </div>
     );
   }
@@ -248,3 +310,4 @@ export function TreeNodeComponent({
     </div>
   );
 }
+
