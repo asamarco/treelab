@@ -1,0 +1,17 @@
+{
+  "id": "uet3xb",
+  "name": "Folder",
+  "icon": "Folder",
+  "color": "#fbd539",
+  "fields": [
+    {
+      "id": "cbx5ubp",
+      "name": "Name",
+      "type": "text",
+      "options": []
+    }
+  ],
+  "nameTemplate": "{Name} ",
+  "bodyTemplate": "",
+  "conditionalRules": []
+}

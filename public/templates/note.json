@@ -1,0 +1,80 @@
+{
+  "id": "2nqu2su",
+  "name": "Note",
+  "icon": "Info",
+  "color": "#19e6bd",
+  "fields": [
+    {
+      "id": "k07y9yo",
+      "name": "Note",
+      "type": "text",
+      "options": []
+    },
+    {
+      "id": "vjv2ggy",
+      "name": "Long text",
+      "type": "textarea",
+      "options": []
+    },
+    {
+      "id": "0qxilez",
+      "name": "Type",
+      "type": "dropdown",
+      "options": [
+        "Info",
+        "Warning",
+        "Success",
+        "Failure"
+      ]
+    },
+    {
+      "id": "fhhl510",
+      "name": "Gallery",
+      "type": "picture",
+      "options": [],
+      "width": 600
+    },
+    {
+      "id": "njun80s",
+      "name": "Attachments",
+      "type": "attachment",
+      "options": []
+    }
+  ],
+  "nameTemplate": "{Note}",
+  "bodyTemplate": "{Long text}",
+  "conditionalRules": [
+    {
+      "id": "xr25bub",
+      "fieldId": "0qxilez",
+      "operator": "equals",
+      "value": "Warning",
+      "icon": "TriangleAlert",
+      "color": "#dfce11"
+    },
+    {
+      "id": "sdw4ihh",
+      "fieldId": "0qxilez",
+      "operator": "equals",
+      "value": "Failure",
+      "icon": "X",
+      "color": "#cd2b0e"
+    },
+    {
+      "id": "n6dfbdl",
+      "fieldId": "0qxilez",
+      "operator": "equals",
+      "value": "Success",
+      "icon": "Check",
+      "color": "#44da1b"
+    },
+    {
+      "id": "n5g9qx5",
+      "fieldId": "fhhl510",
+      "operator": "is_not_empty",
+      "value": "",
+      "icon": "Image",
+      "color": "#ffdd00"
+    }
+  ]
+}

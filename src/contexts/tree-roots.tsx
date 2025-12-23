@@ -6,7 +6,7 @@
  */
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, Dispatch, SetStateAction } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Dispatch, SetStateAction, useRef } from "react";
 import { useRouter, usePathname } from 'next/navigation';
 import { useImmer } from "use-immer";
 import { produce, WritableDraft } from "immer";
@@ -95,10 +95,36 @@ import { TreeContext } from './tree-context';
 
 
 // Helper to create a default tree structure
-const createDefaultTreeFile = (title: string, userId: string, order: number) => ({
-  treeFile: { title, userId, templates: [], expandedNodeIds: [], order, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  initialNodes: [],
-});
+async function createDefaultTreeFile(title: string, userId: string, order: number): Promise<{
+  treeFile: Omit<TreeFile, 'tree' | 'id'>;
+  initialNodes: Omit<TreeNode, 'id' | 'children' | '_id'>[];
+}> {
+  let defaultTemplates: Template[] = [];
+  try {
+    const templateNames = ['folder.json', 'note.json'];
+    const templatePromises = templateNames.map(name =>
+      fetch(`/templates/${name}`).then(res => res.json())
+    );
+    defaultTemplates = await Promise.all(templatePromises);
+  } catch (error) {
+    console.warn("Could not load default templates:", error);
+    // Proceed without default templates if they fail to load
+  }
+
+  return {
+    treeFile: {
+      title,
+      userId,
+      templates: defaultTemplates,
+      expandedNodeIds: [],
+      order,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    initialNodes: [],
+  };
+}
+
 
 interface UseTreeRootsProps {
     initialTree?: TreeFile;
@@ -135,28 +161,25 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const executeCommand = useCallback(async (command: Command, isUndoable: boolean = true) => {
     if (!activeTreeId) return;
 
-    const originalTreeFile = allTrees.find(t => t.id === activeTreeId);
-    if (!originalTreeFile) return;
-
     const newTimestamp = new Date().toISOString();
     
-    // Create the "after" state in memory *before* updating the UI state
+    // Create the "after" state in memory, applying the state change and the new timestamp together
     const finalTreeSnapshot = produce(allTrees, draft => {
         const treeToUpdate = draft.find(t => t.id === activeTreeId);
         if (treeToUpdate) {
-            command.execute(draft);
-            treeToUpdate.updatedAt = newTimestamp;
+            command.execute(draft); // Apply command's state change logic
+            treeToUpdate.updatedAt = newTimestamp; // Update timestamp in the same mutation
         }
     });
-    
+
     const finalTreeFile = finalTreeSnapshot.find(t => t.id === activeTreeId);
 
-    // Now, call the post function with the clean final state and timestamp
+    // Call the post-execution database function with the updated timestamp
     if (command.post && finalTreeFile) {
         await command.post(finalTreeFile, newTimestamp);
     }
 
-    // Finally, update the UI
+    // Update the UI state with the already-computed final snapshot
     setAllTrees(() => finalTreeSnapshot as WritableDraft<TreeFile[]>);
     
     if (isUndoable) {
@@ -168,9 +191,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         setCommandHistory(() => newHistory);
         setHistoryIndex(newHistory.length - 1);
     }
-    // No setIsDirty call here, as server updates are handled by post/redo with a timestamp
 
-  }, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory]);
+}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory]);
   
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < commandHistory.length - 1;
@@ -220,15 +242,18 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
             const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
             if (index > -1) {
                 // Preserve expanded state while updating everything else
-                draft[index] = { ...reloadedTree, expandedNodeIds: draft[index].expandedNodeIds };
+                const oldExpanded = draft[index].expandedNodeIds;
+                draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
             }
         });
-        console.log('INFO: Reloaded tree')
+        setCommandHistory(() => []);
+        setHistoryIndex(-1);
+        console.log('INFO: Reloaded tree and cleared history due to external change.')
       } else {
         console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
       }
     },
-    [activeTreeId, setAllTrees]
+    [activeTreeId, setAllTrees, setCommandHistory, setHistoryIndex]
   );
   
   const createNewTree = useCallback(
@@ -236,7 +261,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       const userToCreateFor = user || currentUser;
       if (!userToCreateFor) return null;
       const newOrder = allTrees.length;
-      const { treeFile, initialNodes } = createDefaultTreeFile(title, userToCreateFor.id, newOrder);
+      const { treeFile, initialNodes } = await createDefaultTreeFile(title, userToCreateFor.id, newOrder);
 
       const createdTree = await createTreeFileInDb(
         treeFile,
