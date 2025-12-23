@@ -557,6 +557,43 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     [createNewTree, importTreeFromJson, setAllTrees, setActiveTreeId]
   );
 
+  const activeTreeRef = useRef<TreeFile | undefined>();
+  useEffect(() => {
+    activeTreeRef.current = activeTree;
+  }, [activeTree]);
+
+  useEffect(() => {
+      if (initialTree || !currentUser) return;
+  
+      const intervalId = setInterval(async () => {
+        if (!activeTreeRef.current) return;
+        try {
+          const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
+          if (response.ok) {
+            const { updatedAt: serverUpdatedAt } = await response.json();
+            
+            if (!activeTreeRef.current) return;
+            const localUpdatedAt = activeTreeRef.current.updatedAt;
+  
+            if (serverUpdatedAt && localUpdatedAt) {
+              const serverTime = new Date(serverUpdatedAt).getTime();
+              const localTime = new Date(localUpdatedAt).getTime();
+              
+              if (serverTime > localTime + 1000) {
+                  console.log("INFO: Newer version detected on server. Automatically refreshing.");
+                  await reloadActiveTree();
+              }
+            }
+          }
+        } catch (error) {
+          console.warn("Polling for tree status failed:", error);
+        }
+      }, 5000); 
+  
+      return () => clearInterval(intervalId);
+    }, [initialTree, currentUser, reloadActiveTree]);
+
+
   useEffect(() => {
     if (initialTree) {
       setIsDataLoaded(true);
