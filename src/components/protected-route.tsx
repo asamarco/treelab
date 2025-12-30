@@ -15,17 +15,19 @@ import { useAuthContext } from "@/contexts/auth-context";
 import { Skeleton } from "./ui/skeleton";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { currentUser, isAuthRequired } = useAuthContext();
+  const { currentUser, isAuthRequired, isAuthLoading } = useAuthContext();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (isAuthRequired && !currentUser) {
+    // Wait until the initial auth check is complete before redirecting.
+    if (!isAuthLoading && isAuthRequired && !currentUser) {
       router.push(`/login?redirect=${pathname}`);
     }
-  }, [currentUser, isAuthRequired, router, pathname]);
+  }, [currentUser, isAuthRequired, isAuthLoading, router, pathname]);
   
-  if (isAuthRequired && !currentUser) {
+  // While loading the auth state OR if a redirect is imminent, show the loader.
+  if (isAuthLoading || (isAuthRequired && !currentUser)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="space-y-4 w-full max-w-md mx-auto p-4">
