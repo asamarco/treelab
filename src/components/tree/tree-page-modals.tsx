@@ -8,6 +8,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,9 @@ import { Textarea } from "../ui/textarea";
 import { useUIContext } from "@/contexts/ui-context";
 // import { PdfExportDialog } from "./pdf-export-dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
+import { Icon } from "../icon";
+import { icons } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 
 interface TreePageModalsProps {
@@ -63,6 +67,7 @@ export function TreePageModals({
     syncFromRepo,
 }: TreePageModalsProps) {
     const { currentUser } = useAuthContext();
+    const router = useRouter();
     const { 
         exportNodesAsJson,
         exportNodesAsArchive,
@@ -316,17 +321,61 @@ export function TreePageModals({
             >
                 <DialogContent>
                     <DialogHeader><DialogTitle>Add New Root Node</DialogTitle></DialogHeader>
-                    {!selectedTemplateForNewNode ? (
-                        <div className="space-y-2 py-4">
-                            <Label>Select a template for the new node</Label>
-                            <Select onValueChange={(templateId) => setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)}>
-                                <SelectTrigger><SelectValue placeholder="Select a template" /></SelectTrigger>
-                                <SelectContent>
-                                    {templates.map((t) => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    ) : (
+                    <div className="space-y-2 pt-4">
+                        <Label>Template</Label>
+                        <Select
+                            value={selectedTemplateForNewNode?.id || ""}
+                            onValueChange={(templateId) => {
+                                if (templateId === 'create_new') {
+                                    router.push('/templates');
+                                    setDialogState({ isAddNodeOpen: false });
+                                    return;
+                                }
+                                const newTemplate = getTemplateById(templateId);
+                                setSelectedTemplateForNewNode(newTemplate || null);
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a template">
+                                    {selectedTemplateForNewNode ? (
+                                        <div className="flex items-center gap-2">
+                                            <Icon
+                                                name={(selectedTemplateForNewNode.icon as keyof typeof icons) || "FileText"}
+                                                className="h-4 w-4"
+                                                style={{ color: selectedTemplateForNewNode.color || "hsl(var(--primary))" }}
+                                            />
+                                            <span>{selectedTemplateForNewNode.name}</span>
+                                        </div>
+                                    ) : (
+                                        "Select a template"
+                                    )}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                {templates.map((t) => (
+                                <SelectItem key={t.id} value={t.id}>
+                                    <div className="flex items-center gap-2">
+                                    <Icon
+                                        name={(t.icon as keyof typeof icons) || "FileText"}
+                                        className="h-4 w-4"
+                                        style={{ color: t.color || "hsl(var(--primary))" }}
+                                    />
+                                    <span>{t.name}</span>
+                                    </div>
+                                </SelectItem>
+                                ))}
+                                <Separator className="my-1" />
+                                <SelectItem value="create_new">
+                                    <div className="flex items-center gap-2 text-primary">
+                                        <ListPlus className="h-4 w-4" />
+                                        <span>Create new template...</span>
+                                    </div>
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {selectedTemplateForNewNode && (
                         <NodeForm
                             template={selectedTemplateForNewNode}
                             onSave={(newNode) => {

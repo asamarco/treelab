@@ -8,6 +8,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ import { useUIContext } from "@/contexts/ui-context";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
 import { Icon } from "../icon";
 import { icons } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 
 interface TreeNodeModalsProps {
@@ -58,6 +60,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
   const { currentUser } = useAuthContext();
   const { toast } = useToast();
   const { setIgnoreClicksUntil, setDialogState } = useUIContext();
+  const router = useRouter();
 
   const [selectedTemplateForNewNode, setSelectedTemplateForNewNode] = useState<Template | null>(null);
   const [selectedNewTemplateId, setSelectedNewTemplateId] = useState<string | null>(null);
@@ -140,7 +143,14 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
           <Label>Template</Label>
           <Select
             value={currentTemplate?.id}
-            onValueChange={(templateId) => setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)}
+            onValueChange={(templateId) => {
+                if (templateId === 'create_new') {
+                    router.push('/templates');
+                    handleClose();
+                    return;
+                }
+                setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a template">
@@ -171,6 +181,13 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
                   </div>
                 </SelectItem>
               ))}
+              <Separator className="my-1" />
+              <SelectItem value="create_new">
+                <div className="flex items-center gap-2 text-primary">
+                  <ListPlus className="h-4 w-4" />
+                  <span>Create new template...</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
