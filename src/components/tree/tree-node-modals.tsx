@@ -41,6 +41,8 @@ import { Textarea } from "../ui/textarea";
 import { useUIContext } from "@/contexts/ui-context";
 // import { PdfExportDialog } from "./pdf-export-dialog";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
+import { Icon } from "../icon";
+import { icons } from "lucide-react";
 
 
 interface TreeNodeModalsProps {
@@ -63,8 +65,12 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
   const isOwner = activeTree?.userId === currentUser?.id;
 
   useEffect(() => {
+    // Pre-fill template for 'addSibling' or 'addChild'
+    if (openModal === 'addSibling' || openModal === 'addChild') {
+        setSelectedTemplateForNewNode(template);
+    }
     // Pre-fill template for 'pasteTemplate' action
-    if (openModal === 'pasteTemplate' && clipboard.nodes && clipboard.nodes.length > 0) {
+    else if (openModal === 'pasteTemplate' && clipboard.nodes && clipboard.nodes.length > 0) {
       const templateFromClipboard = getTemplateById(clipboard.nodes[0].templateId);
       if (templateFromClipboard) {
         setSelectedTemplateForNewNode(templateFromClipboard);
@@ -73,7 +79,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
         onOpenChange(null);
       }
     }
-  }, [openModal, clipboard.nodes, getTemplateById, onOpenChange]);
+  }, [openModal, template, clipboard.nodes, getTemplateById, onOpenChange]);
 
   const handleClose = () => {
     onOpenChange(null);
@@ -126,20 +132,53 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
   };
 
   const renderAddDialogContent = (onSave: (data: TreeNode) => void) => {
-    if (!selectedTemplateForNewNode) {
-      return (
-        <div className="space-y-2 py-4">
-          <Label>Select a template for the new node</Label>
-          <Select onValueChange={(templateId) => setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)}>
-            <SelectTrigger><SelectValue placeholder="Select a template" /></SelectTrigger>
+    const currentTemplate = selectedTemplateForNewNode;
+    
+    return (
+      <>
+        <div className="space-y-2 pt-4">
+          <Label>Template</Label>
+          <Select
+            value={currentTemplate?.id}
+            onValueChange={(templateId) => setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a template">
+                {currentTemplate ? (
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name={(currentTemplate.icon as keyof typeof icons) || "FileText"}
+                      className="h-4 w-4"
+                      style={{ color: currentTemplate.color || "hsl(var(--primary))" }}
+                    />
+                    <span>{currentTemplate.name}</span>
+                  </div>
+                ) : (
+                  "Select a template"
+                )}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
-              {templates.map((t) => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
+              {templates.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  <div className="flex items-center gap-2">
+                    <Icon
+                      name={(t.icon as keyof typeof icons) || "FileText"}
+                      className="h-4 w-4"
+                      style={{ color: t.color || "hsl(var(--primary))" }}
+                    />
+                    <span>{t.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-      );
-    }
-    return <NodeForm template={selectedTemplateForNewNode} onSave={onSave} onClose={handleClose} contextualParentId={contextualParentId} />;
+        {currentTemplate && (
+            <NodeForm template={currentTemplate} onSave={onSave} onClose={handleClose} contextualParentId={contextualParentId} />
+        )}
+      </>
+    );
   }
 
   return (
