@@ -207,12 +207,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   // Client-side security filter. Only show trees the user has access to.
   const visibleTrees = useMemo(() => {
+    if (initialTree && !currentUser) {
+      // For public pages, always include the server-rendered tree.
+      return [initialTree];
+    }
     if (!currentUser) return [];
     return allTrees.filter(tree => 
         tree.userId === currentUser.id || 
         (tree.sharedWith && tree.sharedWith.includes(currentUser.id))
     );
-  }, [allTrees, currentUser]);
+  }, [allTrees, currentUser, initialTree]);
 
   const activeTree = visibleTrees.find((t) => t.id === activeTreeId);
 
