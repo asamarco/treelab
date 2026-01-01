@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function LoginPage() {
   const { login, isAuthRequired, isAuthLoading } = useAuthContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -40,7 +41,14 @@ export default function LoginPage() {
     setIsLoading(true);
     const success = await login(identifier, password);
     if (success) {
-      router.push("/");
+      const redirectUrl = searchParams.get('redirect');
+      // HARDENING: Validate redirect URL to prevent open redirect vulnerabilities.
+      // It must be a relative path within the application.
+      if (redirectUrl && redirectUrl.startsWith('/')) {
+        router.push(redirectUrl);
+      } else {
+        router.push("/");
+      }
     } else {
       toast({
         variant: "destructive",
