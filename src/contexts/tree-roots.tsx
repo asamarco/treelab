@@ -253,7 +253,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     async (treeIdToLoad?: string) => {
       const idToLoad = treeIdToLoad || activeTreeId;
       if (!idToLoad) return;
-      if (!currentUser) return; // Prevent reload for public view
       
       const reloadedTree = await loadTreeFile(idToLoad);
       if (reloadedTree) {
@@ -582,6 +581,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   }, [activeTree]);
 
   useEffect(() => {
+      // Don't poll if there's an initialTree (public view) or no user.
       if (initialTree || !currentUser) return;
   
       const intervalId = setInterval(async () => {
@@ -1279,5 +1279,7 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
 
   return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
 }
+
+
 
 
