@@ -13,13 +13,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TreePage } from "@/app/page-client";
 import { PublicViewBanner } from "@/components/public-view-banner";
 import { TreeFile } from "@/lib/types";
-import fs from 'fs';
-import path from 'path';
-
-interface AppConfig {
-    REQUIRE_AUTHENTICATION?: boolean;
-    USERID?: string;
-}
 
 interface PublicTreeViewClientProps {
   initialTree: TreeFile;
