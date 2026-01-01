@@ -108,9 +108,9 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
           const images = value.filter(v => typeof v === 'string' && v.length > 0);
           if (images.length === 0) return null;
           
-          const imageWidth = field.width || 300;
+          const imageHeight = field.height || 300;
           const containerWidth = containerWidths[field.id] || 0;
-          const totalImageWidth = images.length * (imageWidth + 8); // width + gap
+          const totalImageWidth = images.length * (imageHeight * (4/3) + 8); // Estimate width based on 4:3 aspect ratio + gap
           const doesOverflow = containerWidth > 0 && totalImageWidth > containerWidth;
 
           const viewMode = imageViewModes[field.id] || 'carousel';
@@ -155,10 +155,10 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                   <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
                     <CarouselContent>
                       {images.map((src, index) => (
-                        <CarouselItem key={index} style={{ flexBasis: `${imageWidth}px` }}>
+                        <CarouselItem key={index} style={{ flexBasis: `${imageHeight * (4/3)}px` }}>
                           <div className="p-1 h-full flex items-center justify-center">
                               <CardContent className="flex h-full items-center justify-center p-0 overflow-hidden rounded-lg">
-                                <img src={src} alt={`${field.name} ${index + 1}`} className="max-w-full max-h-full h-auto object-contain" onDoubleClick={(e) => handleImageDoubleClick(e, src)} />
+                                <img src={src} alt={`${field.name} ${index + 1}`} className="max-w-full max-h-full h-auto object-contain" style={{ maxHeight: `${imageHeight}px` }} onDoubleClick={(e) => handleImageDoubleClick(e, src)} />
                               </CardContent>
                           </div>
                         </CarouselItem>
@@ -173,8 +173,8 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
               ) : (
                 <div className="flex flex-wrap gap-2 items-center justify-center">
                     {images.map((src, index) => (
-                        <div key={index} className="flex items-center justify-center" style={{ flexBasis: `${imageWidth}px`, maxWidth: `${imageWidth}px` }}>
-                             <img src={src} alt={`${field.name} ${index + 1}`} className="max-w-full max-h-full object-contain rounded-md" onDoubleClick={(e) => handleImageDoubleClick(e, src)} />
+                        <div key={index} className="flex items-center justify-center" style={{ flexBasis: `${imageHeight * (4/3)}px`, maxWidth: `${imageHeight * (4/3)}px` }}>
+                             <img src={src} alt={`${field.name} ${index + 1}`} className="max-w-full max-h-full object-contain rounded-md" style={{ maxHeight: `${imageHeight}px` }} onDoubleClick={(e) => handleImageDoubleClick(e, src)} />
                         </div>
                     ))}
                 </div>

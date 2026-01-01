@@ -16,7 +16,7 @@ const FieldSchema = new Schema({
   type: { type: String, required: true },
   options: [String],
   columnType: String,
-  width: Number,
+  height: Number,
   prefix: String,
   postfix: String,
 }, { _id: false });

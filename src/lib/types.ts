@@ -17,7 +17,7 @@ export interface Field {
   type: FieldType;
   options?: string[]; // For dropdown
   columnType?: 'text' | 'number' | 'date'; // For table-header
-  width?: number; // for picture
+  height?: number; // for picture
   prefix?: string;
   postfix?: string;
 }

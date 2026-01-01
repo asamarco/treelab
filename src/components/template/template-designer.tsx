@@ -96,7 +96,7 @@ const fieldSchema = z.object({
   type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment"]),
   options: z.array(z.string()).optional(),
   columnType: z.enum(["text", "number", "date"]).optional(),
-  width: z.number().optional(),
+  height: z.number().optional(),
   prefix: z.string().optional(),
   postfix: z.string().optional(),
 });
@@ -634,10 +634,10 @@ export function TemplateDesigner({
                                 <div className="mt-4">
                                   <FormField
                                     control={form.control}
-                                    name={`fields.${index}.width`}
+                                    name={`fields.${index}.height`}
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Image Width (px)</FormLabel>
+                                        <FormLabel>Image Height (px)</FormLabel>
                                         <FormControl>
                                           <Input
                                             type="number"
