@@ -129,7 +129,7 @@ const resequenceSiblingsInDraft = (
         const nodeInDraft = siblings.find(s => s.id === sibling.id);
         if(nodeInDraft) {
           const newOrder = [...nodeInDraft.order];
-          newOrder[pIndex] = index;
+          newOrder[pIndex] = index; // Explicitly set to zero-based index
           nodeInDraft.order = newOrder;
         }
       }
@@ -144,7 +144,7 @@ export async function addNodesAction(
     nodesToAdd: (Omit<TreeNode, 'id' | 'children'> & { _id?: string; id?: string, children?: any[] })[]
   ): Promise<void> {
     const { activeTree, currentUser, executeCommand, findNodeAndParent } = ctx;
-    if (!nodesToAdd.length || !activeTree?.id || !currentUser) return;
+    if (!nodesToAdd.length || !activeTree?.id) return;
 
     const nodesWithIds = nodesToAdd.map(n => {
         const newId = n.id || generateClientSideId();
@@ -174,7 +174,7 @@ export async function addNodesAction(
                 ...rest,
                 order: node.order, 
                 treeId: activeTree.id,
-                userId: currentUser.id,
+                userId: currentUser?.id,
             });
             if (children) {
                 flattenAndPrep(children, node.id);
@@ -316,12 +316,12 @@ export async function addRootNodeAction(
   nodeData: Partial<Omit<TreeNode, 'id' | 'children'>>
 ) {
     const { activeTree, currentUser } = ctx;
-    if (!activeTree || !currentUser) return;
+    if (!activeTree) return; // Should not happen if called from UI with active tree
     
     const fullNodeData = {
       ...nodeData,
       treeId: activeTree.id,
-      userId: currentUser.id,
+      userId: currentUser?.id,
       parentIds: ['root'],
       order: [(activeTree.tree || []).length],
     } as Omit<TreeNode, 'id' | 'children' >;
@@ -336,7 +336,7 @@ export async function addChildNodeAction(
   contextualParentId: string | null
 ) {
     const { activeTree, currentUser, findNodeAndParent } = ctx;
-    if (!activeTree || !currentUser) return;
+    if (!activeTree) return; 
     const parentNode = findNodeAndParent(parentNodeId, activeTree.tree)?.node;
     const children = parentNode?.children || [];
     
@@ -348,7 +348,7 @@ export async function addChildNodeAction(
     const fullNodeData = {
         ...childNodeData,
         treeId: activeTree.id,
-        userId: currentUser.id,
+        userId: currentUser?.id,
         parentIds: [parentNodeId],
         order: [newOrder],
     } as Omit<TreeNode, 'id' | 'children'>;
@@ -363,7 +363,7 @@ export async function addSiblingNodeAction(
   contextualParentId: string | null
 ) {
     const { activeTree, currentUser, findNodeAndContextualParent } = ctx;
-    if (!activeTree || !currentUser) return;
+    if (!activeTree) return;
     const parentInfo = findNodeAndContextualParent(siblingNodeId, contextualParentId, activeTree.tree);
     const parentNode = parentInfo?.parent;
     const siblings = parentNode ? parentNode.children : (activeTree.tree || []);
@@ -376,7 +376,7 @@ export async function addSiblingNodeAction(
     const fullNodeData = {
         ...nodeToAddData,
         treeId: activeTree.id,
-        userId: currentUser.id,
+        userId: currentUser?.id,
         parentIds: [parentNode?.id || 'root'],
         order: [newOrder],
     } as Omit<TreeNode, 'id' | 'children'>;
@@ -562,14 +562,53 @@ export async function changeMultipleNodesTemplateAction(
     newTemplateId: string
 ) {
     const { activeTree, activeTreeId, findNodeAndParent, executeCommand, isCloneOrDescendant, reloadActiveTree } = ctx;
-    if (!activeTree || !isCloneOrDescendant || !reloadActiveTree) return;
+    if (!activeTree) return;
+    
+    // For public users, perform a local-only update
+    if (!ctx.currentUser && reloadActiveTree) {
+        // This is a simplified local update. It is not undoable.
+        const nodeIds = Array.from(new Set(instanceIds.map(id => id.split('_')[0])));
+        const newTemplate = activeTree.templates.find(t => t.id === newTemplateId);
+        if (!newTemplate) return;
 
+        const updater = (draft: WritableDraft<TreeFile[]>) => {
+            const treeToUpdate = draft.find(t => t.id === activeTreeId);
+            if (!treeToUpdate) return;
+            
+            const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
+            const flatten = (nodes: WritableDraft<TreeNode>[]) => nodes.forEach(n => { allNodesMap.set(n.id, n); if(n.children) flatten(n.children); });
+            flatten(treeToUpdate.tree);
+
+            nodeIds.forEach(nodeId => {
+                const node = allNodesMap.get(nodeId);
+                if (node) {
+                    const oldTemplate = activeTree.templates.find(t => t.id === node.templateId);
+                    const newData: Record<string, any> = {};
+                    if (oldTemplate) {
+                        newTemplate.fields.forEach(newField => {
+                            const oldField = oldTemplate.fields.find(f => f.name === newField.name);
+                            if (oldField && node.data[oldField.id] !== undefined) {
+                                newData[newField.id] = node.data[oldField.id];
+                            }
+                        });
+                    }
+                    node.templateId = newTemplateId;
+                    node.data = newData;
+                }
+            });
+            treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
+        };
+        ctx.executeCommand({ type: 'LOCAL_ONLY_UPDATE', execute: updater, undo: async () => {} }, false);
+        return;
+    }
+    
+    // Authenticated user flow
     const nodeIds = Array.from(new Set(instanceIds.map(id => id.split('_')[0])));
 
-    if (nodeIds.some(id => isCloneOrDescendant(id, activeTree.tree))) {
+    if (isCloneOrDescendant && nodeIds.some(id => isCloneOrDescendant(id, activeTree.tree))) {
         const dbUpdates = nodeIds.map(id => ({ id, updates: { templateId: newTemplateId, data: {} } }));
         await batchUpdateNodes(dbUpdates);
-        await reloadActiveTree();
+        if (reloadActiveTree) await reloadActiveTree();
         return;
     }
 
@@ -853,18 +892,14 @@ export async function copyNodesAction(
       const newOrderArray = [...node.order];
       const parentContextForOrder = isTopLevel ? newParentIdForTopNodes : (allNewNodesFlat.find(n => n.id === finalParentIds[0])?.parentIds?.[0] || 'root');
       
-      // The parent index should correspond to the parent in THIS context of the paste.
       const parentIndexForOrder = finalParentIds.indexOf(parentContextForOrder);
 
       if (isTopLevel) {
           if (parentIndexForOrder !== -1) {
               newOrderArray[parentIndexForOrder] = newOrderForTopNodes + index;
           } else {
-              // This case handles when a node is pasted as a child into a new context
               newOrderArray.push(newOrderForTopNodes + index);
           }
-      } else {
-          // Descendants keep their original relative order. The `order` array from the source node is correct.
       }
       
       allNewNodesFlat.push({

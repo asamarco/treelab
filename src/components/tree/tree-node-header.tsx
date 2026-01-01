@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getConditionalStyle, hasAttachments } from "./tree-node-utils";
 import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
+import { WritableDraft } from "immer";
 
 
 interface TreeNodeHeaderProps {
@@ -58,6 +59,7 @@ interface TreeNodeHeaderProps {
   isMenuOpen: boolean;
   onMenuOpenChange: (open: boolean) => void;
   contextMenuPosition: { x: number; y: number } | null;
+  onExpandedChange: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 }
 
 export function TreeNodeHeader({
@@ -74,6 +76,7 @@ export function TreeNodeHeader({
   isMenuOpen,
   onMenuOpenChange,
   contextMenuPosition,
+  onExpandedChange,
 }: TreeNodeHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -284,7 +287,7 @@ export function TreeNodeHeader({
           variant="ghost"
           size="icon"
           className={cn(
-            "cursor-grab shrink-0 no-print read-only-control transition-opacity opacity-0 group-hover/treenode:opacity-100", 
+            "cursor-grab shrink-0 no-print read-only-hidden transition-opacity opacity-0 group-hover/treenode:opacity-100", 
             isCompactView ? 'h-6 w-6' : 'h-8 w-8',
           )}
           onClick={(e) => e.stopPropagation()}
@@ -302,7 +305,7 @@ export function TreeNodeHeader({
               <button
                 onClick={(e) => {
                     e.stopPropagation();
-                    setExpandedNodeIds((prev) => {
+                    onExpandedChange((prev: any) => {
                       const newSet = new Set(prev as string[]);
                       if (newSet.has(instanceId)) newSet.delete(instanceId); else newSet.add(instanceId);
                       return Array.from(newSet);

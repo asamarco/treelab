@@ -403,7 +403,8 @@ export function TreePageModals({
                         {nodesForPreview.length > 0 && (
                             <TreeView 
                                 nodes={nodesForPreview} 
-                                initialExpandedIds={new Set(previewExpandedNodeIds)}
+                                overrideExpandedIds={previewExpandedNodeIds}
+                                onExpandedChange={setPreviewExpandedNodeIds}
                             />
                         )}
                     </div>

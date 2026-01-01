@@ -260,8 +260,12 @@ export interface ExpandCollapseCommand extends BaseCommand {
     }
 }
 
+export interface LocalOnlyUpdateCommand extends BaseCommand {
+    type: 'LOCAL_ONLY_UPDATE';
+}
 
-export type Command = AddNodesCommand | DeleteNodesCommand | MoveNodesCommand | UpdateNodesCommand | UpdateTreeFileCommand | ExpandCollapseCommand | ReorderNodesCommand | PasteAsClonesCommand;
+
+export type Command = AddNodesCommand | DeleteNodesCommand | MoveNodesCommand | UpdateNodesCommand | UpdateTreeFileCommand | ExpandCollapseCommand | ReorderNodesCommand | PasteAsClonesCommand | LocalOnlyUpdateCommand;
 
 export interface ClipboardState {
     nodes: TreeNode[] | null;

@@ -1,3 +1,5 @@
+
+
 /**
  * @fileoverview
  * This file is the single source of truth for all tree-related state management.
@@ -74,7 +76,7 @@ import { useDebouncedCallback } from "use-debounce";
 import { useGitSync } from "@/hooks/useGitSync";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
-    addNodesAction,
+    addNodesAction as executeAddNodes,
     addRootNodeAction,
     addChildNodeAction,
     addSiblingNodeAction,
@@ -132,8 +134,8 @@ interface UseTreeRootsProps {
 
 export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRootsResult {
   const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser } = useAuthContext();
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [isTreeDataLoading, setIsTreeDataLoading] = useState(isDataLoaded === false);
+  const [isDataLoaded, setIsDataLoaded] = useState(!!initialTree);
+  const [isTreeDataLoading, setIsTreeDataLoading] = useState(!initialTree);
   const router = useRouter();
   const pathname = usePathname();
   const [allTrees, setAllTrees] = useImmer<TreeFile[]>(initialTree ? [JSON.parse(JSON.stringify(initialTree))] : []);
@@ -153,34 +155,44 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   
   const performAction = useCallback((updater: (draft: WritableDraft<TreeFile[]>) => TreeFile[] | void, isUndoable: boolean = true) => {
     setAllTrees(updater as (draft: WritableDraft<TreeFile[]>) => WritableDraft<TreeFile[]> | void);
-    if (isUndoable) {
+    if (currentUser) {
+        if (isUndoable) {
+          console.warn("performAction called directly with isUndoable=true for an authenticated user. This should be handled by executeCommand.");
+        }
         setIsDirty(true);
     }
-  }, [setAllTrees]);
+  }, [setAllTrees, currentUser]);
+
 
   const executeCommand = useCallback(async (command: Command, isUndoable: boolean = true) => {
-    if (!activeTreeId) return;
-
+    if (!activeTreeId || !currentUser) { // CRITICAL: Stop if no user
+        performAction(command.execute, false);
+        return;
+    }
+    
     const newTimestamp = new Date().toISOString();
     
-    // Create the "after" state in memory, applying the state change and the new timestamp together
     const finalTreeSnapshot = produce(allTrees, draft => {
         const treeToUpdate = draft.find(t => t.id === activeTreeId);
         if (treeToUpdate) {
-            command.execute(draft); // Apply command's state change logic
-            treeToUpdate.updatedAt = newTimestamp; // Update timestamp in the same mutation
+            command.execute(draft); 
+            treeToUpdate.updatedAt = newTimestamp; 
         }
     });
 
     const finalTreeFile = finalTreeSnapshot.find(t => t.id === activeTreeId);
 
-    // Call the post-execution database function with the updated timestamp
-    if (command.post && finalTreeFile) {
-        await command.post(finalTreeFile, newTimestamp);
-    }
-
-    // Update the UI state with the already-computed final snapshot
     setAllTrees(() => finalTreeSnapshot as WritableDraft<TreeFile[]>);
+    
+    if (command.post && finalTreeFile) {
+        try {
+            await command.post(finalTreeFile, newTimestamp);
+        } catch (error) {
+            console.error("Database operation failed:", error);
+            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save changes to the database. Please reload.' });
+            return;
+        }
+    }
     
     if (isUndoable) {
         const newHistory = commandHistory.slice(0, historyIndex + 1);
@@ -192,7 +204,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         setHistoryIndex(newHistory.length - 1);
     }
 
-}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory]);
+}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, currentUser, performAction, toast]);
   
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < commandHistory.length - 1;
@@ -211,14 +223,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       // For public pages, always include the server-rendered tree.
       return [initialTree];
     }
-    if (!currentUser) return [];
+    if (!currentUser) return allTrees; // For demo mode
     return allTrees.filter(tree => 
         tree.userId === currentUser.id || 
         (tree.sharedWith && tree.sharedWith.includes(currentUser.id))
     );
   }, [allTrees, currentUser, initialTree]);
 
-  const activeTree = visibleTrees.find((t) => t.id === activeTreeId);
+  const activeTree = allTrees.find((t) => t.id === activeTreeId);
 
   const reloadAllTrees = useCallback(async () => {
     if (!currentUser) return;
@@ -232,13 +244,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         _setActiveTreeId(id);
         setCommandHistory(() => []);
         setHistoryIndex(-1);
-        setLastActiveTreeIdForUser(id);
-    }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser]);
+        if (currentUser) {
+            setLastActiveTreeIdForUser(id);
+        }
+    }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser, currentUser]);
 
   const reloadActiveTree = useCallback(
     async (treeIdToLoad?: string) => {
       const idToLoad = treeIdToLoad || activeTreeId;
       if (!idToLoad) return;
+      if (!currentUser) return; // Prevent reload for public view
       
       const reloadedTree = await loadTreeFile(idToLoad);
       if (reloadedTree) {
@@ -257,7 +272,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
       }
     },
-    [activeTreeId, setAllTrees, toast]
+    [activeTreeId, setAllTrees, toast, currentUser]
   );
   
   const createNewTree = useCallback(
@@ -463,7 +478,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   });
 
   const undoLastAction = useCallback(async () => {
-    if (!canUndo) return;
+    if (!canUndo || !currentUser) return; // Must be logged in to undo
     const commandToUndo = commandHistory[historyIndex];
     if (!commandToUndo) return;
   
@@ -488,11 +503,11 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       description: `Reversed action: ${getActionDescription(commandToUndo)}`,
     });
   
-  }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast, allTrees, activeTreeId]);
+  }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast, allTrees, activeTreeId, currentUser]);
   
   const redoLastAction = useCallback(async () => {
     const newIndex = historyIndex + 1;
-    if (!canRedo || newIndex >= commandHistory.length) return;
+    if (!canRedo || newIndex >= commandHistory.length || !currentUser) return; // Must be logged in to redo
 
     const commandToRedo = commandHistory[newIndex];
     if (!commandToRedo) return;
@@ -522,7 +537,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     } else if (commandToRedo.post && finalTreeFile) {
         await commandToRedo.post(finalTreeFile, newTimestamp);
     }
-}, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast]);
+}, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast, currentUser]);
 
 
   const loadUserSpecificData = useCallback(
@@ -598,14 +613,11 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
 
   useEffect(() => {
-    if (initialTree) {
-      setIsDataLoaded(true);
-      setIsTreeDataLoading(false);
-      return;
-    }
-    if (currentUser && !isDataLoaded) {
+    // If there's no initialTree (standard authenticated flow), load user data.
+    if (!initialTree && currentUser && !isDataLoaded) {
       loadUserSpecificData(currentUser);
-    } else if (!currentUser && isDataLoaded) {
+    } else if (!initialTree && !currentUser && isDataLoaded) {
+      // If the user logs out, reset the state.
       setAllTrees(() => []);
       setActiveTreeId(null);
       setCommandHistory(() => []);
@@ -613,48 +625,52 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       setIsDataLoaded(false);
       setIsTreeDataLoading(true);
     }
-  }, [currentUser, isDataLoaded, loadUserSpecificData, setAllTrees, setCommandHistory, setHistoryIndex, initialTree, setActiveTreeId]);
+  }, [currentUser, isDataLoaded, loadUserSpecificData, setAllTrees, setActiveTreeId, setCommandHistory, setHistoryIndex, initialTree]);
   
   const commitToRepo = useCallback(
     (treeId: string, message: string, token: string, force: boolean = false, treeFileToCommit?: TreeFile): Promise<{ success: boolean; error?: string, commitSha?: string }> => {
+        if (!currentUser) {
+            toast({ variant: 'destructive', title: 'Action Denied', description: 'You must be logged in to commit.' });
+            return Promise.resolve({ success: false, error: 'Not authenticated' });
+        }
         // Clear history on commit to prevent complex state issues
         setCommandHistory(() => []);
         setHistoryIndex(-1);
         setIsDirty(false);
         return commitToRepoViaSync(treeId, message, token, force, treeFileToCommit);
     },
-    [commitToRepoViaSync, setCommandHistory, setHistoryIndex]
+    [commitToRepoViaSync, setCommandHistory, setHistoryIndex, currentUser, toast]
   );
 
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
-    if (currentUser && !isSaving) {
-      const newTimestamp = new Date().toISOString();
-      const updatedTree = { ...treeToSave, updatedAt: newTimestamp };
+    if (!currentUser || isSaving) return; // CRITICAL: Only save if logged in
+    
+    const newTimestamp = new Date().toISOString();
+    const updatedTree = { ...treeToSave, updatedAt: newTimestamp };
 
-      // Optimistically update local state with the new timestamp immediately
-      setAllTrees((draft) => {
-        const treeIndex = draft.findIndex((t: TreeFile) => t.id === treeToSave.id);
-        if (treeIndex > -1) {
-          draft[treeIndex].updatedAt = newTimestamp;
-        }
-      });
-      setIsDirty(false); // Mark as clean now that we have the timestamp
-      setIsSaving(true);
-      
-      const { tree, ...metaData } = updatedTree;
-  
-      saveTreeFile(metaData, newTimestamp).finally(() => {
-        setIsSaving(false);
-        console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
-      });
-    }
+    setAllTrees((draft) => {
+      const treeIndex = draft.findIndex((t: TreeFile) => t.id === treeToSave.id);
+      if (treeIndex > -1) {
+        draft[treeIndex].updatedAt = newTimestamp;
+      }
+    });
+    setIsDirty(false); 
+    setIsSaving(true);
+    
+    const { tree, ...metaData } = updatedTree;
+
+    saveTreeFile(metaData, newTimestamp).finally(() => {
+      setIsSaving(false);
+      console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
+    });
+
   }, 1000);
 
   useEffect(() => {
-    if (isDirty && activeTree && !isSaving) {
+    if (currentUser && isDirty && activeTree && !isSaving) { // CRITICAL: Only save if logged in
       debouncedSave(activeTree);
     }
-  }, [isDirty, activeTree, debouncedSave, isSaving]);
+  }, [currentUser, isDirty, activeTree, debouncedSave, isSaving]);
   
   const findNodeAndParent = useCallback((nodeId: string, nodes?: TreeNode[]): { node: TreeNode; parent: TreeNode | null } | null => {
     const searchNodes = nodes || activeTree?.tree;
@@ -733,6 +749,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   }, [currentUser, performAction, reloadAllTrees, toast]);
 
   const setTreeTitle = (treeId: string, title: string) => {
+    if (!activeTreeId) return;
+
     const currentTree = allTrees.find(t=>t.id === treeId);
     if (!currentTree) return;
     const originalTitle = currentTree.title;
@@ -776,7 +794,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         execute: (draft: WritableDraft<TreeFile[]>) => {
             const tree = draft.find(t => t.id === activeTreeId);
             if (tree) {
-                // Apply the updater to the draft state correctly
                 tree.templates = typeof updater === 'function' 
                     ? produce(tree.templates, updater as (draft: WritableDraft<Template[]>) => void) 
                     : updater;
@@ -822,22 +839,23 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   }, [setTemplates]);
 
   const setExpandedNodeIds = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
-      const newExpandedIds = produce(activeTree?.expandedNodeIds || [], updater as any);
-      
-      performAction((draft) => {
-          if (!activeTreeId) return;
-          const tree = draft.find(t => t.id === activeTreeId);
-          if (tree) {
-              tree.expandedNodeIds = newExpandedIds;
-          }
-      }, false); // Expand/collapse is not undoable for simplicity
-      
-      // Save to DB immediately, but without blocking the UI
-      if (activeTree) {
-        debouncedSave({ ...activeTree, expandedNodeIds: newExpandedIds });
+    if (!activeTreeId) return;
+  
+    // Always update local state immediately for UI responsiveness
+    const newExpandedIds = produce(activeTree?.expandedNodeIds ?? [], updater as any);
+    setAllTrees((draft) => {
+      const tree = draft.find((t) => t.id === activeTreeId);
+      if (tree) {
+        tree.expandedNodeIds = newExpandedIds;
       }
-
-  }, [activeTreeId, performAction, activeTree, debouncedSave]);
+    });
+  
+    // Only save to DB if a user is logged in
+    if (currentUser) {
+      // No debouncing, save immediately.
+      saveTreeFile({ id: activeTreeId, expandedNodeIds: newExpandedIds });
+    }
+  }, [activeTreeId, activeTree?.expandedNodeIds, setAllTrees, currentUser]);
 
   const expandAllFromNode = useCallback((nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
     if (!activeTree || nodesToExpand.length === 0) return;
@@ -847,7 +865,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     const traverse = (nodes: TreeNode[], parentId: string | null) => {
         for (const node of nodes) {
             allIdsToAdd.add(`${node.id}_${parentId || "root"}`);
-            // Also add paths for other parents if it's a clone
             (node.parentIds || []).forEach(pId => {
                 if (pId !== (parentId || 'root')) {
                     allIdsToAdd.add(`${node.id}_${pId}`);
@@ -863,10 +880,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         const result = findNodeAndParent(nodeId, activeTree.tree);
         if (!result) continue;
         const { node } = result;
-
         traverse([node], nodeId);
     }
-
 
     if (allIdsToAdd.size > 0) {
         setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
@@ -885,7 +900,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     const traverse = (nodes: TreeNode[], parentId: string | null) => {
       for (const node of nodes) {
           allIdsToRemove.add(`${node.id}_${parentId || "root"}`);
-           // Also remove paths for other parents if it's a clone
           (node.parentIds || []).forEach(pId => {
               if (pId !== (parentId || 'root')) {
                   allIdsToRemove.add(`${node.id}_${pId}`);
@@ -907,7 +921,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     
     if (allIdsToRemove.size > 0) {
       setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-        // Mutate draft directly for performance with Immer
         for (let i = currentIds.length - 1; i >= 0; i--) {
           if (allIdsToRemove.has(currentIds[i])) {
             currentIds.splice(i, 1);
@@ -933,76 +946,62 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     selectedNodeIds,
   }), [activeTree, currentUser, activeTreeId, executeCommand, findNodeAndParent, visibleTrees, findNodeAndContextualParent, reloadActiveTree, isCloneOrDescendant, clipboard, toast, getSiblingOrderRange, selectedNodeIds]);
 
-
-  const addChildNode = useCallback(async (
-    parentNodeId: string,
-    childNodeData: Partial<Omit<TreeNode, "id" | "children">>,
-    contextualParentId: string | null
-  ) => {
-    await addChildNodeAction(actionContext, parentNodeId, childNodeData, contextualParentId);
-  }, [actionContext]);
-
-  const addSiblingNode = useCallback(async (
-    siblingNodeId: string, 
-    nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, 
-    contextualParentId: string | null
-  ) => {
-    await addSiblingNodeAction(actionContext, siblingNodeId, nodeToAddData, contextualParentId);
-  }, [actionContext]);
-  
-  const updateNode = useCallback(async (nodeId: string, newNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>) => {
-    await updateNodeAction(actionContext, nodeId, newNodeData);
-  }, [actionContext]);
-
-  const updateNodeNamesForTemplate = useCallback(async (template: Template) => {
-    await updateNodeNamesForTemplateAction(actionContext, template);
-  }, [actionContext]);
-
-  const changeNodeTemplate = useCallback(async (nodeId: string, newTemplateId: string) => {
-    await changeNodeTemplateAction(actionContext, nodeId, newTemplateId);
-  }, [actionContext]);
-
-  const changeMultipleNodesTemplate = useCallback(async (instanceIds: string[], newTemplateId: string) => {
-    await changeMultipleNodesTemplateAction(actionContext, instanceIds, newTemplateId);
-  }, [actionContext]);
-
-  const deleteNode = useCallback(async (nodeId: string, contextualParentId: string | null) => {
-    await deleteNodeAction(actionContext, nodeId, contextualParentId);
-  }, [actionContext]);
-
-  const deleteNodes = useCallback(async (instanceIds: string[]) => {
-    await deleteNodesAction(actionContext, instanceIds);
-  }, [actionContext]);
-
-  const pasteNodes = useCallback(async (
-    targetNodeId: string,
-    position: 'child' | 'sibling',
-    contextualParentId: string | null,
-    nodes?: TreeNode[]
-  ) => {
-      await copyNodesAction(actionContext, targetNodeId, position, contextualParentId, nodes);
-  }, [actionContext]);
-
-  const moveNodes = useCallback(async (moves: { nodeId: string; targetNodeId: string; position: 'child' | 'sibling' | 'child-bottom'; sourceContextualParentId: string | null; targetContextualParentId: string | null;}[]) => {
-    await moveNodesAction(actionContext, moves);
-  }, [actionContext]);
-
-  const moveNodeOrder = useCallback(async (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => {
-    await moveNodeOrderAction(actionContext, nodeId, direction, contextualParentId);
-  }, [actionContext]);
-  
-  const pasteNodesAsClones = useCallback(async (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[], contextualParentId: string | null) => {
-    await pasteNodesAsClonesAction(actionContext, targetNodeId, as, nodeIdsToClone, contextualParentId);
-  }, [actionContext]);
-  
-  const toggleStarredForSelectedNodes = useCallback(async () => {
-    await toggleStarredForSelectedNodesAction(actionContext);
-  }, [actionContext]);
-  
   const addRootNode = async (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => {
     await addRootNodeAction(actionContext, nodeData as Omit<TreeNode, 'id' | 'children' | 'treeId' | 'userId' | 'parentIds' | 'order'>);
   }
 
+  const addChildNode = async (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, "id" | "children">>, contextualParentId: string | null) => {
+    await addChildNodeAction(actionContext, parentNodeId, childNodeData, contextualParentId);
+  };
+
+  const addSiblingNode = async (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => {
+    await addSiblingNodeAction(actionContext, siblingNodeId, nodeToAddData, contextualParentId);
+  };
+  
+  const updateNode = async (nodeId: string, newNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>) => {
+    await updateNodeAction(actionContext, nodeId, newNodeData);
+  };
+
+  const updateNodeNamesForTemplate = async (template: Template) => {
+    await updateNodeNamesForTemplateAction(actionContext, template);
+  };
+
+  const changeNodeTemplate = async (nodeId: string, newTemplateId: string) => {
+    await changeNodeTemplateAction(actionContext, nodeId, newTemplateId);
+  };
+
+  const changeMultipleNodesTemplate = async (instanceIds: string[], newTemplateId: string) => {
+    await changeMultipleNodesTemplateAction(actionContext, instanceIds, newTemplateId);
+  };
+
+  const deleteNode = async (nodeId: string, contextualParentId: string | null) => {
+    await deleteNodeAction(actionContext, nodeId, contextualParentId);
+  };
+
+  const deleteNodes = async (instanceIds: string[]) => {
+    await deleteNodesAction(actionContext, instanceIds);
+  };
+
+  const pasteNodes = async (targetNodeId: string, position: 'child' | 'sibling', contextualParentId: string | null, nodes?: TreeNode[]) => {
+    await copyNodesAction(actionContext, targetNodeId, position, contextualParentId, nodes);
+  };
+
+  const moveNodes = async (moves: { nodeId: string; targetNodeId: string; position: 'child' | 'sibling' | 'child-bottom'; sourceContextualParentId: string | null; targetContextualParentId: string | null;}[]) => {
+    await moveNodesAction(actionContext, moves);
+  };
+
+  const moveNodeOrder = async (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => {
+    await moveNodeOrderAction(actionContext, nodeId, direction, contextualParentId);
+  };
+  
+  const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[], contextualParentId: string | null) => {
+    await pasteNodesAsClonesAction(actionContext, targetNodeId, as, nodeIdsToClone, contextualParentId);
+  };
+  
+  const toggleStarredForSelectedNodes = async () => {
+    await toggleStarredForSelectedNodesAction(actionContext);
+  };
+  
   const getTemplateById = useCallback(
     (id: string): Template | undefined => {
       return activeTree?.templates?.find((t) => t.id === id);
@@ -1026,9 +1025,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   };
 
   const exportNodesAsArchive = async (nodes: TreeNode[], baseName: string) => {
-    if (!activeTree) return;
+    if (!activeTree || !currentUser) return;
     await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath: string) =>
-      fetchFileAsBuffer(activeTree!.userId, relativePath)
+      fetchFileAsBuffer(currentUser!.id, relativePath)
     );
   };
 
@@ -1147,16 +1146,19 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     deleteTree,
     updateTreeOrder,
     shareTree: async (treeId: string, userId: string) => {
+      if (!currentUser) return;
       performAction((draft) => { const tree = draft.find(t => t.id === treeId); if (tree) { if (!tree.sharedWith) tree.sharedWith = []; tree.sharedWith.push(userId); } });
       await shareTreeWithUser(treeId, userId);
       toast({ title: "Tree Shared", description: "Access has been granted." });
     },
     revokeShare: async (treeId: string, userId: string) => {
+      if (!currentUser) return;
       performAction(draft => { const tree = draft.find(t => t.id === treeId); if (tree && tree.sharedWith) { tree.sharedWith = tree.sharedWith.filter(id => id !== userId); } });
       await revokeShareFromUser(treeId, userId);
       toast({ title: "Access Revoked", description: "User access has been removed." });
     },
     setTreePublicStatus: async (treeId: string, isPublic: boolean) => {
+      if (!currentUser) return;
       performAction(draft => { const tree = draft.find(t => t.id === treeId); if (tree) tree.isPublic = isPublic; });
       await setTreePublicStatusInDb(treeId, isPublic);
       toast({ title: `Tree is now ${isPublic ? 'Public' : 'Private'}` });
@@ -1182,7 +1184,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         try {
           const dataUri = await blobToDataURI(blob);
           const originalFileName = path.basename(relativePath);
-          await uploadAttachmentToServer(currentUser.id, originalFileName, dataUri, originalFileName);
+          await uploadAttachmentToServer(currentUser!.id, originalFileName, dataUri, originalFileName);
         } catch (error) {
           console.error(`Failed to upload file ${relativePath} from archive`, error);
         }
@@ -1229,8 +1231,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     syncFromRepo,
     restoreToCommit,
     resolveConflict,
-    analyzeStorage: () => getStorageInfo(currentUser!.id),
-    purgeStorage: () => purgeUnusedFiles(currentUser!.id),
+    analyzeStorage: () => currentUser ? getStorageInfo(currentUser!.id) : Promise.resolve(null as any),
+    purgeStorage: () => currentUser ? purgeUnusedFiles(currentUser!.id) : Promise.resolve(null as any),
     toggleStarredForSelectedNodes,
     clipboard,
     setClipboard,
@@ -1278,4 +1280,4 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
   return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
 }
 
-    
+

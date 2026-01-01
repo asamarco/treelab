@@ -93,17 +93,31 @@ export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & {
   await connectToDatabase();
   const { id, ...treeData } = treeFile;
   const newTimestamp = timestamp || new Date().toISOString();
-  const updatePayload: any = { 
-    $set: { ...treeData, updatedAt: newTimestamp } 
-  };
+
+  // Check if the only update is for expandedNodeIds
+  const updateKeys = Object.keys(treeData);
+  const isOnlyViewChange = updateKeys.length === 1 && updateKeys[0] === 'expandedNodeIds';
+  
+  const updatePayload: any = { $set: { ...treeData } };
+  
+  // Only update the 'updatedAt' timestamp if it's not just a view change
+  if (!isOnlyViewChange) {
+      updatePayload.$set.updatedAt = newTimestamp;
+  }
 
   // If gitSync is explicitly not present in the update data, it means we are unlinking.
-  if (!('gitSync' in treeData)) {
+  if (!('gitSync' in treeData) && updateKeys.length > 1) { // Ensure it's not part of a larger update that includes gitSync
     updatePayload.$unset = { gitSync: 1 };
   }
   
   await TreeModel.findByIdAndUpdate(id, updatePayload).exec();
-  console.log(`INFO: Saved tree meta '${treeFile.title}' (ID: ${treeFile.id}) to DB`);
+  
+  if (!isOnlyViewChange) {
+      console.log(`INFO: Saved tree meta '${treeFile.title}' (ID: ${treeFile.id}) to DB with new timestamp.`);
+  } else {
+      console.log(`INFO: Saved expanded nodes for tree (ID: ${treeFile.id}) without updating timestamp.`);
+  }
+
   return newTimestamp;
 }
 

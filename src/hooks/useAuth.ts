@@ -221,3 +221,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setLastActiveTreeId,
   };
 }
+
+
+    

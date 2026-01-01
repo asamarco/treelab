@@ -31,13 +31,16 @@ import { TreeNodeDropZone } from "./tree-node-dropzone";
 import { WritableDraft } from "immer";
 import { useUIContext } from "@/contexts/ui-context";
 import { getContextualOrder } from "@/lib/utils";
+import { useAuthContext } from "@/contexts/auth-context";
 
 interface TreeViewProps {
   nodes: TreeNode[];
-  initialExpandedIds?: Set<string>;
+  overrideExpandedIds?: string[];
+  onExpandedChange?: (updater: SetStateAction<string[]>) => void;
 }
 
-export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
+export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeViewProps) {
+  const { currentUser } = useAuthContext();
   const { 
       tree, 
       moveNodes, 
@@ -55,33 +58,63 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       moveNodeOrder,
       undoLastAction,
       redoLastAction,
+      clipboard,
   } = useTreeContext();
   const { dialogState, setDialogState } = useUIContext();
-  
-  const [localExpandedNodeIds, setLocalExpandedNodeIds] = useState<string[]>([]);
-  
-  const isLocal = initialExpandedIds !== undefined;
-  
-  const setExpandedNodeIds = (isLocal
-    ? setLocalExpandedNodeIds
-    : setGlobalExpandedNodeIds) as unknown as (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 
-  const expandedNodeIds = isLocal ? localExpandedNodeIds : globalExpandedNodeIds;
+  const isUsingLocalExpansion = !!overrideExpandedIds && !!onExpandedChange;
 
+  const setExpandedNodeIds = (onExpandedChange || setGlobalExpandedNodeIds) as unknown as (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
+  const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
   
-  useEffect(() => {
-    if (initialExpandedIds) {
-      setLocalExpandedNodeIds(Array.from(initialExpandedIds));
-    }
-  }, [initialExpandedIds]);
-
   const { toast } = useToast();
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over, activatorEvent } = event;
-
+    
     if (!active || !over) return;
     
+    const findNodeAndParentInTree = (nodeId: string, searchNodes: TreeNode[]): { node: TreeNode, parent: TreeNode | null } | null => {
+        for(const node of searchNodes) {
+            if (node.id === nodeId) return { node, parent: null };
+            if (node.children) {
+                const found = findNodeAndParentInTree(nodeId, node.children);
+                if (found) return { ...found, parent: found.parent || node };
+            }
+        }
+        return null;
+    };
+    
+    if (!currentUser) {
+        // Allow local-only drag-drop for public users, without modifiers
+        const { nodeId: activeId } = active.data.current ?? {};
+        const overIdWithContext = over.id as string;
+        const isDroppingOnGap = overIdWithContext.startsWith('gap_');
+        const overNodeId = overIdWithContext.replace(/^(gap_|node_)/, '').split('_')[0];
+
+        const activeNodeFromContext = findNodeAndParentInTree(activeId, tree)?.node;
+        if (activeNodeFromContext && findNodeAndParentInTree(overNodeId, [activeNodeFromContext])) {
+          toast({
+            variant: "destructive",
+            title: "Invalid Move",
+            description: "You cannot move a node into one of its own descendants.",
+          });
+          return;
+        }
+
+        const [targetNodeId, overParentIdStr] = overIdWithContext.replace(/^(gap_|node_)/, '').split('_');
+        const targetContextualParentId = overParentIdStr === 'root' ? null : overParentIdStr;
+        
+        moveNodes([{ 
+            nodeId: activeId, 
+            targetNodeId: targetNodeId, 
+            position: isDroppingOnGap ? 'sibling' : 'child-bottom', 
+            sourceContextualParentId: active.data.current?.parentId,
+            targetContextualParentId: targetContextualParentId,
+        }]);
+        return;
+    }
+
     const typedActivatorEvent = activatorEvent as (KeyboardEvent);
     const isCtrlPressed = typedActivatorEvent.ctrlKey || typedActivatorEvent.metaKey;
     const isShiftPressed = typedActivatorEvent.shiftKey;
@@ -118,17 +151,6 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
             pasteNodes(overNodeId, isDroppingOnGap ? 'sibling' : 'child', null, [fullNodeToCopy]);
         }
         return;
-    }
-    
-    const findNodeAndParentInTree = (nodeId: string, searchNodes: TreeNode[]): { node: TreeNode, parent: TreeNode | null } | null => {
-        for(const node of searchNodes) {
-            if (node.id === nodeId) return { node, parent: null };
-            if (node.children) {
-                const found = findNodeAndParentInTree(nodeId, node.children);
-                if (found) return { ...found, parent: found.parent || node };
-            }
-        }
-        return null;
     }
 
     const activeNodeFromContext = findNodeAndParentInTree(activeId, tree)?.node;
@@ -221,14 +243,15 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
     if (isAnyModalOpen) {
       return;
     }
-
+    
+    // Shortcuts that work for both public and authenticated users
     if (event.ctrlKey || event.metaKey) {
-        if (event.key === 'z') {
+        if (event.key === 'z' && currentUser) {
             event.preventDefault();
             undoLastAction();
             return;
         }
-        if (event.key === 'y' || (event.key === 'Z' && event.shiftKey)) {
+        if ((event.key === 'y' || (event.key === 'Z' && event.shiftKey)) && currentUser) {
             event.preventDefault();
             redoLastAction();
             return;
@@ -242,38 +265,54 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
       }
       return;
     }
-
-    if (selectedNodeIds.length === 1) {
-        const instanceId = selectedNodeIds[0];
-        const [nodeId, parentIdStr] = instanceId.split('_');
-        const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;
-
-        if (event.key === 'e') {
-            event.preventDefault();
-            setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
-            return;
-        }
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
-            return;
-        }
-        if (event.key === '+') {
-            event.preventDefault();
-            setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
-            return;
-        }
-        if (event.key === 'i') {
-            event.preventDefault();
-            moveNodeOrder(nodeId, 'up', contextualParentId);
-            return;
-        }
-        if (event.key === 'k') {
-            event.preventDefault();
-            moveNodeOrder(nodeId, 'down', contextualParentId);
-            return;
-        }
+    
+    // Shortcuts only for authenticated users
+    if (currentUser) {
+       if (event.ctrlKey || event.metaKey) {
+          if (event.key === 'v') { // Paste
+              event.preventDefault();
+              if (selectedNodeIds.length !== 1 || !clipboard.nodes) return;
+              const targetInstanceId = selectedNodeIds[0];
+              const [targetNodeId, contextualParentId] = targetInstanceId.split('_');
+              if (event.altKey) {
+                if (clipboard.operation === 'cut') return;
+                pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes.map(n => n.id), contextualParentId === 'root' ? null : contextualParentId);
+              } else {
+                pasteNodes(targetNodeId, 'child', contextualParentId === 'root' ? null : contextualParentId);
+              }
+          }
+       } else if (selectedNodeIds.length === 1) {
+          const instanceId = selectedNodeIds[0];
+          const [nodeId, parentIdStr] = instanceId.split('_');
+          const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;
+          if (event.key === 'e') {
+              event.preventDefault();
+              setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
+              return;
+          }
+          if (event.key === 'Enter') {
+              event.preventDefault();
+              setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
+              return;
+          }
+          if (event.key === '+') {
+              event.preventDefault();
+              setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
+              return;
+          }
+          if (event.key === 'i') {
+              event.preventDefault();
+              moveNodeOrder(nodeId, 'up', contextualParentId);
+              return;
+          }
+          if (event.key === 'k') {
+              event.preventDefault();
+              moveNodeOrder(nodeId, 'down', contextualParentId);
+              return;
+          }
+       }
     }
+
 
     let nextInstanceId: string | null = null;
     
@@ -294,7 +333,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
             case 'ArrowUp':
             case 'ArrowDown':
                 event.preventDefault();
-                if (isCtrlPressed) { // Sibling navigation
+                if (isCtrlPressed && currentUser) { // Sibling navigation
                     if (selectedNodeIds.length !== 1) break;
                     
                     const parentInfo = currentContextualParentId ? findNodeAndParent(currentContextualParentId, tree) : null;
@@ -348,7 +387,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
                         if (!draft.includes(currentInstanceId)) {
                             draft.push(currentInstanceId);
                         }
-                    });
+                    }, false);
                 }
                 break;
             case 'ArrowLeft':
@@ -364,7 +403,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
                         if (index > -1) {
                             draft.splice(index, 1);
                         }
-                    });
+                    }, false);
                 }
                 break;
         }
@@ -378,7 +417,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
         element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
-  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, dialogState]);
+  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, dialogState, currentUser, clipboard, pasteNodes, pasteNodesAsClones]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -417,3 +456,7 @@ export function TreeView({ nodes, initialExpandedIds }: TreeViewProps) {
 }
 
     
+
+
+    
+

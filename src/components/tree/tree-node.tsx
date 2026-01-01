@@ -286,6 +286,7 @@ export function TreeNodeComponent({
               isMenuOpen={isMenuOpen}
               onMenuOpenChange={setIsMenuOpen}
               contextMenuPosition={contextMenuPosition}
+              onExpandedChange={setExpandedNodeIds}
             />
             <TreeNodeContent 
               node={node} 
@@ -310,4 +311,3 @@ export function TreeNodeComponent({
     </div>
   );
 }
-
