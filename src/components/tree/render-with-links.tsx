@@ -17,7 +17,7 @@ import { Link as LinkIcon } from 'lucide-react';
 import { TreeContext } from '@/contexts/tree-context';
 import { UIContext } from '@/contexts/ui-context';
 import { Button } from '../ui/button';
-import parseHtml from 'html-react-parser';
+import parseHtml, { domToReact, attributesToProps, DOMNode } from 'html-react-parser';
 import { AuthContext } from '@/contexts/auth-context';
 import { formatDate } from '@/lib/utils';
 
@@ -67,7 +67,27 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
             if (part.match(/https?:\/\//)) {
               return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="underline">{part}</a>;
             }
-            return parseHtml(part);
+            return parseHtml(part, {
+              replace: (domNode) => {
+                if ('attribs' in domNode) {
+                    const props = attributesToProps(domNode.attribs);
+                    // Remove any on* event handlers
+                    for (const prop in props) {
+                        if (prop.toLowerCase().startsWith('on')) {
+                            delete (props as any)[prop];
+                        }
+                    }
+                    // Sanitize href attributes
+                    if (domNode.name === 'a' && props.href) {
+                        const href = props.href as string;
+                        if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
+                            delete props.href;
+                        }
+                    }
+                    return React.createElement(domNode.name, props, domToReact((domNode as any).children));
+                }
+              }
+            });
           })}
         </React.Fragment>
       );
@@ -144,7 +164,27 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
           if (part.match(/https?:\/\//)) {
             return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="underline">{part}</a>;
           }
-          return parseHtml(part);
+           return parseHtml(part, {
+              replace: (domNode) => {
+                if ('attribs' in domNode) {
+                    const props = attributesToProps(domNode.attribs);
+                    // Remove any on* event handlers
+                    for (const prop in props) {
+                        if (prop.toLowerCase().startsWith('on')) {
+                            delete (props as any)[prop];
+                        }
+                    }
+                    // Sanitize href attributes
+                    if (domNode.name === 'a' && props.href) {
+                        const href = props.href as string;
+                        if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
+                            delete props.href;
+                        }
+                    }
+                    return React.createElement(domNode.name, props, domToReact((domNode as any).children));
+                }
+              }
+            });
         })}
       </React.Fragment>
     );
