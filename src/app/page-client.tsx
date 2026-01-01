@@ -199,7 +199,7 @@ export function TreePage() {
   }, [activeTree?.id, setSelectedNodeIds]);
 
   const checkSyncStatus = useCallback(async () => {
-    if (!activeTree?.gitSync || !currentUser?.gitSettings?.githubPat || isTokenInvalid) {
+    if (!currentUser || !activeTree?.gitSync || !currentUser?.gitSettings?.githubPat || isTokenInvalid) {
       setRemoteSha(null);
       return;
     }
@@ -218,7 +218,7 @@ export function TreePage() {
     } finally {
       setIsCheckingSync(false);
     }
-  }, [activeTree?.gitSync, currentUser?.gitSettings?.githubPat, isTokenInvalid]);
+  }, [activeTree?.gitSync, currentUser, isTokenInvalid]);
 
 
   useEffect(() => {
