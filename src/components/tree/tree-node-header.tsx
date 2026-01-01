@@ -112,13 +112,12 @@ export function TreeNodeHeader({
   const { minOrder, maxOrder } = getSiblingOrderRange(siblings, contextualParentId);
 
 
-  const hasContentToToggle = (node.children && node.children.length > 0) || 
-    (!isCompactView && (
-      nodeHasAttachments ||
-      template.fields.some(f => f.type === 'picture') ||
-      template.fields.some(f => f.type === 'table-header') ||
-      (template.bodyTemplate && template.bodyTemplate.trim() !== '')
-    ));
+  const hasContentToToggle =
+    (node.children && node.children.length > 0) ||
+    nodeHasAttachments ||
+    template.fields.some(f => f.type === 'picture' && node.data[f.id] && node.data[f.id].length > 0) ||
+    template.fields.some(f => f.type === 'table-header') ||
+    (template.bodyTemplate && template.bodyTemplate.trim() !== '');
 
 
   const handleCopy = () => {
