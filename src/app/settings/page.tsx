@@ -494,7 +494,7 @@ function SettingsPage() {
                     <p className="text-sm text-muted-foreground">
                       This token is stored securely and is used to sync your trees with your GitHub repositories. 
                       You can create a token in your{" "}
-                      <Link href="https://github.com/settings/tokens?type=beta" target="_blank" className="underline">GitHub developer settings</Link>.
+                      <Link href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener noreferrer" className="underline">GitHub developer settings</Link>.
                     </p>
                   </div>
                    <div className="flex justify-end">
