@@ -289,6 +289,16 @@ export const NodeForm = ({
 
   const handlePicturePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>, fieldId: string) => {
     const clipboardItems = e.clipboardData.items;
+    const textItem = e.clipboardData.getData('text/plain');
+
+    if (textItem && (textItem.startsWith('http') || textItem.startsWith('data:'))) {
+        e.preventDefault();
+        const currentImages = formData[fieldId] ? (Array.isArray(formData[fieldId]) ? formData[fieldId] : [formData[fieldId]]) : [];
+        setFormData({ ...formData, [fieldId]: [...currentImages, textItem] });
+        (e.target as HTMLTextAreaElement).value = '';
+        return;
+    }
+    
     const imageItem = Array.from(clipboardItems).find(item => item.type.startsWith('image/'));
     
     if (!imageItem) return;
@@ -531,9 +541,9 @@ export const NodeForm = ({
                     {!uploadingStates[field.id] && (
                       <div className="flex flex-col items-center gap-2">
                         <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">Drag &amp; drop images, paste an image from your clipboard, or enter a URL.</p>
+                        <p className="text-muted-foreground">Drag & drop images, paste an image from your clipboard, or enter a URL.</p>
                         <div className="flex items-center gap-2 w-full">
-                           <Textarea id={`picture-url-${field.id}`} placeholder="Paste URL..." value={""} onChange={(e) => { const url = e.target.value; if (url) { setFormData({ ...formData, [field.id]: [...currentImages, url] }); } }} onPaste={(e) => handlePicturePaste(e, field.id)} rows={1} className="text-xs" />
+                           <Textarea id={`picture-url-${field.id}`} placeholder="Paste URL or image" value={""} onChange={(e) => { e.target.value = '' }} onPaste={(e) => handlePicturePaste(e, field.id)} rows={1} className="text-xs" />
                            <span className="text-xs text-muted-foreground">OR</span>
                            <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
                         </div>
@@ -750,3 +760,6 @@ export const NodeForm = ({
     </form>
   );
 };
+
+    
+
