@@ -531,7 +531,7 @@ export const NodeForm = ({
                     {!uploadingStates[field.id] && (
                       <div className="flex flex-col items-center gap-2">
                         <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">Drag & drop images here, or paste a URL</p>
+                        <p className="text-muted-foreground">Drag &amp; drop images, paste an image from your clipboard, or enter a URL.</p>
                         <div className="flex items-center gap-2 w-full">
                            <Textarea id={`picture-url-${field.id}`} placeholder="Paste URL..." value={""} onChange={(e) => { const url = e.target.value; if (url) { setFormData({ ...formData, [field.id]: [...currentImages, url] }); } }} onPaste={(e) => handlePicturePaste(e, field.id)} rows={1} className="text-xs" />
                            <span className="text-xs text-muted-foreground">OR</span>
