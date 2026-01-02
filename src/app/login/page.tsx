@@ -42,12 +42,23 @@ export default function LoginPage() {
     const success = await login(identifier, password);
     if (success) {
       const redirectUrl = searchParams.get('redirect');
+      
       // HARDENING: Sanitize redirect URL to prevent open redirect and XSS vulnerabilities.
       // It must be a relative path within the application and cannot contain protocol schemes.
       const isSafeRedirect = redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//') && !redirectUrl.includes(':');
 
       if (isSafeRedirect) {
-        router.push(redirectUrl);
+        // Further sanitize to ensure it's a valid path and not something like `/\something`
+        try {
+          const url = new URL(redirectUrl, window.location.origin);
+          if (url.origin === window.location.origin) {
+            router.push(url.pathname + url.search + url.hash);
+          } else {
+             router.push('/');
+          }
+        } catch (e) {
+          router.push('/');
+        }
       } else {
         router.push("/");
       }
