@@ -114,8 +114,17 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
           const maxHeight = field.height || 300;
           const containerWidth = containerWidths[field.id] || 0;
           
-          const estimatedAspectRatio = 4/3;
-          const totalImageWidth = images.length * (maxHeight * estimatedAspectRatio + 8);
+          // Calculate the total width of all images based on their actual aspect ratios
+          const totalImageWidth = images.reduce((acc, src) => {
+              const dims = imageDimensions[src];
+              if (!dims || dims.height === 0) {
+                  // Fallback for images not yet loaded or with zero height
+                  return acc + (maxHeight * (4/3)) + 8; // (width estimate + gap)
+              }
+              const renderedWidth = (dims.width / dims.height) * maxHeight;
+              return acc + renderedWidth + 8; // (actual rendered width + gap)
+          }, 0);
+
           const doesOverflow = containerWidth > 0 && totalImageWidth > containerWidth;
 
           const viewMode = imageViewModes[field.id] || 'carousel';
@@ -160,10 +169,6 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                   <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
                     <CarouselContent>
                       {images.map((src, index) => {
-                          const dimensions = imageDimensions[src];
-                          const style: React.CSSProperties = {
-                            height: dimensions && dimensions.height < maxHeight ? `${dimensions.height}px` : `${maxHeight}px`,
-                          };
                           return (
                             <CarouselItem key={index} style={{ flexBasis: `auto` }}>
                                 <div className="p-1 h-full flex items-center justify-center">
@@ -172,7 +177,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                           src={src} 
                                           alt={`${field.name} ${index + 1}`} 
                                           className="object-contain w-auto h-full"
-                                          style={style} 
+                                          style={{ maxHeight: `${maxHeight}px` }} 
                                           onDoubleClick={(e) => handleImageDoubleClick(e, src)} 
                                           onLoad={(e) => {
                                             const img = e.currentTarget;
@@ -194,12 +199,8 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
               ) : (
                 <div className="flex flex-wrap gap-2 items-center justify-center">
                     {images.map((src, index) => {
-                        const dimensions = imageDimensions[src];
-                        const style: React.CSSProperties = {
-                          height: dimensions && dimensions.height < maxHeight ? `${dimensions.height}px` : `${maxHeight}px`,
-                        };
                         return (
-                            <div key={index} className="flex items-center justify-center" style={style}>
+                            <div key={index} className="flex items-center justify-center" style={{ maxHeight: `${maxHeight}px` }}>
                                  <img 
                                     src={src} 
                                     alt={`${field.name} ${index + 1}`} 

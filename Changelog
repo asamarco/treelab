@@ -6,6 +6,7 @@ Improvement: Automatic tree reload applied back to all trees (not only shared on
 Improvement: Confirmation form for updating existing node names if the template changes
 Improvement: Conditional rules order can be rearranged
 Improvement: Add node form: template selection and field edit unified in a single modal form 
+Improvement: Large images are scaled to user specified height instead of width, smaller images are not stretched
 Bugfix: clones and their descendants are correctly updated everywhere in the tree without need of a tree reload
 Bugfix: Double click in the edit node form does not trigger a second edit form window
 
