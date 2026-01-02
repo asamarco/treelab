@@ -42,9 +42,11 @@ export default function LoginPage() {
     const success = await login(identifier, password);
     if (success) {
       const redirectUrl = searchParams.get('redirect');
-      // HARDENING: Validate redirect URL to prevent open redirect vulnerabilities.
-      // It must be a relative path within the application.
-      if (redirectUrl && redirectUrl.startsWith('/')) {
+      // HARDENING: Sanitize redirect URL to prevent open redirect and XSS vulnerabilities.
+      // It must be a relative path within the application and cannot contain protocol schemes.
+      const isSafeRedirect = redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//') && !redirectUrl.includes(':');
+
+      if (isSafeRedirect) {
         router.push(redirectUrl);
       } else {
         router.push("/");
