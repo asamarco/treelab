@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -43,6 +44,8 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
   const [imageViewModes, setImageViewModes] = useState<Record<string, 'carousel' | 'grid'>>({});
   const [containerWidths, setContainerWidths] = useState<Record<string, number>>({});
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number, height: number }>>({});
+
 
   useEffect(() => {
     if (!isExpanded) return;
@@ -108,9 +111,11 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
           const images = value.filter(v => typeof v === 'string' && v.length > 0);
           if (images.length === 0) return null;
           
-          const imageHeight = field.height || 300;
+          const maxHeight = field.height || 300;
           const containerWidth = containerWidths[field.id] || 0;
-          const totalImageWidth = images.length * (imageHeight * (4/3) + 8); // Estimate width based on 4:3 aspect ratio + gap
+          
+          const estimatedAspectRatio = 4/3;
+          const totalImageWidth = images.length * (maxHeight * estimatedAspectRatio + 8);
           const doesOverflow = containerWidth > 0 && totalImageWidth > containerWidth;
 
           const viewMode = imageViewModes[field.id] || 'carousel';
@@ -154,15 +159,31 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                  <div className="mx-auto" style={{ maxWidth: '100%' }}>
                   <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
                     <CarouselContent>
-                      {images.map((src, index) => (
-                        <CarouselItem key={index} style={{ flexBasis: `${imageHeight * (4/3)}px` }}>
-                          <div className="p-1 h-full flex items-center justify-center">
-                              <CardContent className="flex h-full items-center justify-center p-0 overflow-hidden rounded-lg">
-                                <img src={src} alt={`${field.name} ${index + 1}`} className="max-w-full max-h-full h-auto object-contain" style={{ maxHeight: `${imageHeight}px` }} onDoubleClick={(e) => handleImageDoubleClick(e, src)} />
-                              </CardContent>
-                          </div>
-                        </CarouselItem>
-                      ))}
+                      {images.map((src, index) => {
+                          const dimensions = imageDimensions[src];
+                          const style: React.CSSProperties = {
+                            height: dimensions && dimensions.height < maxHeight ? `${dimensions.height}px` : `${maxHeight}px`,
+                          };
+                          return (
+                            <CarouselItem key={index} style={{ flexBasis: `auto` }}>
+                                <div className="p-1 h-full flex items-center justify-center">
+                                    <CardContent className="flex h-full items-center justify-center p-0 overflow-hidden rounded-lg">
+                                        <img 
+                                          src={src} 
+                                          alt={`${field.name} ${index + 1}`} 
+                                          className="object-contain w-auto h-full"
+                                          style={style} 
+                                          onDoubleClick={(e) => handleImageDoubleClick(e, src)} 
+                                          onLoad={(e) => {
+                                            const img = e.currentTarget;
+                                            setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
+                                          }}
+                                        />
+                                    </CardContent>
+                                </div>
+                            </CarouselItem>
+                          );
+                      })}
                     </CarouselContent>
                     {images.length > 1 && <>
                         <CarouselPrevious />
@@ -172,11 +193,26 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2 items-center justify-center">
-                    {images.map((src, index) => (
-                        <div key={index} className="flex items-center justify-center" style={{ flexBasis: `${imageHeight * (4/3)}px`, maxWidth: `${imageHeight * (4/3)}px` }}>
-                             <img src={src} alt={`${field.name} ${index + 1}`} className="max-w-full max-h-full object-contain rounded-md" style={{ maxHeight: `${imageHeight}px` }} onDoubleClick={(e) => handleImageDoubleClick(e, src)} />
-                        </div>
-                    ))}
+                    {images.map((src, index) => {
+                        const dimensions = imageDimensions[src];
+                        const style: React.CSSProperties = {
+                          height: dimensions && dimensions.height < maxHeight ? `${dimensions.height}px` : `${maxHeight}px`,
+                        };
+                        return (
+                            <div key={index} className="flex items-center justify-center" style={style}>
+                                 <img 
+                                    src={src} 
+                                    alt={`${field.name} ${index + 1}`} 
+                                    className="object-contain max-w-full h-full rounded-md"
+                                    onDoubleClick={(e) => handleImageDoubleClick(e, src)}
+                                    onLoad={(e) => {
+                                      const img = e.currentTarget;
+                                      setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
+                                    }}
+                                  />
+                            </div>
+                        );
+                    })}
                 </div>
               )}
             </div>
