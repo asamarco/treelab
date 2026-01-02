@@ -7,9 +7,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { getSession } from '@/lib/session';
+import { fetchUsers } from '@/lib/auth-service';
 
 export async function POST(request: NextRequest) {
     try {
+        const session = await getSession();
+        if (!session?.userId) {
+            return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+        }
+        
+        // Further check if the user is an admin
+        const allUsers = await fetchUsers();
+        const user = allUsers.find(u => u.id === session.userId);
+        if (!user || !user.isAdmin) {
+            return NextResponse.json({ message: 'Forbidden: Admin access required' }, { status: 403 });
+        }
+
         const formData = await request.formData();
         const logoFile = formData.get('logo') as File | null;
 

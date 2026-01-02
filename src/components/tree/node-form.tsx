@@ -215,7 +215,6 @@ export const NodeForm = ({
         
     const formDataPayload = new FormData();
     formDataPayload.append('file', file);
-    formDataPayload.append('userId', currentUser.id);
     formDataPayload.append('uniqueFileName', uniqueFileName);
     formDataPayload.append('fileName', file.name);
 
@@ -223,6 +222,7 @@ export const NodeForm = ({
         const response = await fetch('/api/upload/attachment', {
             method: 'POST',
             body: formDataPayload,
+            credentials: 'include',
         });
 
         if (!response.ok) {

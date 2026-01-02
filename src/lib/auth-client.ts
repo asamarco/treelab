@@ -34,9 +34,7 @@ export const logout = async (): Promise<void> => {
 export const getSessionUser = async (): Promise<User | null> => {
     try {
         const response = await fetch('/api/auth/session', {
-            headers: {
-                'Cache-Control': 'no-cache',
-            },
+            credentials: 'include',
         });
         if (response.ok) {
             return await response.json();

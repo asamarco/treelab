@@ -10,16 +10,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { saveAttachment } from '@/lib/data-service';
 import sharp from 'sharp';
 import path from 'path';
+import { getSession } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
     try {
+        const session = await getSession();
+        if (!session?.userId) {
+            return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
+        }
+        const userId = session.userId;
+
         const formData = await request.formData();
         const file = formData.get('file') as File | null;
         const uniqueFileName = formData.get('uniqueFileName') as string;
-        const userId = formData.get('userId') as string;
         const originalFileName = formData.get('fileName') as string;
 
-        if (!file || !uniqueFileName || !userId || !originalFileName) {
+        if (!file || !uniqueFileName || !originalFileName) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
         

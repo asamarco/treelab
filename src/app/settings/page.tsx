@@ -143,6 +143,7 @@ function SettingsPage() {
       const response = await fetch('/api/upload/logo', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {
