@@ -22,7 +22,7 @@ export async function encrypt(payload: { userId: string, expires: Date }) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('1d') // Session expires in 1 day
+    .setExpirationTime('12h') // Session expires in 12 hours
     .sign(key);
 }
 
@@ -43,7 +43,7 @@ export async function decrypt(input: string): Promise<any> {
  * It modifies the cookies on the NextResponse object.
  */
 export async function createSessionInApiRoute(response: NextResponse, userId: string) {
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day from now
+  const expires = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
   const session = await encrypt({ userId, expires });
   
   response.cookies.set(SESSION_COOKIE_NAME, session, {
@@ -60,7 +60,7 @@ export async function createSessionInApiRoute(response: NextResponse, userId: st
  * It directly calls the cookies() function to set the cookie.
  */
 export async function createSessionInServerAction(userId: string) {
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day from now
+  const expires = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
   const session = await encrypt({ userId, expires });
   
   (await cookies()).set(SESSION_COOKIE_NAME, session, {
