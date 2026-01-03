@@ -13,9 +13,17 @@ import type { NextRequest } from 'next/server'
  
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const url = request.url;
+
+  // Define a regex for characters commonly used in XSS attacks.
+  // This blocks <, >, ", ', ;, (, )
+  const maliciousCharsRegex = /[<>"';()]/;
+
+  // Define a regex for the encoded versions of those characters.
+  const encodedMaliciousCharsRegex = /%3C|%3E|%22|%27|%3B|%28|%29/i;
 
   // Check the decoded pathname for malicious characters.
-  if (pathname.includes('<') || pathname.includes('>')) {
+  if (maliciousCharsRegex.test(pathname)) {
     console.warn(`WARN: Blocked potentially malicious request to path: ${pathname}`);
     const url = request.nextUrl.clone();
     url.pathname = '/';
@@ -23,11 +31,11 @@ export function middleware(request: NextRequest) {
   }
 
   // Also check the raw, encoded URL for encoded malicious characters.
-  if (request.url.includes('%3C') || request.url.includes('%3E')) {
-     console.warn(`WARN: Blocked potentially malicious request with encoded characters: ${request.url}`);
-     const url = request.nextUrl.clone();
-     url.pathname = '/';
-     return NextResponse.redirect(url);
+  if (encodedMaliciousCharsRegex.test(url)) {
+     console.warn(`WARN: Blocked potentially malicious request with encoded characters: ${url}`);
+     const redirectUrl = request.nextUrl.clone();
+     redirectUrl.pathname = '/';
+     return NextResponse.redirect(redirectUrl);
   }
  
   // Allow the request to proceed if it's clean.
