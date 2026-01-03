@@ -22,7 +22,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Wait until the initial auth check is complete before redirecting.
     if (!isAuthLoading && isAuthRequired && !currentUser) {
-      router.push(`/login?redirect=${pathname}`);
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [currentUser, isAuthRequired, isAuthLoading, router, pathname]);
   
