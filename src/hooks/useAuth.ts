@@ -19,6 +19,8 @@ import {
     register as registerOnClient
 } from '@/lib/auth-client';
 import { loadGlobalSettings } from "@/lib/auth-service";
+import { useIdleTimer } from "./use-idle-timer";
+import { useToast } from "./use-toast";
 
 type Theme = "light" | "dark" | "system";
 
@@ -32,6 +34,30 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [globalSettings, setAppSettings] = useState<GlobalSettings>({ allowPublicRegistration: true });
+  const { toast } = useToast();
+
+  const handleLogout = useCallback(async (isIdle: boolean = false) => {
+    if (currentUser) {
+        if(isIdle) {
+            toast({
+                title: "You have been logged out",
+                description: "Your session has ended due to inactivity.",
+            });
+        }
+        console.log(`INFO: User '${currentUser.username}' logged out.`);
+    }
+    await logoutOnClient();
+    setCurrentUser(null);
+    setUsers([]); // Clear users on logout
+  }, [currentUser, toast]);
+
+  const inactivityTimeoutMinutes = currentUser?.inactivityTimeoutMinutes;
+  const idleTime = typeof inactivityTimeoutMinutes === 'number' && inactivityTimeoutMinutes > 0 
+    ? inactivityTimeoutMinutes * 60 * 1000 
+    : 0;
+
+  useIdleTimer(() => handleLogout(true), idleTime);
+
 
   const initializeAuth = async () => {
     console.log("INFO: Initializing auth state...");
@@ -82,6 +108,24 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   }, [isAuthRequired, defaultUserId]);
 
 
+  // Add a periodic check for session validity
+  useEffect(() => {
+    if (!isAuthRequired || typeof window === 'undefined') return;
+
+    const interval = setInterval(async () => {
+        if (document.cookie.includes('session=')) {
+            const user = await getSessionUser();
+            if (!user) {
+                console.log("INFO: Session expired, logging out user.");
+                handleLogout();
+            }
+        }
+    }, 60 * 1000); // Check every 60 seconds
+
+    return () => clearInterval(interval);
+  }, [isAuthRequired, handleLogout]);
+
+
   // Persist user profile changes
   useEffect(() => {
     if (isAuthRequired && currentUser) {
@@ -90,9 +134,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
           lastActiveTreeId: currentUser.lastActiveTreeId,
           gitSettings: currentUser.gitSettings,
           dateFormat: currentUser.dateFormat,
+          inactivityTimeoutMinutes: currentUser.inactivityTimeoutMinutes,
       });
     }
-  }, [isAuthRequired, currentUser?.theme, currentUser?.lastActiveTreeId, currentUser?.gitSettings, currentUser?.dateFormat]);
+  }, [isAuthRequired, currentUser]);
 
 
   const handleLogin = async (identifier: string, password: string): Promise<boolean> => {
@@ -121,15 +166,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
         return true;
     }
     return false;
-  };
-
-  const handleLogout = async () => {
-    if (currentUser) {
-        console.log(`INFO: User '${currentUser.username}' logged out.`);
-    }
-    await logoutOnClient();
-    setCurrentUser(null);
-    setUsers([]); // Clear users on logout
   };
 
   const addUserByAdmin = async (username: string, password: string, isAdmin: boolean): Promise<boolean> => {
@@ -185,6 +221,11 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setCurrentUser(prev => prev ? { ...prev, dateFormat: newFormat } : null);
   };
 
+  const setInactivityTimeout = (minutes: number) => {
+    if (!isAuthRequired || !currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, inactivityTimeoutMinutes: minutes } : null);
+  };
+
   const setGlobalSettingsState = async (settings: GlobalSettings) => {
     await saveGlobalSettings(settings);
     setAppSettings(settings);
@@ -217,10 +258,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     resetPasswordByAdmin,
     setTheme,
     setDateFormat,
+    setInactivityTimeout,
     setGitSettings,
     setLastActiveTreeId,
   };
 }
-
 
     

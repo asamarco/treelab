@@ -176,7 +176,7 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
     await UserModel.findByIdAndUpdate(userId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
 }
 
-export async function updateUserSettings(userId: string, settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat'>>): Promise<void> {
+export async function updateUserSettings(userId: string, settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes'>>): Promise<void> {
     await connectToDatabase();
 
     const settingsToSave = { ...settings };
@@ -216,3 +216,5 @@ export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Pro
     await GlobalSettingsModel.updateOne({}, { $set: updateData }, { upsert: true }).exec();
   }
 }
+
+    

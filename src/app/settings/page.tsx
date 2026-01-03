@@ -85,6 +85,7 @@ function SettingsPage() {
     resetPasswordByAdmin,
     setGitSettings,
     setDateFormat,
+    setInactivityTimeout,
   } = useAuthContext();
   
   const { analyzeStorage, purgeStorage } = useTreeContext();
@@ -107,6 +108,7 @@ function SettingsPage() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(globalSettings?.customLogoPath || null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [inactivityTimeout, setInactivityTimeoutState] = useState(currentUser?.inactivityTimeoutMinutes ?? 15);
 
 
   useEffect(() => {
@@ -185,7 +187,10 @@ function SettingsPage() {
     if (currentUser?.gitSettings?.githubPat) {
       setGithubPat(currentUser.gitSettings.githubPat);
     }
-  }, [currentUser?.gitSettings?.githubPat]);
+    if (currentUser?.inactivityTimeoutMinutes !== undefined) {
+      setInactivityTimeoutState(currentUser.inactivityTimeoutMinutes);
+    }
+  }, [currentUser]);
 
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -291,6 +296,11 @@ function SettingsPage() {
     e.preventDefault();
     await setGitSettings({ githubPat });
     toast({ title: "Settings Saved", description: "Your GitHub token has been updated." });
+  };
+  
+  const handleInactivityTimeoutSave = () => {
+    setInactivityTimeout(inactivityTimeout);
+    toast({ title: "Settings Saved", description: "Your inactivity timeout has been updated." });
   };
 
 
@@ -427,10 +437,10 @@ function SettingsPage() {
               <CardHeader>
                 <CardTitle>Security</CardTitle>
                 <CardDescription>
-                  Change your password here.
+                  Manage your account security settings.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
@@ -469,6 +479,27 @@ function SettingsPage() {
                     </Button>
                   </div>
                 </form>
+                 <Separator />
+                 <div className="space-y-4">
+                    <Label htmlFor="inactivity-timeout">Automatic Logout</Label>
+                    <p className="text-sm text-muted-foreground">
+                        Set the number of minutes of inactivity before you are automatically logged out. Set to 0 to disable.
+                    </p>
+                    <div className="flex items-center gap-2 max-w-md">
+                        <Input
+                            id="inactivity-timeout"
+                            type="number"
+                            min="0"
+                            value={inactivityTimeout}
+                            onChange={(e) => setInactivityTimeoutState(Number(e.target.value))}
+                            className="w-24"
+                        />
+                        <span className="text-sm text-muted-foreground">minutes</span>
+                        <Button onClick={handleInactivityTimeoutSave} className="ml-auto">
+                            Save Timeout
+                        </Button>
+                    </div>
+                </div>
               </CardContent>
             </Card>
             
@@ -703,3 +734,5 @@ function SettingsPage() {
 }
 
 export default SettingsPage;
+
+    

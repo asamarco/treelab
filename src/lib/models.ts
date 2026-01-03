@@ -120,6 +120,7 @@ const UserSchema = new Schema<User>({
   lastActiveTreeId: String,
   theme: String,
   dateFormat: String,
+  inactivityTimeoutMinutes: { type: Number, default: 15 },
   gitSettings: GitSettingsSchema,
 });
 UserSchema.pre('save', function (next) {

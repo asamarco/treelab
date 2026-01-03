@@ -144,6 +144,7 @@ export interface User {
     lastActiveTreeId?: string | null;
     theme?: Theme;
     dateFormat?: string;
+    inactivityTimeoutMinutes?: number;
     gitSettings?: GitSettings;
 }
 
@@ -368,3 +369,5 @@ export interface UseTreeRootsResult {
 }
 
 export type TreeContextType = UseTreeRootsResult;
+
+    

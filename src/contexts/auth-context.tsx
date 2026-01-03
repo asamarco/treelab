@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This file defines the context for managing all UI state.
@@ -33,6 +34,7 @@ interface AuthContextType {
   setTheme: (theme: Theme) => void;
   dateFormat: string;
   setDateFormat: (format: string) => void;
+  setInactivityTimeout: (minutes: number) => void;
   globalSettings: GlobalSettings;
   setGlobalSettings: (settings: GlobalSettings) => Promise<void>;
   setGitSettings: (gitSettings: GitSettings) => Promise<void>;
@@ -66,6 +68,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setGitSettings,
     setLastActiveTreeId,
     setDateFormat: setAuthDateFormat,
+    setInactivityTimeout: setAuthInactivityTimeout,
   } = useAuthHook({ isAuthRequired, defaultUserId });
 
   const [theme, setThemeState] = useState<Theme>("system");
@@ -112,6 +115,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setTheme: handleSetTheme,
     dateFormat,
     setDateFormat: setAuthDateFormat,
+    setInactivityTimeout: setAuthInactivityTimeout,
     globalSettings,
     setGlobalSettings: setAppSettings,
     setGitSettings,
@@ -128,3 +132,5 @@ export function useAuthContext() {
   }
   return context;
 }
+
+    
