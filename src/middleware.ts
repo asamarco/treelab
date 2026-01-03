@@ -1,48 +1,66 @@
 /**
  * @fileoverview
- * This middleware provides an application-wide security layer to proactively
- * block potential Cross-Site Scripting (XSS) attacks.
+ * This middleware provides an application-wide security layer.
  *
- * It inspects the pathname of every incoming request. If the path contains
- * characters commonly used in HTML injection attacks (like '<' or '>'),
- * it intercepts the request and redirects the user to the homepage.
- * This prevents malicious URLs from ever reaching the Next.js rendering engine.
+ * It implements two main security features:
+ * 1.  URL Path Validation: Proactively blocks requests with URLs containing characters
+ *     commonly used in injection attacks (e.g., <, >).
+ * 2.  Nonce-based Content Security Policy (CSP): Generates a unique nonce for each
+ *     request and sets a strict CSP header. This ensures that only authorized inline
+ *     scripts can be executed, providing a strong defense against XSS.
  */
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
  
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const url = request.url;
 
-  // Define a regex for characters commonly used in XSS attacks.
-  // This blocks <, >, ", ', ;, (, )
+  // 1. URL Path Validation
   const maliciousCharsRegex = /[<>"';()]/;
 
-  // Define a regex for the encoded versions of those characters.
-  const encodedMaliciousCharsRegex = /%3C|%3E|%22|%27|%3B|%28|%29/i;
-
-  // Check the decoded pathname for malicious characters.
-  if (maliciousCharsRegex.test(pathname)) {
+  if (maliciousCharsRegex.test(decodeURIComponent(pathname))) {
     console.warn(`WARN: Blocked potentially malicious request to path: ${pathname}`);
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
-  // Also check the raw, encoded URL for encoded malicious characters.
-  if (encodedMaliciousCharsRegex.test(url)) {
-     console.warn(`WARN: Blocked potentially malicious request with encoded characters: ${url}`);
-     const redirectUrl = request.nextUrl.clone();
-     redirectUrl.pathname = '/';
-     return NextResponse.redirect(redirectUrl);
-  }
+  // 2. Nonce-based Content Security Policy & Security Headers
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  const cspHeader = [
+    `default-src 'self'`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `font-src 'self' https://fonts.gstatic.com`,
+    `img-src 'self' data:`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDevelopment ? "'unsafe-eval'" : ""}`,
+    `object-src 'none'`,
+    `base-uri 'self'`,
+    `form-action 'self'`,
+    `connect-src 'self' *.cloudworkstations.dev`,
+  ].join('; ');
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  
+  // Set all security headers on the response
+  response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
  
-  // Allow the request to proceed if it's clean.
-  return NextResponse.next()
+  return response;
 }
  
-// See "Matching Paths" below to learn more
 export const config = {
-  matcher: '/:path*',
+  matcher: [
+    // Apply middleware to all paths except for static files and API routes
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ]
 }
