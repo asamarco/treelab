@@ -2,281 +2,301 @@
   "title": "Welcome to Treelab!",
   "nodes": [
     {
-      "id": "2025-09-14T16:26:19.975Zshjld0y",
+      "id": "mk05e56s-okucnaed7",
       "name": "Welcome to Treelab!",
-      "templateId": "2025-08-19T08:57:55.257Zziy6knj",
+      "templateId": "SectionTemplate",
       "data": {
         "2025-08-19T08:57:55.257Zi4vl4q4": "Welcome to Treelab!",
         "2025-08-19T08:57:55.257Z0wu6pdt": "This is your first tree, a brief guide to help you get started. You can edit, add to, or delete this entire tree at any time from the <b>Roots</b> page."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
-      "parentIds": ["root"],
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
+      "parentIds": [],
       "order": [
         0
       ],
-      "createdAt": "2025-08-08T14:59:05.041Z",
-      "updatedAt": "2025-08-08T14:59:05.041Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zmb5afyp",
+      "id": "mk05e56t-lyetxr8oy",
       "name": "Getting Started",
-      "templateId": "2025-08-19T08:57:55.257Zziy6knj",
+      "templateId": "SectionTemplate",
       "data": {
         "2025-08-19T08:57:55.257Zi4vl4q4": "Getting Started",
         "2025-08-19T08:57:55.257Z0wu6pdt": "Here's a quick overview of the basic workflow:\n\n<b>1. Create Templates:</b> Go to the <i>Templates</i> page to define the structure of your data.\n\n<b>2. Build Your Tree:</b> Come back here to add nodes using the templates you created.\n\n<b>3. Organize:</b> Add new nodes as sibling or children, reorder them freely and create nested hierarchies.\n "
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zshjld0y"
+        "mk05e56s-okucnaed7"
       ],
       "order": [
         0
       ],
-      "createdAt": "2025-08-08T14:59:05.202Z",
-      "updatedAt": "2025-08-24T07:09:37.154Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Z98zrrhd",
+      "id": "mk05e56t-nnbbxas7n",
       "name": "Core Features",
-      "templateId": "2025-08-19T08:57:55.257Zziy6knj",
+      "templateId": "SectionTemplate",
       "data": {
         "2025-08-19T08:57:55.257Zi4vl4q4": "Core Features",
         "2025-08-19T08:57:55.257Z0wu6pdt": "Treelab is built around a few key concepts. Here are some of the features you can explore."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zshjld0y"
+        "mk05e56s-okucnaed7"
       ],
       "order": [
         1
       ],
-      "createdAt": "2025-08-17T17:56:48.985Z",
-      "updatedAt": "2025-08-17T17:56:48.985Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Z443atkn",
+      "id": "mk05e56t-xv9gs4955",
       "name": "Templates",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Templates",
         "2025-08-19T08:57:55.257Z1ddpobd": "Templates are the blueprint for your data. You can combine various field types like:\n<li>Text & Text Areas (with HTML support!)</li><li>Numbers & Dates</li><li>Dropdowns (static or dynamic)</li><li>Pictures & Attachments</li><li>Tables!</li>\nGo to the templates to create new templates and modify the existing ones",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Z98zrrhd"
+        "mk05e56t-nnbbxas7n"
       ],
       "order": [
         0
       ],
-      "createdAt": "2025-08-08T14:59:05.214Z",
-      "updatedAt": "2025-08-24T08:02:54.228Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zdchf4zy",
+      "id": "mk05e56t-qsxk0rgjr",
       "name": "Hierarchical Nodes",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Hierarchical Nodes",
         "2025-08-19T08:57:55.257Z1ddpobd": "Organize your information in a nested tree structure. You can add child nodes, create siblings, move them around, delete them.",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Z98zrrhd"
+        "mk05e56t-nnbbxas7n"
       ],
       "order": [
         1
       ],
-      "createdAt": "2025-08-08T14:59:05.222Z",
-      "updatedAt": "2025-08-24T07:12:54.223Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zmwubgyq",
+      "id": "mk05e56t-k4dsripzq",
       "name": "Node actions",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Node actions",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
         "2025-08-19T08:57:55.257Z1ddpobd": "\nThe main actions are available directly on the node, just to the right of its name. Hovering every icon with the mouse will reveal its function.\n\n<li>Preview: open a viewer focused on the specific node</li><li>Edit: Allows to change the node fields</li><li>Expand/Collapse all: expand and collapses the node and all its descendants</li><li>Move up and Move down: move the node with respect to its siblings</li><li>Add child and Add sibling: create a new node as child of the node or sibling</li>\nClick the <b>more options</b> icon (the three dots) on any node to see all the other actions you can perform, like changing the node type, cut/copy/paste, and delete the node.\n"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zdchf4zy"
+        "mk05e56t-qsxk0rgjr"
       ],
       "order": [
         0
       ],
-      "createdAt": "2025-08-24T07:14:17.862Z",
-      "updatedAt": "2025-08-24T07:32:02.909Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Z0cx8otc",
+      "id": "mk05e56t-2wjc75eqd",
       "name": "Clones",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Clones",
         "2025-08-19T08:57:55.257Z1ddpobd": "If you copy a node and paste as clone you will have an exact replica of the original node. Changes on one of the two will immediately be reflected on the other. <small>(Technically, it is the exact same node, but with multiple parents)</small>\n\nA Cloned node is identified by an icon next to his name. Hovering the mouse pointer on this icon will make appear a list of all the clones locations.",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zdchf4zy",
-        "2025-09-14T16:26:19.975Zsnjvqeg"
+        "mk05e56t-qsxk0rgjr",
+        "mk05e56t-zenqxclfr"
       ],
       "order": [
-        2,
+        1,
         2
       ],
-      "createdAt": "2025-08-17T17:19:54.768Z",
-      "updatedAt": "2025-08-24T07:02:14.833Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zmx6n74a",
+      "id": "mk05e56t-35e1kxhni",
       "name": "Export",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
         "2025-08-19T08:57:55.257Z0m2c3ze": "Export",
         "2025-08-19T08:57:55.257Z1ddpobd": "The entire or any subset of its nodes can be exported as json file, zip archive (with attachments and pictures), or html page.\nThe node preview allows also to print to pdf."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Z98zrrhd"
+        "mk05e56t-nnbbxas7n"
       ],
       "order": [
         2
       ],
-      "createdAt": "2025-08-24T08:01:36.698Z",
-      "updatedAt": "2025-08-24T08:01:36.698Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zsnjvqeg",
+      "id": "mk05e56t-zenqxclfr",
       "name": "Advanced functions",
-      "templateId": "2025-08-19T08:57:55.257Zziy6knj",
+      "templateId": "SectionTemplate",
       "data": {
         "2025-08-19T08:57:55.257Zi4vl4q4": "Advanced functions",
         "2025-08-19T08:57:55.257Z0wu6pdt": ""
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zshjld0y"
+        "mk05e56s-okucnaed7"
       ],
       "order": [
         2
       ],
-      "createdAt": "2025-08-08T14:59:05.236Z",
-      "updatedAt": "2025-08-08T14:59:05.236Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zzkmjn7n",
-      "name": "HTML formatting",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "id": "mk05e56t-pklh5xsr7",
+      "name": "HTML formatting 🪛",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
-        "2025-08-19T08:57:55.257Z0m2c3ze": "HTML formatting",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Common HTML tags can be used for formatting in text, and text area fields:\n\n<b>Bold</b>, <strong>Strong</strong>, <i>Italic</i>, <em>Emphasized</em>,<mark>Marked</mark>, <small>Smaller</small>, <del>Deleted</del>, <ins>Inserted</ins>, <sub>Subscript</sub>, <sup>Superscript</sup>\n<code>\ncode block\n</code>\n<li>Bullet point</li>\n"
+        "2025-08-19T08:57:55.257Z0m2c3ze": "HTML formatting 🪛",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Common HTML tags can be used for formatting in text and text area fields:\n\n<b>Bold</b>, <strong>Strong</strong>, <i>Italic</i>, <em>Emphasized</em>,<mark>Marked</mark>, <small>Smaller</small>, <del>Deleted</del>, <ins>Inserted</ins>, <sub>Subscript</sub>, <sup>Superscript</sup>\n<code>\ncode block\n</code>\n<li>Bullet point</li>\nEmojis are supported 😁"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zsnjvqeg"
+        "mk05e56t-zenqxclfr"
       ],
       "order": [
         0
       ],
-      "createdAt": "2025-08-24T07:37:03.581Z",
-      "updatedAt": "2025-08-24T07:55:34.837Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zcwcifni",
+      "id": "mk05e56t-l7m0i0gzw",
+      "name": "Tables",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z1ddpobd": "While tables can be used in templates combining multiple <i>Table header</i> field types, It is also possible to include simple tables directly in text like this:\n\n<table>\n<tr>\n<th>  Format  </th>\n<th>HTML</th>\n</tr>\n<tr>\n<th>Bold</th>\n<th>&ltb&gt...&lt/b&gt</th>\n<th></th>\n</tr>\n<tr>\n<th>Italic</th>\n<th>&lti&gt...&lt/i&gt</th>\n<th></th>\n</tr>\n\n</table>",
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Tables"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
+      "parentIds": [
+        "mk05e56t-pklh5xsr7"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
+    },
+    {
+      "id": "mk05e56t-9q72d4uh8",
       "name": "Conditional formatting",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Special",
         "2025-08-19T08:57:55.257Z0m2c3ze": "Conditional formatting",
         "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be customized depending on the value of a certain field by writing conditional formatting rules in the template editor"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zsnjvqeg"
+        "mk05e56t-zenqxclfr"
       ],
       "order": [
         1
       ],
-      "createdAt": "2025-08-24T07:03:52.741Z",
-      "updatedAt": "2025-08-24T07:03:57.782Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Zbdg6p44",
+      "id": "mk05e56t-7uulwkk01",
       "name": "Internal links",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Internal links",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://2025-09-14T16:26:19.975Zsnjvqeg\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://mk05e56t-zenqxclfr\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zsnjvqeg"
+        "mk05e56t-zenqxclfr"
       ],
       "order": [
         3
       ],
-      "createdAt": "Sun Aug 17 2025 16:42:17 GMT+0000 (Coordinated Universal Time)",
-      "updatedAt": "2025-08-24T07:56:51.936Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     },
     {
-      "id": "2025-09-14T16:26:19.975Z1glu3ib",
+      "id": "mk05e56t-j4pciuqq4",
       "name": "Git Sync",
-      "templateId": "2025-08-19T08:57:55.257Ziajn4ay",
+      "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Git Sync",
         "2025-08-19T08:57:55.257Z1ddpobd": "You can link a tree to a GitHub repository to version control your data, view commit history, and restore to previous versions. You'll need to register a valid github access token with editing and, optionally, creation of repositories permissions in your user settings page.\n\nhttps://www.github.com",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "68c6ecac7c9a7f9bd6bfad51",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "695ac4db77387b924dc1fbae",
       "parentIds": [
-        "2025-09-14T16:26:19.975Zsnjvqeg"
+        "mk05e56t-zenqxclfr"
       ],
       "order": [
         4
       ],
-      "createdAt": "Fri Aug 08 2025 14:59:05 GMT+0000 (Coordinated Universal Time)",
-      "updatedAt": "2025-08-24T07:49:14.734Z"
+      "createdAt": "2026-01-04T19:51:56.180Z",
+      "updatedAt": "2026-01-04T19:51:56.180Z"
     }
   ],
   "templates": [
     {
-      "id": "2025-08-19T08:57:55.257Zziy6knj",
+      "id": "SectionTemplate",
       "name": "Welcome Section",
-      "icon": "Sparkles",
-      "color": "#818cf8",
+      "icon": "Type",
+      "color": "#ff8000",
       "fields": [
         {
           "id": "2025-08-19T08:57:55.257Zi4vl4q4",
@@ -296,7 +316,7 @@
       "conditionalRules": []
     },
     {
-      "id": "2025-08-19T08:57:55.257Ziajn4ay",
+      "id": "FeatureTemplate",
       "name": "Feature Highlight",
       "icon": "Star",
       "color": "#fbbf24",
@@ -353,6 +373,6 @@
     }
   ],
   "rootNodeIds": [
-    "2025-09-14T16:26:19.975Zshjld0y"
+    "mk05e56s-okucnaed7"
   ]
 }
