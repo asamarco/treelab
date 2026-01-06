@@ -481,22 +481,24 @@ function SettingsPage() {
                 </form>
                  <Separator />
                  <div className="space-y-4">
-                    <Label htmlFor="inactivity-timeout">Automatic Logout</Label>
+                    <Label>Automatic Logout</Label>
                     <p className="text-sm text-muted-foreground">
                         Set the number of minutes of inactivity before you are automatically logged out. Set to 0 to disable.
                     </p>
-                    <div className="flex items-center gap-2 max-w-md">
-                        <Input
-                            id="inactivity-timeout"
-                            type="number"
-                            min="0"
-                            value={inactivityTimeout}
-                            onChange={(e) => setInactivityTimeoutState(Number(e.target.value))}
-                            className="w-24"
-                        />
-                        <span className="text-sm text-muted-foreground">minutes</span>
-                        <Button onClick={handleInactivityTimeoutSave} className="ml-auto">
-                            Save Timeout
+                    <div className="flex items-center justify-between p-2 rounded-md">
+                        <div className="flex items-center gap-2">
+                            <Input
+                                id="inactivity-timeout"
+                                type="number"
+                                min="0"
+                                value={inactivityTimeout}
+                                onChange={(e) => setInactivityTimeoutState(Number(e.target.value))}
+                                className="w-24"
+                            />
+                            <span className="text-sm text-muted-foreground">minutes</span>
+                        </div>
+                        <Button onClick={handleInactivityTimeoutSave}>
+                          Save Timeout
                         </Button>
                     </div>
                 </div>
@@ -735,4 +737,6 @@ function SettingsPage() {
 
 export default SettingsPage;
 
+    
+    
     
