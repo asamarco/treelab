@@ -183,8 +183,21 @@ export function TreeNodeHeader({
     });
   };
   
-  // Pre-render the HTML for export in a hidden div, then trigger PDF/HTML generation
+  const handlePublicExportClick = () => {
+      if (!currentUser) {
+          toast({
+              variant: 'destructive',
+              title: 'Feature Disabled',
+              description: 'This export option is not available on public pages.',
+          });
+      }
+  };
+
   const handleHtmlExport = () => {
+    if (!currentUser) {
+        handlePublicExportClick();
+        return;
+    }
     setNodesForHtmlExport([node]);
     setTimeout(() => {
         exportNodesAsHtml(`export-container-single-${node.id}`, [node], node.name);
@@ -192,6 +205,14 @@ export function TreeNodeHeader({
     }, 100);
   };
   
+  const handleArchiveExport = () => {
+      if (!currentUser) {
+          handlePublicExportClick();
+          return;
+      }
+      exportNodesAsArchive([node], `${node.name}_archive`);
+  };
+
   return (
     <>
       <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
@@ -217,8 +238,8 @@ export function TreeNodeHeader({
                 <DropdownMenuPortal>
                     <DropdownMenuSubContent>
                         <DropdownMenuItem onSelect={() => exportNodesAsJson([node], node.name)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={handleHtmlExport}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => exportNodesAsArchive([node], `${node.name}_archive`)}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleHtmlExport} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={handleArchiveExport} disabled={!currentUser}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
                     </DropdownMenuSubContent>
                 </DropdownMenuPortal>
             </DropdownMenuSub>

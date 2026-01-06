@@ -262,7 +262,22 @@ export function TreeSelectionBar() {
         toast({ title: 'Deleted', description: `${selectedNodeIds.length} node instance(s) deleted.` });
     };
     
+    const handlePublicExportClick = () => {
+        if (!currentUser) {
+            toast({
+                variant: 'destructive',
+                title: 'Feature Disabled',
+                description: 'This export option is not available on public pages.',
+            });
+        }
+    };
+    
     const handleExport = (format: 'json' | 'archive' | 'html') => {
+        if (!currentUser) {
+            handlePublicExportClick();
+            return;
+        }
+        
         const nodes = getSelectedTopLevelNodes().map(item => item.node);
         if (nodes.length === 0) {
             toast({ variant: 'destructive', title: 'Export Error', description: 'Could not find any top-level nodes in your selection to export.' });
@@ -332,8 +347,8 @@ export function TreeSelectionBar() {
                                 </Tooltip>
                                 <DropdownMenuContent>
                                     <DropdownMenuItem onSelect={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleExport('archive')}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('html')} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('archive')} disabled={!currentUser}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
 

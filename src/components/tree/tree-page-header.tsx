@@ -15,7 +15,7 @@ import {
     Redo2, ListOrdered, Users, RefreshCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuthContext } from "@/contexts/auth-context";
+import { useAuthContext } from "@/components/../contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
 import { TreeFile } from "@/lib/types";
@@ -96,6 +96,16 @@ export function TreePageHeader({
         }
     };
     
+    const handlePublicExportClick = () => {
+        if (!currentUser) {
+            toast({
+                variant: 'destructive',
+                title: 'Feature Disabled',
+                description: 'This export option is not available on public pages.',
+            });
+        }
+    };
+    
     return (
         <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
             <div className="group flex items-center gap-2">
@@ -165,9 +175,7 @@ export function TreePageHeader({
                                 <ListOrdered className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Show numbering (o)</p>
-                        </TooltipContent>
+                        <TooltipContent><p>Show numbering (o)</p></TooltipContent>
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -200,11 +208,11 @@ export function TreePageHeader({
                     <FileJson className="mr-2 h-4 w-4" />
                     Export as JSON
                   </DropdownMenuItem>
-                   <DropdownMenuItem onSelect={() => exportNodesAsArchive(allNodes, tree.title)}>
+                   <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsArchive(allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}>
                     <Archive className="mr-2 h-4 w-4" />
                     Export as Archive
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => exportNodesAsHtml('tree-view-container', allNodes, tree.title)}>
+                  <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsHtml('tree-view-container', allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}>
                     <FileCode className="mr-2 h-4 w-4" />
                     Export as HTML
                   </DropdownMenuItem>

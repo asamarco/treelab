@@ -1027,12 +1027,12 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const exportNodesAsArchive = async (nodes: TreeNode[], baseName: string) => {
     if (!activeTree || !currentUser) return;
     await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath: string) =>
-      fetchFileAsBuffer(currentUser!.id, relativePath)
+      fetchFileAsBuffer(activeTree.userId, relativePath)
     );
   };
 
   const exportNodesAsHtml = async (elementId: string, nodes: TreeNode[], title: string) => {
-    if (!activeTree) return;
+    if (!activeTree || !currentUser) return;
 
     toast({ title: "Generating HTML...", description: "This may take a moment." });
 
@@ -1225,7 +1225,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     findNodeAndParent,
     findNodeAndContextualParent,
     getNodeInstancePaths,
-    uploadAttachment: uploadAttachmentToServer,
+    uploadAttachment: async (relativePath: string, dataUri: string, fileName: string, ownerId: string): Promise<AttachmentInfo> => {
+        return uploadAttachmentToServer(ownerId, relativePath, dataUri, fileName);
+    },
     commitToRepo,
     fetchRepoHistory,
     syncFromRepo,
@@ -1279,7 +1281,3 @@ export function TreeProvider({ children, initialTree }: TreeProviderProps) {
 
   return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
 }
-
-
-
-
