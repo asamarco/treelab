@@ -10,16 +10,26 @@ In practice, Treelab is used daily to track laboratory activities, fabrication p
     <img width="960" height="475" alt="image" src="https://github.com/user-attachments/assets/f3791717-3265-41e5-8458-45bba4d1e766" /
 </p>
 
-## ✨ Core Features
+##  Core Features
 
 -   **🕸️ Hierarchical Data**: Organize data in a nested, tree-like structure with full drag-and-drop support for reordering and reparenting nodes.
--   **🎨 Custom Templates**: Design templates with a rich set of field types (text, date, dropdowns, pictures, tables, attachments, and more) to structure your data nodes. Includes a drag-and-drop interface for reordering fields.
+-   **🎨 Custom Templates**: Design templates with a rich set of field types (text, date, dropdowns, pictures, tables, attachments, and more) to structure your data nodes.
 -   **🌲 Multi-Tree Management**: Create, edit, rename, and switch between multiple independent data trees.
 -   **🔄 Import/Export**: Export your trees and templates as JSON or ZIP archive for backup or sharing.
--   **🤝 Collaborative Sharing**: Tree can be shared with other users
--   **☁️ GitHub Sync**: Configure a GitHub Personal Access Token and link your trees to public or private repositories for version control, change history, and backup.
+-   **🤝 Collaborative Sharing**: Tree can be shared with other users and concurrently edited.
+-   **☁️ GitHub Sync**: Configure a GitHub Personal Access Token and link your trees to public or private repositories for document versioning and backup.
 
-## 🚀 Getting Started & Configuration
+##   Disclaimer
+
+This software was developed with the assistance of Large Language Models (AI). While every effort has been made to ensure the integrity, efficiency, and logic of the code through rigorous testing and security-focused reviews, users should be aware of the following:
+
+-   Not for High-Risk Data: This application is not designed to store or process highly sensitive, classified, or "mission-critical" information (e.g., government secrets or financial infrastructure). While data is encrypted at rest, it is not a hardened vault.
+
+-   Security Best Practices: For optimal security, Avoid exposing the application directly to the public internet unless needed and deploy this software locally or within a private network/VPN. Automated backup of database and binary data (attachments) is recommended.
+
+-   As-Is Basis: This software is provided "as-is" without any express or implied warranties. The developer assumes no liability for data loss or security breaches resulting from misuse or unforeseen vulnerabilities.
+
+##   Getting Started & Configuration
 
 The recommended setup is to use docker with docker-compose which will run treelab together with a mongodb container. This is an example docker-compose.yml
 
