@@ -44,14 +44,13 @@ import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { WritableDraft } from "immer";
 
-
 interface TreeNodeHeaderProps {
   node: TreeNode;
   template: Template;
   isExpanded: boolean;
   isSelected: boolean;
   siblings: TreeNode[];
-  onSelect: () => void;
+  onSelect: (nodeId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
   onOpenModal: (modal: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => void;
   dndAttributes: any;
   dndListeners: any;

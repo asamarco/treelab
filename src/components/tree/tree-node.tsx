@@ -228,11 +228,10 @@ export function TreeNodeComponent({
           isOver && "outline-2 outline-dashed outline-primary"
         )}
         onClick={(e) => {
+            e.stopPropagation();
             if (Date.now() < ignoreClicksUntil) {
-              e.stopPropagation();
               return;
             }
-            e.stopPropagation();
             onSelect(instanceId, e.shiftKey, e.ctrlKey || e.metaKey);
         }}
         onDoubleClick={(e) => {
@@ -255,7 +254,7 @@ export function TreeNodeComponent({
               isExpanded={isExpanded}
               isSelected={isSelected}
               siblings={siblings}
-              onSelect={() => onSelect(instanceId, false, false)}
+              onSelect={onSelect}
               onOpenModal={handleOpenModal}
               dndAttributes={attributes}
               dndListeners={listeners}
@@ -270,7 +269,7 @@ export function TreeNodeComponent({
               template={template} 
               isExpanded={isExpanded}
               level={level}
-              onSelect={() => onSelect(instanceId, false, false)}
+              onSelect={onSelect}
               contextualParentId={node.id}
               overrideExpandedIds={overrideExpandedIds}
               onExpandedChange={setExpandedNodeIds}

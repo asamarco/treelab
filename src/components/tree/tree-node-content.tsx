@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -33,7 +32,7 @@ interface TreeNodeContentProps {
   template: Template;
   isExpanded: boolean;
   level: number;
-  onSelect: () => void;
+  onSelect: (instanceId: string, isChecked: boolean, isShiftClick: boolean) => void;
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
