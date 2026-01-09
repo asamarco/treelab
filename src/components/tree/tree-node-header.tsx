@@ -117,6 +117,7 @@ export function TreeNodeHeader({
     nodeHasAttachments ||
     template.fields.some(f => f.type === 'picture' && node.data[f.id] && node.data[f.id].length > 0) ||
     template.fields.some(f => f.type === 'table-header') ||
+    template.fields.some(f => f.type === 'xy-chart') ||
     (template.bodyTemplate && template.bodyTemplate.trim() !== '');
 
 

@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This file defines the core TypeScript types and interfaces used throughout the application.
@@ -8,7 +9,7 @@
 import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
 
-export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment";
+export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart";
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
@@ -58,6 +59,12 @@ export interface Template {
   bodyTemplate?: string;
   conditionalRules: ConditionalRule[];
   preferredChildTemplates?: string[];
+}
+
+export interface XYChartData {
+  points: { x: string; y: string }[];
+  xAxisLabel?: string;
+  yAxisLabel?: string;
 }
 
 export interface TreeNode {

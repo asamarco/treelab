@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { TreeNode, Template, AttachmentInfo } from "@/lib/types";
+import { TreeNode, Template, AttachmentInfo, XYChartData } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "../ui/card";
@@ -25,6 +25,7 @@ import { SetStateAction } from "react";
 import type { WritableDraft } from "immer";
 import { Button } from "../ui/button";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
 
 
 interface TreeNodeContentProps {
@@ -82,6 +83,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
   const pictureFields = template.fields.filter((f) => f.type === 'picture');
   const attachmentFields = template.fields.filter((f) => f.type === 'attachment');
   const tableHeaderFields = template.fields.filter(f => f.type === 'table-header');
+  const xyChartFields = template.fields.filter(f => f.type === 'xy-chart');
   
   const getTableRowCount = () => {
     if (tableHeaderFields.length === 0) return 0;
@@ -101,6 +103,37 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
             <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
           </div>
         )}
+        {xyChartFields.map((field) => {
+            const chartData: XYChartData = nodeData[field.id];
+            if (!chartData || !Array.isArray(chartData.points) || chartData.points.length === 0) {
+              return null;
+            }
+            // Ensure data is numeric
+            const numericData = chartData.points.map(d => ({ ...d, x: Number(d.x), y: Number(d.y) })).filter(d => !isNaN(d.x) && !isNaN(d.y));
+
+            if(numericData.length === 0) return null;
+
+            return (
+              <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                 <p className="font-medium text-sm mb-2">{field.name}</p>
+                 <div style={{ width: '100%', height: 300 }}>
+                    <ResponsiveContainer>
+                      <LineChart data={numericData} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']}>
+                           <Label value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
+                        </XAxis>
+                        <YAxis>
+                           <Label value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+                        </YAxis>
+                        <ChartTooltip />
+                        <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                 </div>
+              </div>
+            )
+        })}
         {pictureFields.map((field) => {
           let value = nodeData[field.id];
           if (!value || (Array.isArray(value) && value.length === 0)) return null;

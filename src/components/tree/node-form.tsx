@@ -14,7 +14,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { TreeNode, Template, Field, AttachmentInfo } from "@/lib/types";
+import { TreeNode, Template, Field, AttachmentInfo, XYChartData } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -402,6 +402,48 @@ export const NodeForm = ({
     });
   };
 
+  const handleChartDataChange = (fieldId: string, index: number, key: 'x' | 'y' | 'xAxisLabel' | 'yAxisLabel', value: string) => {
+    setFormData(prev => {
+        const currentChartData: XYChartData = prev[fieldId] || { points: [] };
+        if (key === 'xAxisLabel' || key === 'yAxisLabel') {
+            return {
+                ...prev,
+                [fieldId]: { ...currentChartData, [key]: value },
+            };
+        }
+        const newPoints = [...(currentChartData.points || [])];
+        if (newPoints[index]) {
+            newPoints[index] = { ...newPoints[index], [key]: value };
+        }
+        return {
+            ...prev,
+            [fieldId]: { ...currentChartData, points: newPoints },
+        };
+    });
+  };
+
+  const handleAddChartRow = (fieldId: string) => {
+      setFormData(prev => {
+          const currentChartData: XYChartData = prev[fieldId] || { points: [] };
+          const points = currentChartData.points || [];
+          return {
+              ...prev,
+              [fieldId]: { ...currentChartData, points: [...points, { x: '', y: '' }] },
+          };
+      });
+  };
+
+  const handleRemoveChartRow = (fieldId: string, index: number) => {
+      setFormData(prev => {
+          const currentChartData: XYChartData = prev[fieldId] || { points: [] };
+          const newPoints = [...(currentChartData.points || [])];
+          newPoints.splice(index, 1);
+          return {
+              ...prev,
+              [fieldId]: { ...currentChartData, points: newPoints },
+          };
+      });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -669,7 +711,7 @@ export const NodeForm = ({
                 />
             </div>
         )} */}
-        {template.fields.filter(f => f.type !== 'table-header').map((field) => (
+        {template.fields.filter(f => f.type !== 'table-header' && f.type !== 'xy-chart').map((field) => (
           <div key={field.id} className="space-y-2">
             <Label className="text-sm font-medium">{field.name}</Label>
             <div className="flex items-center gap-1">
@@ -679,6 +721,45 @@ export const NodeForm = ({
             </div>
           </div>
         ))}
+        {template.fields.filter(f => f.type === 'xy-chart').map(field => {
+            const chartData: XYChartData = {
+                points: [],
+                ...formData[field.id],
+            };
+            return (
+                <div key={field.id} className="space-y-2">
+                    <Label className="text-sm font-medium">{field.name}</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor={`${field.id}-x-label`} className="text-xs">X-Axis Label</Label>
+                            <Input id={`${field.id}-x-label`} placeholder="e.g., Time (s)" value={chartData.xAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'xAxisLabel', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor={`${field.id}-y-label`} className="text-xs">Y-Axis Label</Label>
+                            <Input id={`${field.id}-y-label`} placeholder="e.g., Temperature (°C)" value={chartData.yAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'yAxisLabel', e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        {chartData.points.map((dataPoint, index) => (
+                            <Card key={index} className="bg-muted/50 p-2">
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-xs w-8">X:</Label>
+                                    <Input type="number" value={dataPoint.x} onChange={e => handleChartDataChange(field.id, index, 'x', e.target.value)} className="h-8" />
+                                    <Label className="text-xs w-8">Y:</Label>
+                                    <Input type="number" value={dataPoint.y} onChange={e => handleChartDataChange(field.id, index, 'y', e.target.value)} className="h-8" />
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveChartRow(field.id, index)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => handleAddChartRow(field.id)} className="mt-2">
+                        <PlusCircle className="mr-2 h-4 w-4"/> Add Data Point
+                    </Button>
+                </div>
+            )
+        })}
         {tableHeaderFields.length > 0 && (
           <div className="space-y-2">
               <Label className="text-sm font-medium">Table Data</Label>
@@ -778,5 +859,8 @@ export const NodeForm = ({
 };
 
     
+
+
+
 
 
