@@ -24,6 +24,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "../ui/select";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
@@ -41,7 +43,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { useUIContext } from "@/contexts/ui-context";
 // import { PdfExportDialog } from "./pdf-export-dialog";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { Icon } from "../icon";
 import { icons } from "lucide-react";
 import { Separator } from "../ui/separator";
@@ -61,6 +63,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
   const { toast } = useToast();
   const { setIgnoreClicksUntil, setDialogState } = useUIContext();
   const router = useRouter();
+  const { findNodeAndParent } = useTreeContext();
 
   const [selectedTemplateForNewNode, setSelectedTemplateForNewNode] = useState<Template | null>(null);
   const [selectedNewTemplateId, setSelectedNewTemplateId] = useState<string | null>(null);
@@ -69,8 +72,21 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
 
   useEffect(() => {
     // Pre-fill template for 'addSibling' or 'addChild'
-    if (openModal === 'addSibling' || openModal === 'addChild') {
+    if (openModal === 'addSibling') {
+        const parentInfo = findNodeAndParent(node.id);
+        const parentTemplate = parentInfo?.parent ? getTemplateById(parentInfo.parent.templateId) : undefined;
+        // If the parent has preferred children, maybe default to the first one?
+        // For now, let's just default to the sibling's template, which is simpler.
         setSelectedTemplateForNewNode(template);
+    } else if (openModal === 'addChild') {
+        // If the current node's template has preferred children, pre-select the first one.
+        const firstPreferredId = template.preferredChildTemplates?.[0];
+        if (firstPreferredId) {
+            setSelectedTemplateForNewNode(getTemplateById(firstPreferredId) ?? null);
+        } else {
+            // Fallback to a default or no selection
+            setSelectedTemplateForNewNode(null);
+        }
     }
     // Pre-fill template for 'pasteTemplate' action
     else if (openModal === 'pasteTemplate' && clipboard.nodes && clipboard.nodes.length > 0) {
@@ -82,7 +98,7 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
         onOpenChange(null);
       }
     }
-  }, [openModal, template, clipboard.nodes, getTemplateById, onOpenChange]);
+  }, [openModal, template, clipboard.nodes, getTemplateById, onOpenChange, node.id, findNodeAndParent]);
 
   const handleClose = () => {
     onOpenChange(null);
@@ -136,12 +152,20 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
 
   const renderAddDialogContent = (onSave: (data: TreeNode) => void) => {
     const currentTemplate = selectedTemplateForNewNode;
+
+    const parentNodeTemplateForContext = (openModal === 'addChild' ? template : findNodeAndParent(node.id)?.parent?.templateId ? getTemplateById(findNodeAndParent(node.id)!.parent!.templateId) : undefined) || template;
+
+    const preferredTemplates = (parentNodeTemplateForContext.preferredChildTemplates || [])
+        .map(id => getTemplateById(id))
+        .filter((t): t is Template => !!t);
+
+    const otherTemplates = templates.filter(t => !(parentNodeTemplateForContext.preferredChildTemplates || []).includes(t.id));
     
     return (
       <>
         <div className="space-y-2 pt-4">
           <Label>Template</Label>
-          <Select
+           <Select
             value={currentTemplate?.id}
             onValueChange={(templateId) => {
                 if (templateId === 'create_new') {
@@ -169,18 +193,42 @@ export function TreeNodeModals({ node, template, openModal, onOpenChange, contex
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {templates.map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  <div className="flex items-center gap-2">
-                    <Icon
-                      name={(t.icon as keyof typeof icons) || "FileText"}
-                      className="h-4 w-4"
-                      style={{ color: t.color || "hsl(var(--primary))" }}
-                    />
-                    <span>{t.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {preferredTemplates.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel>Preferred</SelectLabel>
+                  {preferredTemplates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <div className="flex items-center gap-2">
+                        <Icon
+                          name={(t.icon as keyof typeof icons) || "FileText"}
+                          className="h-4 w-4"
+                          style={{ color: t.color || "hsl(var(--primary))" }}
+                        />
+                        <span>{t.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+
+              {otherTemplates.length > 0 && (
+                <SelectGroup>
+                  {preferredTemplates.length > 0 && <SelectLabel>Other</SelectLabel>}
+                  {otherTemplates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <div className="flex items-center gap-2">
+                        <Icon
+                          name={(t.icon as keyof typeof icons) || "FileText"}
+                          className="h-4 w-4"
+                          style={{ color: t.color || "hsl(var(--primary))" }}
+                        />
+                        <span>{t.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+             
               <Separator className="my-1" />
               <SelectItem value="create_new">
                 <div className="flex items-center gap-2 text-primary">

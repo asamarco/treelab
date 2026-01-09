@@ -153,10 +153,23 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
   if (!treeFileDoc) return null;
 
   const nodes = await loadTreeNodes(treeId);
-  const plainDoc: TreeFile = { 
-      ...(treeFileDoc as any), 
-      id: treeFileDoc._id.toString(),
-      tree: nodes 
+  
+  const plainDoc: TreeFile = {
+    id: treeFileDoc._id.toString(),
+    userId: treeFileDoc.userId,
+    sharedWith: treeFileDoc.sharedWith,
+    isPublic: treeFileDoc.isPublic,
+    title: treeFileDoc.title,
+    templates: treeFileDoc.templates.map((t: any) => ({
+        ...t,
+        preferredChildTemplates: t.preferredChildTemplates || [],
+    })),
+    expandedNodeIds: treeFileDoc.expandedNodeIds,
+    gitSync: treeFileDoc.gitSync,
+    order: treeFileDoc.order,
+    createdAt: treeFileDoc.createdAt,
+    updatedAt: treeFileDoc.updatedAt,
+    tree: nodes
   };
   delete (plainDoc as any)._id;
   delete (plainDoc as any).__v;
@@ -173,6 +186,10 @@ export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | nul
   const plainDoc: TreeFile = { 
       ...(treeFileDoc as any), 
       id: treeFileDoc._id.toString(),
+      templates: treeFileDoc.templates.map((t: any) => ({
+        ...t,
+        preferredChildTemplates: t.preferredChildTemplates || [],
+      })),
       tree: nodes 
   };
   delete (plainDoc as any)._id;
@@ -221,7 +238,10 @@ export async function loadAllTreeFiles(userId: string): Promise<TreeFile[]> {
       sharedWith: doc.sharedWith,
       isPublic: doc.isPublic,
       title: doc.title,
-      templates: doc.templates,
+      templates: doc.templates.map((t: any) => ({
+          ...t,
+          preferredChildTemplates: t.preferredChildTemplates || [],
+      })),
       expandedNodeIds: doc.expandedNodeIds,
       gitSync: doc.gitSync,
       order: doc.order,

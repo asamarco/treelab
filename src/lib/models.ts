@@ -39,6 +39,7 @@ const TemplateSchema = new Schema({
   nameTemplate: String,
   bodyTemplate: String,
   conditionalRules: [ConditionalRuleSchema],
+  preferredChildTemplates: [String],
 }, { _id: false });
 
 // --- GitSync Schema (embedded in TreeFile) ---
@@ -140,5 +141,3 @@ const GlobalSettingsSchema = new Schema<GlobalSettings>({
 });
 
 export const GlobalSettingsModel = models.GlobalSettings || model<GlobalSettings>('GlobalSettings', GlobalSettingsSchema);
-
-    

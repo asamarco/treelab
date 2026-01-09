@@ -57,6 +57,7 @@ export interface Template {
   nameTemplate?: string;
   bodyTemplate?: string;
   conditionalRules: ConditionalRule[];
+  preferredChildTemplates?: string[];
 }
 
 export interface TreeNode {
@@ -369,5 +370,3 @@ export interface UseTreeRootsResult {
 }
 
 export type TreeContextType = UseTreeRootsResult;
-
-    

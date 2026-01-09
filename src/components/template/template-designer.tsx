@@ -88,6 +88,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTreeContext } from "@/contexts/tree-context";
+import { MultiSelect } from "../ui/multi-select";
 
 
 const fieldSchema = z.object({
@@ -121,6 +122,7 @@ const templateSchema = z.object({
     .array(fieldSchema)
     .min(1, "A template must have at least one field."),
   conditionalRules: z.array(conditionalRuleSchema).optional(),
+  preferredChildTemplates: z.array(z.string()).optional(),
 });
 
 type TemplateFormValues = z.infer<typeof templateSchema>;
@@ -380,6 +382,13 @@ export function TemplateDesigner({
     }
   };
 
+  const availableChildTemplates = allTemplates
+  .filter((t) => t.id !== template.id)
+  .map((t) => ({
+    value: t.id,
+    label: t.name,
+  }));
+
   return (
     <>
     <Form {...form}>
@@ -525,6 +534,28 @@ export function TemplateDesigner({
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="preferredChildTemplates"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Preferred Child Templates</FormLabel>
+                        <FormControl>
+                            <MultiSelect
+                                options={availableChildTemplates}
+                                selected={field.value || []}
+                                onChange={field.onChange}
+                                placeholder="Select preferred templates..."
+                                className="w-full"
+                            />
+                        </FormControl>
+                        <FormDescription>
+                            These templates will be shown first when adding a child to a node of this type.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )}
+                />
             </div>
             <Separator />
             <div>
