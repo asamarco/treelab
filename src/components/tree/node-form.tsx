@@ -114,7 +114,11 @@ export const NodeForm = ({
 }) => {
   const { tree, uploadAttachment, activeTree, findNodeAndParent, getSiblingOrderRange } = useTreeContext();
   const { setDialogState } = useUIContext();
+  
+  //console.log('[NodeForm] Rendering form for:', node?.name || 'New Node');
+  
   const [formData, setFormData] = useState<Record<string, any>>(() => {
+    //console.log('[NodeForm] Initializing state with node data:', node?.data);
     const initialData = { ...(node?.data || {}) };
     
     // Convert ISO date strings from DB to yyyy-MM-dd for DatePicker
@@ -152,6 +156,7 @@ export const NodeForm = ({
   
   const [orderString, setOrderString] = useState(contextualOrder.toString());
 
+
   useEffect(() => {
       const parentIndex = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
       const contextualOrder = (parentIndex !== -1 && node?.order && (node.order.length > parentIndex))
@@ -187,6 +192,7 @@ export const NodeForm = ({
   }, [tree]);
 
   const handleFileUpload = async (file: File, field: Field) => {
+    //console.log(`[NodeForm] handleFileUpload started for field ${field.id}, file: ${file.name}`);
     if (!activeTree || !currentUser) return;
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
@@ -201,7 +207,7 @@ export const NodeForm = ({
     if (field.type === 'picture') {
         const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/tiff', 'image/bmp'];
         const isValidMime = validImageTypes.includes(file.type);
-        const isValidExtension = /\.(jpe?g|png|gif|svg|webp|tif|tiff|bmp)$/i.test(file.name);
+        const isValidExtension = /\.(jpe?g|png|gif|svg|tif|tiff|bmp)$/i.test(file.name);
 
         if (!isValidMime && !isValidExtension) {
             toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload a valid image file (jpg, png, gif, svg, tiff, webp, bmp)." });
@@ -233,14 +239,19 @@ export const NodeForm = ({
         const { attachmentInfo } = await response.json();
         
         if (attachmentInfo) {
+            //console.log('[NodeForm] File upload successful, attachmentInfo:', attachmentInfo);
             if (field.type === 'picture') {
                  setFormData(prev => {
+                  //console.log(`[NodeForm] Updating form data for picture field ${field.id}. Prev state:`, prev[field.id]);
                   const currentImages = Array.isArray(prev[field.id]) ? prev[field.id] : (prev[field.id] ? [prev[field.id]] : []);
-                  return { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
+                  const newState = { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
+                  //console.log(`[NodeForm] New picture state for ${field.id}:`, newState[field.id]);
+                  return newState;
               });
               toast({ title: "Image Uploaded", description: "The image has been saved successfully." });
             } else if (field.type === 'attachment') {
                setFormData(prev => {
+                  //console.log(`[NodeForm] Updating form data for attachment field ${field.id}.`);
                   const currentAttachments = prev[field.id] || [];
                   return { ...prev, [field.id]: [...currentAttachments, attachmentInfo] };
               });
@@ -250,6 +261,7 @@ export const NodeForm = ({
     } catch(error) {
         toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message || "Could not save the file to the server." });
     } finally {
+        //console.log(`[NodeForm] handleFileUpload finished for field ${field.id}`);
         setUploadingStates(prev => ({...prev, [field.id]: false}));
     }
   };
@@ -288,6 +300,7 @@ export const NodeForm = ({
   };
 
   const handlePicturePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>, fieldId: string) => {
+    //console.log(`[NodeForm] handlePicturePaste for field ${fieldId}`);
     const clipboardItems = e.clipboardData.items;
     const textItem = e.clipboardData.getData('text/plain');
 
@@ -306,6 +319,7 @@ export const NodeForm = ({
 
     const file = imageItem.getAsFile();
     if (file) {
+        //console.log('[NodeForm] Pasted an image file from clipboard.');
         const field = template.fields.find(f => f.id === fieldId);
         if (field) {
             handleFileUpload(file, field);
@@ -391,6 +405,7 @@ export const NodeForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    //console.log('[NodeForm] handleSubmit triggered. Current form data:', formData);
     
     const finalFormData = { ...formData };
     let isFormValid = true;
@@ -458,6 +473,7 @@ export const NodeForm = ({
       parentIds: node?.parentIds || [],
       order: newOrderArray,
     };
+    //console.log('[NodeForm] Calling onSave with new node data:', newNode);
     onSave(newNode);
   };
   
@@ -762,4 +778,5 @@ export const NodeForm = ({
 };
 
     
+
 

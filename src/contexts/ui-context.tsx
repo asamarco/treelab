@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the context for managing global UI state.
@@ -53,7 +51,13 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [ignoreClicksUntil, setIgnoreClicksUntil] = useState(0);
   
   const setDialogState = (newState: Partial<DialogState>) => {
-    setDialogStateInternal(prev => ({...prev, ...newState}));
+    //console.log('[UIContext] Setting dialog state:', newState);
+    setDialogStateInternal(prev => {
+        const nextState = {...prev, ...newState};
+        //console.log('[UIContext] Previous state:', prev);
+        //console.log('[UIContext] Next state:', nextState);
+        return nextState;
+    });
   };
 
   const value: UIContextType = {

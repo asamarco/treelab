@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the `TreeNodeComponent`, which is responsible for rendering a
@@ -83,38 +81,6 @@ export function TreeNodeComponent({
 
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
   
-  const getActiveModal = (): null | 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate' => {
-    if (dialogState.nodeInstanceIdForAction !== instanceId) return null;
-    if (dialogState.isNodeEditOpen) return 'edit';
-    if (dialogState.isAddChildOpen) return 'addChild';
-    if (dialogState.isAddSiblingOpen) return 'addSibling';
-    if (dialogState.isChangeTemplateOpen) return 'changeTemplate';
-    if (dialogState.isPasteTemplateOpen) return 'pasteTemplate';
-    return null;
-  };
-  
-  const activeModal = getActiveModal();
-
-  const setModalOpen = (modal: null | 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => {
-    if (modal === 'edit') setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
-    else if (modal === 'addChild') setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
-    else if (modal === 'addSibling') setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
-    else if (modal === 'changeTemplate') setDialogState({ isChangeTemplateOpen: true, nodeInstanceIdForAction: instanceId });
-    else if (modal === 'pasteTemplate') setDialogState({ isPasteTemplateOpen: true, nodeInstanceIdForAction: instanceId });
-    else {
-        // Close all modals associated with this instance
-        setDialogState({ 
-            isNodeEditOpen: false, 
-            isAddChildOpen: false, 
-            isAddSiblingOpen: false,
-            isChangeTemplateOpen: false,
-            isPasteTemplateOpen: false,
-            nodeInstanceIdForAction: undefined 
-        });
-    }
-  };
-
-
   const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
   const setExpandedNodeIds = onExpandedChange || setGlobalExpandedNodeIds;
 
@@ -165,6 +131,20 @@ export function TreeNodeComponent({
     setIsMenuOpen(true);
   };
   
+  const handleOpenModal = (modalType: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => {
+    setDialogState({ [modalType === 'addChild' ? 'isAddChildOpen' : modalType === 'addSibling' ? 'isAddSiblingOpen' : modalType === 'edit' ? 'isNodeEditOpen' : modalType === 'changeTemplate' ? 'isChangeTemplateOpen' : 'isPasteTemplateOpen']: true, nodeInstanceIdForAction: instanceId });
+  };
+  
+  const activeModal = useMemo(() => {
+    if (dialogState.nodeInstanceIdForAction !== instanceId) return null;
+    if (dialogState.isAddChildOpen) return 'addChild';
+    if (dialogState.isAddSiblingOpen) return 'addSibling';
+    if (dialogState.isNodeEditOpen) return 'edit';
+    if (dialogState.isChangeTemplateOpen) return 'changeTemplate';
+    if (dialogState.isPasteTemplateOpen) return 'pasteTemplate';
+    return null;
+  }, [dialogState, instanceId]);
+
   if (!template) {
     return (
       <div style={{ paddingLeft: `${level * 1.5}rem` }} className="pl-6 my-1">
@@ -178,7 +158,7 @@ export function TreeNodeComponent({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setModalOpen('changeTemplate')}>
+              <Button variant="ghost" size="sm" onClick={() => handleOpenModal('changeTemplate')}>
                 <RefreshCcw className="mr-2 h-4 w-4" />
                 Change Template
               </Button>
@@ -213,9 +193,6 @@ export function TreeNodeComponent({
         <TreeNodeModals
           node={node}
           template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} // Dummy template
-          openModal={activeModal}
-          onOpenChange={setModalOpen}
-          contextualParentId={contextualParentId}
         />
       </div>
     );
@@ -261,13 +238,13 @@ export function TreeNodeComponent({
         onDoubleClick={(e) => {
           if ((e.target as HTMLElement).closest('.read-only-view')) return;
           
-          const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
+          const isAnyModalOpen = activeModal !== null || Object.values(dialogState).some(state => state === true);
           if (isAnyModalOpen) {
             return;
           }
 
           e.stopPropagation();
-          setModalOpen('edit');
+          handleOpenModal('edit');
         }}
       >
         <CardContent className="p-1">
@@ -278,8 +255,8 @@ export function TreeNodeComponent({
               isExpanded={isExpanded}
               isSelected={isSelected}
               siblings={siblings}
-              onSelect={onSelect}
-              onOpenModal={setModalOpen}
+              onSelect={() => onSelect(instanceId, false, false)}
+              onOpenModal={handleOpenModal}
               dndAttributes={attributes}
               dndListeners={listeners}
               contextualParentId={contextualParentId}
@@ -293,7 +270,7 @@ export function TreeNodeComponent({
               template={template} 
               isExpanded={isExpanded}
               level={level}
-              onSelect={onSelect}
+              onSelect={() => onSelect(instanceId, false, false)}
               contextualParentId={node.id}
               overrideExpandedIds={overrideExpandedIds}
               onExpandedChange={setExpandedNodeIds}
@@ -304,9 +281,6 @@ export function TreeNodeComponent({
       <TreeNodeModals
         node={node}
         template={template}
-        openModal={activeModal}
-        onOpenChange={setModalOpen}
-        contextualParentId={contextualParentId}
       />
     </div>
   );

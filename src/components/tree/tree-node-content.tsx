@@ -32,7 +32,7 @@ interface TreeNodeContentProps {
   template: Template;
   isExpanded: boolean;
   level: number;
-  onSelect: (instanceId: string, isChecked: boolean, isShiftClick: boolean) => void;
+  onSelect: () => void;
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;

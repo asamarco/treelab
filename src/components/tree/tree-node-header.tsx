@@ -51,7 +51,7 @@ interface TreeNodeHeaderProps {
   isExpanded: boolean;
   isSelected: boolean;
   siblings: TreeNode[];
-  onSelect: (nodeId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
+  onSelect: () => void;
   onOpenModal: (modal: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => void;
   dndAttributes: any;
   dndListeners: any;
