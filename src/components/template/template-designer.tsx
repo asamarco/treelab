@@ -17,7 +17,7 @@
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Template, Field, ConditionalRuleOperator } from "@/lib/types";
+import { Template, Field, ConditionalRuleOperator, XYChartData } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -383,11 +383,10 @@ export function TemplateDesigner({
   };
 
   const availableChildTemplates = allTemplates
-  .filter((t) => t.id !== template.id)
-  .map((t) => ({
-    value: t.id,
-    label: t.name,
-  }));
+    .map((t) => ({
+      value: t.id,
+      label: t.name,
+    }));
 
   return (
     <>
