@@ -1,4 +1,5 @@
 
+
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -96,7 +97,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
   return (
     <CollapsibleContent>
-      <div className="pt-2 pl-6">
+      <div className="pt-2 pl-6" onClick={(e) => e.stopPropagation()}>
         {template.bodyTemplate && (
           <div className="text-sm text-foreground/90 whitespace-pre-wrap pt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
             <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
@@ -122,11 +123,11 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                         <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']}>
                            <Label value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
                         </XAxis>
-                        <YAxis>
+                        <YAxis domain={['auto', 'auto']}>
                            <Label value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                         </YAxis>
                         <ChartTooltip />
-                        <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" />
+                        <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={false} />
                       </LineChart>
                     </ResponsiveContainer>
                  </div>
@@ -327,7 +328,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
         )}
       </div>
       {node.children && node.children.length > 0 && (
-        <div className="children-container">
+        <div className="children-container" onClick={(e) => e.stopPropagation()}>
             {node.children.map((childNode) => (
               <div key={`${childNode.id}_${node.id}`}>
                 <TreeNodeComponent
