@@ -432,6 +432,26 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
   };
 
+  const duplicateTree = useCallback(async (treeId: string) => {
+    if (!currentUser) return;
+    const treeToDuplicate = allTrees.find(t => t.id === treeId);
+    if (!treeToDuplicate) {
+        toast({ variant: "destructive", title: "Error", description: "Could not find the tree to duplicate." });
+        return;
+    }
+
+    try {
+        const treeJson = generateJsonForExport(treeToDuplicate.title, treeToDuplicate.tree, treeToDuplicate.templates);
+        treeJson.title = `${treeToDuplicate.title} - Copy`;
+        
+        await importTreeFromJson(treeJson, currentUser);
+        toast({ title: "Tree Duplicated", description: `A copy of "${treeToDuplicate.title}" has been created.` });
+    } catch(err) {
+        const error = err as Error;
+        toast({ variant: "destructive", title: "Duplication Failed", description: error.message });
+    }
+  }, [allTrees, currentUser, importTreeFromJson, toast]);
+
   const getNodeInstancePaths = useCallback(
     (nodeId: string): string[] => {
       if (!activeTree) return [];
@@ -1144,6 +1164,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     setActiveTreeId,
     createNewTree,
     deleteTree,
+    duplicateTree,
     updateTreeOrder,
     shareTree: async (treeId: string, userId: string) => {
       if (!currentUser) return;

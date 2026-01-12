@@ -307,6 +307,7 @@ export interface UseTreeRootsResult {
   setActiveTreeId: (id: string | null) => void;
   createNewTree: (title: string, user?: User | undefined) => Promise<string | null>;
   deleteTree: (id: string) => Promise<void>;
+  duplicateTree: (treeId: string) => Promise<void>;
   updateTreeOrder: (updates: { id: string; order: number; }[]) => Promise<void>;
   shareTree: (treeId: string, userId: string) => Promise<void>;
   revokeShare: (treeId: string, userId: string) => Promise<void>;

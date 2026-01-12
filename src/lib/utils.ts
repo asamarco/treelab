@@ -146,7 +146,9 @@ export const generateJsonForExport = (
     const getDescendantsAndSelf = (nodes: TreeNode[]) => {
         for(const node of nodes) {
             if(!visitedNodeIds.has(node.id)) {
-                const { children, _id, ...nodeToKeep } = node;
+                // FIX: Perform a deep clone to prevent read-only errors on import/duplication.
+                const deepClonedNode = JSON.parse(JSON.stringify(node));
+                const { children, _id, ...nodeToKeep } = deepClonedNode;
                 flattenedNodes.push(nodeToKeep);
                 visitedNodeIds.add(node.id);
             }

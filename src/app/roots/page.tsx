@@ -63,7 +63,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe } from "lucide-react";
+import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe, CopyPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ExampleInfo, TreeFile, User } from "@/lib/types";
 import { Octokit } from "octokit";
@@ -76,6 +76,7 @@ import { cn } from "@/lib/utils";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { generateJsonForExport } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 function DraggableTreeCard({ tree, children }: { tree: TreeFile, children: React.ReactNode }) {
@@ -135,6 +136,7 @@ function ManageRootsPage() {
     isTreeDataLoading,
     setTreeTitle,
     updateTreeOrder,
+    duplicateTree,
   } = useTreeContext();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -534,19 +536,39 @@ function ManageRootsPage() {
                   >
                     {tree.id === activeTreeId ? "Active" : "Open"}
                   </Button>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
+                    <TooltipProvider>
                       {isOwner && (
-                          <Button variant="outline" size="sm" onClick={() => { setSelectedTreeToShare(tree); setIsShareDialogOpen(true); }}>
-                              <Share2 className="mr-2 h-4 w-4" />
-                              Share
-                          </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={() => duplicateTree(tree.id)}>
+                                <CopyPlus className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Duplicate Tree</p></TooltipContent>
+                        </Tooltip>
+                      )}
+                      {isOwner && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={() => { setSelectedTreeToShare(tree); setIsShareDialogOpen(true); }}>
+                                    <Share2 className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Share Tree</p></TooltipContent>
+                        </Tooltip>
                       )}
                       {!tree.gitSync && isOwner && (
-                          <Button variant="outline" size="sm" onClick={() => { setSelectedTreeForLink(tree.id); setIsLinkRepoOpen(true); }} disabled={!currentUser?.gitSettings?.githubPat}>
-                              <LinkIcon className="mr-2 h-4 w-4" />
-                              Link
-                          </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={() => { setSelectedTreeForLink(tree.id); setIsLinkRepoOpen(true); }} disabled={!currentUser?.gitSettings?.githubPat}>
+                                    <Github className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Link to GitHub</p></TooltipContent>
+                        </Tooltip>
                       )}
+                    </TooltipProvider>
                   </div>
                 </CardFooter>
               </Card>
