@@ -38,7 +38,7 @@ export function middleware(request: NextRequest) {
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
-    `connect-src 'self' *.cloudworkstations.dev`,
+    `connect-src 'self' *.cloudworkstations.dev api.github.com`,
   ].join('; ');
 
   const requestHeaders = new Headers(request.headers);
