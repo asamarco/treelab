@@ -27,7 +27,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2, Edit, Search, Download, Upload, FileJson, GripVertical, Archive } from "lucide-react";
+import { PlusCircle, Trash2, Edit, Search, Download, Upload, FileJson, GripVertical, Archive, Copy, Library, ChevronDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +39,31 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Icon } from "@/components/icon";
 import { icons } from "lucide-react";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -71,7 +96,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { generateJsonForExport } from "@/lib/utils";
+import { generateJsonForExport, generateClientSideId } from "@/lib/utils";
 
 
 function DraggableTemplateWrapper({
@@ -121,6 +146,7 @@ function TemplatesPage() {
   const router = useRouter();
   const { 
     activeTree, 
+    allTrees,
     templates, 
     setTemplates, 
     getTemplateById, 
@@ -133,6 +159,9 @@ function TemplatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const [isImportTreeOpen, setIsImportTreeOpen] = useState(false);
+  const [importFromTreeId, setImportFromTreeId] = useState<string | null>(null);
+  const [selectedTemplatesToImport, setSelectedTemplatesToImport] = useState<string[]>([]);
 
   const selectedTemplate = useMemo(() => {
     if (!selectedTemplateId) return null;
@@ -219,7 +248,7 @@ function TemplatesPage() {
     const existingIndex = templates.findIndex(t => t.id === updatedTemplate.id);
 
     if (isNew || existingIndex === -1) {
-        const finalTemplate = { ...updatedTemplate, id: updatedTemplate.id.startsWith('new_') ? new Date().toISOString() : updatedTemplate.id };
+        const finalTemplate = { ...updatedTemplate, id: updatedTemplate.id.startsWith('new_') ? generateClientSideId() : updatedTemplate.id };
         setTemplates(currentTemplates => [...currentTemplates, finalTemplate]);
         setSelectedTemplateId(finalTemplate.id); 
     } else {
@@ -244,6 +273,17 @@ function TemplatesPage() {
       setSelectedTemplateId(null);
     }
   }
+
+  const handleDuplicateTemplate = (templateToDuplicate: Template) => {
+    const newTemplate = JSON.parse(JSON.stringify(templateToDuplicate));
+    newTemplate.id = generateClientSideId();
+    newTemplate.name = `${newTemplate.name} - copy`;
+    setTemplates(currentTemplates => [...currentTemplates, newTemplate]);
+    toast({
+        title: "Template Duplicated",
+        description: `Created a copy named "${newTemplate.name}".`,
+    });
+  };
 
   const handleExportAll = async () => {
     if (!activeTree || templates.length === 0) return;
@@ -347,6 +387,33 @@ function TemplatesPage() {
     }
   };
 
+  const handleImportFromTree = () => {
+    if (!importFromTreeId || selectedTemplatesToImport.length === 0) return;
+    
+    const sourceTree = allTrees.find(t => t.id === importFromTreeId);
+    if (!sourceTree) return;
+
+    const templatesToImport = sourceTree.templates.filter(t => selectedTemplatesToImport.includes(t.id));
+    importTemplates(templatesToImport);
+
+    toast({
+      title: "Templates Imported",
+      description: `Successfully imported ${templatesToImport.length} templates from "${sourceTree.title}".`,
+    });
+
+    setIsImportTreeOpen(false);
+    setImportFromTreeId(null);
+    setSelectedTemplatesToImport([]);
+  };
+
+  const templatesToImportFrom = useMemo(() => {
+    if (!importFromTreeId) return [];
+    const sourceTree = allTrees.find(t => t.id === importFromTreeId);
+    if (!sourceTree) return [];
+    const currentTemplateIds = new Set(templates.map(t => t.id));
+    return sourceTree.templates.filter(t => !currentTemplateIds.has(t.id));
+  }, [importFromTreeId, allTrees, templates]);
+
 
   if (!activeTree) {
      return (
@@ -385,9 +452,22 @@ function TemplatesPage() {
                     <PlusCircle className="mr-2 h-4 w-4" /> Create New Template
                   </Button>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="mr-2 h-4 w-4" /> Import Archive
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="w-full">
+                                <Upload className="mr-2 h-4 w-4" /> Import <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+                            <DropdownMenuItem onSelect={() => setIsImportTreeOpen(true)}>
+                                <Library className="mr-2 h-4 w-4" /> Import from Tree
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
+                                <Archive className="mr-2 h-4 w-4" /> Import from Archive
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -396,7 +476,7 @@ function TemplatesPage() {
                         className="hidden"
                     />
                     <Button variant="outline" onClick={handleExportAll}>
-                        <Archive className="mr-2 h-4 w-4" /> Export Archive
+                        <Archive className="mr-2 h-4 w-4" /> Export All
                     </Button>
                   </div>
                    <Separator />
@@ -441,9 +521,12 @@ function TemplatesPage() {
                               </div>
                             </div>
                             <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => handleDuplicateTemplate(template)}>
+                                  <Copy className="h-4 w-4" />
+                              </Button>
                               <Button variant="ghost" size="icon" onClick={() => handleSelectTemplate(template)}>
                                   <Edit className="h-4 w-4" />
-                                </Button>
+                              </Button>
 
                               <AlertDialog>
                                   <Tooltip>
@@ -521,8 +604,71 @@ function TemplatesPage() {
           </TooltipProvider>
         </main>
       </div>
+      <Dialog open={isImportTreeOpen} onOpenChange={(open) => {
+        if(!open) {
+            setImportFromTreeId(null);
+            setSelectedTemplatesToImport([]);
+        }
+        setIsImportTreeOpen(open);
+      }}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Import Templates from Tree</DialogTitle>
+                  <DialogDescription>
+                      Select a tree to import templates from. Only templates that do not already exist in the current tree will be shown.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                  <Select onValueChange={setImportFromTreeId}>
+                      <SelectTrigger>
+                          <SelectValue placeholder="Select a tree..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {allTrees.filter(t => t.id !== activeTree.id).map(tree => (
+                              <SelectItem key={tree.id} value={tree.id}>{tree.title}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+
+                  {importFromTreeId && (
+                      <ScrollArea className="h-64 border rounded-md">
+                          <div className="p-4 space-y-2">
+                              {templatesToImportFrom.length > 0 ? (
+                                  templatesToImportFrom.map(template => (
+                                      <div key={template.id} className="flex items-center space-x-2">
+                                          <Checkbox
+                                              id={`import-${template.id}`}
+                                              checked={selectedTemplatesToImport.includes(template.id)}
+                                              onCheckedChange={(checked) => {
+                                                  setSelectedTemplatesToImport(prev => 
+                                                      checked
+                                                          ? [...prev, template.id]
+                                                          : prev.filter(id => id !== template.id)
+                                                  );
+                                              }}
+                                          />
+                                          <Label htmlFor={`import-${template.id}`} className="font-normal">{template.name}</Label>
+                                      </div>
+                                  ))
+                              ) : (
+                                  <p className="text-sm text-muted-foreground text-center">No new templates to import from this tree.</p>
+                              )}
+                          </div>
+                      </ScrollArea>
+                  )}
+              </div>
+              <DialogFooter>
+                  <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                  <Button onClick={handleImportFromTree} disabled={selectedTemplatesToImport.length === 0}>
+                      Import {selectedTemplatesToImport.length > 0 ? selectedTemplatesToImport.length : ''} Template{selectedTemplatesToImport.length !== 1 ? 's' : ''}
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
     </ProtectedRoute>
   );
 }
 
 export default TemplatesPage;
+
+    
