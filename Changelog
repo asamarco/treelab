@@ -1,4 +1,14 @@
-v.0.3
+v0.3.1
+
+Feature: Preferred child templates
+Feature: XY-chart field type
+Improvement: direct template duplication and import from another tree in the Templates page
+Improvement: direct tree duplication and in the Roots page
+Bugfix: Fix broken github link feature (api.github.com allowed as external content) 
+Bugfix: unneeded reload caused uploads to reset add child node forms
+
+
+v0.3.0
 
 Feature: unlimited Undo/Redo functionality on nodes actions
 Improvement: Server-side session management
