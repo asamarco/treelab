@@ -273,12 +273,26 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
               event.preventDefault();
               if (selectedNodeIds.length !== 1 || !clipboard.nodes) return;
               const targetInstanceId = selectedNodeIds[0];
-              const [targetNodeId, contextualParentId] = targetInstanceId.split('_');
+              const [targetNodeId, contextualParentIdStr] = targetInstanceId.split('_');
+              const contextualParentId = contextualParentIdStr === 'root' ? null : contextualParentIdStr;
+              
               if (event.altKey) {
                 if (clipboard.operation === 'cut') return;
-                pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes.map(n => n.id), contextualParentId === 'root' ? null : contextualParentId);
+                pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes.map(n => n.id), contextualParentId);
               } else {
-                pasteNodes(targetNodeId, 'child', contextualParentId === 'root' ? null : contextualParentId);
+                  if (clipboard.operation === 'cut') {
+                    const moves = clipboard.nodes.map(sourceNode => ({
+                        nodeId: sourceNode.id,
+                        targetNodeId: targetNodeId,
+                        position: 'child' as 'child' | 'sibling',
+                        sourceContextualParentId: sourceNode.parentIds[0] ?? null,
+                        targetContextualParentId: contextualParentId,
+                        isCutOperation: true,
+                    }));
+                    moveNodes(moves);
+                  } else {
+                    pasteNodes(targetNodeId, 'child', contextualParentId);
+                  }
               }
           }
        } else if (selectedNodeIds.length === 1) {
@@ -454,9 +468,3 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
     </DndContext>
   );
 }
-
-    
-
-
-    
-

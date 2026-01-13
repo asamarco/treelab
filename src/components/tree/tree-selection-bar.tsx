@@ -137,14 +137,20 @@ export function TreeSelectionBar() {
     }, [selectedNodeIds, tree, findNodeAndParent, setClipboard, toast]);
 
     const handleCutSelection = useCallback(() => {
-        const instancesToCut = getSelectedTopLevelNodes().map(item => {
-            return { ...item.node, parentIds: [item.parentId!] } // Store the contextual parent
-        });
+        const instancesToCut = selectedNodeIds.map(instanceId => {
+            const [nodeId, parentIdStr] = instanceId.split('_');
+            const parentId = parentIdStr === 'root' ? null : parentIdStr;
+            const node = findNodeAndParent(nodeId)?.node;
+            if (!node) return null;
+            // Store the specific parentId in the parentIds array for the cut operation
+            return { ...node, parentIds: [parentId!] };
+        }).filter((n): n is TreeNode => !!n);
+
         if (instancesToCut.length > 0) {
             setClipboard({ nodes: instancesToCut, operation: 'cut' });
             toast({ title: 'Cut', description: `${instancesToCut.length} node instance(s) cut to clipboard.` });
         }
-    }, [getSelectedTopLevelNodes, setClipboard, toast]);
+    }, [selectedNodeIds, findNodeAndParent, setClipboard, toast]);
     
     const handlePreviewSelection = useCallback(() => {
         const topLevelIds = getSelectedTopLevelNodes().map(n => n.node.id);
