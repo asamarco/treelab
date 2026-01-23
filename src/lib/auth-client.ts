@@ -24,7 +24,12 @@ export const login = async (identifier: string, password: string): Promise<User 
 export const register = async (username: string, password: string): Promise<User | null> => {
     // The register server action will handle both registration and login (session creation)
     const { registerUser } = await import('./auth-service');
-    return registerUser(username, password);
+    try {
+        return await registerUser(username, password);
+    } catch(error) {
+        console.error("Registration failed:", error);
+        throw error;
+    }
 };
 
 export const logout = async (): Promise<void> => {

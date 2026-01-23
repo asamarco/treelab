@@ -11,6 +11,7 @@ import { connectToDatabase } from './mongodb';
 import { TreeModel, TreeNodeModel } from './models';
 import { decrypt } from './encryption';
 import { TreeFile, TreeNode, Template, AttachmentInfo, StorageInfo, PurgeResult } from './types';
+import { getSession } from './session';
 
 
 async function getAllReferencedFileNames(userId: string, treeId?: string): Promise<Set<string>> {
@@ -72,7 +73,11 @@ async function listFilesWithSizes(dir: string): Promise<{ name: string, size: nu
     }
 }
 
-export async function getStorageInfo(userId: string, treeId?: string): Promise<StorageInfo> {
+export async function getStorageInfo(treeId?: string): Promise<StorageInfo> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+    const userId = session.userId;
+
     const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
     const USERS_DIR = path.join(DATA_DIR, 'users');
     const defaultInfo: StorageInfo = {
@@ -141,7 +146,11 @@ export async function getStorageInfo(userId: string, treeId?: string): Promise<S
     }
 }
 
-export async function purgeUnusedFiles(userId: string, treeId?: string): Promise<PurgeResult> {
+export async function purgeUnusedFiles(treeId?: string): Promise<PurgeResult> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+    const userId = session.userId;
+
     const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
     const USERS_DIR = path.join(DATA_DIR, 'users');
     const attachmentsDir = path.join(USERS_DIR, userId, 'attachments');

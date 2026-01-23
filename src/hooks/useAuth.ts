@@ -79,10 +79,9 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
 
     try {
-      const [userFromSession, loadedSettings, allUsers] = await Promise.all([
+      const [userFromSession, loadedSettings] = await Promise.all([
           getSessionUser(),
           loadGlobalSettings(),
-          fetchUsers() // Always fetch all users
       ]);
       
       if (loadedSettings) {
@@ -90,9 +89,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       }
       
       setCurrentUser(userFromSession);
-      setUsers(allUsers); // Always set all users
-
+      
       if (userFromSession) {
+          const allUsers = await fetchUsers(); // Only fetch all users if logged in
+          setUsers(allUsers);
           console.log(`INFO: Restored user '${userFromSession.username}' and fetched all users.`);
       }
 
@@ -129,7 +129,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   // Persist user profile changes
   useEffect(() => {
     if (isAuthRequired && currentUser) {
-      updateUserSettings(currentUser.id, {
+      updateUserSettings({
           theme: currentUser.theme,
           lastActiveTreeId: currentUser.lastActiveTreeId,
           gitSettings: currentUser.gitSettings,
@@ -152,10 +152,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   };
 
   const handleRegister = async (username: string, password: string): Promise<boolean> => {
-    if (!globalSettings.allowPublicRegistration) {
-        console.error("ERROR: Registration attempt failed: Public registration is disabled.");
-        return false;
-    }
     const newUser = await registerOnClient(username, password);
     if (newUser) {
         setCurrentUser(newUser);
@@ -203,7 +199,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
-    return await changeUserPassword(currentUser.id, currentPassword, newPassword);
+    return await changeUserPassword(currentPassword, newPassword);
   };
   
   const resetPasswordByAdmin = async (userId: string, newPassword: string): Promise<void> => {
@@ -263,5 +259,3 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setLastActiveTreeId,
   };
 }
-
-    

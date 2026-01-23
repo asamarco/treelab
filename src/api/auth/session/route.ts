@@ -6,6 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
+import { fetchUsers } from '@/lib/auth-service';
 import { UserModel } from '@/lib/models';
 import { decrypt } from '@/lib/encryption';
 import { connectToDatabase } from '@/lib/mongodb';

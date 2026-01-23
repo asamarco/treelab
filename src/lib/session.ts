@@ -9,6 +9,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { User } from './types';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const secretKey = process.env.JWT_SECRET_KEY;
 if (!secretKey) {
@@ -63,7 +64,7 @@ export async function createSessionInServerAction(userId: string) {
   const expires = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
   const session = await encrypt({ userId, expires });
   
-  (await cookies()).set(SESSION_COOKIE_NAME, session, {
+  cookies().set(SESSION_COOKIE_NAME, session, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     expires: expires,
@@ -81,7 +82,10 @@ export function clearSession(response: NextResponse) {
 }
 
 export async function getSession(): Promise<{ userId: string } | null> {
-  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  // Prevent caching of the session
+  noStore();
+  
+  const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!sessionCookie) return null;
 
   const decryptedPayload = await decrypt(sessionCookie);

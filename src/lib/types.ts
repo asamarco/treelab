@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This file defines the core TypeScript types and interfaces used throughout the application.
@@ -8,6 +7,7 @@
  */
 import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart";
 export type Theme = "light" | "dark" | "system";
@@ -292,7 +292,7 @@ export interface ActionContext {
   isCloneOrDescendant?: (nodeId: string, nodes?: TreeNode[]) => boolean;
   reloadActiveTree?: () => Promise<void>;
   clipboard?: ClipboardState;
-  toast?: ReturnType<typeof import('@/hooks/use-toast').useToast>['toast'];
+  toast?: ReturnType<typeof useToast>['toast'];
   getSiblingOrderRange?: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
   selectedNodeIds?: string[];
 }
@@ -348,7 +348,7 @@ export interface UseTreeRootsResult {
   findNodeAndParent: (nodeId: string, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
   findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
   getNodeInstancePaths: (nodeId: string) => string[];
-  uploadAttachment: (relativePath: string, dataUri: string, fileName: string, ownerId: string) => Promise<AttachmentInfo | null>;
+  uploadAttachment: (relativePath: string, dataUri: string, fileName: string) => Promise<AttachmentInfo>;
   commitToRepo: (treeId: string, message: string, token: string, force?: boolean, treeFileToCommit?: TreeFile) => Promise<{ success: boolean; error?: string | undefined; commitSha?: string | undefined; }>;
   fetchRepoHistory: (treeFile: TreeFile, token: string) => Promise<GitCommit[]>;
   syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;

@@ -10,7 +10,7 @@ import { connectToDatabase } from './mongodb';
 import { UserModel, GlobalSettingsModel, TreeModel, TreeNodeModel } from './models';
 import { User, GlobalSettings } from './types';
 import { encrypt, decrypt } from './encryption';
-import { createSessionInServerAction } from './session';
+import { createSessionInServerAction, getSession } from './session';
 import crypto from 'crypto';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -43,6 +43,11 @@ const toPlainObject = (doc: any): any => {
 export async function fetchUsers(): Promise<User[]> {
   // This is critical to prevent Next.js from caching the user list across different user sessions.
   noStore();
+  const session = await getSession();
+  if (!session?.userId) {
+      // While this returns public info, it should still only be available to logged-in users.
+      throw new Error("Authentication required to fetch users.");
+  }
   
   await connectToDatabase();
   const users = await UserModel.find().select('-passwordHash -salt').lean<User[]>().exec();
@@ -92,6 +97,12 @@ export async function validateLogin(identifier: string, password: string): Promi
 
 export async function registerUser(username: string, password: string): Promise<User | null> {
     await connectToDatabase();
+    
+    const globalSettings = await loadGlobalSettings();
+    if (!globalSettings?.allowPublicRegistration) {
+        throw new Error("Public registration is disabled by the administrator.");
+    }
+    
     const existingUsers = await UserModel.find().lean<User[]>().exec();
     if (existingUsers.some(u => u.username === username)) {
       console.warn(`WARN: Registration failed: Username '${username}' already exists.`);
@@ -118,6 +129,12 @@ export async function registerUser(username: string, password: string): Promise<
 }
 
 export async function addUser(userData: Omit<User, 'id' | 'passwordHash' | 'salt'> & { password?: string }): Promise<User> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    const adminUser = await UserModel.findById(session.userId);
+    if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
+
     await connectToDatabase();
     const { password, ...rest } = userData;
     if (!password) throw new Error("Password is required for new user");
@@ -132,11 +149,25 @@ export async function addUser(userData: Omit<User, 'id' | 'passwordHash' | 'salt
 }
 
 export async function updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    const adminUser = await UserModel.findById(session.userId);
+    if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
+    if(session.userId === userId) throw new Error("Admins cannot change their own status.");
+
     await connectToDatabase();
     await UserModel.findByIdAndUpdate(userId, { isAdmin }).exec();
 }
 
 export async function deleteUser(userId: string): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    const adminUser = await UserModel.findById(session.userId);
+    if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
+    if(session.userId === userId) throw new Error("Users cannot delete themselves.");
+
     await connectToDatabase();
     const userToDelete = await UserModel.findById(userId);
     if (!userToDelete) return;
@@ -147,9 +178,12 @@ export async function deleteUser(userId: string): Promise<void> {
     console.log(`INFO: Deleted user ${userId} and all associated data.`);
 }
 
-export async function changeUserPassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+export async function changeUserPassword(currentPassword: string, newPassword: string): Promise<boolean> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
     await connectToDatabase();
-    const user = await UserModel.findById(userId).select('+passwordHash +salt').exec();
+    const user = await UserModel.findById(session.userId).select('+passwordHash +salt').exec();
     if (!user) return false;
 
     // Handle legacy users without a salt - they must reset their password.
@@ -169,6 +203,12 @@ export async function changeUserPassword(userId: string, currentPassword: string
 }
 
 export async function resetUserPasswordByAdmin(userId: string, newPassword: string): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    const adminUser = await UserModel.findById(session.userId);
+    if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
+
     await connectToDatabase();
     
     const newSalt = crypto.randomBytes(16).toString('hex');
@@ -176,7 +216,10 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
     await UserModel.findByIdAndUpdate(userId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
 }
 
-export async function updateUserSettings(userId: string, settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes'>>): Promise<void> {
+export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes'>>): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
     await connectToDatabase();
 
     const settingsToSave = { ...settings };
@@ -186,7 +229,7 @@ export async function updateUserSettings(userId: string, settings: Partial<Pick<
         settingsToSave.gitSettings.githubPat = await encrypt(settingsToSave.gitSettings.githubPat);
     }
     
-    await UserModel.findByIdAndUpdate(userId, settingsToSave).exec();
+    await UserModel.findByIdAndUpdate(session.userId, settingsToSave).exec();
 }
 
 
@@ -206,15 +249,18 @@ export async function loadGlobalSettings(): Promise<GlobalSettings | null> {
 }
 
 export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Promise<void> {
-  await connectToDatabase();
-  // Ensure that customLogoPath is not set to an empty string, but rather removed if empty
-  const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...settings, updatedAt: new Date().toISOString() };
-  if ('customLogoPath' in updateData && !updateData.customLogoPath) {
-    delete updateData.customLogoPath;
-    await GlobalSettingsModel.updateOne({}, { $set: updateData, $unset: { customLogoPath: 1 } }, { upsert: true }).exec();
-  } else {
-    await GlobalSettingsModel.updateOne({}, { $set: updateData }, { upsert: true }).exec();
-  }
-}
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+    const adminUser = await UserModel.findById(session.userId);
+    if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
 
-    
+    await connectToDatabase();
+    // Ensure that customLogoPath is not set to an empty string, but rather removed if empty
+    const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...settings, updatedAt: new Date().toISOString() };
+    if ('customLogoPath' in updateData && !updateData.customLogoPath) {
+        delete updateData.customLogoPath;
+        await GlobalSettingsModel.updateOne({}, { $set: updateData, $unset: { customLogoPath: 1 } }, { upsert: true }).exec();
+    } else {
+        await GlobalSettingsModel.updateOne({}, { $set: updateData }, { upsert: true }).exec();
+    }
+}
