@@ -59,6 +59,7 @@ async function listFilesWithSizes(dir: string): Promise<{ name: string, size: nu
         const fileNames = await fs.readdir(dir);
         const fileDetails = await Promise.all(
             fileNames.map(async (name) => {
+                if (name.includes('..')) throw new Error('Invalid file name');
                 const fullPath = path.join(dir, name);
                 const stats = await fs.stat(fullPath);
                 return { name, size: stats.size, path: fullPath };
