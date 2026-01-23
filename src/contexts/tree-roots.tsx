@@ -235,7 +235,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const reloadAllTrees = useCallback(async () => {
     if (!currentUser) return;
     console.log("INFO: Reloading all trees from server...");
-    const loadedTrees = await loadAllTreeFiles(currentUser.id);
+    const loadedTrees = await loadAllTreeFiles();
     loadedTrees.sort((a,b) => (a.order || 0) - (b.order || 0));
     setAllTrees(() => loadedTrees);
   }, [currentUser, setAllTrees]);
@@ -563,15 +563,15 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     async (user: User) => {
       setIsTreeDataLoading(true);
       try {
-        let loadedTrees = await loadAllTreeFiles(user.id);
+        let loadedTrees = await loadAllTreeFiles();
         if (loadedTrees.length === 0) {
           const welcomeGuideData = await loadExampleFromFile("welcome-guide.json");
           if (welcomeGuideData) {
             await importTreeFromJson(welcomeGuideData, user, true);
-            loadedTrees = await loadAllTreeFiles(user.id);
+            loadedTrees = await loadAllTreeFiles();
           } else {
             await createNewTree("My First Tree", user);
-            loadedTrees = await loadAllTreeFiles(user.id);
+            loadedTrees = await loadAllTreeFiles();
           }
         }
         
@@ -1047,7 +1047,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const exportNodesAsArchive = async (nodes: TreeNode[], baseName: string) => {
     if (!activeTree || !currentUser) return;
     await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath: string) =>
-      fetchFileAsBuffer(activeTree.userId, relativePath)
+      fetchFileAsBuffer(currentUser!.id, relativePath)
     );
   };
 
@@ -1246,8 +1246,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     findNodeAndParent,
     findNodeAndContextualParent,
     getNodeInstancePaths,
-    uploadAttachment: async (relativePath: string, dataUri: string, fileName: string, ownerId: string): Promise<AttachmentInfo> => {
-        return uploadAttachmentToServer(ownerId, relativePath, dataUri, fileName);
+    uploadAttachment: (relativePath: string, dataUri: string, fileName: string) => {
+      if (!currentUser) throw new Error("User not authenticated for upload");
+      return uploadAttachmentToServer(currentUser.id, relativePath, dataUri, fileName);
     },
     commitToRepo,
     fetchRepoHistory,

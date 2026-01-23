@@ -42,87 +42,82 @@ const toPlainObject = (doc: any): any => {
 
 export async function fetchUsers(): Promise<User[]> {
   // This is critical to prevent Next.js from caching the user list across different user sessions.
-  noStore();
-  const session = await getSession();
+    noStore();
+    const session = await getSession();
   if (!session?.userId) {
       // While this returns public info, it should still only be available to logged-in users.
       throw new Error("Authentication required to fetch users.");
   }
   
-  await connectToDatabase();
-  const users = await UserModel.find().select('-passwordHash -salt').lean<User[]>().exec();
+    await connectToDatabase();
+    const users = await UserModel.find().select('-passwordHash -salt').lean<User[]>().exec();
   const decryptedUsers = await Promise.all(
-    users.map(async (u: any) => {
-      const plainUser = toPlainObject(u);
-      if (plainUser.gitSettings?.githubPat) {
-        plainUser.gitSettings.githubPat = await decrypt(plainUser.gitSettings.githubPat);
-      }
-      return plainUser;
-    })
-  );
+        users.map(async (u: any) => {
+            const plainUser = toPlainObject(u);
+            if (plainUser.gitSettings?.githubPat) {
+                plainUser.gitSettings.githubPat = await decrypt(plainUser.gitSettings.githubPat);
+            }
+            return plainUser;
+        })
+    );
   return decryptedUsers;
 }
 
 
 export async function validateLogin(identifier: string, password: string): Promise<User | null> {
     await connectToDatabase();
-    const user = await UserModel.findOne({ username: identifier }).select('+passwordHash +salt').exec();
-    if (!user) {
-        console.warn(`WARN: Failed login attempt for identifier '${identifier}': User not found.`);
-        return null;
-    }
     
-    // Handle legacy users without a salt
-    if (!user.salt) {
-        console.warn(`WARN: Failed login attempt for username '${user.username}': Account is missing a password salt and cannot be authenticated.`);
+    // Avoid NoSQL Injection
+    const safeIdentifier = String(identifier);
+    const safePassword = String(password);
+
+    const user = await UserModel.findOne({ username: safeIdentifier })
+        .select('+passwordHash +salt')
+        .exec();
+
+    if (!user || !user.salt) {
+        console.warn(`WARN: Login failed for identifier '${safeIdentifier}'`);
         return null;
     }
 
-    const passwordHash = await hashPassword(password, user.salt);
+    const passwordHash = await hashPassword(safePassword, user.salt);
 
     if (passwordHash === user.passwordHash) {
-        console.log(`INFO: User '${user.username}' logged in successfully.`);
-        const { passwordHash, salt, ...userToReturn } = toPlainObject(user);
-        
+        const { passwordHash: _ph, salt: _s, ...userToReturn } = toPlainObject(user);
         if (userToReturn.gitSettings?.githubPat) {
-          userToReturn.gitSettings.githubPat = await decrypt(userToReturn.gitSettings.githubPat);
+            userToReturn.gitSettings.githubPat = await decrypt(userToReturn.gitSettings.githubPat);
         }
-
         return userToReturn;
     }
 
-    console.warn(`WARN: Failed login attempt for username '${user.username}': Invalid password.`);
     return null;
 }
 
 export async function registerUser(username: string, password: string): Promise<User | null> {
     await connectToDatabase();
+    const safeUsername = String(username);
     
     const globalSettings = await loadGlobalSettings();
     if (!globalSettings?.allowPublicRegistration) {
-        throw new Error("Public registration is disabled by the administrator.");
+        throw new Error("Registration disabled.");
     }
     
-    const existingUsers = await UserModel.find().lean<User[]>().exec();
-    if (existingUsers.some(u => u.username === username)) {
-      console.warn(`WARN: Registration failed: Username '${username}' already exists.`);
-      return null; 
-    }
+    const exists = await UserModel.exists({ username: safeUsername });
+    if (exists) return null; 
     
+    const isFirstUser = (await UserModel.countDocuments({})) === 0;
     const salt = crypto.randomBytes(16).toString('hex');
     const passwordHash = await hashPassword(password, salt);
 
-    const newUserDoc: Omit<User, 'id'> = {
-      username,
-      passwordHash,
-      salt,
-      isAdmin: existingUsers.length === 0,
+    const newUserDoc = {
+        username: safeUsername,
+        passwordHash,
+        salt,
+        isAdmin: isFirstUser, 
     };
     
     const createdUser = await new UserModel(newUserDoc).save();
-    const { passwordHash: savedHash, salt: savedSalt, ...userToReturn } = toPlainObject(createdUser);
-
-    // After successful registration, immediately create a session for the user.
+    const userToReturn = toPlainObject(createdUser);
     await createSessionInServerAction(userToReturn.id);
     
     return userToReturn;
@@ -210,7 +205,7 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
 
     await connectToDatabase();
-    
+
     const newSalt = crypto.randomBytes(16).toString('hex');
     const newPasswordHash = await hashPassword(newPassword, newSalt);
     await UserModel.findByIdAndUpdate(userId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
@@ -236,7 +231,7 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
 // --- GlobalSettings Functions ---
 
 export async function loadGlobalSettings(): Promise<GlobalSettings | null> {
-  await connectToDatabase();
+    await connectToDatabase();
   let settings = await GlobalSettingsModel.findOne().lean<GlobalSettings>().exec();
   
   if (settings) {
@@ -253,7 +248,7 @@ export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Pro
     if (!session?.userId) throw new Error("Authentication required.");
     const adminUser = await UserModel.findById(session.userId);
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
-
+    
     await connectToDatabase();
     // Ensure that customLogoPath is not set to an empty string, but rather removed if empty
     const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...settings, updatedAt: new Date().toISOString() };
