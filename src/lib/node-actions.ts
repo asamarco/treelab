@@ -676,164 +676,171 @@ export async function changeMultipleNodesTemplateAction(
 }
 
 export async function deleteNodesAction(
-    ctx: ActionContext,
-    instanceIds: string[],
-    sourceTree?: TreeNode[]
+  ctx: ActionContext,
+  instanceIds: string[],
+  sourceTree?: TreeNode[]
 ) {
-    const { activeTree, activeTreeId, executeCommand, findNodeAndParent } = ctx;
-    const treeToSearch = sourceTree || activeTree?.tree;
-    if (!treeToSearch || instanceIds.length === 0) return;
+  const { activeTree, activeTreeId, executeCommand, findNodeAndParent } = ctx;
+  const treeToSearch = sourceTree || activeTree?.tree;
+  if (!treeToSearch || instanceIds.length === 0) return;
 
-    const nodesToDelete = instanceIds.map(instanceId => {
-        const [nodeId, parentIdStr] = instanceId.split('_');
-        return { nodeId, parentId: parentIdStr === 'root' ? null : parentIdStr };
-    });
+  // 1. PRE-CAPTURE STEP: 
+  // Create a deep-copy map of EVERY node in the tree BEFORE we start looping.
+  // This ensures clones captured later in the loop haven't been mutated by 
+  // earlier iterations of the same delete command.
+  const preMutationMap = new Map<string, TreeNode>();
+  const flattenOriginal = (nodes: TreeNode[]) => {
+      nodes.forEach(n => {
+          preMutationMap.set(n.id, JSON.parse(JSON.stringify(n)));
+          if (n.children) flattenOriginal(n.children);
+      });
+  };
+  flattenOriginal(treeToSearch);
 
-    const originalState: DeleteNodesCommand['originalState'] = [];
+  const nodesToDelete = instanceIds.map(instanceId => {
+      const [nodeId, parentIdStr] = instanceId.split('_');
+      return { nodeId, parentId: parentIdStr === 'root' ? null : parentIdStr };
+  });
 
-    for (const { nodeId, parentId } of nodesToDelete) {
-        const nodeInfo = findNodeAndParent(nodeId, treeToSearch);
-        if (nodeInfo) {
-            const allDescendantsAndSelf: TreeNode[] = [];
-            const collect = (n: TreeNode) => {
-                allDescendantsAndSelf.push(JSON.parse(JSON.stringify(n)));
-                if (n.children) n.children.forEach(collect);
-            };
-            collect(nodeInfo.node);
+  const originalState: DeleteNodesCommand['originalState'] = [];
 
-            originalState.push({
-                node: JSON.parse(JSON.stringify(nodeInfo.node)), // The top-level deleted node
-                parent: nodeInfo.parent ? JSON.parse(JSON.stringify(nodeInfo.parent)) : null,
-                originalSiblings: JSON.parse(JSON.stringify(nodeInfo.parent ? nodeInfo.parent.children : treeToSearch)),
-                allDeletedNodes: allDescendantsAndSelf, // All nodes in the branch
-            });
-        }
-    }
+  for (const { nodeId, parentId } of nodesToDelete) {
+      const nodeInfo = findNodeAndParent(nodeId, treeToSearch);
+      if (nodeInfo) {
+          // Use the preMutationMap to get the "Clean" version of the node
+          const cleanNode = preMutationMap.get(nodeId) || nodeInfo.node;
+          
+          const allDescendantsAndSelf: TreeNode[] = [];
+          const collect = (n: TreeNode) => {
+              allDescendantsAndSelf.push(JSON.parse(JSON.stringify(n)));
+              if (n.children) n.children.forEach(collect);
+          };
+          collect(cleanNode);
+
+          originalState.push({
+              node: JSON.parse(JSON.stringify(cleanNode)),
+              parent: nodeInfo.parent ? JSON.parse(JSON.stringify(nodeInfo.parent)) : null,
+              // Siblings must also come from the clean snapshot
+              originalSiblings: JSON.parse(JSON.stringify(
+                  nodeInfo.parent 
+                      ? (preMutationMap.get(nodeInfo.parent.id)?.children || []) 
+                      : treeToSearch
+              )),
+              allDeletedNodes: allDescendantsAndSelf,
+          });
+      }
+  }
+
+  const command: DeleteNodesCommand = {
+      type: 'DELETE_NODES',
+      payload: { nodes: nodesToDelete },
+      originalState,
+      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+          await batchDeleteNodes(nodesToDelete.map(n => ({ nodeId: n.nodeId, parentIdToUnlink: n.parentId })), timestamp);
+      },
+      execute: (draft: WritableDraft<TreeFile[]>) => {
+          const treeToUpdate = draft.find((t) => t.id === activeTreeId);
+          if (!treeToUpdate) return;
+          
+          const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
+          const flatten = (nodes: WritableDraft<TreeNode>[]) => {
+              nodes.forEach(n => {
+                  allNodesMap.set(n.id, n);
+                  if (n.children) flatten(n.children);
+              });
+          };
+          flatten(treeToUpdate.tree);
+
+          const parentsToResequence = new Set<string | null>();
+
+          for (const { nodeId, parentId } of nodesToDelete) {
+              const node = allNodesMap.get(nodeId);
+              if (!node) continue;
+              
+              parentsToResequence.add(parentId);
+              const pIdStr = parentId ?? 'root';
+              const idx = (node.parentIds || []).indexOf(pIdStr);
+              if (idx > -1) {
+                  node.parentIds.splice(idx, 1);
+                  node.order.splice(idx, 1);
+              }
+          }
+
+          treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
+          
+          allNodesMap.clear();
+          flatten(treeToUpdate.tree);
+
+          parentsToResequence.forEach(pId => {
+              const siblings = pId ? allNodesMap.get(pId)?.children : treeToUpdate.tree;
+              if (siblings) resequenceSiblingsInDraft(siblings, pId);
+          });
+      },
+      undo: async (timestamp?: string) => {
+        // 1. Guard check for the ID
+        if (!activeTreeId) return;
     
-    if (originalState.length === 0) return;
-
-    const command: DeleteNodesCommand = {
-        type: 'DELETE_NODES',
-        payload: { nodes: nodesToDelete },
-        originalState: originalState,
-        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
-            await batchDeleteNodes(nodesToDelete.map(n => ({ nodeId: n.nodeId, parentIdToUnlink: n.parentId })), timestamp);
-        },
-        execute: (draft: WritableDraft<TreeFile[]>) => {
-            const treeToUpdate = draft.find((t: TreeFile) => t.id === activeTreeId);
-            if (!treeToUpdate) return;
-            
-            const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
-            const flattenAndMap = (nodes: WritableDraft<TreeNode>[]) => {
-              nodes.forEach((node) => {
-                allNodesMap.set(node.id, node);
-                if (node.children) flattenAndMap(node.children);
-              });
-            };
-            flattenAndMap(treeToUpdate.tree);
-        
-            const nodesToFullyDelete = new Set<string>();
-            const parentsToResequence = new Set<string | null>();
-        
-            for (const { nodeId, parentId } of nodesToDelete) {
-              const pKey = parentId ?? 'root';
-              parentsToResequence.add(pKey);
-        
-              const nodeInDraft = allNodesMap.get(nodeId);
-              if (!nodeInDraft) continue;
-        
-              const parentIdStr = parentId ?? 'root';
-              const parentIndexInNode = (nodeInDraft.parentIds || []).indexOf(parentIdStr);
-        
-              if (parentIndexInNode > -1) {
-                nodeInDraft.parentIds.splice(parentIndexInNode, 1);
-                nodeInDraft.order.splice(parentIndexInNode, 1);
-              }
-        
-              if ((nodeInDraft.parentIds || []).length === 0) {
-                nodesToFullyDelete.add(nodeId);
-              } else {
-                // If it's just an unlink, we need to re-sequence the siblings of its other parents too
-                nodeInDraft.parentIds.forEach(pid => parentsToResequence.add(pid === 'root' ? null : pid));
-              }
-            }
-            
-            const filterTree = (nodes: WritableDraft<TreeNode>[]): WritableDraft<TreeNode>[] => {
-              if (!nodes) return [];
-              const filtered = nodes.filter(node => !nodesToFullyDelete.has(node.id));
-              filtered.forEach(node => {
-                if (node.children) node.children = filterTree(node.children);
-              });
-              return filtered;
-            };
-            treeToUpdate.tree = filterTree(treeToUpdate.tree);
-        
-            // Re-flatten the map *after* full deletions
-            allNodesMap.clear();
-            flattenAndMap(treeToUpdate.tree);
-        
-            parentsToResequence.forEach(pId => {
-              const parentNode = pId ? allNodesMap.get(pId) : null;
-              const siblings = parentNode ? parentNode.children : treeToUpdate.tree;
-              if (siblings) {
-                resequenceSiblingsInDraft(siblings, pId);
-              }
-            });
-        
-            treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
-        },
-        undo: async (timestamp?: string) => {
-            const nodesToRecreate: Partial<TreeNode>[] = [];
-            const nodesToUpdate: { id: string; updates: Partial<TreeNode> }[] = [];
-
-            for (const { allDeletedNodes } of command.originalState) {
-                for (const originalNode of allDeletedNodes) {
-                    const existingNode = await findNodeById(originalNode.id);
-                    if (existingNode) {
-                        const existingUpdate = nodesToUpdate.find(u => u.id === originalNode.id);
-                        if (existingUpdate) {
-                            existingUpdate.updates.parentIds = originalNode.parentIds;
-                            existingUpdate.updates.order = originalNode.order;
-                        } else {
-                            nodesToUpdate.push({ id: originalNode.id, updates: { parentIds: originalNode.parentIds, order: originalNode.order } });
-                        }
-                    } else {
-                        nodesToRecreate.push(originalNode);
-                    }
+        for (const state of command.originalState) {
+            for (const node of state.allDeletedNodes) {
+                const exists = await findNodeById(node.id);
+                if (!exists) {
+                    await batchCreateNodes([node], timestamp);
+                } else {
+                    await batchUpdateNodes([{
+                        id: node.id, 
+                        updates: { parentIds: node.parentIds, order: node.order }
+                    }], timestamp);
                 }
             }
-            if (nodesToRecreate.length > 0) {
-                await batchCreateNodes(nodesToRecreate, timestamp);
-            }
-            if (nodesToUpdate.length > 0) {
-                await batchUpdateNodes(nodesToUpdate, timestamp);
-            }
-        },
-        getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
-            const treeToUpdate = draft.find((t) => t.id === activeTreeId);
-            if (treeToUpdate) {
-                const allCurrentNodes = new Map<string, WritableDraft<TreeNode>>();
-                const flatten = (nodes: WritableDraft<TreeNode>[]) => {
-                    nodes.forEach(n => {
-                        allCurrentNodes.set(n.id, n);
-                        if (n.children) flatten(n.children);
-                    });
-                };
-                flatten(treeToUpdate.tree);
-        
-                (cmd as DeleteNodesCommand).originalState.forEach(({ allDeletedNodes }) => {
-                    allDeletedNodes.forEach(node => {
-                        const mutableNode = JSON.parse(JSON.stringify(node));
-                        allCurrentNodes.set(node.id, mutableNode);
-                    });
-                });
-                
-                treeToUpdate.tree = reconstructTree(Array.from(allCurrentNodes.values()));
-            }
-        },
-    };
+        }
     
-    await executeCommand(command);
+        const parents = new Set<string | null>();
+        nodesToDelete.forEach(n => parents.add(n.parentId));
+        
+        for (const pId of parents) {
+            // TypeScript now knows activeTreeId is a string here
+            await resequenceSiblings(pId, activeTreeId);
+        }
+    },
+      getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
+          const treeToUpdate = draft.find((t) => t.id === activeTreeId);
+          if (!treeToUpdate) return;
+
+          const allNodesMap = new Map<string, WritableDraft<TreeNode>>();
+          const flatten = (nodes: WritableDraft<TreeNode>[]) => {
+              nodes.forEach(n => {
+                  allNodesMap.set(n.id, n);
+                  if (n.children) flatten(n.children);
+              });
+          };
+          flatten(treeToUpdate.tree);
+
+          // Restore clean snapshots to the map
+          (cmd as DeleteNodesCommand).originalState.forEach(state => {
+              state.allDeletedNodes.forEach(node => {
+                  allNodesMap.set(node.id, JSON.parse(JSON.stringify(node)));
+              });
+              // Ensure siblings are reverted to original sequential state
+              state.originalSiblings.forEach(sibling => {
+                  allNodesMap.set(sibling.id, JSON.parse(JSON.stringify(sibling)));
+              });
+          });
+
+          treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
+
+          // Final Resequence to fix clashing
+          allNodesMap.clear();
+          flatten(treeToUpdate.tree);
+          const parentsToFix = new Set<string | null>();
+          nodesToDelete.forEach(n => parentsToFix.add(n.parentId));
+          parentsToFix.forEach(pId => {
+              const siblings = pId ? allNodesMap.get(pId)?.children : treeToUpdate.tree;
+              if (siblings) resequenceSiblingsInDraft(siblings, pId);
+          });
+      }
+  };
+
+  await executeCommand(command);
 }
 
 export async function deleteNodeAction(ctx: ActionContext, nodeId: string, contextualParentId: string | null) {
