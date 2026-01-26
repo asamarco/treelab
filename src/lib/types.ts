@@ -308,6 +308,7 @@ export interface ActionContext {
   toast?: ReturnType<typeof useToast>['toast'];
   getSiblingOrderRange?: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
   selectedNodeIds?: string[];
+  getTemplateById?: (id: string) => Template | undefined;
 }
 
 export interface UseTreeRootsResult {

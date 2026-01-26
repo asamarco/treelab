@@ -1041,7 +1041,13 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     toast,
     getSiblingOrderRange,
     selectedNodeIds,
-  }), [activeTree, currentUser, activeTreeId, executeCommand, findNodeAndParent, visibleTrees, findNodeAndContextualParent, reloadActiveTree, isCloneOrDescendant, clipboard, toast, getSiblingOrderRange, selectedNodeIds]);
+    getTemplateById,
+  }), [
+    activeTree, currentUser, activeTreeId, executeCommand, findNodeAndParent,
+    visibleTrees, findNodeAndContextualParent, reloadActiveTree,
+    isCloneOrDescendant, clipboard, toast, getSiblingOrderRange, selectedNodeIds,
+    getTemplateById,
+  ]);
 
   const addRootNode = async (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => {
     await addRootNodeAction(actionContext, nodeData as Omit<TreeNode, 'id' | 'children' | 'treeId' | 'userId' | 'parentIds' | 'order'>);

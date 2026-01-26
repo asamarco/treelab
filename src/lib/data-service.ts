@@ -1,3 +1,5 @@
+
+
 /**
  * @fileoverview
  * This service handles all data persistence for the application by interacting
@@ -702,35 +704,46 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
 
 export async function batchUpdateNodes(updates: { id: string; updates: Partial<TreeNode> }[], timestamp?: string): Promise<string> {
     if (updates.length === 0) return timestamp || new Date().toISOString();
-    
+
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
 
-    const firstNodeId = updates[0].id;
-    if (!firstNodeId) return timestamp || new Date().toISOString();
+    const nodeIds = updates.map(u => u.id);
+    const nodesToUpdate = await TreeNodeModel.find({ _id: { $in: nodeIds } }).select('treeId').lean<TreeNode[]>();
 
-    const firstNode = await TreeNodeModel.findById(firstNodeId).select('treeId').lean<TreeNode>();
-    if (!firstNode) {
-        console.warn(`batchUpdateNodes: Could not find node with ID ${firstNodeId} to determine treeId.`);
-        return timestamp || new Date().toISOString();
-    };
-    const treeId = firstNode.treeId;
+    if (nodesToUpdate.length !== nodeIds.length) {
+        throw new Error("One or more nodes to update could not be found.");
+    }
+
+    const firstTreeId = nodesToUpdate[0]?.treeId;
+    if (!firstTreeId) {
+        throw new Error("Could not determine tree for update operation.");
+    }
+
+    const allNodesInSameTree = nodesToUpdate.every(node => node.treeId.toString() === firstTreeId.toString());
+    if (!allNodesInSameTree) {
+        throw new Error("Batch updates can only target nodes within the same tree.");
+    }
     
     // Authorization check
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    const tree = await TreeModel.findById(firstTreeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree || (tree.userId.toString() !== session.userId && !(tree.sharedWith || []).includes(session.userId))) {
         throw new Error("Authorization denied for batch update.");
     }
-    
+
     const newTimestamp = timestamp || new Date().toISOString();
 
     const bulkOps = await Promise.all(updates.map(async ({ id, updates }) => {
         const { name, data, ...restOfUpdates } = updates;
         const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: newTimestamp };
-        if (name) encryptedUpdates.name = await encrypt(name);
-        if (data !== undefined) encryptedUpdates.data = await encrypt(data);
+        if (name) {
+            encryptedUpdates.name = await encrypt(name);
+        }
+        if (data !== undefined) {
+            encryptedUpdates.data = await encrypt(data as any);
+        }
         
         return {
             updateOne: {
@@ -740,7 +753,7 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
         };
     }));
     await TreeNodeModel.bulkWrite(bulkOps);
-    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
+    await TreeModel.findByIdAndUpdate(firstTreeId, { updatedAt: newTimestamp });
     console.log(`INFO: Batch updated ${updates.length} nodes in DB.`);
     return newTimestamp;
 }
@@ -1192,3 +1205,5 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
 
     await TreeModel.findByIdAndUpdate(treeId, { isPublic }).exec();
 }
+
+    
