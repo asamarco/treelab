@@ -4,36 +4,8 @@
  * shared between different tree node components.
  */
 
-import { TreeNode, Template, ConditionalRuleOperator } from "@/lib/types";
-
-const evaluateCondition = (
-  operator: ConditionalRuleOperator,
-  fieldValue: any,
-  ruleValue: string
-): boolean => {
-  const fv = String(fieldValue ?? '').toLowerCase();
-  const rv = ruleValue.toLowerCase();
-
-  switch (operator) {
-    case 'equals': return fv === rv;
-    case 'not_equals': return fv !== rv;
-    case 'contains': return fv.includes(rv);
-    case 'not_contains': return !fv.includes(rv);
-    case 'is_not_empty': return fv.length > 0;
-    case 'is_empty': return fv.length === 0;
-    case 'greater_than': {
-      const numFv = parseFloat(fv);
-      const numRv = parseFloat(rv);
-      return !isNaN(numFv) && !isNaN(numRv) && numFv > numRv;
-    }
-    case 'less_than': {
-      const numFv = parseFloat(fv);
-      const numRv = parseFloat(rv);
-      return !isNaN(numFv) && !isNaN(numRv) && numFv < numRv;
-    }
-    default: return false;
-  }
-};
+import { TreeNode, Template } from "@/lib/types";
+import { evaluateCondition } from "@/lib/utils";
 
 export const getConditionalStyle = (targetNode: TreeNode, targetTemplate: Template | undefined) => {
   if (!targetTemplate || !targetTemplate.conditionalRules) {

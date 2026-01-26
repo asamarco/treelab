@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This is the main client component of the application, responsible for displaying and
@@ -13,9 +14,9 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { TreeView } from "@/components/tree/tree-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
-import { Template, TreeNode } from "@/lib/types";
+import { ConditionalRuleOperator, QueryDefinition, QueryRule, Template, TreeNode } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon } from "lucide-react";
+import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Label } from "@/components/ui/label";
@@ -37,9 +38,21 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { startOfDay, endOfDay, parse } from "date-fns";
 import { hasAttachments } from "@/components/tree/tree-node-utils";
-import { cn } from "@/lib/utils";
+import { cn, evaluateCondition, generateClientSideId } from "@/lib/utils";
 import { useUIContext } from "@/contexts/ui-context";
+import { Separator } from "@/components/ui/separator";
 
+
+const operatorLabels: Record<ConditionalRuleOperator, string> = {
+  equals: 'Equals',
+  not_equals: 'Not Equals',
+  contains: 'Contains',
+  not_contains: 'Does Not Contain',
+  is_not_empty: 'Is Not Empty',
+  is_empty: 'Is Empty',
+  greater_than: 'Greater Than',
+  less_than: 'Less Than',
+};
 
 function filterTree(
   nodes: TreeNode[],
@@ -51,7 +64,8 @@ function filterTree(
   createdTo: Date | null,
   modifiedFrom: Date | null,
   modifiedTo: Date | null,
-  hasAttachmentsFilter: boolean
+  hasAttachmentsFilter: boolean,
+  queryFilter: QueryDefinition[]
 ): TreeNode[] {
   const lowercasedTerm = searchTerm.toLowerCase();
 
@@ -85,7 +99,29 @@ function filterTree(
     const isNodeEffectivelyStarred = isAncestorStarred || !!node.isStarred;
     const isStarredMatch = !showStarredOnly || isNodeEffectivelyStarred;
 
-    return !!(isSearchMatch && isTemplateMatch && isCreatedDateMatch && isModifiedDateMatch && hasAttachmentsMatch && isStarredMatch);
+    const isQueryMatch = () => {
+        if (!queryFilter || queryFilter.length === 0) {
+            return true;
+        }
+
+        return queryFilter.some(queryGroup => {
+            if (!queryGroup.targetTemplateId) {
+                return false;
+            }
+
+            if (node.templateId !== queryGroup.targetTemplateId) {
+                return false;
+            }
+            
+            return queryGroup.rules.every(rule => {
+                if (!rule.fieldId) return false;
+                const fieldValue = (node.data || {})[rule.fieldId];
+                return evaluateCondition(rule.operator as ConditionalRuleOperator, fieldValue, rule.value);
+            });
+        });
+    };
+
+    return !!(isSearchMatch && isTemplateMatch && isCreatedDateMatch && isModifiedDateMatch && hasAttachmentsMatch && isStarredMatch && isQueryMatch());
   };
   
   const search = (nodesToFilter: TreeNode[], isAncestorStarred: boolean, path: Set<string>): TreeNode[] => {
@@ -155,6 +191,7 @@ export function TreePage() {
   const [modifiedFrom, setModifiedFrom] = useState<Date | undefined>(undefined);
   const [modifiedTo, setModifiedTo] = useState<Date | undefined>(undefined);
   const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
+  const [queryFilter, setQueryFilter] = useState<QueryDefinition[]>([]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -165,8 +202,9 @@ export function TreePage() {
     if (modifiedFrom) count++;
     if (modifiedTo) count++;
     if (hasAttachmentsFilter) count++;
+    if (queryFilter.length > 0) count++;
     return count;
-  }, [showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter]);
+  }, [showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
 
   const areFiltersActive = activeFilterCount > 0;
 
@@ -276,7 +314,7 @@ export function TreePage() {
   const filteredTree = useMemo(() => {
       try {
           if (!tree) return [];
-          return filterTree(tree, getTemplateById, searchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter);
+          return filterTree(tree, getTemplateById, searchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter, queryFilter);
       } catch (error) {
           if (error instanceof RangeError && error.message.includes("Maximum call stack size exceeded")) {
               console.warn("A cyclical reference was detected in the tree structure during filtering. This can happen if a node is cloned as a child of itself. Search is disabled until this is resolved.");
@@ -284,7 +322,7 @@ export function TreePage() {
           }
           throw error;
       }
-  }, [tree, getTemplateById, searchTerm, showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter]);
+  }, [tree, getTemplateById, searchTerm, showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
   
   const resetFilters = () => {
     setTemplateFilter(null);
@@ -293,6 +331,7 @@ export function TreePage() {
     setModifiedFrom(undefined);
     setModifiedTo(undefined);
     setHasAttachmentsFilter(false);
+    setQueryFilter([]);
   }
 
   const handleSaveNewRootNode = async (newNode: Partial<TreeNode>) => {
@@ -323,7 +362,7 @@ export function TreePage() {
           <div className="text-center">
             <h3 className="text-lg font-semibold">No nodes found</h3>
             <p className="text-muted-foreground">
-              {searchTerm || showStarred || templateFilter || createdFrom || createdTo || modifiedFrom || modifiedTo || hasAttachmentsFilter
+              {searchTerm || areFiltersActive
                 ? "Your filters did not return any results."
                 : "Get started by adding a root node."}
             </p>
@@ -362,6 +401,37 @@ export function TreePage() {
       }
     }
     setter(undefined);
+  };
+
+  const handleQueryGroupChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
+      const newQueryFilter = [...queryFilter];
+      newQueryFilter[queryIndex] = { ...newQueryFilter[queryIndex], [key]: value };
+      setQueryFilter(newQueryFilter);
+  };
+
+  const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, value: any) => {
+      const newQueryFilter = [...queryFilter];
+      const newRules = [...newQueryFilter[queryIndex].rules];
+      newRules[ruleIndex] = { ...newRules[ruleIndex], [key]: value };
+      handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
+
+  const addQueryGroup = () => {
+      setQueryFilter([...queryFilter, { id: generateClientSideId(), targetTemplateId: null, rules: [] }]);
+  };
+  
+  const removeQueryGroup = (queryIndex: number) => {
+      setQueryFilter(queryFilter.filter((_, index) => index !== queryIndex));
+  }
+
+  const addRule = (queryIndex: number) => {
+      const newRules = [...queryFilter[queryIndex].rules, { id: generateClientSideId(), fieldId: '', operator: 'equals', value: '' }];
+      handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
+
+  const removeRule = (queryIndex: number, ruleIndex: number) => {
+      const newRules = queryFilter[queryIndex].rules.filter((_, index) => index !== ruleIndex);
+      handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
   
   return (
@@ -442,8 +512,75 @@ export function TreePage() {
                       Has Attachments
                     </Label>
                   </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none">Query Builder</h4>
+                    <p className="text-sm text-muted-foreground">
+                        Find nodes matching specific criteria. Groups are combined with OR, conditions within a group are combined with AND.
+                    </p>
+                  </div>
+                  <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+                      {queryFilter.map((queryDef, queryIndex) => {
+                        const targetTemplate = queryDef.targetTemplateId ? getTemplateById(queryDef.targetTemplateId) : null;
+                        return (
+                            <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <Label>Search for nodes with template:</Label>
+                                    <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
+                                <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
+                                    <SelectTrigger><SelectValue placeholder="Select a template..."/></SelectTrigger>
+                                    <SelectContent>
+                                        {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                
+                                <div className="space-y-2">
+                                     <Label>Where...</Label>
+                                     {queryDef.rules.map((rule, ruleIndex) => (
+                                         <Card key={rule.id || ruleIndex} className="p-2 bg-background">
+                                             <div className="flex items-center gap-2">
+                                                 <Select value={rule.fieldId} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
+                                                    <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
+                                                    <SelectContent>
+                                                        {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                                                    </SelectContent>
+                                                 </Select>
+                                                  <Select value={rule.operator} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
+                                                    <SelectTrigger className="w-48"><SelectValue placeholder="Operator..."/></SelectTrigger>
+                                                    <SelectContent>
+                                                        {Object.entries(operatorLabels).map(([op, label]) => (
+                                                            <SelectItem key={op} value={op as ConditionalRuleOperator}>{label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                 </Select>
+                                                 <Input value={rule.value} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
+                                                 <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
+                                                     <Trash2 className="h-4 w-4"/>
+                                                 </Button>
+                                             </div>
+                                         </Card>
+                                     ))}
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
+                                        <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition
+                                    </Button>
+                                </div>
+                            </Card>
+                        )
+                      })}
+                      <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
+                        <PlusCircle className="mr-2 h-4 w-4"/> Add OR Group
+                      </Button>
+                    </div>
+
+                  <Separator />
+
                   <Button variant="outline" onClick={resetFilters}>
-                      <X className="mr-2 h-4 w-4" /> Reset Filters
+                      <X className="mr-2 h-4 w-4" /> Reset All Filters
                   </Button>
                 </div>
             </PopoverContent>

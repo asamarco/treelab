@@ -8,15 +8,15 @@
  */
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { TreeNode, Template, AttachmentInfo, XYChartData } from "@/lib/types";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { RenderWithLinks } from "./render-with-links";
 import { Icon } from "../icon";
-import { Download, Grid, Rows } from "lucide-react";
+import { Download, Grid, Rows, Crosshair } from "lucide-react";
 import { TreeNodeComponent } from "./tree-node";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -26,7 +26,10 @@ import type { WritableDraft } from "immer";
 import { Button } from "../ui/button";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
-
+import { useTreeContext } from "@/contexts/tree-context";
+import { useUIContext } from "@/contexts/ui-context";
+import { getConditionalStyle } from "./tree-node-utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface TreeNodeContentProps {
   node: TreeNode;
@@ -41,6 +44,9 @@ interface TreeNodeContentProps {
 
 export function TreeNodeContent({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange }: TreeNodeContentProps) {
   const { currentUser } = useAuthContext();
+  const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode } = useTreeContext();
+  const { setDialogState } = useUIContext();
+  const { toast } = useToast();
   const nodeData = node.data || {}; // Ensure node.data is an object
   const [imageViewModes, setImageViewModes] = useState<Record<string, 'carousel' | 'grid'>>({});
   const [containerWidths, setContainerWidths] = useState<Record<string, number>>({});
@@ -84,12 +90,33 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
   const attachmentFields = template.fields.filter((f) => f.type === 'attachment');
   const tableHeaderFields = template.fields.filter(f => f.type === 'table-header');
   const xyChartFields = template.fields.filter(f => f.type === 'xy-chart');
+  const queryFields = template.fields.filter(f => f.type === 'query');
   
   const getTableRowCount = () => {
     if (tableHeaderFields.length === 0) return 0;
     const firstColumnData = nodeData[tableHeaderFields[0].id];
     return Array.isArray(firstColumnData) ? firstColumnData.length : 0;
   };
+  
+  const queriesAndResults = useMemo(() => {
+    return queryFields.map(field => {
+        const queryDefinitions = nodeData[field.id];
+        if (!Array.isArray(queryDefinitions) || queryDefinitions.length === 0) {
+            return { field, results: null };
+        }
+
+        const combinedResults = new Map<string, TreeNode>();
+        
+        queryDefinitions.forEach((queryDef: QueryDefinition) => {
+            if (queryDef && queryDef.targetTemplateId) {
+                const results = findNodesByQuery(queryDef);
+                results.forEach(node => combinedResults.set(node.id, node));
+            }
+        });
+
+        return { field, results: Array.from(combinedResults.values()) };
+    });
+  }, [queryFields, nodeData, findNodesByQuery]);
 
   if (!isExpanded) {
     return null;
@@ -326,25 +353,104 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
             </div>
           </div>
         )}
+        
+        {queriesAndResults.map(({ field, results }) => {
+          if (!results) return null;
+          return (
+            <div key={field.id} className="mt-4 space-y-1 pt-2">
+              <p className="font-medium text-sm mb-1">{field.name}</p>
+              {results.length > 0 ? (
+                results.map(resultNode => {
+                  const resultTemplate = getTemplateById(resultNode.templateId);
+                  const { icon, color } = getConditionalStyle(resultNode, resultTemplate);
+                  return (
+                    <div key={resultNode.id} className="flex items-center justify-between gap-2 p-1.5 -ml-1.5 rounded-md hover:bg-accent group/queryresult">
+                        <div className="flex items-center gap-2 overflow-hidden flex-grow">
+                            <div
+                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={(e) => {
+                                e.stopPropagation();
+                                setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [resultNode.id] });
+                                }}
+                            >
+                                <Icon name={icon as any} className="h-4 w-4 shrink-0" style={{ color: color }} />
+                                <span className="font-medium text-sm truncate">{resultNode.name}</span>
+                            </div>
+                            <TooltipProvider>
+                                <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 shrink-0 opacity-0 group-hover/queryresult:opacity-100"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const nodeInfo = findNodeAndParent(resultNode.id);
+                                        if (nodeInfo) {
+                                        expandToNode(resultNode.id);
+                                        
+                                        const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
+                                        const instanceId = `${resultNode.id}_${primaryParentId}`;
+                                        setSelectedNodeIds([instanceId]);
+                                        
+                                        setDialogState({ 
+                                            isNodePreviewOpen: false, 
+                                            isNodeEditOpen: false,
+                                            isAddChildOpen: false,
+                                            isAddSiblingOpen: false,
+                                        });
+
+                                        requestAnimationFrame(() => {
+                                            const element = document.getElementById(`node-card-${instanceId}`);
+                                            element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        });
+                                        } else {
+                                            toast({
+                                                variant: 'destructive',
+                                                title: 'Node not found',
+                                                description: 'The target node could not be found in the current tree view.'
+                                            });
+                                        }
+                                    }}
+                                    >
+                                    <Crosshair className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Locate node in tree</p>
+                                </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground italic px-2 py-1">Query returned no results.</p>
+              )}
+            </div>
+          );
+        })}
+        
+        {node.children && node.children.length > 0 && (
+          <div className="children-container mt-4 space-y-1 pt-2" onClick={(e) => e.stopPropagation()}>
+              {node.children.map((childNode) => (
+                <div key={`${childNode.id}_${node.id}`}>
+                  <TreeNodeComponent
+                    node={childNode}
+                    level={level + 1}
+                    siblings={node.children}
+                    onSelect={onSelect}
+                    contextualParentId={node.id}
+                    overrideExpandedIds={overrideExpandedIds}
+                    onExpandedChange={onExpandedChange}
+                  />
+                  <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />
+                </div>
+              ))}
+          </div>
+        )}
       </div>
-      {node.children && node.children.length > 0 && (
-        <div className="children-container" onClick={(e) => e.stopPropagation()}>
-            {node.children.map((childNode) => (
-              <div key={`${childNode.id}_${node.id}`}>
-                <TreeNodeComponent
-                  node={childNode}
-                  level={level + 1}
-                  siblings={node.children}
-                  onSelect={onSelect}
-                  contextualParentId={node.id}
-                  overrideExpandedIds={overrideExpandedIds}
-                  onExpandedChange={onExpandedChange}
-                />
-                <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />
-              </div>
-            ))}
-        </div>
-      )}
     </CollapsibleContent>
   );
 }

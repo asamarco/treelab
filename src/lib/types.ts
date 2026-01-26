@@ -9,7 +9,7 @@ import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart";
+export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query";
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
@@ -47,6 +47,19 @@ export interface ConditionalRule {
   value: string;
   icon: string;
   color: string;
+}
+
+export interface QueryRule {
+  id: string;
+  fieldId: string;
+  operator: ConditionalRuleOperator;
+  value: string;
+}
+
+export interface QueryDefinition {
+  id: string;
+  targetTemplateId: string | null;
+  rules: QueryRule[];
 }
 
 export interface Template {
@@ -324,6 +337,7 @@ export interface UseTreeRootsResult {
   expandedNodeIds: string[];
   setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
   expandAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
+  expandToNode: (nodeId: string) => void;
   collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
   addRootNode: (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
   addChildNode: (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, "id" | "children">>, contextualParentId: string | null) => Promise<void>;
@@ -373,6 +387,7 @@ export interface UseTreeRootsResult {
   tree: TreeNode[];
   treeTitle: string;
   getTemplateById: (id: string) => Template | undefined;
+  findNodesByQuery: (query: QueryDefinition) => TreeNode[];
   exportNodesAsJson: (nodesToExport: TreeNode[], baseName: string) => void;
   exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
   exportNodesAsHtml: (elementId: string, nodes: TreeNode[], title: string) => void;

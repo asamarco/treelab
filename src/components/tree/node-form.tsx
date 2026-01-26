@@ -14,7 +14,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { TreeNode, Template, Field, AttachmentInfo, XYChartData } from "@/lib/types";
+import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -62,7 +62,7 @@ import {
 import { useTreeContext } from "@/contexts/tree-context";
 import { useAuthContext } from "@/contexts/auth-context";
 import { Combobox } from "../ui/combobox";
-import { generateNodeName, formatDate } from "@/lib/utils";
+import { generateNodeName, formatDate, generateClientSideId } from "@/lib/utils";
 import { Card, CardContent } from "../ui/card";
 import path from "path";
 import { Separator } from "../ui/separator";
@@ -98,6 +98,17 @@ const DraggableImage = ({ id, src, onRemove, onDoubleClick }: { id: string; src:
     );
 };
 
+const operatorLabels: Record<ConditionalRuleOperator, string> = {
+  equals: 'Equals',
+  not_equals: 'Not Equals',
+  contains: 'Contains',
+  not_contains: 'Does Not Contain',
+  is_not_empty: 'Is Not Empty',
+  is_empty: 'Is Empty',
+  greater_than: 'Greater Than',
+  less_than: 'Less Than',
+};
+
 
 export const NodeForm = ({
   node,
@@ -114,7 +125,7 @@ export const NodeForm = ({
   contextualParentId: string | null;
   isMultiEdit?: boolean;
 }) => {
-  const { tree, uploadAttachment, activeTree, findNodeAndParent, getSiblingOrderRange } = useTreeContext();
+  const { tree, uploadAttachment, activeTree, findNodeAndParent, getSiblingOrderRange, templates } = useTreeContext();
   const { setDialogState } = useUIContext();
   
   //console.log('[NodeForm] Rendering form for:', node?.name || 'New Node');
@@ -744,7 +755,7 @@ export const NodeForm = ({
                 You are editing {node?.id ? 1 : 'multiple'} nodes. Only the fields you fill out will be updated on the selected nodes.
             </div>
         )}
-        {template.fields.filter(f => f.type !== 'table-header' && f.type !== 'xy-chart').map((field) => (
+        {template.fields.filter(f => f.type !== 'table-header' && f.type !== 'xy-chart' && f.type !== 'query').map((field) => (
           <div key={field.id} className="space-y-2">
             <Label className="text-sm font-medium">{field.name}</Label>
             <div className="flex items-center gap-1">
@@ -754,6 +765,105 @@ export const NodeForm = ({
             </div>
           </div>
         ))}
+        {template.fields.filter(f => f.type === 'query').map(field => {
+            const queryDefs: QueryDefinition[] = Array.isArray(formData[field.id]) ? formData[field.id] : [];
+            
+            const handleQueryArrayChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
+                const newQueryDefs = [...queryDefs];
+                newQueryDefs[queryIndex] = { ...newQueryDefs[queryIndex], [key]: value };
+                setFormData({ ...formData, [field.id]: newQueryDefs });
+            };
+
+            const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, value: any) => {
+                const newQueryDefs = [...queryDefs];
+                const newRules = [...newQueryDefs[queryIndex].rules];
+                newRules[ruleIndex] = { ...newRules[ruleIndex], [key]: value, id: newRules[ruleIndex].id || generateClientSideId() };
+                handleQueryArrayChange(queryIndex, 'rules', newRules);
+            };
+
+            const addQueryGroup = () => {
+                const newQueryDefs = [...queryDefs, { id: generateClientSideId(), targetTemplateId: null, rules: [] }];
+                setFormData({ ...formData, [field.id]: newQueryDefs });
+            };
+            
+            const removeQueryGroup = (queryIndex: number) => {
+                const newQueryDefs = queryDefs.filter((_, index) => index !== queryIndex);
+                setFormData({ ...formData, [field.id]: newQueryDefs });
+            }
+
+            const addRule = (queryIndex: number) => {
+                const newRules = [...queryDefs[queryIndex].rules, { id: generateClientSideId(), fieldId: '', operator: 'equals', value: '' }];
+                handleQueryArrayChange(queryIndex, 'rules', newRules);
+            };
+
+            const removeRule = (queryIndex: number, ruleIndex: number) => {
+                const newRules = queryDefs[queryIndex].rules.filter((_, index) => index !== ruleIndex);
+                handleQueryArrayChange(queryIndex, 'rules', newRules);
+            };
+            
+            return (
+              <div key={field.id} className="space-y-2">
+                <Label className="text-sm font-medium">{field.name}</Label>
+                <div className="space-y-4">
+                  {queryDefs.map((queryDef, queryIndex) => {
+                    const targetTemplate = templates.find(t => t.id === queryDef.targetTemplateId);
+                    return (
+                        <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <Label>Search for nodes with template:</Label>
+                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
+                                    <Trash2 className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                            <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryArrayChange(queryIndex, 'targetTemplateId', val)}>
+                                <SelectTrigger><SelectValue placeholder="Select a template..."/></SelectTrigger>
+                                <SelectContent>
+                                    {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            
+                            {queryDef.targetTemplateId && (
+                                <div className="space-y-2">
+                                     <Label>Where...</Label>
+                                     {(queryDef.rules || []).map((rule: QueryRule, ruleIndex: number) => (
+                                         <Card key={rule.id || ruleIndex} className="p-2 bg-background">
+                                             <div className="flex items-center gap-2">
+                                                 <Select value={rule.fieldId} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)}>
+                                                    <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
+                                                    <SelectContent>
+                                                        {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                                                    </SelectContent>
+                                                 </Select>
+                                                  <Select value={rule.operator} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
+                                                    <SelectTrigger className="w-48"><SelectValue placeholder="Operator..."/></SelectTrigger>
+                                                    <SelectContent>
+                                                        {Object.entries(operatorLabels).map(([op, label]) => (
+                                                            <SelectItem key={op} value={op}>{label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                 </Select>
+                                                 <Input value={rule.value} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
+                                                 <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
+                                                     <Trash2 className="h-4 w-4"/>
+                                                 </Button>
+                                             </div>
+                                         </Card>
+                                     ))}
+                                    <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)}>
+                                        <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition
+                                    </Button>
+                                </div>
+                            )}
+                        </Card>
+                    )
+                  })}
+                  <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
+                    <PlusCircle className="mr-2 h-4 w-4"/> Add OR Condition
+                  </Button>
+                </div>
+              </div>
+            )
+        })}
         {template.fields.filter(f => f.type === 'xy-chart').map(field => {
             const chartData: XYChartData = {
                 points: [],
@@ -876,11 +986,3 @@ export const NodeForm = ({
     </form>
   );
 };
-
-    
-
-
-
-
-
-

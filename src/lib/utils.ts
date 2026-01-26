@@ -13,7 +13,7 @@
  */
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { TreeNode, Template, TreeFile } from "./types";
+import { TreeNode, Template, TreeFile, ConditionalRuleOperator } from "./types";
 import { format, parse, isValid, parseISO } from "date-fns";
 import path from 'path';
 
@@ -176,3 +176,32 @@ export const getContextualOrder = (node: TreeNode, siblings: readonly TreeNode[]
   const finalPIndex = pIndex === -1 ? 0 : pIndex; 
   return (finalPIndex !== -1 && node.order && node.order.length > finalPIndex) ? node.order[finalPIndex] : (fallbackOrder !== -1 ? fallbackOrder : 0);
 }
+
+export const evaluateCondition = (
+  operator: ConditionalRuleOperator,
+  fieldValue: any,
+  ruleValue: string
+): boolean => {
+  const fv = String(fieldValue ?? '').toLowerCase();
+  const rv = ruleValue.toLowerCase();
+
+  switch (operator) {
+    case 'equals': return fv === rv;
+    case 'not_equals': return fv !== rv;
+    case 'contains': return fv.includes(rv);
+    case 'not_contains': return !fv.includes(rv);
+    case 'is_not_empty': return fv.length > 0;
+    case 'is_empty': return fv.length === 0;
+    case 'greater_than': {
+      const numFv = parseFloat(fv);
+      const numRv = parseFloat(rv);
+      return !isNaN(numFv) && !isNaN(numRv) && numFv > numRv;
+    }
+    case 'less_than': {
+      const numFv = parseFloat(fv);
+      const numRv = parseFloat(rv);
+      return !isNaN(numFv) && !isNaN(numRv) && numFv < numRv;
+    }
+    default: return false;
+  }
+};

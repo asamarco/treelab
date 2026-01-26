@@ -37,8 +37,10 @@ import {
     Command,
     UseTreeRootsResult,
     TreeContextType,
+    QueryDefinition,
+    ConditionalRuleOperator,
 } from '@/lib/types';
-import { generateJsonForExport, getContextualOrder, generateClientSideId } from '@/lib/utils';
+import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
 import { HtmlExportView } from "@/components/tree/html-export-view";
 import { 
@@ -232,6 +234,46 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   }, [allTrees, currentUser, initialTree]);
 
   const activeTree = allTrees.find((t) => t.id === activeTreeId);
+
+  const getTemplateById = useCallback(
+    (id: string): Template | undefined => {
+      return activeTree?.templates?.find((t) => t.id === id);
+    },
+    [activeTree]
+  );
+  
+  const findNodesByQuery = useCallback((query: QueryDefinition): TreeNode[] => {
+    if (!activeTree || !query || !query.targetTemplateId) return [];
+
+    const targetTemplate = getTemplateById(query.targetTemplateId);
+    if (!targetTemplate) return [];
+
+    const results: TreeNode[] = [];
+    const allNodes: TreeNode[] = [];
+
+    const flatten = (nodes: TreeNode[]) => {
+        for (const node of nodes) {
+            allNodes.push(node);
+            if (node.children) {
+                flatten(node.children);
+            }
+        }
+    };
+    flatten(activeTree.tree);
+
+    for (const node of allNodes) {
+        if (node.templateId === query.targetTemplateId) {
+            const matches = query.rules.every(rule => {
+                const fieldValue = (node.data || {})[rule.fieldId];
+                return evaluateCondition(rule.operator, fieldValue, rule.value);
+            });
+            if (matches) {
+                results.push(node);
+            }
+        }
+    }
+    return results;
+  }, [activeTree, getTemplateById]);
 
   const reloadAllTrees = useCallback(async () => {
     if (!currentUser) return;
@@ -878,6 +920,40 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
   }, [activeTreeId, activeTree?.expandedNodeIds, setAllTrees, currentUser]);
 
+  const expandToNode = useCallback((nodeId: string) => {
+    if (!activeTree) return;
+    const pathToExpand: string[] = [];
+    let currentId: string | null = nodeId;
+
+    // We walk up the tree from the target node to the root.
+    while (currentId) {
+        const nodeInfo = findNodeAndParent(currentId, activeTree.tree);
+        if (!nodeInfo) break; // Should not happen in a consistent tree
+
+        const parent = nodeInfo.parent;
+        // If there's a parent, we need to find its instance ID to ensure it's expanded.
+        if (parent) {
+            // To construct the parent's instance ID, we need ITS parent (the grandparent).
+            // This assumes a single primary path for clones, which is acceptable for this feature.
+            const grandParentInfo = findNodeAndParent(parent.id, activeTree.tree);
+            const grandParentId = grandParentInfo?.parent?.id || 'root';
+            const parentInstanceId = `${parent.id}_${grandParentId}`;
+            pathToExpand.unshift(parentInstanceId); // Add to the front to maintain order from root down.
+        }
+        // Move up to the next parent.
+        currentId = parent ? parent.id : null;
+    }
+    
+    if (pathToExpand.length > 0) {
+        setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+            const idSet = new Set(currentIds);
+            pathToExpand.forEach(id => idSet.add(id));
+            // No need to check if it's already there, Set handles it.
+            return Array.from(idSet);
+        }, false); // This is a view change, not undoable.
+    }
+  }, [activeTree, findNodeAndParent, setExpandedNodeIds]);
+
   const expandAllFromNode = useCallback((nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
     if (!activeTree || nodesToExpand.length === 0) return;
     
@@ -1026,13 +1102,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const batchUpdateNodeData = async (instanceIds: string[], data: Record<string, any>) => {
     await batchUpdateNodesDataAction(actionContext, instanceIds, data);
   };
-  
-  const getTemplateById = useCallback(
-    (id: string): Template | undefined => {
-      return activeTree?.templates?.find((t) => t.id === id);
-    },
-    [activeTree]
-  );
   
   const exportNodesAsJson = (nodesToExport: TreeNode[], baseName: string) => {
     if (!activeTree || nodesToExport.length === 0) return;
@@ -1227,6 +1296,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     expandedNodeIds: activeTree?.expandedNodeIds ?? [],
     setExpandedNodeIds,
     expandAllFromNode,
+    expandToNode,
     collapseAllFromNode,
     addRootNode,
     addChildNode,
@@ -1279,6 +1349,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     tree: activeTree?.tree ?? [],
     treeTitle: activeTree?.title ?? "",
     getTemplateById,
+    findNodesByQuery,
     exportNodesAsJson,
     exportNodesAsArchive,
     exportNodesAsHtml,
