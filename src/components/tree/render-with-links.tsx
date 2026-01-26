@@ -20,6 +20,7 @@ import { Button } from '../ui/button';
 import parseHtml, { domToReact, attributesToProps, DOMNode } from 'html-react-parser';
 import { AuthContext } from '@/contexts/auth-context';
 import { formatDate } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface RenderWithLinksProps {
@@ -37,12 +38,57 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
   const treeContext = useContext(TreeContext);
   const authContext = useContext(AuthContext);
   const currentUser = authContext?.currentUser;
+  const { toast } = useToast();
 
   if (!text) return null;
 
-  const handleNodeLinkClick = (e: React.MouseEvent, nodeId: string) => {
+  const handleJumpToNode = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault();
-    uiContext?.setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [nodeId] });
+    e.stopPropagation();
+
+    if (!treeContext || !uiContext) return;
+
+    const { findNodeAndParent, expandToNode, setSelectedNodeIds } = treeContext;
+    const { setDialogState } = uiContext;
+
+    const nodeInfo = findNodeAndParent(nodeId);
+    if (nodeInfo) {
+        expandToNode(nodeId);
+        
+        const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
+        const instanceId = `${nodeInfo.node.id}_${primaryParentId}`;
+        setSelectedNodeIds([instanceId]);
+        
+        // Close any open dialogs that might be obscuring the view
+        setDialogState({ 
+            isNodePreviewOpen: false, 
+            isNodeEditOpen: false,
+            isAddChildOpen: false,
+            isAddSiblingOpen: false,
+            isAddNodeOpen: false,
+            isCommitOpen: false,
+            isHistoryOpen: false,
+        });
+
+        // Allow the UI to update before scrolling
+        requestAnimationFrame(() => {
+            const element = document.getElementById(`node-card-${instanceId}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              // Fallback if the element isn't found immediately
+              setTimeout(() => {
+                document.getElementById(`node-card-${instanceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 100);
+            }
+        });
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Node not found',
+            description: 'The target node could not be found in the current tree view.'
+        });
+    }
   };
   
   const nodeData = node.data || {};
@@ -62,7 +108,7 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
               const nodeName = linkedNodeInfo ? linkedNodeInfo.node.name : 'Invalid Link';
               // If context is not available (e.g., during static export), render as plain text.
               if (!uiContext || !treeContext) return <span key={index} className="font-semibold">{nodeName}</span>;
-              return <Button key={index} variant="link" className="p-0 h-auto" onClick={(e) => handleNodeLinkClick(e, nodeId)}>{nodeName}</Button>;
+              return <Button key={index} variant="link" className="p-0 h-auto" onClick={(e) => handleJumpToNode(e, nodeId)}>{nodeName}</Button>;
             }
             if (part.match(/https?:\/\//)) {
               return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="underline">{part}</a>;
@@ -159,7 +205,7 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
             const linkedNodeInfo = treeContext?.findNodeAndParent(nodeId);
             const nodeName = linkedNodeInfo ? linkedNodeInfo.node.name : 'Invalid Link';
             if (!uiContext || !treeContext) return <span key={index} className="font-semibold">{nodeName}</span>;
-            return <Button key={index} variant="link" className="p-0 h-auto" onClick={(e) => handleNodeLinkClick(e, nodeId)}>{nodeName}</Button>;
+            return <Button key={index} variant="link" className="p-0 h-auto" onClick={(e) => handleJumpToNode(e, nodeId)}>{nodeName}</Button>;
           }
           if (part.match(/https?:\/\//)) {
             return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="underline">{part}</a>;
