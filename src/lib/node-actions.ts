@@ -684,10 +684,6 @@ export async function deleteNodesAction(
   const treeToSearch = sourceTree || activeTree?.tree;
   if (!treeToSearch || instanceIds.length === 0) return;
 
-  // 1. PRE-CAPTURE STEP: 
-  // Create a deep-copy map of EVERY node in the tree BEFORE we start looping.
-  // This ensures clones captured later in the loop haven't been mutated by 
-  // earlier iterations of the same delete command.
   const preMutationMap = new Map<string, TreeNode>();
   const flattenOriginal = (nodes: TreeNode[]) => {
       nodes.forEach(n => {
@@ -707,9 +703,7 @@ export async function deleteNodesAction(
   for (const { nodeId, parentId } of nodesToDelete) {
       const nodeInfo = findNodeAndParent(nodeId, treeToSearch);
       if (nodeInfo) {
-          // Use the preMutationMap to get the "Clean" version of the node
           const cleanNode = preMutationMap.get(nodeId) || nodeInfo.node;
-          
           const allDescendantsAndSelf: TreeNode[] = [];
           const collect = (n: TreeNode) => {
               allDescendantsAndSelf.push(JSON.parse(JSON.stringify(n)));
@@ -720,7 +714,6 @@ export async function deleteNodesAction(
           originalState.push({
               node: JSON.parse(JSON.stringify(cleanNode)),
               parent: nodeInfo.parent ? JSON.parse(JSON.stringify(nodeInfo.parent)) : null,
-              // Siblings must also come from the clean snapshot
               originalSiblings: JSON.parse(JSON.stringify(
                   nodeInfo.parent 
                       ? (preMutationMap.get(nodeInfo.parent.id)?.children || []) 
@@ -752,6 +745,7 @@ export async function deleteNodesAction(
           flatten(treeToUpdate.tree);
 
           const parentsToResequence = new Set<string | null>();
+          const nodesToCheckForOrphans = new Set<string>();
 
           for (const { nodeId, parentId } of nodesToDelete) {
               const node = allNodesMap.get(nodeId);
@@ -764,10 +758,26 @@ export async function deleteNodesAction(
                   node.parentIds.splice(idx, 1);
                   node.order.splice(idx, 1);
               }
+              nodesToCheckForOrphans.add(nodeId);
           }
+
+          // FIX: If parentIds is empty, we MUST remove it from the map 
+          // or reconstructTree will assume it's a root node.
+          nodesToCheckForOrphans.forEach(id => {
+            const node = allNodesMap.get(id);
+            if (node && (!node.parentIds || node.parentIds.length === 0)) {
+               // Also remove its descendants from the map to prevent "ghost" roots
+               const removeRecursive = (n: WritableDraft<TreeNode>) => {
+                 allNodesMap.delete(n.id);
+                 if (n.children) n.children.forEach(removeRecursive);
+               };
+               removeRecursive(node);
+            }
+          });
 
           treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
           
+          // Re-map for resequencing
           allNodesMap.clear();
           flatten(treeToUpdate.tree);
 
@@ -777,7 +787,6 @@ export async function deleteNodesAction(
           });
       },
       undo: async (timestamp?: string) => {
-        // 1. Guard check for the ID
         if (!activeTreeId) return;
     
         for (const state of command.originalState) {
@@ -796,9 +805,7 @@ export async function deleteNodesAction(
     
         const parents = new Set<string | null>();
         nodesToDelete.forEach(n => parents.add(n.parentId));
-        
         for (const pId of parents) {
-            // TypeScript now knows activeTreeId is a string here
             await resequenceSiblings(pId, activeTreeId);
         }
     },
@@ -815,12 +822,10 @@ export async function deleteNodesAction(
           };
           flatten(treeToUpdate.tree);
 
-          // Restore clean snapshots to the map
           (cmd as DeleteNodesCommand).originalState.forEach(state => {
               state.allDeletedNodes.forEach(node => {
                   allNodesMap.set(node.id, JSON.parse(JSON.stringify(node)));
               });
-              // Ensure siblings are reverted to original sequential state
               state.originalSiblings.forEach(sibling => {
                   allNodesMap.set(sibling.id, JSON.parse(JSON.stringify(sibling)));
               });
@@ -828,7 +833,6 @@ export async function deleteNodesAction(
 
           treeToUpdate.tree = reconstructTree(Array.from(allNodesMap.values()));
 
-          // Final Resequence to fix clashing
           allNodesMap.clear();
           flatten(treeToUpdate.tree);
           const parentsToFix = new Set<string | null>();
