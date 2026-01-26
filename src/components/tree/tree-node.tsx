@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 interface TreeNodeProps {
@@ -64,6 +65,7 @@ export function TreeNodeComponent({
 
   const { dialogState, setDialogState, ignoreClicksUntil } = useUIContext();
   const nodeCardRef = useRef<HTMLDivElement | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setIsMounted(true);
@@ -102,7 +104,7 @@ export function TreeNodeComponent({
         nodeId: node.id,
         parentId: contextualParentId,
     },
-    disabled: !isMounted
+    disabled: !isMounted || isMobile
   });
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
@@ -203,7 +205,8 @@ export function TreeNodeComponent({
   return (
     <div
       className={cn(
-        "relative pl-6 transition-opacity",
+        "relative transition-opacity",
+        isMobile ? "pl-[5px]" : "pl-6",
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
@@ -214,7 +217,8 @@ export function TreeNodeComponent({
             "absolute left-0 top-[2.5rem] h-[calc(100%-2.5rem)] w-px bg-border -translate-x-3",
             "group-last/treenode:hidden",
             (isExpanded || !node.children || node.children.length === 0) && "hidden",
-            isCompactView && "hidden"
+            isCompactView && "hidden",
+            isMobile && "hidden"
         )}
       />
       <Card
@@ -246,7 +250,7 @@ export function TreeNodeComponent({
           handleOpenModal('edit');
         }}
       >
-        <CardContent className="p-1">
+        <CardContent className={cn("p-1", isMobile && "p-0")}>
           <Collapsible open={isExpanded}>
             <TreeNodeHeader
               node={node}
@@ -284,3 +288,5 @@ export function TreeNodeComponent({
     </div>
   );
 }
+
+    

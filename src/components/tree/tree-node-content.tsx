@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -30,6 +28,8 @@ import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
 import { getConditionalStyle } from "./tree-node-utils";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TreeNodeContentProps {
   node: TreeNode;
@@ -46,6 +46,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
   const { currentUser } = useAuthContext();
   const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode } = useTreeContext();
   const { setDialogState } = useUIContext();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const nodeData = node.data || {}; // Ensure node.data is an object
   const [imageViewModes, setImageViewModes] = useState<Record<string, 'carousel' | 'grid'>>({});
@@ -124,7 +125,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
   return (
     <CollapsibleContent>
-      <div className="pt-2 pl-6" onClick={(e) => e.stopPropagation()}>
+      <div className={cn("pt-2", isMobile ? "pl-1 pt-1" : "pl-6")} onClick={(e) => e.stopPropagation()}>
         {template.bodyTemplate && (
           <div className="text-sm text-foreground/90 whitespace-pre-wrap pt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
             <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
@@ -201,7 +202,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
             >
               <div className="flex justify-between items-center mb-1">
                  <p className="font-medium text-sm">{field.name}</p>
-                 {doesOverflow && images.length > 1 && (
+                 {doesOverflow && images.length > 1 && !isMobile && (
                     <TooltipProvider>
                       <div className="flex items-center gap-1 rounded-full p-1 bg-muted">
                           <Tooltip>
@@ -225,7 +226,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                  )}
               </div>
               
-              {finalViewMode === 'carousel' ? (
+              {finalViewMode === 'carousel' && !isMobile ? (
                  <div className="mx-auto" style={{ maxWidth: '100%' }}>
                   <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
                     <CarouselContent>
@@ -242,7 +243,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                         <img 
                                           src={src} 
                                           alt={`${field.name} ${index + 1}`} 
-                                          className="object-contain w-auto h-full"
+                                          className="object-contain w-full h-full"
                                           style={{ height: `${height}px` }} 
                                           onDoubleClick={(e) => handleImageDoubleClick(e, src)} 
                                           onLoad={(e) => {
@@ -264,27 +265,21 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2 items-center justify-center">
-                    {images.map((src, index) => {
-                        const dims = imageDimensions[src];
-                        let height = maxHeight;
-                        if (dims && dims.height < maxHeight) {
-                          height = dims.height;
-                        }
-                        return (
-                            <div key={index} className="flex items-center justify-center" style={{ height: `${height}px` }}>
-                                 <img 
-                                    src={src} 
-                                    alt={`${field.name} ${index + 1}`} 
-                                    className="object-contain max-w-full h-full rounded-md"
-                                    onDoubleClick={(e) => handleImageDoubleClick(e, src)}
-                                    onLoad={(e) => {
-                                      const img = e.currentTarget;
-                                      setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
-                                    }}
-                                  />
-                            </div>
-                        );
-                    })}
+                  {images.map((src, index) => (
+                    <div key={index} className="flex items-center justify-center">
+                        <img
+                          src={src}
+                          alt={`${field.name} ${index + 1}`}
+                          className="object-contain max-w-full h-auto rounded-md"
+                          style={{ maxHeight: `${maxHeight}px` }}
+                          onDoubleClick={(e) => handleImageDoubleClick(e, src)}
+                          onLoad={(e) => {
+                              const img = e.currentTarget;
+                              setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
+                          }}
+                        />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

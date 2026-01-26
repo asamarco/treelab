@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview
  * This component renders the header section of the main tree page, including
@@ -12,7 +11,7 @@ import {
     Edit, Download, FileJson, FileText, ChevronDown, Rows, Columns, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
     CheckCircle, AlertCircle, PlusCircle, Undo2, FileCode, Check,
-    Redo2, ListOrdered, Users, RefreshCcw
+    Redo2, ListOrdered, Users, RefreshCcw, Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/components/../contexts/auth-context";
@@ -26,8 +25,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TreePageHeaderProps {
     tree: TreeFile;
@@ -65,6 +70,7 @@ export function TreePageHeader({
         setActiveTreeId,
     } = useTreeContext();
     const { isCompactView, setIsCompactView, showNodeOrder, setShowNodeOrder, setDialogState } = useUIContext();
+    const isMobile = useIsMobile();
 
     const { toast } = useToast();
     const [isSyncing, setIsSyncing] = useState(false);
@@ -147,7 +153,9 @@ export function TreePageHeader({
                   </TooltipProvider>
                 )}
             </div>
-            <div className="flex flex-row flex-wrap gap-2 w-full md:w-auto justify-end">
+            
+            {/* Desktop Header Actions */}
+            <div className="hidden md:flex flex-row flex-wrap gap-2 w-full md:w-auto justify-end">
                <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>

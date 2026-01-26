@@ -43,6 +43,7 @@ import { getConditionalStyle, hasAttachments } from "./tree-node-utils";
 import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { WritableDraft } from "immer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TreeNodeHeaderProps {
   node: TreeNode;
@@ -81,6 +82,7 @@ export function TreeNodeHeader({
   const { toast } = useToast();
   const { currentUser } = useAuthContext();
   const { isCompactView, showNodeOrder, setDialogState } = useUIContext();
+  const isMobile = useIsMobile();
   const {
     clipboard, setClipboard, findNodeAndParent, setExpandedNodeIds, expandAllFromNode,
     collapseAllFromNode, updateNode, deleteNode, moveNodeOrder, moveNodes,
@@ -310,18 +312,19 @@ export function TreeNodeHeader({
           className={cn(
             "cursor-grab shrink-0 no-print read-only-hidden transition-opacity opacity-0 group-hover/treenode:opacity-100", 
             isCompactView ? 'h-6 w-6' : 'h-8 w-8',
+            isMobile && 'hidden'
           )}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
           {...dndAttributes}
           {...dndListeners}
         >
-          <GripVertical className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4')} />
+          <GripVertical className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4', isMobile && 'h-6 w-6')} />
         </Button>
         <div
           className="flex-1"
         >
-          <div className="flex items-center gap-1">
+          <div className={cn("flex items-center gap-1", isMobile && "py-2 min-h-[3.5rem]")}>
             <CollapsibleTrigger asChild>
               <button
                 onClick={(e) => {
@@ -333,14 +336,14 @@ export function TreeNodeHeader({
                     });
                 }}
                 aria-label="Toggle node"
-                className={cn("p-1 rounded-md hover:bg-accent no-print", isCompactView && 'p-0.5', !hasContentToToggle && "invisible")}
+                className={cn("p-1 rounded-md hover:bg-accent no-print", isCompactView && 'p-0.5', !hasContentToToggle && "invisible", isMobile && "p-2")}
               >
-                <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 shrink-0 no-print", isCompactView && 'h-3 w-3', isExpanded && "rotate-90")} />
+                <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 shrink-0 no-print", isCompactView && 'h-3 w-3', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
               </button>
             </CollapsibleTrigger>
-            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0", isCompactView && "h-4 w-4 mr-1")} style={{ color: color || "hsl(var(--primary))" }} />
+            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0", isCompactView && "h-4 w-4 mr-1", isMobile && "h-6 w-6 mr-3")} style={{ color: color || "hsl(var(--primary))" }} />
             <div className="flex-grow flex items-center gap-1">
-              <p className={cn("font-semibold", isCompactView && "text-sm")}>
+              <p className={cn("font-semibold", isCompactView && "text-sm", isMobile && "text-base")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
                 {node.name}
               </p>
@@ -360,50 +363,52 @@ export function TreeNodeHeader({
                  </TooltipProvider>
               )}
               {nodeHasAttachments && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />)}
-              <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control">
-                <TooltipProvider>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
-                            <Eye className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Preview Node (v)</p></TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
-                            <Edit className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
-                    <div className="w-2"></div>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } else { expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } }} disabled={!node.children || node.children.length === 0}>
-                            <ChevronsUpDown className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
-                            <ArrowUp className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Move Up (i)</p></TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
-                            <ArrowDown className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Move Down (k)</p></TooltipContent></Tooltip>
-                    <div className="w-2"></div>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
-                            <CornerDownRight className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Add Child (Enter)</p></TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
-                            <Plus className="h-3 w-3" />
-                        </Button>
-                    </TooltipTrigger><TooltipContent><p>Add Sibling (+)</p></TooltipContent></Tooltip>
-                </TooltipProvider>
-              </div>
+              {!isMobile && (
+                <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control">
+                  <TooltipProvider>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
+                              <Eye className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>Preview Node (v)</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
+                              <Edit className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
+                      <div className="w-2"></div>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } else { expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } }} disabled={!node.children || node.children.length === 0}>
+                              <ChevronsUpDown className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
+                              <ArrowUp className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>Move Up (i)</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
+                              <ArrowDown className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>Move Down (k)</p></TooltipContent></Tooltip>
+                      <div className="w-2"></div>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
+                              <CornerDownRight className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>Add Child (Enter)</p></TooltipContent></Tooltip>
+                      <Tooltip><TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
+                              <Plus className="h-3 w-3" />
+                          </Button>
+                      </TooltipTrigger><TooltipContent><p>Add Sibling (+)</p></TooltipContent></Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
             </div>
           </div>
-          {!isExpanded && node.children && node.children.length > 0 && !isCompactView && (
+          {!isExpanded && node.children && node.children.length > 0 && !isCompactView && !isMobile && (
             <div className="pl-6 pt-1 flex items-center gap-2 overflow-hidden text-muted-foreground text-xs">
                 {node.children.slice(0, 5).map((child, index) => {
                     const childTemplate = getTemplateById(child.templateId);
@@ -422,17 +427,52 @@ export function TreeNodeHeader({
             </div>
            )}
         </div>
-        <div className="flex items-center ml-auto read-only-control" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center ml-auto pl-2 read-only-control" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
           <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className={cn("h-7 w-7 transition-colors no-print", isCompactView && "h-6 w-6")} onClick={(e) => { e.stopPropagation(); updateNode(node.id, { isStarred: !node.isStarred }); }}>
-                        <Star className={cn("h-4 w-4 no-print", node.isStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground/50 hover:text-muted-foreground")} />
+                    <Button variant="ghost" size="icon" className={cn("h-7 w-7 transition-colors no-print", isCompactView && "h-6 w-6", isMobile && "h-10 w-10")} onClick={(e) => { e.stopPropagation(); updateNode(node.id, { isStarred: !node.isStarred }); }}>
+                        <Star className={cn("h-4 w-4 no-print", node.isStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground/50 hover:text-muted-foreground", isMobile && "h-5 w-5")} />
                     </Button>
                 </TooltipTrigger>
                 <TooltipContent><p>{node.isStarred ? 'Unstar' : 'Star'} (*)</p></TooltipContent>
               </Tooltip>
           </TooltipProvider>
+           {isMobile && (
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className={cn("h-7 w-7", isCompactView && "h-6 w-6", isMobile && "h-10 w-10")}>
+                          <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
+                          <Eye className="mr-2 h-4 w-4" /> Preview
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
+                          <CornerDownRight className="mr-2 h-4 w-4" /> Add Child
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
+                          <Plus className="mr-2 h-4 w-4" /> Add Sibling
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
+                          <ArrowUp className="mr-2 h-4 w-4" /> Move Up
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
+                          <ArrowDown className="mr-2 h-4 w-4" /> Move Down
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } else { expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } }} disabled={!node.children || node.children.length === 0}>
+                          <ChevronsUpDown className="mr-2 h-4 w-4" /> {isExpanded ? 'Collapse All' : 'Expand All'}
+                      </DropdownMenuItem>
+                  </DropdownMenuContent>
+              </DropdownMenu>
+          )}
         </div>
       </div>
       {nodesForHtmlExport && (

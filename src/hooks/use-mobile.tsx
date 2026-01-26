@@ -13,6 +13,22 @@ import * as React from "react"
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {
-  // Return false to always use desktop mode as requested.
-  return false;
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    }
+
+    // Initial check
+    checkIsMobile()
+
+    // Listen for resize events
+    window.addEventListener("resize", checkIsMobile)
+
+    // Cleanup
+    return () => window.removeEventListener("resize", checkIsMobile)
+  }, [])
+
+  return isMobile
 }

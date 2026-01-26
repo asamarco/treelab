@@ -23,12 +23,12 @@ import { getSession } from './session';
 
 
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
 }
 
 export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
@@ -56,8 +56,8 @@ export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
 // Helper to convert a Mongoose doc to a plain object, ensuring it's serializable.
 const toPlainObject = (doc: any): any => {
     if (!doc) return null;
-    const obj = doc.toObject ? doc.toObject({getters: true, virtuals: true}) : doc;
-    
+    const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
+
     const plain: any = { id: obj._id ? obj._id.toString() : obj.id };
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
@@ -70,252 +70,252 @@ const toPlainObject = (doc: any): any => {
 // --- TreeFile Functions (MongoDB) ---
 
 export async function createTreeFile(treeFile: Omit<TreeFile, 'tree' | 'id'>, initialNodes: Omit<TreeNode, 'id' | 'children' | '_id'>[]): Promise<TreeFile> {
-  const session = await getSession();
-  if (!session?.userId) throw new Error("Authentication required.");
-  if (treeFile.userId !== session.userId) throw new Error("Authorization denied.");
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+    if (treeFile.userId !== session.userId) throw new Error("Authorization denied.");
 
-  await connectToDatabase();
-  try {
-    const { id, _id, nodes, rootNodeIds, ...rest } = treeFile as any;
-    const dataWithCleanedExpandedIds = { ...rest, expandedNodeIds: [] };
-    const newTreeFile = new TreeModel(dataWithCleanedExpandedIds);
-    const savedTreeFile = await newTreeFile.save();
-    
-    if (initialNodes && initialNodes.length > 0) {
-      const nodesToCreate = await Promise.all(initialNodes.map(async (node: Omit<TreeNode, 'id' | 'children' | '_id'>) => ({
-        ...node,
-        name: await encrypt(node.name), // Encrypt name
-        data: await encrypt(node.data), // Encrypt data
-        treeId: savedTreeFile.id,
-      })));
-      await TreeNodeModel.insertMany(nodesToCreate);
+    await connectToDatabase();
+    try {
+        const { id, _id, nodes, rootNodeIds, ...rest } = treeFile as any;
+        const dataWithCleanedExpandedIds = { ...rest, expandedNodeIds: [] };
+        const newTreeFile = new TreeModel(dataWithCleanedExpandedIds);
+        const savedTreeFile = await newTreeFile.save();
+
+        if (initialNodes && initialNodes.length > 0) {
+            const nodesToCreate = await Promise.all(initialNodes.map(async (node: Omit<TreeNode, 'id' | 'children' | '_id'>) => ({
+                ...node,
+                name: await encrypt(node.name), // Encrypt name
+                data: await encrypt(node.data), // Encrypt data
+                treeId: savedTreeFile.id,
+            })));
+            await TreeNodeModel.insertMany(nodesToCreate);
+        }
+
+        console.log(`INFO: Created tree '${savedTreeFile.title}' (ID: ${savedTreeFile.id}) and initial nodes in DB`);
+
+        const treeNodes = await loadTreeNodes(savedTreeFile.id);
+
+        const plainTreeFile = toPlainObject(savedTreeFile);
+        return { ...plainTreeFile, tree: treeNodes };
+
+    } catch (error) {
+        console.error("Error creating tree file:", error);
+        throw error;
     }
-    
-    console.log(`INFO: Created tree '${savedTreeFile.title}' (ID: ${savedTreeFile.id}) and initial nodes in DB`);
-    
-    const treeNodes = await loadTreeNodes(savedTreeFile.id);
-    
-    const plainTreeFile = toPlainObject(savedTreeFile);
-    return { ...plainTreeFile, tree: treeNodes };
-
-  } catch (error) {
-    console.error("Error creating tree file:", error);
-    throw error;
-  }
 }
 
-export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & {id: string}, timestamp?: string): Promise<string> {
-  const session = await getSession();
-  if (!session?.userId) throw new Error("Authentication required.");
+export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & { id: string }, timestamp?: string): Promise<string> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
 
-  await connectToDatabase();
-  
-  const existingTree = await TreeModel.findById(treeFile.id).lean<Omit<TreeFile, 'tree'>>();
-  if (!existingTree) throw new Error("Tree not found.");
-  if (existingTree.userId.toString() !== session.userId) throw new Error("Authorization denied.");
-  
-  const { id, ...treeData } = treeFile;
-  const newTimestamp = timestamp || new Date().toISOString();
+    await connectToDatabase();
 
-  // Check if the only update is for expandedNodeIds
-  const updateKeys = Object.keys(treeData);
-  const isOnlyViewChange = updateKeys.length === 1 && updateKeys[0] === 'expandedNodeIds';
-  
-  const updatePayload: any = { $set: { ...treeData } };
-  
-  // Only update the 'updatedAt' timestamp if it's not just a view change
-  if (!isOnlyViewChange) {
-      updatePayload.$set.updatedAt = newTimestamp;
-  }
+    const existingTree = await TreeModel.findById(treeFile.id).lean<Omit<TreeFile, 'tree'>>();
+    if (!existingTree) throw new Error("Tree not found.");
+    if (existingTree.userId.toString() !== session.userId) throw new Error("Authorization denied.");
 
-  // If gitSync is explicitly not present in the update data, it means we are unlinking.
-  if (!('gitSync' in treeData) && updateKeys.length > 1) { // Ensure it's not part of a larger update that includes gitSync
-    updatePayload.$unset = { gitSync: 1 };
-  }
-  
-  await TreeModel.findByIdAndUpdate(id, updatePayload).exec();
-  
-  if (!isOnlyViewChange) {
-      console.log(`INFO: Saved tree meta '${treeFile.title}' (ID: ${treeFile.id}) to DB with new timestamp.`);
-  } else {
-      console.log(`INFO: Saved expanded nodes for tree (ID: ${treeFile.id}) without updating timestamp.`);
-  }
+    const { id, ...treeData } = treeFile;
+    const newTimestamp = timestamp || new Date().toISOString();
 
-  return newTimestamp;
+    // Check if the only update is for expandedNodeIds
+    const updateKeys = Object.keys(treeData);
+    const isOnlyViewChange = updateKeys.length === 1 && updateKeys[0] === 'expandedNodeIds';
+
+    const updatePayload: any = { $set: { ...treeData } };
+
+    // Only update the 'updatedAt' timestamp if it's not just a view change
+    if (!isOnlyViewChange) {
+        updatePayload.$set.updatedAt = newTimestamp;
+    }
+
+    // If gitSync is explicitly not present in the update data, it means we are unlinking.
+    if (!('gitSync' in treeData) && updateKeys.length > 1) { // Ensure it's not part of a larger update that includes gitSync
+        updatePayload.$unset = { gitSync: 1 };
+    }
+
+    await TreeModel.findByIdAndUpdate(id, updatePayload).exec();
+
+    if (!isOnlyViewChange) {
+        console.log(`INFO: Saved tree meta '${treeFile.title}' (ID: ${treeFile.id}) to DB with new timestamp.`);
+    } else {
+        console.log(`INFO: Saved expanded nodes for tree (ID: ${treeFile.id}) without updating timestamp.`);
+    }
+
+    return newTimestamp;
 }
 
 export async function updateTreeOrder(updates: { id: string; order: number }[]) {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     if (!Array.isArray(updates) || updates.length === 0) {
-      console.warn('updateTreeOrder called with no updates');
-      return { success: false, modifiedCount: 0 };
+        console.warn('updateTreeOrder called with no updates');
+        return { success: false, modifiedCount: 0 };
     }
-    
+
     console.log(`INFO: Updating order for ${updates.length} trees in DB.`);
     await connectToDatabase();
-  
+
     try {
-      const treeIds = updates.map(u => new mongoose.Types.ObjectId(u.id));
-      const treesToUpdate = await TreeModel.find({ _id: { $in: treeIds } });
+        const treeIds = updates.map(u => new mongoose.Types.ObjectId(u.id));
+        const treesToUpdate = await TreeModel.find({ _id: { $in: treeIds } });
 
-      if (treesToUpdate.some(t => t.userId.toString() !== session.userId)) {
-          throw new Error("Authorization denied: Cannot reorder trees you do not own.");
-      }
-
-      const bulkOps = updates.map(({ id, order }) => ({
-        updateOne: {
-          filter: { _id: new mongoose.Types.ObjectId(id) },
-          update: { $set: { order: order } }
+        if (treesToUpdate.some(t => t.userId.toString() !== session.userId)) {
+            throw new Error("Authorization denied: Cannot reorder trees you do not own.");
         }
-      }));
-  
-      const result = await TreeModel.bulkWrite(bulkOps);
-      console.log(`INFO: updateTreeOrder successfully modified ${result.modifiedCount} documents.`);
-      return { success: true, modifiedCount: result.modifiedCount };
+
+        const bulkOps = updates.map(({ id, order }) => ({
+            updateOne: {
+                filter: { _id: new mongoose.Types.ObjectId(id) },
+                update: { $set: { order: order } }
+            }
+        }));
+
+        const result = await TreeModel.bulkWrite(bulkOps);
+        console.log(`INFO: updateTreeOrder successfully modified ${result.modifiedCount} documents.`);
+        return { success: true, modifiedCount: result.modifiedCount };
     } catch (err) {
-      console.error('Error in updateTreeOrder:', err);
-      throw err;
+        console.error('Error in updateTreeOrder:', err);
+        throw err;
     }
 }
 
 export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
-  const session = await getSession();
-  if (!session?.userId) throw new Error("Authentication required.");
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
 
-  await connectToDatabase();
-  const treeFileDoc = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>().exec();
-  if (!treeFileDoc) return null;
-  
-  const hasAccess = treeFileDoc.userId.toString() === session.userId || (treeFileDoc.sharedWith || []).includes(session.userId);
-  if (!hasAccess) {
-      throw new Error("Authorization denied.");
-  }
+    await connectToDatabase();
+    const treeFileDoc = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>().exec();
+    if (!treeFileDoc) return null;
 
-  const nodes = await loadTreeNodes(treeId);
-  
-  const plainDoc: TreeFile = {
-    id: treeFileDoc._id.toString(),
-    userId: treeFileDoc.userId,
-    sharedWith: treeFileDoc.sharedWith,
-    isPublic: treeFileDoc.isPublic,
-    title: treeFileDoc.title,
-    templates: treeFileDoc.templates.map((t: any) => ({
-        ...t,
-        preferredChildTemplates: t.preferredChildTemplates || [],
-    })),
-    expandedNodeIds: treeFileDoc.expandedNodeIds,
-    gitSync: treeFileDoc.gitSync,
-    order: treeFileDoc.order,
-    createdAt: treeFileDoc.createdAt,
-    updatedAt: treeFileDoc.updatedAt,
-    tree: nodes
-  };
-  delete (plainDoc as any)._id;
-  delete (plainDoc as any).__v;
-  
-  return plainDoc;
+    const hasAccess = treeFileDoc.userId.toString() === session.userId || (treeFileDoc.sharedWith || []).includes(session.userId);
+    if (!hasAccess) {
+        throw new Error("Authorization denied.");
+    }
+
+    const nodes = await loadTreeNodes(treeId);
+
+    const plainDoc: TreeFile = {
+        id: treeFileDoc._id.toString(),
+        userId: treeFileDoc.userId,
+        sharedWith: treeFileDoc.sharedWith,
+        isPublic: treeFileDoc.isPublic,
+        title: treeFileDoc.title,
+        templates: treeFileDoc.templates.map((t: any) => ({
+            ...t,
+            preferredChildTemplates: t.preferredChildTemplates || [],
+        })),
+        expandedNodeIds: treeFileDoc.expandedNodeIds,
+        gitSync: treeFileDoc.gitSync,
+        order: treeFileDoc.order,
+        createdAt: treeFileDoc.createdAt,
+        updatedAt: treeFileDoc.updatedAt,
+        tree: nodes
+    };
+    delete (plainDoc as any)._id;
+    delete (plainDoc as any).__v;
+
+    return plainDoc;
 }
 
 export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | null> {
-  await connectToDatabase();
-  const treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
-  if (!treeFileDoc) return null;
+    await connectToDatabase();
+    const treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
+    if (!treeFileDoc) return null;
 
-  const nodes = await loadTreeNodes(treeId);
-  const plainDoc: TreeFile = { 
-      ...(treeFileDoc as any), 
-      id: treeFileDoc._id.toString(),
-      templates: treeFileDoc.templates.map((t: any) => ({
-        ...t,
-        preferredChildTemplates: t.preferredChildTemplates || [],
-      })),
-      tree: nodes 
-  };
-  delete (plainDoc as any)._id;
-  delete (plainDoc as any).__v;
-  
-  return plainDoc;
+    const nodes = await loadTreeNodes(treeId);
+    const plainDoc: TreeFile = {
+        ...(treeFileDoc as any),
+        id: treeFileDoc._id.toString(),
+        templates: treeFileDoc.templates.map((t: any) => ({
+            ...t,
+            preferredChildTemplates: t.preferredChildTemplates || [],
+        })),
+        tree: nodes
+    };
+    delete (plainDoc as any)._id;
+    delete (plainDoc as any).__v;
+
+    return plainDoc;
 }
 
 
 export async function loadAllTreeFiles(): Promise<TreeFile[]> {
-  noStore();
-  const session = await getSession();
-  if (!session?.userId) return [];
-  
-  await connectToDatabase();
-  const treeFileDocs = await TreeModel.find({ 
-    $or: [
-      { userId: session.userId },
-      { sharedWith: { $in: [session.userId] } }
-    ]
-  }).lean<Omit<TreeFile, 'tree' & { _id: any }>[]>().exec();
-  
-  const treeIds = treeFileDocs.map((t: any) => t._id.toString());
-  // Fetch all nodes for the user in one go
-  const allNodesForUser = await TreeNodeModel.find({ treeId: { $in: treeIds } }).lean<TreeNode[]>().exec();
+    noStore();
+    const session = await getSession();
+    if (!session?.userId) return [];
 
-  // Group nodes by treeId
-  const nodesByTreeId = new Map<string, TreeNode[]>();
-  for (const node of allNodesForUser) {
-    // Decrypt sensitive fields
-    node.name = await decrypt(node.name);
-    node.data = await decrypt(node.data);
+    await connectToDatabase();
+    const treeFileDocs = await TreeModel.find({
+        $or: [
+            { userId: session.userId },
+            { sharedWith: { $in: [session.userId] } }
+        ]
+    }).lean<Omit<TreeFile, 'tree' & { _id: any }>[]>().exec();
 
-    const treeId = node.treeId.toString();
-    if (!nodesByTreeId.has(treeId)) {
-      nodesByTreeId.set(treeId, []);
+    const treeIds = treeFileDocs.map((t: any) => t._id.toString());
+    // Fetch all nodes for the user in one go
+    const allNodesForUser = await TreeNodeModel.find({ treeId: { $in: treeIds } }).lean<TreeNode[]>().exec();
+
+    // Group nodes by treeId
+    const nodesByTreeId = new Map<string, TreeNode[]>();
+    for (const node of allNodesForUser) {
+        // Decrypt sensitive fields
+        node.name = await decrypt(node.name);
+        node.data = await decrypt(node.data);
+
+        const treeId = node.treeId.toString();
+        if (!nodesByTreeId.has(treeId)) {
+            nodesByTreeId.set(treeId, []);
+        }
+        nodesByTreeId.get(treeId)!.push(node);
     }
-    nodesByTreeId.get(treeId)!.push(node);
-  }
-  
-  const fullTreeFiles = treeFileDocs.map((doc: any) => {
-    const treeId = doc._id.toString();
-    const nodesForTree = nodesByTreeId.get(treeId) || [];
-    const hierarchicalNodes = buildTreeHierarchy(nodesForTree);
-    
-    const plainDoc: TreeFile = { 
-      id: treeId,
-      userId: doc.userId,
-      sharedWith: doc.sharedWith,
-      isPublic: doc.isPublic,
-      title: doc.title,
-      templates: doc.templates.map((t: any) => ({
-          ...t,
-          preferredChildTemplates: t.preferredChildTemplates || [],
-      })),
-      expandedNodeIds: doc.expandedNodeIds,
-      gitSync: doc.gitSync,
-      order: doc.order,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      tree: hierarchicalNodes 
-    };
-    return plainDoc;
-  });
-  
-  return fullTreeFiles;
+
+    const fullTreeFiles = treeFileDocs.map((doc: any) => {
+        const treeId = doc._id.toString();
+        const nodesForTree = nodesByTreeId.get(treeId) || [];
+        const hierarchicalNodes = buildTreeHierarchy(nodesForTree);
+
+        const plainDoc: TreeFile = {
+            id: treeId,
+            userId: doc.userId,
+            sharedWith: doc.sharedWith,
+            isPublic: doc.isPublic,
+            title: doc.title,
+            templates: doc.templates.map((t: any) => ({
+                ...t,
+                preferredChildTemplates: t.preferredChildTemplates || [],
+            })),
+            expandedNodeIds: doc.expandedNodeIds,
+            gitSync: doc.gitSync,
+            order: doc.order,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            tree: hierarchicalNodes
+        };
+        return plainDoc;
+    });
+
+    return fullTreeFiles;
 }
 
 export async function deleteTreeFile(treeId: string): Promise<void> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
-    
+
     const treeToDelete = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!treeToDelete) return;
     if (treeToDelete.userId.toString() !== session.userId) {
         throw new Error("Authorization denied: Only the owner can delete a tree.");
     }
-    
+
     try {
         // Perform deletions sequentially
         await TreeNodeModel.deleteMany({ treeId });
         await TreeModel.findByIdAndDelete(treeId);
-        
+
         console.log(`INFO: Deleted tree (ID: ${treeId}) and all associated nodes from DB`);
     } catch (error) {
         console.error("Error deleting tree file:", error);
@@ -332,12 +332,12 @@ export async function deleteTreeFilesByUserId(userId: string): Promise<void> {
     try {
         const treesToDelete = await TreeModel.find({ userId: userId }).select('_id').lean();
         const treeIds = treesToDelete.map((t: any) => t._id.toString());
-        
+
         if (treeIds.length > 0) {
             await TreeNodeModel.deleteMany({ treeId: { $in: treeIds } });
             await TreeModel.deleteMany({ _id: { $in: treeIds } });
         }
-        
+
         console.log(`INFO: Deleted all trees and nodes for user ${userId} from DB`);
     } catch (error) {
         console.error("Error deleting tree files by user ID:", error);
@@ -373,14 +373,14 @@ const buildTreeHierarchy = (nodes: TreeNode[]): TreeNode[] => {
                 const parentNode = nodeMap.get(parentId);
                 if (parentNode) {
                     if (!parentNode.children.some(child => child.id === node.id)) {
-                         // This is the crucial change: push the actual object reference.
-                         parentNode.children.push(node);
+                        // This is the crucial change: push the actual object reference.
+                        parentNode.children.push(node);
                     }
                 }
             }
         });
     });
-    
+
     const sortChildrenRecursive = (nodesToSort: TreeNode[], parentId: string | null) => {
         if (!nodesToSort || nodesToSort.length === 0) return;
         nodesToSort.sort((a, b) => getContextualOrder(a, nodesToSort, parentId) - getContextualOrder(b, nodesToSort, parentId));
@@ -390,13 +390,17 @@ const buildTreeHierarchy = (nodes: TreeNode[]): TreeNode[] => {
             }
         });
     };
-    
+
     // Sort all children at every level
+    // Sort all children at every level
+    // Optimization: Redundant sorting removed. The recursive sort on rootNodes handles everything.
+    /* 
     nodeMap.forEach(node => {
         if (node.children) {
             sortChildrenRecursive(node.children, node.id);
         }
     });
+    */
     sortChildrenRecursive(rootNodes, null);
 
     return rootNodes;
@@ -404,14 +408,14 @@ const buildTreeHierarchy = (nodes: TreeNode[]): TreeNode[] => {
 
 export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
     await connectToDatabase();
-    
+
     const treeFileDoc = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!treeFileDoc) {
         throw new Error("Tree not found when trying to load its nodes.");
     }
-    
+
     const isPublic = treeFileDoc.isPublic === true;
-    
+
     if (!isPublic) {
         const session = await getSession();
         if (!session?.userId) {
@@ -419,7 +423,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
         }
         const isOwner = treeFileDoc.userId.toString() === session.userId;
         const isSharedWith = (treeFileDoc.sharedWith || []).includes(session.userId);
-        
+
         if (!isOwner && !isSharedWith) {
             throw new Error("Authorization denied: You do not have permission to view these nodes.");
         }
@@ -427,10 +431,10 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
 
     const nodes = await TreeNodeModel.find({ treeId }).lean<TreeNode[]>().exec();
 
-    for (const node of nodes) {
+    await Promise.all(nodes.map(async (node) => {
         node.name = await decrypt(node.name);
         node.data = await decrypt(node.data);
-    }
+    }));
 
     return buildTreeHierarchy(nodes);
 }
@@ -441,7 +445,7 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
 
     await connectToDatabase();
     const { id, name, data, ...rest } = nodeData as any;
-    
+
     const dataToSave = {
         ...rest,
         name: await encrypt(name),
@@ -450,14 +454,14 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
     };
 
     const documentToSave = id ? { ...dataToSave, _id: id } : dataToSave;
-    
+
     const newNode = new TreeNodeModel(documentToSave);
     await newNode.save();
-    
+
     await TreeModel.findByIdAndUpdate(newNode.treeId, { updatedAt: new Date().toISOString() });
-    
+
     const plainNode = toPlainObject(newNode);
-    
+
     // Decrypt for returning to the client
     plainNode.name = await decrypt(plainNode.name);
     plainNode.data = await decrypt(plainNode.data);
@@ -470,7 +474,7 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
     if (!session?.userId) throw new Error("Authentication required.");
 
     await connectToDatabase();
-    
+
     const node = await TreeNodeModel.findById(nodeId).select('treeId userId').lean<TreeNode>();
     if (!node) {
         throw new Error("Node not found for update.");
@@ -485,13 +489,13 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
     const { name, data, ...restOfUpdates } = updates;
     const newTimestamp = timestamp || new Date().toISOString();
     const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: newTimestamp };
-    
+
     if (name) {
         encryptedUpdates.name = await encrypt(name);
     }
     if (data !== undefined) {
         encryptedUpdates.data = await encrypt(data as any);
-      }
+    }
 
     await TreeNodeModel.findByIdAndUpdate(nodeId, encryptedUpdates).exec();
     await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: newTimestamp });
@@ -541,10 +545,10 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     if (!session?.userId) throw new Error("Authentication required.");
 
     await connectToDatabase();
-    
+
     const node = await TreeNodeModel.findById(nodeId).exec();
     if (!node) return { deletedIds: [], newTimestamp: new Date().toISOString() };
-    
+
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree || (tree.userId.toString() !== session.userId && !(tree.sharedWith || []).includes(session.userId))) {
         throw new Error("Authorization denied.");
@@ -601,29 +605,29 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     if (deletedIds.length > 0) {
         await TreeNodeModel.deleteMany({ _id: { $in: deletedIds } }).exec();
     }
-    
+
     await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
-    
+
     // Resequence siblings in all original parent contexts
     const resequencePromises = Array.from(parentsToResequence).map(pid => resequenceSiblings(pid === 'root' ? null : pid, treeId));
     await Promise.all(resequencePromises);
-    
+
     console.log(`INFO: Permanently deleted ${deletedIds.length} nodes from DB.`);
     return { deletedIds, newTimestamp };
 }
 
 export async function batchDeleteNodes(deletions: { nodeId: string; parentIdToUnlink: string | null }[], timestamp?: string): Promise<{ deletedIds: string[], newTimestamp: string }> {
     if (deletions.length === 0) return { deletedIds: [], newTimestamp: new Date().toISOString() };
-    
+
     let allDeletedIds: string[] = [];
     const newTimestamp = timestamp || new Date().toISOString();
-    
+
     // We process sequentially to avoid race conditions with tree structure modifications.
     for (const { nodeId, parentIdToUnlink } of deletions) {
         const { deletedIds } = await deleteNodeWithChildren(nodeId, parentIdToUnlink, newTimestamp);
         allDeletedIds.push(...deletedIds);
     }
-    
+
     // Return only the unique list of permanently deleted node IDs.
     return { deletedIds: Array.from(new Set(allDeletedIds)), newTimestamp };
 }
@@ -633,7 +637,7 @@ export async function reorderSiblingsForAdd(treeId: string, parentId: string | n
     await connectToDatabase();
     const parentIdToUpdate = parentId || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
-    
+
     // Get all siblings in this context
     const siblings = await TreeNodeModel.find({ treeId, parentIds: parentIdToUpdate }).exec();
 
@@ -667,40 +671,40 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
     if (!session?.userId) throw new Error("Authentication required.");
 
     await connectToDatabase();
-  
+
     if (nodes.length === 0) return { createdNodes: [], newTimestamp: timestamp || new Date().toISOString() };
-  
+
     const treeId = nodes[0]?.treeId; // Assume all nodes are for the same tree
     if (!treeId) throw new Error("Batch create requires nodes to have a treeId.");
 
     const newTimestamp = timestamp || new Date().toISOString();
 
     const nodesToInsert = await Promise.all(nodes.map(async (n) => {
-      const { id, _id, name, data, ...rest } = n as any;
-      return {
-        ...rest,
-        name: await encrypt(name),
-        data: await encrypt(data),
-        _id: _id || id,
-        userId: session.userId,
-        createdAt: newTimestamp,
-        updatedAt: newTimestamp,
-      };
+        const { id, _id, name, data, ...rest } = n as any;
+        return {
+            ...rest,
+            name: await encrypt(name),
+            data: await encrypt(data),
+            _id: _id || id,
+            userId: session.userId,
+            createdAt: newTimestamp,
+            updatedAt: newTimestamp,
+        };
     }));
-  
+
     const createdDocs = await TreeNodeModel.insertMany(nodesToInsert);
-    
+
     await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
-  
+
     const decryptedDocs = await Promise.all(createdDocs.map(async (doc) => {
-      const plainDoc = toPlainObject(doc);
-      plainDoc.name = await decrypt(plainDoc.name);
-      plainDoc.data = await decrypt(plainDoc.data);
-      return plainDoc;
+        const plainDoc = toPlainObject(doc);
+        plainDoc.name = await decrypt(plainDoc.name);
+        plainDoc.data = await decrypt(plainDoc.data);
+        return plainDoc;
     }));
     return { createdNodes: decryptedDocs, newTimestamp };
-  }
-  
+}
+
 
 export async function batchUpdateNodes(updates: { id: string; updates: Partial<TreeNode> }[], timestamp?: string): Promise<string> {
     if (updates.length === 0) return timestamp || new Date().toISOString();
@@ -726,7 +730,7 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
     if (!allNodesInSameTree) {
         throw new Error("Batch updates can only target nodes within the same tree.");
     }
-    
+
     // Authorization check
     const tree = await TreeModel.findById(firstTreeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree || (tree.userId.toString() !== session.userId && !(tree.sharedWith || []).includes(session.userId))) {
@@ -744,10 +748,10 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
         if (data !== undefined) {
             encryptedUpdates.data = await encrypt(data as any);
         }
-        
+
         return {
             updateOne: {
-                filter: { _id: id },
+                filter: { _id: id, treeId: firstTreeId },
                 update: { $set: encryptedUpdates },
             },
         };
@@ -761,13 +765,13 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
 export async function addParentToNode(nodeId: string, newParentId: string | null, newOrder: number, timestamp?: string): Promise<string> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
     const node = await TreeNodeModel.findById(nodeId).exec();
     if (!node) {
         throw new Error("Node to clone not found");
     }
-    
+
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree || (tree.userId.toString() !== session.userId && !(tree.sharedWith || []).includes(session.userId))) {
         throw new Error("Authorization denied.");
@@ -797,13 +801,13 @@ export async function addParentToNode(nodeId: string, newParentId: string | null
 export async function removeParentFromNode(nodeId: string, parentIdToRemove: string, timestamp?: string): Promise<string> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
     const node = await TreeNodeModel.findById(nodeId).exec();
     if (!node) {
         throw new Error("Node not found for unlinking.");
     }
-    
+
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree || (tree.userId.toString() !== session.userId && !(tree.sharedWith || []).includes(session.userId))) {
         throw new Error("Authorization denied.");
@@ -838,11 +842,11 @@ export async function saveAttachment(userId: string, relativePath: string, dataU
 
     const cleanRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
     const fullPath = path.join(USERS_DIR, userId, 'attachments', cleanRelativePath);
-    
+
     if (!fullPath.startsWith(path.join(USERS_DIR, userId, 'attachments'))) {
         throw new Error("Access denied: path is outside of the user's attachments directory.");
     }
-    
+
     // Ensure the directory for the file exists
     const dirName = path.dirname(fullPath);
     await fs.mkdir(dirName, { recursive: true });
@@ -855,7 +859,7 @@ export async function saveAttachment(userId: string, relativePath: string, dataU
     const mimeType = matches[1];
     const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, 'base64');
-    
+
     await fs.writeFile(fullPath, buffer);
 
     const serverPath = path.join('/attachments', userId, cleanRelativePath).replace(/\\/g, '/');
@@ -906,7 +910,7 @@ export async function listExamples(): Promise<ExampleInfo[]> {
 export async function loadExampleFromFile(fileName: string): Promise<Partial<TreeFile> | null> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
     const EXAMPLES_DIR = path.join(process.cwd(), 'public', 'examples');
     const filePath = path.join(EXAMPLES_DIR, fileName);
@@ -929,16 +933,16 @@ export async function fetchFileAsBuffer(userId: string, serverPath: string): Pro
     if (!session?.userId || session.userId !== userId) throw new Error("Authentication required.");
 
     const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
-    
+
     // serverPath is like /attachments/userId/fileName.ext
     // We need to resolve it to the filesystem path which is data/users/userId/attachments/fileName.ext
-    
+
     // Remove the leading '/attachments/' part and the userId, which should match the passed userId for security
     const pathParts = serverPath.split('/').filter(Boolean); // e.g., ['attachments', 'userId', 'fileName.ext']
     if (pathParts.length < 3 || pathParts[0] !== 'attachments' || pathParts[1] !== userId) {
         throw new Error("Invalid or forbidden file path for fetcher.");
     }
-    
+
     const cleanRelativePath = path.join(...pathParts.slice(2)); // e.g., 'fileName.ext'
     const fullPath = path.join(DATA_DIR, 'users', userId, 'attachments', cleanRelativePath);
 
@@ -958,9 +962,9 @@ export async function fetchFileAsBuffer(userId: string, serverPath: string): Pro
 // --- Git Provider Functions ---
 
 export async function createRepo(
-  token: string,
-  repoName: string,
-  isPrivate: boolean
+    token: string,
+    repoName: string,
+    isPrivate: boolean
 ): Promise<{ success: boolean; repo?: GitProvider; error?: string }> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
@@ -969,25 +973,25 @@ export async function createRepo(
     try {
         const octokit = new Octokit({ auth: token, request: { fetch } });
         const response = await octokit.rest.repos.createForAuthenticatedUser({
-          name: repoName,
-          private: isPrivate,
-          auto_init: true,
-          description: 'Data for Treelab application',
+            name: repoName,
+            private: isPrivate,
+            auto_init: true,
+            description: 'Data for Treelab application',
         });
 
         if (response.status === 201) {
-          const repoData = response.data;
-          return {
-            success: true,
-            repo: {
-              owner: repoData.owner.login,
-              name: repoData.name,
-              fullName: repoData.full_name,
-              defaultBranch: repoData.default_branch,
-            },
-          };
+            const repoData = response.data;
+            return {
+                success: true,
+                repo: {
+                    owner: repoData.owner.login,
+                    name: repoData.name,
+                    fullName: repoData.full_name,
+                    defaultBranch: repoData.default_branch,
+                },
+            };
         } else {
-          return { success: false, error: `GitHub API returned status ${response.status}` };
+            return { success: false, error: `GitHub API returned status ${response.status}` };
         }
     } catch (error: any) {
         console.error('Failed to create GitHub repository:', error);
@@ -999,115 +1003,115 @@ export async function createRepo(
 const sanitizeName = (name: string) => String(name).replace(/[\\?%*:|"<>]/g, '_').replace(/\s+/g, '-');
 
 const getFullNodePath = (node: TreeNode, allNodesMap: Map<string, TreeNode>): string => {
-  const pathParts: string[] = [];
-  let current: TreeNode | undefined = node;
-  while(current) {
-    pathParts.unshift(sanitizeName(current.name));
-    // For clones, we just pick the first parent for path generation.
-    // The true structure is preserved in the parentIds array.
-    const parentId: string | undefined = current.parentIds?.[0];
-    current = parentId ? allNodesMap.get(parentId) : undefined;
-  }
-  return path.join(...pathParts);
+    const pathParts: string[] = [];
+    let current: TreeNode | undefined = node;
+    while (current) {
+        pathParts.unshift(sanitizeName(current.name));
+        // For clones, we just pick the first parent for path generation.
+        // The true structure is preserved in the parentIds array.
+        const parentId: string | undefined = current.parentIds?.[0];
+        current = parentId ? allNodesMap.get(parentId) : undefined;
+    }
+    return path.join(...pathParts);
 };
 
 
 export async function commitTreeFileToRepo(
-  token: string,
-  treeId: string,
-  message: string,
-  treeFileToCommit?: TreeFile
+    token: string,
+    treeId: string,
+    message: string,
+    treeFileToCommit?: TreeFile
 ): Promise<{ success: boolean; error?: string; commitSha?: string }> {
-  const session = await getSession();
-  if (!session?.userId) throw new Error("Authentication required.");
-  
-  const fetch = (await import('node-fetch')).default;
-  const treeFile = treeFileToCommit || await loadTreeFile(treeId);
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
 
-  if (!treeFile || !treeFile.gitSync) {
-    return { success: false, error: "Tree is not linked to a repository." };
-  }
-  
-  if (treeFile.userId.toString() !== session.userId) {
-    throw new Error("Authorization denied.");
-  }
+    const fetch = (await import('node-fetch')).default;
+    const treeFile = treeFileToCommit || await loadTreeFile(treeId);
 
-  const octokit = new Octokit({ auth: token, request: { fetch } });
-  const { repoOwner, repoName, branch } = treeFile.gitSync;
-
-  const { data: branchData } = await octokit.rest.repos.getBranch({
-    owner: repoOwner,
-    repo: repoName,
-    branch,
-  });
-  const latestCommitSha = branchData.commit.sha;
-
-  const allNodesMap = new Map<string, TreeNode>();
-  const buildNodeMap = (nodes: TreeNode[]) => {
-    for (const node of nodes) {
-      allNodesMap.set(node.id, node);
-      if (node.children) buildNodeMap(node.children);
+    if (!treeFile || !treeFile.gitSync) {
+        return { success: false, error: "Tree is not linked to a repository." };
     }
-  };
-  buildNodeMap(treeFile.tree);
-  
-  const treePayload: { path: string; mode: '100644'; type: 'blob'; content: string }[] = [];
-  
-  const treeJsonData = generateJsonForExport(treeFile.title, treeFile.tree, treeFile.templates);
 
-  treePayload.push({
-    path: 'tree.json',
-    mode: '100644',
-    type: 'blob',
-    content: JSON.stringify(treeJsonData, null, 2),
-  });
+    if (treeFile.userId.toString() !== session.userId) {
+        throw new Error("Authorization denied.");
+    }
 
-  // This part generates the markdown file hierarchy
-  const traverseAndCreateTree = (nodes: TreeNode[], currentPath: string) => {
-    for (const node of nodes) {
-      const template = treeFile.templates.find((t) => t.id === node.templateId);
-      if (!template) continue;
+    const octokit = new Octokit({ auth: token, request: { fetch } });
+    const { repoOwner, repoName, branch } = treeFile.gitSync;
 
-      const nodePath = path.join(currentPath, sanitizeName(node.name)).replace(/\\/g, '/');
-      const bodyContent = generateNodeName(template, node.data, template.bodyTemplate);
-      
-      treePayload.push({
-        path: `${nodePath}.md`,
+    const { data: branchData } = await octokit.rest.repos.getBranch({
+        owner: repoOwner,
+        repo: repoName,
+        branch,
+    });
+    const latestCommitSha = branchData.commit.sha;
+
+    const allNodesMap = new Map<string, TreeNode>();
+    const buildNodeMap = (nodes: TreeNode[]) => {
+        for (const node of nodes) {
+            allNodesMap.set(node.id, node);
+            if (node.children) buildNodeMap(node.children);
+        }
+    };
+    buildNodeMap(treeFile.tree);
+
+    const treePayload: { path: string; mode: '100644'; type: 'blob'; content: string }[] = [];
+
+    const treeJsonData = generateJsonForExport(treeFile.title, treeFile.tree, treeFile.templates);
+
+    treePayload.push({
+        path: 'tree.json',
         mode: '100644',
         type: 'blob',
-        content: bodyContent,
-      });
+        content: JSON.stringify(treeJsonData, null, 2),
+    });
 
-      if (node.children && node.children.length > 0) {
-        traverseAndCreateTree(node.children, nodePath);
-      }
-    }
-  };
-  traverseAndCreateTree(treeFile.tree, "");
-  
-  const { data: newTree } = await octokit.rest.git.createTree({
-    owner: repoOwner,
-    repo: repoName,
-    tree: treePayload,
-    base_tree: branchData.commit.commit.tree.sha,
-  });
+    // This part generates the markdown file hierarchy
+    const traverseAndCreateTree = (nodes: TreeNode[], currentPath: string) => {
+        for (const node of nodes) {
+            const template = treeFile.templates.find((t) => t.id === node.templateId);
+            if (!template) continue;
 
-  const { data: newCommit } = await octokit.rest.git.createCommit({
-    owner: repoOwner,
-    repo: repoName,
-    message,
-    tree: newTree.sha,
-    parents: [latestCommitSha],
-  });
+            const nodePath = path.join(currentPath, sanitizeName(node.name)).replace(/\\/g, '/');
+            const bodyContent = generateNodeName(template, node.data, template.bodyTemplate);
 
-  await octokit.rest.git.updateRef({
-    owner: repoOwner,
-    repo: repoName,
-    ref: `heads/${branch}`,
-    sha: newCommit.sha,
-  });
+            treePayload.push({
+                path: `${nodePath}.md`,
+                mode: '100644',
+                type: 'blob',
+                content: bodyContent,
+            });
 
-  return { success: true, commitSha: newCommit.sha };
+            if (node.children && node.children.length > 0) {
+                traverseAndCreateTree(node.children, nodePath);
+            }
+        }
+    };
+    traverseAndCreateTree(treeFile.tree, "");
+
+    const { data: newTree } = await octokit.rest.git.createTree({
+        owner: repoOwner,
+        repo: repoName,
+        tree: treePayload,
+        base_tree: branchData.commit.commit.tree.sha,
+    });
+
+    const { data: newCommit } = await octokit.rest.git.createCommit({
+        owner: repoOwner,
+        repo: repoName,
+        message,
+        tree: newTree.sha,
+        parents: [latestCommitSha],
+    });
+
+    await octokit.rest.git.updateRef({
+        owner: repoOwner,
+        repo: repoName,
+        ref: `heads/${branch}`,
+        sha: newCommit.sha,
+    });
+
+    return { success: true, commitSha: newCommit.sha };
 }
 
 
@@ -1170,9 +1174,9 @@ export async function getTreeFromGit(token: string, owner: string, repo: string,
 export async function shareTreeWithUser(treeId: string, userId: string): Promise<void> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
-    
+
     const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
     if (tree.userId.toString() !== session.userId) throw new Error("Authorization denied.");
@@ -1183,9 +1187,9 @@ export async function shareTreeWithUser(treeId: string, userId: string): Promise
 export async function revokeShareFromUser(treeId: string, userId: string): Promise<void> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
-    
+
     await connectToDatabase();
-    
+
     const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
     if (tree.userId.toString() !== session.userId) throw new Error("Authorization denied.");
@@ -1198,7 +1202,7 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
     if (!session?.userId) throw new Error("Authentication required.");
 
     await connectToDatabase();
-    
+
     const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
     if (tree.userId.toString() !== session.userId) throw new Error("Authorization denied.");
@@ -1206,4 +1210,3 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
     await TreeModel.findByIdAndUpdate(treeId, { isPublic }).exec();
 }
 
-    
