@@ -26,6 +26,7 @@ import {
   Copy, Scissors, Trash2, ChevronsUpDown, ChevronsDownUp, X, Download,
   FileJson, FileCode, FileText, Archive, ChevronDown, Eye, RefreshCcw,
   ClipboardPlus,
+  Pencil,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TreeNode } from "@/lib/types";
@@ -37,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUIContext } from "@/contexts/ui-context";
 import { useAuthContext } from "@/contexts/auth-context";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { HtmlExportView } from "./html-export-view";
 
 
@@ -65,6 +66,17 @@ export function TreeSelectionBar() {
     const { currentUser } = useAuthContext();
     const { toast } = useToast();
     const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+
+    const areAllSameTemplate = useMemo(() => {
+        if (selectedNodeIds.length < 2) return false;
+        const firstNodeInfo = findNodeAndParent(selectedNodeIds[0].split('_')[0]);
+        if (!firstNodeInfo) return false;
+        const firstTemplateId = firstNodeInfo.node.templateId;
+        return selectedNodeIds.every(id => {
+            const nodeInfo = findNodeAndParent(id.split('_')[0]);
+            return nodeInfo?.node.templateId === firstTemplateId;
+        });
+    }, [selectedNodeIds, findNodeAndParent]);
 
     const getSelectedTopLevelNodes = useCallback((): {node: TreeNode, parentId: string | null}[] => {
       const topLevelInstanceIds = new Set(selectedNodeIds);
@@ -325,6 +337,14 @@ export function TreeSelectionBar() {
                              <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDialogState({ isChangeTemplateMultipleOpen: true })}><RefreshCcw className="h-4 w-4"/></Button></TooltipTrigger>
                                 <TooltipContent><p>Change Template (t)</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDialogState({ isMultiNodeEditOpen: true })} disabled={!areAllSameTemplate}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Edit Selection</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopySelection}><Copy className="h-4 w-4"/></Button></TooltipTrigger>

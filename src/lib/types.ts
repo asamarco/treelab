@@ -357,6 +357,7 @@ export interface UseTreeRootsResult {
   analyzeStorage: (treeId?: string | undefined) => Promise<StorageInfo>;
   purgeStorage: (treeId?: string | undefined) => Promise<PurgeResult | null>;
   toggleStarredForSelectedNodes: () => Promise<void>;
+  batchUpdateNodeData: (instanceIds: string[], data: Record<string, any>) => Promise<void>;
   clipboard: ClipboardState;
   setClipboard: Dispatch<SetStateAction<ClipboardState>>;
   selectedNodeIds: string[];

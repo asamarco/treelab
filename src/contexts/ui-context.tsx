@@ -23,6 +23,7 @@ export interface DialogState {
     isNodePreviewOpen?: boolean;
     nodeIdsForPreview?: string[];
     isChangeTemplateMultipleOpen?: boolean;
+    isMultiNodeEditOpen?: boolean;
     isNodeEditOpen?: boolean;
     isAddChildOpen?: boolean;
     isAddSiblingOpen?: boolean;

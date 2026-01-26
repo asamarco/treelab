@@ -91,6 +91,7 @@ import {
     moveNodeOrderAction,
     pasteNodesAsClonesAction,
     toggleStarredForSelectedNodesAction,
+    batchUpdateNodesDataAction,
 } from '@/lib/node-actions';
 import ReactDOMServer from "react-dom/server";
 import { TreeContext } from './tree-context';
@@ -1021,6 +1022,10 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const toggleStarredForSelectedNodes = async () => {
     await toggleStarredForSelectedNodesAction(actionContext);
   };
+
+  const batchUpdateNodeData = async (instanceIds: string[], data: Record<string, any>) => {
+    await batchUpdateNodesDataAction(actionContext, instanceIds, data);
+  };
   
   const getTemplateById = useCallback(
     (id: string): Template | undefined => {
@@ -1258,6 +1263,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     analyzeStorage: () => currentUser ? getStorageInfo(currentUser!.id) : Promise.resolve(null as any),
     purgeStorage: () => currentUser ? purgeUnusedFiles(currentUser!.id) : Promise.resolve(null as any),
     toggleStarredForSelectedNodes,
+    batchUpdateNodeData,
     clipboard,
     setClipboard,
     selectedNodeIds,

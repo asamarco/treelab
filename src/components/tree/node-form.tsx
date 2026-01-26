@@ -105,12 +105,14 @@ export const NodeForm = ({
   onSave,
   onClose,
   contextualParentId,
+  isMultiEdit = false,
 }: {
   node?: Partial<TreeNode>;
   template: Template;
   onSave: (data: TreeNode) => void;
   onClose: () => void;
   contextualParentId: string | null;
+  isMultiEdit?: boolean;
 }) => {
   const { tree, uploadAttachment, activeTree, findNodeAndParent, getSiblingOrderRange } = useTreeContext();
   const { setDialogState } = useUIContext();
@@ -118,6 +120,7 @@ export const NodeForm = ({
   //console.log('[NodeForm] Rendering form for:', node?.name || 'New Node');
   
   const [formData, setFormData] = useState<Record<string, any>>(() => {
+    if (isMultiEdit) return {};
     //console.log('[NodeForm] Initializing state with node data:', node?.data);
     const initialData = { ...(node?.data || {}) };
     
@@ -449,6 +452,33 @@ export const NodeForm = ({
     e.preventDefault();
     //console.log('[NodeForm] handleSubmit triggered. Current form data:', formData);
     
+    if (isMultiEdit) {
+        const dirtyData: Record<string, any> = {};
+        let isFormValid = true;
+
+        for (const field of template.fields) {
+            const value = formData[field.id];
+            if (value !== undefined && value !== '') {
+                if (field.type === 'date' && typeof value === 'string') {
+                    const parsedDate = parse(value, 'yyyy-MM-dd', new Date());
+                    if (isValid(parsedDate)) {
+                        dirtyData[field.id] = parsedDate.toISOString();
+                    } else {
+                        toast({ variant: 'destructive', title: 'Invalid Date', description: `Date for "${field.name}" is invalid.` });
+                        isFormValid = false;
+                        break;
+                    }
+                } else {
+                    dirtyData[field.id] = value;
+                }
+            }
+        }
+        if (isFormValid) {
+            onSave({ data: dirtyData } as TreeNode);
+        }
+        return;
+    }
+
     const finalFormData = { ...formData };
     let isFormValid = true;
 
@@ -690,8 +720,8 @@ export const NodeForm = ({
 
   const { setIgnoreClicksUntil } = useUIContext();
 
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClose = (e?: React.MouseEvent) => {
+    if(e) e.stopPropagation();
     setIgnoreClicksUntil(Date.now() + 100);
     onClose();
   };
@@ -699,18 +729,21 @@ export const NodeForm = ({
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-4 p-1 max-h-[60vh] overflow-y-auto">
-        {/* {node?.id && (
-            <div className="space-y-2">
-                <Label htmlFor="node-order" className="text-sm font-medium">Order</Label>
-                <Input 
-                    id="node-order"
-                    type="number"
-                    value={orderString}
-                    onChange={(e) => setOrderString(e.target.value)}
-                    className="w-24"
-                />
+        {!isMultiEdit && node?.id && (node.createdAt || node.updatedAt) && (
+             <div className="text-xs text-muted-foreground space-y-1">
+                {node.createdAt && (
+                    <p>Created: {formatDate(node.createdAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
+                )}
+                {node.updatedAt && (
+                    <p>Last Modified: {formatDate(node.updatedAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
+                )}
             </div>
-        )} */}
+        )}
+        {isMultiEdit && (
+            <div className="p-3 bg-accent/50 border border-accent rounded-md text-sm text-accent-foreground">
+                You are editing {node?.id ? 1 : 'multiple'} nodes. Only the fields you fill out will be updated on the selected nodes.
+            </div>
+        )}
         {template.fields.filter(f => f.type !== 'table-header' && f.type !== 'xy-chart').map((field) => (
           <div key={field.id} className="space-y-2">
             <Label className="text-sm font-medium">{field.name}</Label>
@@ -831,20 +864,6 @@ export const NodeForm = ({
           </div>
         )}
       </div>
-
-       {node && node.id && (node.createdAt || node.updatedAt) && (
-        <>
-            <Separator className="my-4" />
-            <div className="text-xs text-muted-foreground space-y-1 px-1">
-                {node.createdAt && (
-                    <p>Created: {formatDate(node.createdAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
-                )}
-                {node.updatedAt && (
-                    <p>Last Modified: {formatDate(node.updatedAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
-                )}
-            </div>
-        </>
-      )}
       
       <DialogFooter className="mt-4">
         <DialogClose asChild>
@@ -852,13 +871,14 @@ export const NodeForm = ({
             Cancel
           </Button>
         </DialogClose>
-        <Button type="submit">Save</Button>
+        <Button type="submit">{isMultiEdit ? `Update ${node?.id ? 1 : 'nodes'}` : 'Save'}</Button>
       </DialogFooter>
     </form>
   );
 };
 
     
+
 
 
 

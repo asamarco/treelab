@@ -24,6 +24,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "../ui/select";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
@@ -41,7 +44,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { useUIContext } from "@/contexts/ui-context";
 // import { PdfExportDialog } from "./pdf-export-dialog";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "../ui/dropdown-menu";
 import { Icon } from "../icon";
 import { icons } from "lucide-react";
 import { Separator } from "../ui/separator";
@@ -82,7 +85,8 @@ export function TreePageModals({
         setActiveTreeId,
         activeTreeId,
         changeMultipleNodesTemplate,
-        selectedNodeIds
+        selectedNodeIds,
+        batchUpdateNodeData,
     } = useTreeContext();
     const { dialogState, setDialogState } = useUIContext();
     const { toast } = useToast();
@@ -121,6 +125,16 @@ export function TreePageModals({
       return dialogState.nodeIdsForPreview.map(id => findNodeAndParent(id, allNodes)?.node).filter((n): n is TreeNode => !!n);
 
     }, [dialogState.isNodePreviewOpen, dialogState.nodeIdsForPreview, allNodes, findNodeAndParent]);
+
+    const commonTemplateForMultiEdit = useMemo(() => {
+        if (!dialogState.isMultiNodeEditOpen || selectedNodeIds.length === 0) return null;
+        const firstNodeId = selectedNodeIds[0].split('_')[0];
+        const firstNode = findNodeAndParent(firstNodeId)?.node;
+        if (!firstNode) return null;
+        const templateId = firstNode.templateId;
+        const allSame = selectedNodeIds.every(id => findNodeAndParent(id.split('_')[0])?.node.templateId === templateId);
+        return allSame ? getTemplateById(templateId) : null;
+    }, [dialogState.isMultiNodeEditOpen, selectedNodeIds, findNodeAndParent, getTemplateById]);
 
     const previewNavigation = useMemo(() => {
       if (nodesForPreview.length !== 1) {
@@ -307,6 +321,15 @@ export function TreePageModals({
         toast({ title: "Templates Changed", description: `Updated ${selectedNodeIds.length} nodes.` });
         setDialogState({ isChangeTemplateMultipleOpen: false });
         setTargetTemplateId(null);
+    };
+
+    const handleMultiNodeSave = (savedNode: TreeNode) => {
+        batchUpdateNodeData(selectedNodeIds, savedNode.data);
+        setDialogState({ isMultiNodeEditOpen: false });
+        toast({
+            title: "Nodes Updated",
+            description: `${selectedNodeIds.length} nodes have been updated.`
+        });
     };
 
     return (
@@ -610,6 +633,22 @@ export function TreePageModals({
                         <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
                         <Button onClick={handleChangeMultipleTemplates} disabled={!targetTemplateId}>Apply to All</Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Multi Node Edit Dialog */}
+            <Dialog open={dialogState.isMultiNodeEditOpen || false} onOpenChange={(open) => setDialogState({ isMultiNodeEditOpen: open })}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader><DialogTitle>Editing {selectedNodeIds.length} nodes</DialogTitle></DialogHeader>
+                    {commonTemplateForMultiEdit && (
+                        <NodeForm
+                            template={commonTemplateForMultiEdit}
+                            onSave={handleMultiNodeSave}
+                            onClose={() => setDialogState({ isMultiNodeEditOpen: false })}
+                            contextualParentId={null}
+                            isMultiEdit={true}
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
         </>

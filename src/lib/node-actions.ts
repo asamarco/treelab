@@ -442,6 +442,73 @@ export async function updateNodeAction(
     await executeCommand(command);
 }
 
+export async function batchUpdateNodesDataAction(
+    ctx: ActionContext,
+    instanceIds: string[],
+    data: Record<string, any>
+  ) {
+    const { activeTree, activeTreeId, executeCommand, findNodeAndParent } = ctx;
+    if (!activeTree || instanceIds.length === 0) return;
+  
+    const nodeIds = Array.from(new Set(instanceIds.map(id => id.split('_')[0])));
+  
+    const updatesPayload: { nodeId: string; updates: Partial<TreeNode>; originalData: Partial<TreeNode> }[] = [];
+  
+    nodeIds.forEach(nodeId => {
+      const nodeInfo = findNodeAndParent(nodeId, activeTree.tree);
+      if (nodeInfo) {
+        const originalNode = nodeInfo.node;
+        // The update merges new data with existing data
+        const newData = { ...originalNode.data, ...data };
+        updatesPayload.push({
+          nodeId,
+          updates: { data: newData },
+          originalData: { data: originalNode.data },
+        });
+      }
+    });
+  
+    if (updatesPayload.length === 0) return;
+  
+    const command: UpdateNodesCommand = {
+      type: 'UPDATE_NODES',
+      payload: updatesPayload,
+      execute: (draft: WritableDraft<TreeFile[]>) => {
+        const tree = draft.find((t: TreeFile) => t.id === activeTreeId)?.tree;
+        if (!tree) return;
+        updatesPayload.forEach(({ nodeId, updates }) => {
+          const node = findNodeAndParentInDraft(nodeId, tree)?.node;
+          if (node) {
+            // Important: Merge data, don't replace
+            node.data = { ...node.data, ...(updates.data || {}) };
+          }
+        });
+      },
+      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+        const dbUpdates = updatesPayload.map(p => ({ id: p.nodeId, updates: { data: p.updates.data } }));
+        await batchUpdateNodes(dbUpdates, timestamp);
+      },
+      undo: async (timestamp?: string) => {
+        const undoUpdates = updatesPayload.map(p => ({
+          id: p.nodeId,
+          updates: { data: p.originalData.data },
+        }));
+        await batchUpdateNodes(undoUpdates, timestamp);
+      },
+      getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
+        const tree = draft.find((t: TreeFile) => t.id === activeTreeId)?.tree;
+        if (!tree) return;
+        (command as UpdateNodesCommand).payload.forEach(({ nodeId, originalData }) => {
+          const node = findNodeAndParentInDraft(nodeId, tree)?.node;
+          if (node) {
+            node.data = originalData.data as WritableDraft<Record<string, any>>;
+          }
+        });
+      }
+    };
+    await executeCommand(command);
+  }
+
 export async function updateNodeNamesForTemplateAction(ctx: ActionContext, template: Template) {
     const { activeTree, activeTreeId, executeCommand, findNodeAndParent } = ctx;
     if (!activeTree) return;
