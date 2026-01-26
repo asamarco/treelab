@@ -1,3 +1,9 @@
+v0.3.2 
+
+Improvement: enforced authentication on all server actions and APIs, mitigation of possible NoSQL injections
+Bugfix: Undo of a node deletion did not reset the correct node order
+Bugfix: Ctrl+X/Ctrk+V keyboard shortcut did not work for cut/paste
+
 v0.3.1
 
 Feature: Preferred child templates
