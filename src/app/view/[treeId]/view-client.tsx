@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TreePage } from "@/app/page-client";
 import { PublicViewBanner } from "@/components/public-view-banner";
 import { TreeFile } from "@/lib/types";
+import { useEffect } from "react";
 
 interface PublicTreeViewClientProps {
   initialTree: TreeFile;
@@ -22,6 +23,13 @@ export function PublicTreeViewClient({ initialTree }: PublicTreeViewClientProps)
   // Hardcoded config for public view as we can't read files on the client
   const isAuthRequired = true;
   const defaultUserId = "test";
+  
+  useEffect(() => {
+    document.body.classList.add('read-only-view');
+    return () => {
+      document.body.classList.remove('read-only-view');
+    }
+  }, []);
 
   return (
     <AuthProvider isAuthRequired={isAuthRequired} defaultUserId={defaultUserId}>

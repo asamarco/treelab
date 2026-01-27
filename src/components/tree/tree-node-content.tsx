@@ -226,25 +226,20 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                  )}
               </div>
               
-              {finalViewMode === 'carousel' && !isMobile ? (
+              {isMobile || finalViewMode === 'carousel' ? (
                  <div className="mx-auto" style={{ maxWidth: '100%' }}>
                   <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
                     <CarouselContent>
                       {images.map((src, index) => {
-                          const dims = imageDimensions[src];
-                          let height = maxHeight;
-                          if (dims && dims.height < maxHeight) {
-                            height = dims.height;
-                          }
                           return (
-                            <CarouselItem key={index} style={{ flexBasis: `auto` }}>
+                            <CarouselItem key={index} className={cn(isMobile && "basis-full")}>
                                 <div className="p-1 h-full flex items-center justify-center">
                                     <CardContent className="flex h-full items-center justify-center p-0 overflow-hidden rounded-lg">
                                         <img 
                                           src={src} 
                                           alt={`${field.name} ${index + 1}`} 
                                           className="object-contain w-full h-full"
-                                          style={{ height: `${height}px` }} 
+                                          style={{ maxHeight: `${maxHeight}px` }} 
                                           onDoubleClick={(e) => handleImageDoubleClick(e, src)} 
                                           onLoad={(e) => {
                                             const img = e.currentTarget;
