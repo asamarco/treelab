@@ -38,6 +38,15 @@ export function AppHeader() {
     { href: "/roots", label: "Roots" },
   ];
 
+  if (!currentUser) {
+    return null; // Don't render header on auth pages
+  }
+  
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
   const handleThemeChange = (isDark: boolean) => {
     const newTheme = isDark ? 'dark' : 'light';
     setTheme(newTheme);
@@ -46,41 +55,7 @@ export function AppHeader() {
     });
   }
 
-  const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-  if (!currentUser) {
-    // Render a simplified header for public/unauthenticated views
-    return (
-        <header className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Link
-                href="/"
-                className="flex items-center gap-2 text-lg font-bold text-foreground"
-              >
-                <Logo className="w-12 h-12 text-primary" />
-                Treelab
-              </Link>
-              <div className="flex items-center gap-2">
-                 <div className="flex items-center gap-1 rounded-full p-1 bg-muted">
-                    <Button variant={!isDarkMode ? 'secondary' : 'ghost'} size="icon" className="h-6 w-6 rounded-full" onClick={() => handleThemeChange(false)}>
-                        <Sun className="h-4 w-4" />
-                    </Button>
-                    <Button variant={isDarkMode ? 'secondary' : 'ghost'} size="icon" className="h-6 w-6 rounded-full" onClick={() => handleThemeChange(true)}>
-                        <Moon className="h-4 w-4" />
-                    </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-    );
-  }
-  
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+  const isDarkMode = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   return (
     <header className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
