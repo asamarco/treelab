@@ -14,10 +14,11 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useEffect } from "react";
-import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator } from "@/lib/types";
+import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { Checkbox } from "../ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ import {
   SortableContext,
   useSortable,
   rectSortingStrategy,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Calendar } from "../ui/calendar";
@@ -94,6 +96,26 @@ const DraggableImage = ({ id, src, onRemove, onDoubleClick }: { id: string; src:
             <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={onRemove}>
                 <X className="h-4 w-4" />
             </Button>
+        </div>
+    );
+};
+
+const DraggableCheckboxItem = ({ id, children }: { id: string; children: React.ReactNode; }) => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 100 : 'auto',
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="flex items-center gap-2 w-full">
+            <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="h-8 w-8 cursor-grab shrink-0">
+                <GripVertical className="h-4 w-4" />
+            </Button>
+            {children}
         </div>
     );
 };
@@ -755,7 +777,7 @@ export const NodeForm = ({
                 You are editing {node?.id ? 1 : 'multiple'} nodes. Only the fields you fill out will be updated on the selected nodes.
             </div>
         )}
-        {template.fields.filter(f => f.type !== 'table-header' && f.type !== 'xy-chart' && f.type !== 'query').map((field) => (
+        {template.fields.filter(f => !['table-header', 'xy-chart', 'query', 'checklist', 'checkbox'].includes(f.type)).map((field) => (
           <div key={field.id} className="space-y-2">
             <Label className="text-sm font-medium">{field.name}</Label>
             <div className="flex items-center gap-1">
@@ -765,6 +787,101 @@ export const NodeForm = ({
             </div>
           </div>
         ))}
+        {template.fields.filter(f => f.type === 'checkbox').map((field) => (
+            <div key={field.id} className="space-y-2">
+                <div className="flex items-center space-x-2 pt-2 h-10">
+                    <Checkbox
+                        id={`form-${field.id}`}
+                        checked={!!formData[field.id]}
+                        onCheckedChange={(checked) => {
+                        setFormData({ ...formData, [field.id]: !!checked });
+                        }}
+                    />
+                    <Label htmlFor={`form-${field.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        {field.name}
+                    </Label>
+                </div>
+            </div>
+        ))}
+        {template.fields.filter(f => f.type === 'checklist').map(field => {
+            const items: ChecklistItem[] = formData[field.id] || [];
+            
+            const handleItemChange = (index: number, newText: string) => {
+                const newItems = [...items];
+                newItems[index] = { ...newItems[index], text: newText };
+                setFormData({ ...formData, [field.id]: newItems });
+            };
+        
+            const handleCheckedChange = (index: number, checked: boolean) => {
+                const newItems = [...items];
+                newItems[index] = { ...newItems[index], checked };
+                setFormData({ ...formData, [field.id]: newItems });
+            };
+            
+            const handleAddItem = () => {
+                const newItems = [...items, { id: generateClientSideId(), text: '', checked: false }];
+                setFormData({ ...formData, [field.id]: newItems });
+            };
+        
+            const handleRemoveItem = (index: number) => {
+                const newItems = items.filter((_, i) => i !== index);
+                setFormData({ ...formData, [field.id]: newItems });
+            };
+        
+            const handleCheckboxDragEnd = (event: DragEndEvent) => {
+                const { active, over } = event;
+                if (over && active.id !== over.id) {
+                    const oldIndex = items.findIndex(item => item.id === active.id);
+                    const newIndex = items.findIndex(item => item.id === over.id);
+                    if (oldIndex !== -1 && newIndex !== -1) {
+                        setFormData(prev => ({
+                            ...prev,
+                            [field.id]: arrayMove(items, oldIndex, newIndex)
+                        }));
+                    }
+                }
+            };
+
+            return (
+                <div key={field.id} className="space-y-2">
+                    <Label className="text-sm font-medium">{field.name}</Label>
+                    <div className="space-y-2">
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCheckboxDragEnd}>
+                            <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                                {items.map((item, index) => (
+                                    <DraggableCheckboxItem key={item.id} id={item.id}>
+                                        <div className="flex items-center gap-2 w-full">
+                                            <Checkbox
+                                                checked={item.checked}
+                                                onCheckedChange={(checked) => handleCheckedChange(index, !!checked)}
+                                            />
+                                            <Input
+                                                value={item.text}
+                                                onChange={(e) => handleItemChange(index, e.target.value)}
+                                                className="h-8"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive"
+                                                onClick={() => handleRemoveItem(index)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </DraggableCheckboxItem>
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+            
+                        <Button type="button" variant="outline" size="sm" onClick={handleAddItem} className="mt-2">
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Item
+                        </Button>
+                    </div>
+                </div>
+            );
+        })}
         {template.fields.filter(f => f.type === 'query').map(field => {
             const queryDefs: QueryDefinition[] = Array.isArray(formData[field.id]) ? formData[field.id] : [];
             

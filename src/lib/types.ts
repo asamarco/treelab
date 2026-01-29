@@ -9,7 +9,7 @@ import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query";
+export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "checklist" | "checkbox";
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
@@ -28,6 +28,12 @@ export interface AttachmentInfo {
   name: string; // Original file name
   size: number; // File size in bytes
   type: string; // Mime type
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  checked: boolean;
 }
 
 export type ConditionalRuleOperator = 

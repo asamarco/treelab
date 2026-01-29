@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition } from "@/lib/types";
+import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "../ui/card";
@@ -23,13 +23,16 @@ import { SetStateAction } from "react";
 import type { WritableDraft } from "immer";
 import { Button } from "../ui/button";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "../ui/tooltip";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label as ChartLabel, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
 import { getConditionalStyle } from "./tree-node-utils";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
+
 
 interface TreeNodeContentProps {
   node: TreeNode;
@@ -44,7 +47,7 @@ interface TreeNodeContentProps {
 
 export function TreeNodeContent({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange }: TreeNodeContentProps) {
   const { currentUser } = useAuthContext();
-  const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode } = useTreeContext();
+  const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode, updateNode } = useTreeContext();
   const { setDialogState } = useUIContext();
   const isMobile = useIsMobile();
   const { toast } = useToast();
@@ -87,11 +90,27 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
     window.open(url, '_blank');
   };
 
+  const handleCheckboxChange = (fieldId: string, itemId: string, checked: boolean) => {
+    const currentItems: ChecklistItem[] = node.data[fieldId] || [];
+    const newItems = currentItems.map(item =>
+      item.id === itemId ? { ...item, checked } : item
+    );
+    const newData = {
+      ...node.data,
+      [fieldId]: newItems,
+    };
+    if (updateNode) {
+      updateNode(node.id, { data: newData });
+    }
+  };
+
   const pictureFields = template.fields.filter((f) => f.type === 'picture');
   const attachmentFields = template.fields.filter((f) => f.type === 'attachment');
   const tableHeaderFields = template.fields.filter(f => f.type === 'table-header');
   const xyChartFields = template.fields.filter(f => f.type === 'xy-chart');
   const queryFields = template.fields.filter(f => f.type === 'query');
+  const checklistFields = template.fields.filter(f => f.type === 'checklist');
+  const checkboxFields = template.fields.filter(f => f.type === 'checkbox');
   
   const getTableRowCount = () => {
     if (tableHeaderFields.length === 0) return 0;
@@ -131,6 +150,50 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
             <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
           </div>
         )}
+        {checkboxFields.map(field => {
+          const isChecked = !!nodeData[field.id];
+          return (
+            <div key={field.id} className="mt-2 flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
+              <Checkbox
+                id={`view-${node.id}-${field.id}`}
+                checked={isChecked}
+                onCheckedChange={(checked) => {
+                  if (updateNode) {
+                    updateNode(node.id, { data: { ...node.data, [field.id]: !!checked } });
+                  }
+                }}
+              />
+              <Label htmlFor={`view-${node.id}-${field.id}`} className={cn("font-normal", isChecked && "line-through text-muted-foreground")}>
+                {field.name}
+              </Label>
+            </div>
+          );
+        })}
+        {checklistFields.map(field => {
+          const items: ChecklistItem[] = nodeData[field.id];
+          if (!items || !Array.isArray(items) || items.length === 0) {
+              return null;
+          }
+      
+          return (
+              <div key={field.id} className="mt-4" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                  <p className="font-medium text-sm mb-2">{field.name}</p>
+                  <div className="space-y-2">
+                      {items.map(item => (
+                          <div key={item.id} className="flex items-center gap-2">
+                              <Checkbox 
+                                checked={item.checked} 
+                                onCheckedChange={(checked) => handleCheckboxChange(field.id, item.id, !!checked)}
+                              />
+                              <span className={cn("text-sm", item.checked && "line-through text-muted-foreground")}>
+                                  {item.text}
+                              </span>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          )
+        })}
         {xyChartFields.map((field) => {
             const chartData: XYChartData = nodeData[field.id];
             if (!chartData || !Array.isArray(chartData.points) || chartData.points.length === 0) {
@@ -149,10 +212,10 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                       <LineChart data={numericData} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']}>
-                           <Label value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
+                           <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
                         </XAxis>
                         <YAxis domain={['auto', 'auto']}>
-                           <Label value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+                           <ChartLabel value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                         </YAxis>
                         <ChartTooltip />
                         <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={false} />
@@ -190,7 +253,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
           const doesOverflow = containerWidth > 0 && totalImageWidth > (containerWidth - indentation - 50);
 
           const viewMode = imageViewModes[field.id] || 'carousel';
-          const finalViewMode = doesOverflow ? viewMode : 'grid';
+          const finalViewMode = isMobile ? 'carousel' : doesOverflow ? viewMode : 'grid';
 
           return (
             <div 
@@ -226,19 +289,19 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                  )}
               </div>
               
-              {isMobile || finalViewMode === 'carousel' ? (
+              {finalViewMode === 'carousel' ? (
                  <div className="mx-auto" style={{ maxWidth: '100%' }}>
                   <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
                     <CarouselContent>
                       {images.map((src, index) => {
                           return (
-                            <CarouselItem key={index} className={cn(isMobile && "basis-full")}>
+                            <CarouselItem key={index} className={cn(!isMobile && "basis-auto", isMobile && "basis-full")}>
                                 <div className="p-1 h-full flex items-center justify-center">
                                     <CardContent className="flex h-full items-center justify-center p-0 overflow-hidden rounded-lg">
                                         <img 
                                           src={src} 
                                           alt={`${field.name} ${index + 1}`} 
-                                          className="object-contain w-full h-full"
+                                          className="object-contain w-full"
                                           style={{ maxHeight: `${maxHeight}px` }} 
                                           onDoubleClick={(e) => handleImageDoubleClick(e, src)} 
                                           onLoad={(e) => {

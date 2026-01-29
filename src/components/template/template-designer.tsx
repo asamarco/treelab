@@ -94,7 +94,7 @@ import { MultiSelect } from "../ui/multi-select";
 const fieldSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "Field name is required"),
-  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query"]),
+  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox"]),
   options: z.array(z.string()).optional(),
   columnType: z.enum(["text", "number", "date"]).optional(),
   height: z.number().optional(),
@@ -617,6 +617,8 @@ export function TemplateDesigner({
                                       <SelectItem value="query">Query</SelectItem>
                                       <SelectItem value="picture">Picture</SelectItem>
                                       <SelectItem value="attachment">Attachment</SelectItem>
+                                      <SelectItem value="checkbox">Checkbox</SelectItem>
+                                      <SelectItem value="checklist">Checklist</SelectItem>
                                       <SelectItem value="table-header">Table Header</SelectItem>
                                       <SelectItem value="xy-chart">XY Chart</SelectItem>
                                       <SelectItem value="dropdown">
@@ -951,4 +953,3 @@ export function TemplateDesigner({
     </>
   );
 }
-  
