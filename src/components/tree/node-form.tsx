@@ -192,6 +192,7 @@ export const NodeForm = ({
   
   const [orderString, setOrderString] = useState(contextualOrder.toString());
 
+  let tableRendered = false;
 
   useEffect(() => {
       const parentIndex = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
@@ -777,33 +778,26 @@ export const NodeForm = ({
                 You are editing {node?.id ? 1 : 'multiple'} nodes. Only the fields you fill out will be updated on the selected nodes.
             </div>
         )}
-        {template.fields.filter(f => !['table-header', 'xy-chart', 'query', 'checklist', 'checkbox'].includes(f.type)).map((field) => (
-          <div key={field.id} className="space-y-2">
-            <Label className="text-sm font-medium">{field.name}</Label>
-            <div className="flex items-center gap-1">
-              {field.prefix && <span className="text-muted-foreground text-sm">{field.prefix}</span>}
-              <div className="flex-grow">{renderField(field)}</div>
-              {field.postfix && <span className="text-muted-foreground text-sm">{field.postfix}</span>}
-            </div>
-          </div>
-        ))}
-        {template.fields.filter(f => f.type === 'checkbox').map((field) => (
-            <div key={field.id} className="space-y-2">
+        {template.fields.map((field) => {
+          if (field.type === 'checkbox') {
+            return (
+              <div key={field.id} className="space-y-2">
                 <div className="flex items-center space-x-2 pt-2 h-10">
-                    <Checkbox
-                        id={`form-${field.id}`}
-                        checked={!!formData[field.id]}
-                        onCheckedChange={(checked) => {
-                        setFormData({ ...formData, [field.id]: !!checked });
-                        }}
-                    />
-                    <Label htmlFor={`form-${field.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {field.name}
-                    </Label>
+                  <Checkbox
+                    id={`form-${field.id}`}
+                    checked={!!formData[field.id]}
+                    onCheckedChange={(checked) => {
+                      setFormData({ ...formData, [field.id]: !!checked });
+                    }}
+                  />
+                  <Label htmlFor={`form-${field.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    {field.name}
+                  </Label>
                 </div>
-            </div>
-        ))}
-        {template.fields.filter(f => f.type === 'checklist').map(field => {
+              </div>
+            );
+          }
+          if (field.type === 'checklist') {
             const items: ChecklistItem[] = formData[field.id] || [];
             
             const handleItemChange = (index: number, newText: string) => {
@@ -881,8 +875,8 @@ export const NodeForm = ({
                     </div>
                 </div>
             );
-        })}
-        {template.fields.filter(f => f.type === 'query').map(field => {
+          }
+          if (field.type === 'query') {
             const queryDefs: QueryDefinition[] = Array.isArray(formData[field.id]) ? formData[field.id] : [];
             
             const handleQueryArrayChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
@@ -979,9 +973,9 @@ export const NodeForm = ({
                   </Button>
                 </div>
               </div>
-            )
-        })}
-        {template.fields.filter(f => f.type === 'xy-chart').map(field => {
+            );
+          }
+          if (field.type === 'xy-chart') {
             const chartData: XYChartData = {
                 points: [],
                 ...formData[field.id],
@@ -1019,77 +1013,94 @@ export const NodeForm = ({
                     </Button>
                 </div>
             )
-        })}
-        {tableHeaderFields.length > 0 && (
-          <div className="space-y-2">
-              <Label className="text-sm font-medium">Table Data</Label>
-              <div className="space-y-4">
-                  {Array.from({ length: getTableRowCount() }).map((_, rowIndex) => (
-                      <Card key={rowIndex} className="bg-muted/50">
-                        <CardContent className="p-4 space-y-4">
-                          <div className="flex justify-between items-center">
-                              <p className="font-semibold">Row {rowIndex + 1}</p>
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                      <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8">
-                                          <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                          <AlertDialogDescription>This will delete the entire row.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">
-                                              Delete
-                                          </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
-                          </div>
-                          {tableHeaderFields.map(field => {
-                            const dateString = formData[field.id]?.[rowIndex];
-                            let dateValue: Date | undefined;
-                            if(dateString && typeof dateString === 'string') {
-                               const parsed = parse(dateString, 'yyyy-MM-dd', new Date());
-                               if (isValid(parsed)) dateValue = parsed;
-                            }
-                            
-                            return (
-                              <div key={field.id} className="space-y-2">
-                                  <Label className="text-sm font-medium">{field.name}</Label>
-                                  <div className="flex items-center gap-1">
-                                      {field.prefix && <span className="text-muted-foreground text-sm">{field.prefix}</span>}
-                                       {field.columnType === 'date' ? (
-                                        <DatePicker
-                                          date={dateValue}
-                                          setDate={(d) => handleTableChange(rowIndex, field.id, d)}
-                                          placeholder="Select a date"
-                                        />
-                                      ) : (
-                                        <Input
-                                            type={field.columnType || 'text'}
-                                            value={formData[field.id]?.[rowIndex] || ''}
-                                            onChange={e => handleTableChange(rowIndex, field.id, e.target.value)}
-                                            className="h-8 flex-grow"
-                                        />
-                                      )}
-                                      {field.postfix && <span className="text-muted-foreground text-sm">{field.postfix}</span>}
-                                  </div>
-                              </div>
-                            )
-                          })}
-                        </CardContent>
-                      </Card>
-                  ))}
+          }
+          if (field.type === 'table-header') {
+            if (tableRendered) {
+              return null;
+            }
+            tableRendered = true;
+            return (
+              <div key="table-block" className="space-y-2">
+                <Label className="text-sm font-medium">Table Data</Label>
+                <div className="space-y-4">
+                    {Array.from({ length: getTableRowCount() }).map((_, rowIndex) => (
+                        <Card key={rowIndex} className="bg-muted/50">
+                          <CardContent className="p-4 space-y-4">
+                            <div className="flex justify-between items-center">
+                                <p className="font-semibold">Row {rowIndex + 1}</p>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8">
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>This will delete the entire row.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">
+                                                Delete
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                            {tableHeaderFields.map(field => {
+                              const dateString = formData[field.id]?.[rowIndex];
+                              let dateValue: Date | undefined;
+                              if(dateString && typeof dateString === 'string') {
+                                 const parsed = parse(dateString, 'yyyy-MM-dd', new Date());
+                                 if (isValid(parsed)) dateValue = parsed;
+                              }
+                              
+                              return (
+                                <div key={field.id} className="space-y-2">
+                                    <Label className="text-sm font-medium">{field.name}</Label>
+                                    <div className="flex items-center gap-1">
+                                        {field.prefix && <span className="text-muted-foreground text-sm">{field.prefix}</span>}
+                                         {field.columnType === 'date' ? (
+                                          <DatePicker
+                                            date={dateValue}
+                                            setDate={(d) => handleTableChange(rowIndex, field.id, d)}
+                                            placeholder="Select a date"
+                                          />
+                                        ) : (
+                                          <Input
+                                              type={field.columnType || 'text'}
+                                              value={formData[field.id]?.[rowIndex] || ''}
+                                              onChange={e => handleTableChange(rowIndex, field.id, e.target.value)}
+                                              className="h-8 flex-grow"
+                                          />
+                                        )}
+                                        {field.postfix && <span className="text-muted-foreground text-sm">{field.postfix}</span>}
+                                    </div>
+                                </div>
+                              )
+                            })}
+                          </CardContent>
+                        </Card>
+                    ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddRow} className="mt-2">
+                    <PlusCircle className="mr-2 h-4 w-4"/> Add Row
+                </Button>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddRow} className="mt-2">
-                  <PlusCircle className="mr-2 h-4 w-4"/> Add Row
-              </Button>
-          </div>
-        )}
+            );
+          }
+          return (
+            <div key={field.id} className="space-y-2">
+              <Label className="text-sm font-medium">{field.name}</Label>
+              <div className="flex items-center gap-1">
+                {field.prefix && <span className="text-muted-foreground text-sm">{field.prefix}</span>}
+                <div className="flex-grow">{renderField(field)}</div>
+                {field.postfix && <span className="text-muted-foreground text-sm">{field.postfix}</span>}
+              </div>
+            </div>
+          );
+        })}
       </div>
       
       <DialogFooter className="mt-4">
