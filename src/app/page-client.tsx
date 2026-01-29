@@ -47,6 +47,12 @@ import {
   DropdownMenuSubContent,
   DropdownMenuCheckboxItem
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { startOfDay, endOfDay, parse } from "date-fns";
 import { hasAttachments } from "@/components/tree/tree-node-utils";
@@ -219,6 +225,7 @@ export function TreePage() {
   const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
   const [queryFilter, setQueryFilter] = useState<QueryDefinition[]>([]);
   const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -488,6 +495,123 @@ export function TreePage() {
       handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
   
+  const renderFilterContent = () => (
+    <div className="grid gap-4">
+      <div className="space-y-2">
+          <h4 className="font-medium leading-none">Advanced Filters</h4>
+      </div>
+      <div className="grid gap-2">
+          <Label>Template</Label>
+           <Select value={templateFilter || 'all'} onValueChange={(value) => setTemplateFilter(value === 'all' ? null : value)}>
+              <SelectTrigger>
+                  <SelectValue placeholder="Filter by template..." />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="all">All Templates</SelectItem>
+                  {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+              </SelectContent>
+          </Select>
+      </div>
+       <div className="grid gap-2">
+          <Label>Date Created</Label>
+          <div className="flex gap-2">
+              <DatePicker date={createdFrom} setDate={handleDateChange(setCreatedFrom)} placeholder="From" />
+              <DatePicker date={createdTo} setDate={handleDateChange(setCreatedTo)} placeholder="To" />
+          </div>
+      </div>
+       <div className="grid gap-2">
+          <Label>Date Modified</Label>
+          <div className="flex gap-2">
+              <DatePicker date={modifiedFrom} setDate={handleDateChange(setModifiedFrom)} placeholder="From" />
+              <DatePicker date={modifiedTo} setDate={handleDateChange(setModifiedTo)} placeholder="To" />
+          </div>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="has-attachments-filter"
+          checked={hasAttachmentsFilter}
+          onCheckedChange={setHasAttachmentsFilter}
+        />
+        <Label htmlFor="has-attachments-filter" className="flex items-center gap-1">
+          <Paperclip className="h-4 w-4" />
+          Has Attachments
+        </Label>
+      </div>
+
+      <Separator />
+
+      <div className="space-y-2">
+        <h4 className="font-medium leading-none">Query Builder</h4>
+        <p className="text-sm text-muted-foreground">
+            Find nodes matching specific criteria. Groups are combined with OR, conditions within a group are combined with AND.
+        </p>
+      </div>
+      <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+          {queryFilter.map((queryDef, queryIndex) => {
+            const targetTemplate = queryDef.targetTemplateId ? getTemplateById(queryDef.targetTemplateId) : null;
+            return (
+                <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
+                    <div className="flex justify-between items-center">
+                        <Label>Search for nodes with template:</Label>
+                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
+                            <Trash2 className="h-4 w-4"/>
+                        </Button>
+                    </div>
+                    <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
+                        <SelectTrigger><SelectValue placeholder="Select a template..."/></SelectTrigger>
+                        <SelectContent>
+                            {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    
+                    <div className="space-y-2">
+                         <Label>Where...</Label>
+                         {queryDef.rules.map((rule, ruleIndex) => (
+                             <Card key={rule.id || ruleIndex} className="p-2 bg-background">
+                                 <div className="flex items-center gap-2">
+                                     <Select value={rule.fieldId} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
+                                        <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
+                                        <SelectContent>
+                                            {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                                        </SelectContent>
+                                     </Select>
+                                      <Select value={rule.operator} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
+                                        <SelectTrigger className="w-48"><SelectValue placeholder="Operator..."/></SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(operatorLabels).map(([op, label]) => (
+                                                <SelectItem key={op} value={op as ConditionalRuleOperator}>{label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                     </Select>
+                                     <Input value={rule.value} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
+                                     <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
+                                         <Trash2 className="h-4 w-4"/>
+                                     </Button>
+                                 </div>
+                             </Card>
+                         ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
+                            <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition
+                        </Button>
+                    </div>
+                </Card>
+            )
+          })}
+          <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
+            <PlusCircle className="mr-2 h-4 w-4"/> Add OR Group
+          </Button>
+        </div>
+
+      <Separator />
+
+      <Button variant="outline" onClick={resetFilters}>
+          <X className="mr-2 h-4 w-4" /> Reset All Filters
+      </Button>
+    </div>
+  );
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
@@ -525,7 +649,7 @@ export function TreePage() {
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Node
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                     <DropdownMenuItem onSelect={() => setIsFilterPopoverOpen(true)}>
+                     <DropdownMenuItem onSelect={() => setIsFilterDialogOpen(true)}>
                         <Filter className={cn("mr-2 h-4 w-4", areFiltersActive && "fill-current text-primary")} />
                         Filters {areFiltersActive && `(${activeFilterCount})`}
                     </DropdownMenuItem>
@@ -596,120 +720,7 @@ export function TreePage() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-96" align="end">
-                    <div className="grid gap-4">
-                      <div className="space-y-2">
-                          <h4 className="font-medium leading-none">Advanced Filters</h4>
-                      </div>
-                      <div className="grid gap-2">
-                          <Label>Template</Label>
-                           <Select value={templateFilter || 'all'} onValueChange={(value) => setTemplateFilter(value === 'all' ? null : value)}>
-                              <SelectTrigger>
-                                  <SelectValue placeholder="Filter by template..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                  <SelectItem value="all">All Templates</SelectItem>
-                                  {templates.map(t => (
-                                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                      </div>
-                       <div className="grid gap-2">
-                          <Label>Date Created</Label>
-                          <div className="flex gap-2">
-                              <DatePicker date={createdFrom} setDate={handleDateChange(setCreatedFrom)} placeholder="From" />
-                              <DatePicker date={createdTo} setDate={handleDateChange(setCreatedTo)} placeholder="To" />
-                          </div>
-                      </div>
-                       <div className="grid gap-2">
-                          <Label>Date Modified</Label>
-                          <div className="flex gap-2">
-                              <DatePicker date={modifiedFrom} setDate={handleDateChange(setModifiedFrom)} placeholder="From" />
-                              <DatePicker date={modifiedTo} setDate={handleDateChange(setModifiedTo)} placeholder="To" />
-                          </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          id="has-attachments-filter"
-                          checked={hasAttachmentsFilter}
-                          onCheckedChange={setHasAttachmentsFilter}
-                        />
-                        <Label htmlFor="has-attachments-filter" className="flex items-center gap-1">
-                          <Paperclip className="h-4 w-4" />
-                          Has Attachments
-                        </Label>
-                      </div>
-
-                      <Separator />
-
-                      <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Query Builder</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Find nodes matching specific criteria. Groups are combined with OR, conditions within a group are combined with AND.
-                        </p>
-                      </div>
-                      <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-                          {queryFilter.map((queryDef, queryIndex) => {
-                            const targetTemplate = queryDef.targetTemplateId ? getTemplateById(queryDef.targetTemplateId) : null;
-                            return (
-                                <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <Label>Search for nodes with template:</Label>
-                                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
-                                            <Trash2 className="h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                    <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
-                                        <SelectTrigger><SelectValue placeholder="Select a template..."/></SelectTrigger>
-                                        <SelectContent>
-                                            {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    
-                                    <div className="space-y-2">
-                                         <Label>Where...</Label>
-                                         {queryDef.rules.map((rule, ruleIndex) => (
-                                             <Card key={rule.id || ruleIndex} className="p-2 bg-background">
-                                                 <div className="flex items-center gap-2">
-                                                     <Select value={rule.fieldId} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
-                                                        <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
-                                                        <SelectContent>
-                                                            {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                                                        </SelectContent>
-                                                     </Select>
-                                                      <Select value={rule.operator} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
-                                                        <SelectTrigger className="w-48"><SelectValue placeholder="Operator..."/></SelectTrigger>
-                                                        <SelectContent>
-                                                            {Object.entries(operatorLabels).map(([op, label]) => (
-                                                                <SelectItem key={op} value={op as ConditionalRuleOperator}>{label}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                     </Select>
-                                                     <Input value={rule.value} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                                     <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
-                                                         <Trash2 className="h-4 w-4"/>
-                                                     </Button>
-                                                 </div>
-                                             </Card>
-                                         ))}
-                                        <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
-                                            <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition
-                                        </Button>
-                                    </div>
-                                </Card>
-                            )
-                          })}
-                          <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
-                            <PlusCircle className="mr-2 h-4 w-4"/> Add OR Group
-                          </Button>
-                        </div>
-
-                      <Separator />
-
-                      <Button variant="outline" onClick={resetFilters}>
-                          <X className="mr-2 h-4 w-4" /> Reset All Filters
-                      </Button>
-                    </div>
+                    {renderFilterContent()}
                 </PopoverContent>
               </Popover>
               <div className="flex items-center space-x-2">
@@ -742,6 +753,19 @@ export function TreePage() {
 
         <TreeSelectionBar />
       </main>
+
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+          </DialogHeader>
+          <div className="pt-4">
+            {renderFilterContent()}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+    
