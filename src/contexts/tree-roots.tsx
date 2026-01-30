@@ -166,6 +166,30 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
   }, [setAllTrees, currentUser]);
 
+  const reloadActiveTree = useCallback(
+    async (treeIdToLoad?: string) => {
+      const idToLoad = treeIdToLoad || activeTreeId;
+      if (!idToLoad) return;
+      
+      const reloadedTree = await loadTreeFile(idToLoad);
+      if (reloadedTree) {
+        setAllTrees((draft: WritableDraft<TreeFile[]>) => {
+            const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
+            if (index > -1) {
+                // Preserve expanded state while updating everything else
+                const oldExpanded = draft[index].expandedNodeIds;
+                draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
+            }
+        });
+        toast({ title: "Tree Reloaded", description: "The latest version of the tree has been loaded." });
+        console.log('INFO: Reloaded tree due to external change.')
+      } else {
+        toast({ variant: "destructive", title: "Reload Failed", description: `Could not reload the tree.` });
+        console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
+      }
+    },
+    [activeTreeId, setAllTrees, toast, currentUser]
+  );
 
   const executeCommand = useCallback(async (command: Command, isUndoable: boolean = true) => {
     if (!activeTreeId || !currentUser) { // CRITICAL: Stop if no user
@@ -192,8 +216,13 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
             await command.post(finalTreeFile, newTimestamp);
         } catch (error) {
             console.error("Database operation failed:", error);
-            toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save changes to the database. Please reload.' });
-            return;
+            toast({ 
+                variant: 'destructive', 
+                title: 'Save Failed', 
+                description: 'Your change could not be saved. Reloading the tree to ensure data consistency.' 
+            });
+            await reloadActiveTree(); 
+            return; // Important to stop further execution like history update
         }
     }
     
@@ -207,7 +236,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         setHistoryIndex(newHistory.length - 1);
     }
 
-}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, currentUser, performAction, toast]);
+}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, currentUser, performAction, toast, reloadActiveTree]);
   
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < commandHistory.length - 1;
@@ -292,30 +321,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         }
     }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser, currentUser]);
 
-  const reloadActiveTree = useCallback(
-    async (treeIdToLoad?: string) => {
-      const idToLoad = treeIdToLoad || activeTreeId;
-      if (!idToLoad) return;
-      
-      const reloadedTree = await loadTreeFile(idToLoad);
-      if (reloadedTree) {
-        setAllTrees((draft: WritableDraft<TreeFile[]>) => {
-            const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
-            if (index > -1) {
-                // Preserve expanded state while updating everything else
-                const oldExpanded = draft[index].expandedNodeIds;
-                draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
-            }
-        });
-        toast({ title: "Tree Reloaded", description: "The latest version of the tree has been loaded." });
-        console.log('INFO: Reloaded tree due to external change.')
-      } else {
-        toast({ variant: "destructive", title: "Reload Failed", description: `Could not reload the tree.` });
-        console.error(`ERROR: Failed to reload tree with ID ${idToLoad}.`);
-      }
-    },
-    [activeTreeId, setAllTrees, toast, currentUser]
-  );
   
   const createNewTree = useCallback(
     async (title: string, user?: User): Promise<string | null> => {
@@ -556,7 +561,15 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         }
     });
 
-    await commandToUndo.undo(newTimestamp);
+    try {
+        await commandToUndo.undo(newTimestamp);
+    } catch (error) {
+        console.error("Undo operation failed in database:", error);
+        toast({ variant: 'destructive', title: 'Undo Failed', description: 'Could not save the undo operation. Reloading to prevent data inconsistency.' });
+        await reloadActiveTree();
+        return;
+    }
+
     setAllTrees(() => undoSnapshot);
     setHistoryIndex((prev) => prev - 1);
   
@@ -565,7 +578,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       description: `Reversed action: ${getActionDescription(commandToUndo)}`,
     });
   
-  }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast, allTrees, activeTreeId, currentUser]);
+  }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast, allTrees, activeTreeId, currentUser, reloadActiveTree]);
   
   const redoLastAction = useCallback(async () => {
     const newIndex = historyIndex + 1;
@@ -586,6 +599,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     
     const finalTreeFile = afterState.find(t => t.id === activeTreeId);
 
+    // Optimistically update UI first.
     setAllTrees(() => afterState);
     setHistoryIndex(newIndex);
     
@@ -594,12 +608,19 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         description: `Re-applied action: ${getActionDescription(commandToRedo)}`,
     });
     
-    if (commandToRedo.redo) {
-        await commandToRedo.redo(finalTreeFile, newTimestamp);
-    } else if (commandToRedo.post && finalTreeFile) {
-        await commandToRedo.post(finalTreeFile, newTimestamp);
+    try {
+        if (commandToRedo.redo) {
+            await commandToRedo.redo(finalTreeFile, newTimestamp);
+        } else if (commandToRedo.post && finalTreeFile) {
+            await commandToRedo.post(finalTreeFile, newTimestamp);
+        }
+    } catch (error) {
+        console.error("Redo operation failed in database:", error);
+        toast({ variant: 'destructive', title: 'Redo Failed', description: 'Could not save the redo operation. Reloading to prevent data inconsistency.' });
+        await reloadActiveTree();
+        return;
     }
-}, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast, currentUser]);
+}, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast, currentUser, reloadActiveTree]);
 
 
   const loadUserSpecificData = useCallback(
@@ -722,9 +743,21 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     
     const { tree, ...metaData } = updatedTree;
 
-    saveTreeFile(metaData, newTimestamp).finally(() => {
-      setIsSaving(false);
-      console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
+    saveTreeFile(metaData, newTimestamp)
+    .then(() => {
+        console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
+    })
+    .catch((error) => {
+        console.error("Debounced save failed:", error);
+        toast({
+            variant: "destructive",
+            title: "Auto-Save Failed",
+            description: "A background save failed. Reloading the tree to ensure data consistency.",
+        });
+        reloadActiveTree();
+    })
+    .finally(() => {
+        setIsSaving(false);
     });
 
   }, 1000);
