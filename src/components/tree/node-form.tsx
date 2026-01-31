@@ -993,7 +993,7 @@ const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, on
         const newRules = [...newQueryDefs[queryIndex].rules];
         const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relationRuleIndex);
         newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
-        handleQueryChange(newQueryDefs);
+        handleQueryGroupChange(queryIndex, 'rules', newRules);
     };
 
     return (
@@ -1024,17 +1024,22 @@ const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, on
                                 const relationTemplate = rule.relationTemplateId ? getTemplateById(rule.relationTemplateId) : null;
                                 return (
                                     <Card key={rule.id || ruleIndex} className="p-2 bg-background space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val)}>
-                                                <SelectTrigger className="w-32"><SelectValue/></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="field">Field</SelectItem>
-                                                    <SelectItem value="ancestor">Ancestor</SelectItem>
-                                                    <SelectItem value="descendant">Descendant</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val)}>
+                                                    <SelectTrigger className="w-auto"><SelectValue/></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="field">Field</SelectItem>
+                                                        <SelectItem value="ancestor">Ancestor</SelectItem>
+                                                        <SelectItem value="descendant">Descendant</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
                                             {ruleType === 'field' ? (
-                                                <>
+                                                <div className="space-y-2 pl-2">
                                                     <Select value={rule.fieldId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
                                                         <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
                                                         <SelectContent>
@@ -1042,48 +1047,47 @@ const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, on
                                                         </SelectContent>
                                                     </Select>
                                                     <Select value={rule.operator || 'equals'} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
-                                                        <SelectTrigger className="w-48"><SelectValue placeholder="Operator..."/></SelectTrigger>
+                                                        <SelectTrigger><SelectValue placeholder="Operator..."/></SelectTrigger>
                                                         <SelectContent>
                                                             {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <Input value={rule.value || ''} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                                </>
+                                                </div>
                                             ) : (
-                                                <>
-                                                   <span className="text-sm">has {ruleType} with template:</span>
+                                                <div className="space-y-2 pl-2">
+                                                   <span className="text-sm p-2 block">has {ruleType} with template:</span>
                                                     <Select value={rule.relationTemplateId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'relationTemplateId', val)}>
                                                         <SelectTrigger><SelectValue placeholder="Template..."/></SelectTrigger>
                                                         <SelectContent>
                                                             {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
-                                                </>
+                                                </div>
                                             )}
-                                            <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
-                                                <Trash2 className="h-4 w-4"/>
-                                            </Button>
                                         </div>
                                         { (ruleType === 'ancestor' || ruleType === 'descendant') && rule.relationTemplateId && (
                                             <div className="pl-6 space-y-2">
                                                 <Label className="text-xs text-muted-foreground">Where...</Label>
                                                 {(rule.relationRules || []).map((relRule, relRuleIndex) => (
                                                     <Card key={relRule.id} className="p-2 bg-muted/50">
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="space-y-2">
                                                             <Select value={relRule.fieldId} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'fieldId', val)}>
                                                                 <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
                                                                 <SelectContent>{relationTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
                                                             </Select>
                                                             <Select value={relRule.operator} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'operator', val)}>
-                                                                <SelectTrigger className="w-48"><SelectValue placeholder="Operator..."/></SelectTrigger>
+                                                                <SelectTrigger><SelectValue placeholder="Operator..."/></SelectTrigger>
                                                                 <SelectContent>
                                                                     {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
                                                                 </SelectContent>
                                                             </Select>
                                                             <Input value={relRule.value} onChange={(e) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                                            <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRelationRule(queryIndex, ruleIndex, relRuleIndex)}>
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            <div className="flex justify-end">
+                                                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRelationRule(queryIndex, ruleIndex, relRuleIndex)}>
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                     </Card>
                                                 ))}
