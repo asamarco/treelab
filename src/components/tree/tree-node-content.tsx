@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -166,32 +167,35 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                             }
                             }}
                         />
-                        <Label htmlFor={`view-${node.id}-${field.id}`} className={cn("font-normal", isChecked && "line-through text-muted-foreground")}>
+                        <Label htmlFor={`view-${node.id}-${field.id}`} className={cn("font-normal", isChecked && "text-muted-foreground")}>
                             {field.name}
                         </Label>
                         </div>
                     );
                 }
                 case 'checklist': {
-                    const items: ChecklistItem[] = value;
-                    if (!items || !Array.isArray(items) || items.length === 0) return null;
+                    const items: ChecklistItem[] = value || [];
                 
                     return (
                         <div key={field.id} className="mt-4" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                             <p className="font-medium text-sm mb-2">{field.name}</p>
-                            <div className="space-y-2">
-                                {items.map(item => (
-                                    <div key={item.id} className="flex items-center gap-2">
-                                        <Checkbox 
-                                        checked={item.checked} 
-                                        onCheckedChange={(checked) => handleCheckboxChange(field.id, item.id, !!checked)}
-                                        />
-                                        <span className={cn("text-sm", item.checked && "line-through text-muted-foreground")}>
-                                            {item.text}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
+                            {items.length > 0 ? (
+                                <div className="space-y-2">
+                                    {items.map(item => (
+                                        <div key={item.id} className="flex items-center gap-2">
+                                            <Checkbox 
+                                            checked={item.checked} 
+                                            onCheckedChange={(checked) => handleCheckboxChange(field.id, item.id, !!checked)}
+                                            />
+                                            <span className={cn("text-sm", item.checked && "text-muted-foreground")}>
+                                                {item.text}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground italic px-2">No items.</p>
+                            )}
                         </div>
                     )
                 }
@@ -373,7 +377,6 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
                     return (
                         <div key="table-block" className="mt-2 text-sm" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                        <p className="font-medium mb-1">Table</p>
                         <div className="overflow-x-auto rounded-md border">
                         <Table>
                             <TableHeader>
