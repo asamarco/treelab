@@ -180,10 +180,10 @@ export const getContextualOrder = (node: TreeNode, siblings: readonly TreeNode[]
 export const evaluateCondition = (
   operator: ConditionalRuleOperator,
   fieldValue: any,
-  ruleValue: string
+  ruleValue: string | undefined
 ): boolean => {
   const fv = String(fieldValue ?? '').toLowerCase();
-  const rv = ruleValue.toLowerCase();
+  const rv = (ruleValue ?? '').toLowerCase();
 
   switch (operator) {
     case 'equals': return fv === rv;

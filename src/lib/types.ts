@@ -55,11 +55,27 @@ export interface ConditionalRule {
   color: string;
 }
 
-export interface QueryRule {
+export interface SimpleQueryRule {
   id: string;
   fieldId: string;
   operator: ConditionalRuleOperator;
   value: string;
+}
+
+export type RuleType = 'field' | 'ancestor' | 'descendant';
+
+export interface QueryRule {
+  id: string;
+  type: RuleType;
+
+  // for type: 'field'
+  fieldId?: string;
+  operator?: ConditionalRuleOperator;
+  value?: string;
+  
+  // for type: 'ancestor' | 'descendant'
+  relationTemplateId?: string | null;
+  relationRules?: SimpleQueryRule[];
 }
 
 export interface QueryDefinition {
@@ -67,6 +83,7 @@ export interface QueryDefinition {
   targetTemplateId: string | null;
   rules: QueryRule[];
 }
+
 
 export interface Template {
   id: string;

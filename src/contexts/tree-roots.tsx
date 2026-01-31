@@ -39,6 +39,7 @@ import {
     TreeContextType,
     QueryDefinition,
     ConditionalRuleOperator,
+    SimpleQueryRule,
 } from '@/lib/types';
 import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
@@ -271,11 +272,66 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     [activeTree]
   );
   
+  const findNodeAndParent = useCallback((nodeId: string, nodes?: TreeNode[]): { node: TreeNode; parent: TreeNode | null } | null => {
+    const searchNodes = nodes || activeTree?.tree;
+    if (!searchNodes) return null;
+
+    for (const node of searchNodes) {
+        if (node.id === nodeId) {
+            return { node, parent: null };
+        }
+        if (node.children) {
+            const found = findNodeAndParent(nodeId, node.children);
+            if (found) {
+                return { ...found, parent: found.parent || node };
+            }
+        }
+    }
+    return null;
+  }, [activeTree?.tree]);
+  
   const findNodesByQuery = useCallback((query: QueryDefinition): TreeNode[] => {
     if (!activeTree || !query || !query.targetTemplateId) return [];
 
     const targetTemplate = getTemplateById(query.targetTemplateId);
     if (!targetTemplate) return [];
+
+    const hasMatchingAncestor = (node: TreeNode, relationTemplateId: string, relationRules: SimpleQueryRule[]): boolean => {
+        let current = node;
+        while (true) {
+            const parentInfo = findNodeAndParent(current.id, activeTree.tree);
+            if (!parentInfo || !parentInfo.parent) {
+                return false; // Reached root
+            }
+            const parent = parentInfo.parent;
+            if (parent.templateId === relationTemplateId) {
+                const matches = (relationRules || []).every(rule => {
+                    const fieldValue = (parent.data || {})[rule.fieldId!];
+                    return evaluateCondition(rule.operator, fieldValue, rule.value!);
+                });
+                if (matches) return true;
+            }
+            current = parent;
+        }
+    };
+
+    const hasMatchingDescendant = (node: TreeNode, relationTemplateId: string, relationRules: SimpleQueryRule[]): boolean => {
+        const queue: TreeNode[] = [...(node.children || [])];
+        while (queue.length > 0) {
+            const currentNode = queue.shift()!;
+            if (currentNode.templateId === relationTemplateId) {
+                const matches = (relationRules || []).every(rule => {
+                    const fieldValue = (currentNode.data || {})[rule.fieldId!];
+                    return evaluateCondition(rule.operator, fieldValue, rule.value!);
+                });
+                if (matches) return true;
+            }
+            if (currentNode.children) {
+                queue.push(...currentNode.children);
+            }
+        }
+        return false;
+    };
 
     const results: TreeNode[] = [];
     const allNodes: TreeNode[] = [];
@@ -292,17 +348,31 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     for (const node of allNodes) {
         if (node.templateId === query.targetTemplateId) {
-            const matches = query.rules.every(rule => {
-                const fieldValue = (node.data || {})[rule.fieldId];
-                return evaluateCondition(rule.operator, fieldValue, rule.value);
+            const matches = (query.rules || []).every(rule => {
+                const { type = 'field' } = rule;
+                if (type === 'field') {
+                    if (!rule.fieldId) return false;
+                    const fieldValue = (node.data || {})[rule.fieldId];
+                    return evaluateCondition(rule.operator as ConditionalRuleOperator, fieldValue, rule.value!);
+                }
+                if (type === 'ancestor') {
+                    if (!rule.relationTemplateId) return false;
+                    return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules!);
+                }
+                if (type === 'descendant') {
+                    if (!rule.relationTemplateId) return false;
+                    return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules!);
+                }
+                return false;
             });
+
             if (matches) {
                 results.push(node);
             }
         }
     }
     return results;
-  }, [activeTree, getTemplateById]);
+  }, [activeTree, getTemplateById, findNodeAndParent]);
 
   const reloadAllTrees = useCallback(async () => {
     if (!currentUser) return;
@@ -767,24 +837,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       debouncedSave(activeTree);
     }
   }, [currentUser, isDirty, activeTree, debouncedSave, isSaving]);
-  
-  const findNodeAndParent = useCallback((nodeId: string, nodes?: TreeNode[]): { node: TreeNode; parent: TreeNode | null } | null => {
-    const searchNodes = nodes || activeTree?.tree;
-    if (!searchNodes) return null;
-
-    for (const node of searchNodes) {
-        if (node.id === nodeId) {
-            return { node, parent: null };
-        }
-        if (node.children) {
-            const found = findNodeAndParent(nodeId, node.children);
-            if (found) {
-                return { ...found, parent: found.parent || node };
-            }
-        }
-    }
-    return null;
-  }, [activeTree?.tree]);
   
   const findNodeAndContextualParent = useCallback(
     (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[]): { node: TreeNode, parent: TreeNode | null } | null => {
