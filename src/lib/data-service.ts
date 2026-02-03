@@ -717,10 +717,6 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
     const nodeIds = updates.map(u => u.id);
     const nodesToUpdate = await TreeNodeModel.find({ _id: { $in: nodeIds } }).select('treeId').lean<TreeNode[]>();
 
-    if (nodesToUpdate.length !== nodeIds.length) {
-        throw new Error("One or more nodes to update could not be found.");
-    }
-
     const firstTreeId = nodesToUpdate[0]?.treeId;
     if (!firstTreeId) {
         throw new Error("Could not determine tree for update operation.");
