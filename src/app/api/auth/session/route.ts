@@ -48,5 +48,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(null, { status: 401 });
+  // Return 200 with null instead of 401 to avoid unnecessary console errors
+  // during initial app load when no user is signed in.
+  return NextResponse.json(null);
 }
