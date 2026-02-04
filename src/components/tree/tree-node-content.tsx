@@ -175,27 +175,24 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                 }
                 case 'checklist': {
                     const items: ChecklistItem[] = value || [];
+                    if (items.length === 0) return null;
                 
                     return (
                         <div key={field.id} className="mt-4" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                             <p className="font-medium text-sm mb-2">{field.name}</p>
-                            {items.length > 0 ? (
-                                <div className="space-y-2">
-                                    {items.map(item => (
-                                        <div key={item.id} className="flex items-center gap-2">
-                                            <Checkbox 
-                                            checked={item.checked} 
-                                            onCheckedChange={(checked) => handleCheckboxChange(field.id, item.id, !!checked)}
-                                            />
-                                            <span className={cn("text-sm", item.checked && "text-muted-foreground")}>
-                                                {item.text}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground italic px-2">No items.</p>
-                            )}
+                            <div className="space-y-2">
+                                {items.map(item => (
+                                    <div key={item.id} className="flex items-center gap-2">
+                                        <Checkbox 
+                                        checked={item.checked} 
+                                        onCheckedChange={(checked) => handleCheckboxChange(field.id, item.id, !!checked)}
+                                        />
+                                        <span className={cn("text-sm", item.checked && "text-muted-foreground")}>
+                                            {item.text}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )
                 }
