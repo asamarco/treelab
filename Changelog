@@ -1,3 +1,13 @@
+v0.4.0
+
+Feature: Custom filter queries and "Query" node type
+Feature: Batch update of nodes (multinode edit)
+Feature: Checkbox and Checklist field types
+Improvement: dedicated mobile UI
+Improvement: render nodes exactly as specified in the template whatever the node type
+Improvement: feedback user and reload current tree in the event of a failed DB write
+
+
 v0.3.2 
 
 Improvement: enforced authentication on all server actions and APIs, mitigation of possible NoSQL injections

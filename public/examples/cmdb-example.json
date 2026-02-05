@@ -1,0 +1,99 @@
+{
+  "title": "CMDB Example",
+  "templates": [
+    {
+      "id": "template-folder",
+      "name": "Folder",
+      "icon": "Folder",
+      "color": "#a1a1aa",
+      "fields": [
+        {
+          "id": "field_folder_name",
+          "name": "Name",
+          "type": "text"
+        }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "template-server",
+      "name": "Server",
+      "icon": "Server",
+      "color": "#3b82f6",
+      "fields": [
+        { "id": "field_server_name", "name": "Name", "type": "text" },
+        { "id": "field_server_os", "name": "OS", "type": "dynamic-dropdown" },
+        { "id": "field_server_location", "name": "Location", "type": "dropdown", "options": ["us-east-1", "eu-west-2", "ap-southeast-1"] },
+        { "id": "field_server_status", "name": "Status", "type": "dropdown", "options": ["Online", "Offline", "Maintenance"] },
+        { "id": "field_server_ip", "name": "IP Address", "type": "text" }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "Status: {Status}\nLocation: {Location}\nOS: {OS}\nIP: {IP Address}",
+      "conditionalRules": [
+        { "id": "rule-server-online", "fieldId": "field_server_status", "operator": "equals", "value": "Online", "icon": "Server", "color": "#22c55e" },
+        { "id": "rule-server-offline", "fieldId": "field_server_status", "operator": "equals", "value": "Offline", "icon": "Server", "color": "#ef4444" },
+        { "id": "rule-server-maint", "fieldId": "field_server_status", "operator": "equals", "value": "Maintenance", "icon": "Server", "color": "#f97316" }
+      ],
+      "preferredChildTemplates": ["template-vm"]
+    },
+    {
+      "id": "template-vm",
+      "name": "Virtual Machine",
+      "icon": "PcCase",
+      "color": "#8b5cf6",
+      "fields": [
+        { "id": "field_vm_name", "name": "Name", "type": "text" },
+        { "id": "field_vm_os", "name": "OS", "type": "dynamic-dropdown" },
+        { "id": "field_vm_status", "name": "Status", "type": "dropdown", "options": ["Running", "Stopped"] },
+        { "id": "field_vm_ip", "name": "IP Address", "type": "text" }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "Status: {Status}\nOS: {OS}\nIP: {IP Address}",
+      "conditionalRules": [],
+      "preferredChildTemplates": ["template-app"]
+    },
+    {
+      "id": "template-app",
+      "name": "Application",
+      "icon": "AppWindow",
+      "color": "#14b8a6",
+      "fields": [
+        { "id": "field_app_name", "name": "Name", "type": "text" },
+        { "id": "field_app_version", "name": "Version", "type": "text" },
+        { "id": "field_app_status", "name": "Status", "type": "dropdown", "options": ["Running", "Stopped", "Error"] }
+      ],
+      "nameTemplate": "{Name} v{Version}",
+      "bodyTemplate": "Status: {Status}",
+      "conditionalRules": []
+    },
+    {
+        "id": "template-query",
+        "name": "Query",
+        "icon": "Search",
+        "color": "#f59e0b",
+        "fields": [
+            { "id": "field_query_name", "name": "Name", "type": "text" },
+            { "id": "field_query_query", "name": "Query", "type": "query" }
+        ],
+        "nameTemplate": "{Name}",
+        "conditionalRules": []
+    }
+  ],
+  "rootNodeIds": ["node_root_queries", "node_root_us_east", "node_root_eu_west"],
+  "nodes": [
+    { "id": "node_root_queries", "name": "Queries", "templateId": "template-folder", "data": { "field_folder_name": "Queries"}, "parentIds": ["root"], "order": [0] },
+    { "id": "node_query_us_east", "name": "Infrastructure in US-East-1", "templateId": "template-query", "data": { "field_query_name": "Infrastructure in US-East-1", "field_query_query": [{"id": "query_def_1", "targetTemplateId": "template-server", "rules": [{"id": "query_rule_1", "fieldId": "field_server_location", "operator": "equals", "value": "us-east-1"}] }] }, "parentIds": ["node_root_queries"], "order": [0] },
+    { "id": "node_query_offline", "name": "Offline Servers", "templateId": "template-query", "data": { "field_query_name": "Offline Servers", "field_query_query": [{"id": "query_def_2", "targetTemplateId": "template-server", "rules": [{"id": "query_rule_2", "fieldId": "field_server_status", "operator": "equals", "value": "Offline"}] }] }, "parentIds": ["node_root_queries"], "order": [1] },
+    { "id": "node_root_us_east", "name": "US-East-1", "templateId": "template-folder", "data": { "field_folder_name": "US-East-1" }, "parentIds": ["root"], "order": [1] },
+    { "id": "node_server_1", "name": "web-01", "templateId": "template-server", "data": { "field_server_name": "web-01", "field_server_os": "Ubuntu 22.04", "field_server_location": "us-east-1", "field_server_status": "Online", "field_server_ip": "10.1.1.10" }, "parentIds": ["node_root_us_east"], "order": [0] },
+    { "id": "node_vm_1", "name": "web-01-vm-01", "templateId": "template-vm", "data": { "field_vm_name": "web-01-vm-01", "field_vm_os": "Ubuntu 22.04", "field_vm_status": "Running", "field_vm_ip": "10.1.1.11" }, "parentIds": ["node_server_1"], "order": [0] },
+    { "id": "node_app_1", "name": "Main Website", "templateId": "template-app", "data": { "field_app_name": "Main Website", "field_app_version": "2.1.0", "field_app_status": "Running" }, "parentIds": ["node_vm_1"], "order": [0] },
+    { "id": "node_server_2", "name": "db-01", "templateId": "template-server", "data": { "field_server_name": "db-01", "field_server_os": "Rocky Linux 9", "field_server_location": "us-east-1", "field_server_status": "Online", "field_server_ip": "10.1.1.20" }, "parentIds": ["node_root_us_east"], "order": [1] },
+    { "id": "node_root_eu_west", "name": "EU-West-2", "templateId": "template-folder", "data": { "field_folder_name": "EU-West-2" }, "parentIds": ["root"], "order": [2] },
+    { "id": "node_server_3", "name": "api-01", "templateId": "template-server", "data": { "field_server_name": "api-01", "field_server_os": "Ubuntu 22.04", "field_server_location": "eu-west-2", "field_server_status": "Offline", "field_server_ip": "10.2.1.10" }, "parentIds": ["node_root_eu_west"], "order": [0] },
+    { "id": "node_server_4", "name": "api-02", "templateId": "template-server", "data": { "field_server_name": "api-02", "field_server_os": "Debian 12", "field_server_location": "eu-west-2", "field_server_status": "Maintenance", "field_server_ip": "10.2.1.11" }, "parentIds": ["node_root_eu_west"], "order": [1] }
+  ]
+}

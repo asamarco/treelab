@@ -2,7 +2,7 @@
   "title": "Welcome to Treelab!",
   "nodes": [
     {
-      "id": "mk05e56s-okucnaed7",
+      "id": "ml46t5g8-v0p91sce1",
       "name": "Welcome to Treelab!",
       "templateId": "SectionTemplate",
       "data": {
@@ -10,17 +10,17 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "This is your first tree, a brief guide to help you get started. You can edit, add to, or delete this entire tree at any time from the <b>Roots</b> page."
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [],
       "order": [
         0
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-lyetxr8oy",
+      "id": "ml46t5g8-3rz9f4n1y",
       "name": "Getting Started",
       "templateId": "SectionTemplate",
       "data": {
@@ -28,19 +28,19 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "Here's a quick overview of the basic workflow:\n\n<b>1. Create Templates:</b> Go to the <i>Templates</i> page to define the structure of your data.\n\n<b>2. Build Your Tree:</b> Come back here to add nodes using the templates you created.\n\n<b>3. Organize:</b> Add new nodes as sibling or children, reorder them freely and create nested hierarchies.\n "
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56s-okucnaed7"
+        "ml46t5g8-v0p91sce1"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-nnbbxas7n",
+      "id": "ml46t5g8-qunwp8wj0",
       "name": "Core Features",
       "templateId": "SectionTemplate",
       "data": {
@@ -48,40 +48,40 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "Treelab is built around a few key concepts. Here are some of the features you can explore."
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56s-okucnaed7"
+        "ml46t5g8-v0p91sce1"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-xv9gs4955",
+      "id": "ml46t5g8-v0xpm55j9",
       "name": "Templates",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Templates",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Templates are the blueprint for your data. You can combine various field types like:\n<li>Text & Text Areas (with HTML support!)</li><li>Numbers & Dates</li><li>Dropdowns (static or dynamic)</li><li>Pictures & Attachments</li><li>Tables!</li>\nGo to the templates to create new templates and modify the existing ones",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Templates are the blueprint for your data. You can combine various field types like:\n<li>Text & Text Areas (with HTML support!)</li><li>Numbers & Dates</li><li>Dropdowns (static or dynamic)</li><li>Pictures & Attachments</li><li>Tables</li><li>Checboxes and checklists</li><li>XY plots</li>\nGo to the templates to create new templates and modify the existing ones",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-nnbbxas7n"
+        "ml46t5g8-qunwp8wj0"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-qsxk0rgjr",
+      "id": "ml46t5g8-qommpayrc",
       "name": "Hierarchical Nodes",
       "templateId": "FeatureTemplate",
       "data": {
@@ -90,40 +90,40 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-nnbbxas7n"
+        "ml46t5g8-qunwp8wj0"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-k4dsripzq",
+      "id": "ml46t5g8-408b9tcai",
       "name": "Node actions",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Node actions",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
-        "2025-08-19T08:57:55.257Z1ddpobd": "\nThe main actions are available directly on the node, just to the right of its name. Hovering every icon with the mouse will reveal its function.\n\n<li>Preview: open a viewer focused on the specific node</li><li>Edit: Allows to change the node fields</li><li>Expand/Collapse all: expand and collapses the node and all its descendants</li><li>Move up and Move down: move the node with respect to its siblings</li><li>Add child and Add sibling: create a new node as child of the node or sibling</li>\nClick the <b>more options</b> icon (the three dots) on any node to see all the other actions you can perform, like changing the node type, cut/copy/paste, and delete the node.\n"
+        "2025-08-19T08:57:55.257Z1ddpobd": "\nThe main actions are available directly on the node, just to the right of its name. Hovering every icon with the mouse will reveal its function.\n\n<li>Preview: open a viewer focused on the specific node</li><li>Edit: Allows to change the node fields</li><li>Expand/Collapse all: expand and collapses the node and all its descendants</li><li>Move up and Move down: move the node with respect to its siblings</li><li>Add child and Add sibling: create a new node as child of the node or sibling</li>\nUse the <b>more options</b> icon (the three dots) or right click on any node to see all the other actions you can perform, like changing the node type, cut/copy/paste, and delete the node.\n"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-qsxk0rgjr"
+        "ml46t5g8-qommpayrc"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-2wjc75eqd",
+      "id": "ml46t5g8-hs6tt2z6v",
       "name": "Clones",
       "templateId": "FeatureTemplate",
       "data": {
@@ -132,21 +132,21 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-qsxk0rgjr",
-        "mk05e56t-zenqxclfr"
+        "ml46t5g8-qommpayrc",
+        "ml46t5g8-ep2sdkccw"
       ],
       "order": [
         1,
         2
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-35e1kxhni",
+      "id": "ml46t5g8-z9vbhf09u",
       "name": "Export",
       "templateId": "FeatureTemplate",
       "data": {
@@ -155,19 +155,19 @@
         "2025-08-19T08:57:55.257Z1ddpobd": "The entire or any subset of its nodes can be exported as json file, zip archive (with attachments and pictures), or html page.\nThe node preview allows also to print to pdf."
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-nnbbxas7n"
+        "ml46t5g8-qunwp8wj0"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-zenqxclfr",
+      "id": "ml46t5g8-ep2sdkccw",
       "name": "Advanced functions",
       "templateId": "SectionTemplate",
       "data": {
@@ -175,40 +175,40 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": ""
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56s-okucnaed7"
+        "ml46t5g8-v0p91sce1"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-pklh5xsr7",
-      "name": "HTML formatting 🪛",
+      "id": "ml46t5g8-0e4pz62bm",
+      "name": "HTML formatting 💡",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
-        "2025-08-19T08:57:55.257Z0m2c3ze": "HTML formatting 🪛",
+        "2025-08-19T08:57:55.257Z0m2c3ze": "HTML formatting 💡",
         "2025-08-19T08:57:55.257Z1ddpobd": "Common HTML tags can be used for formatting in text and text area fields:\n\n<b>Bold</b>, <strong>Strong</strong>, <i>Italic</i>, <em>Emphasized</em>,<mark>Marked</mark>, <small>Smaller</small>, <del>Deleted</del>, <ins>Inserted</ins>, <sub>Subscript</sub>, <sup>Superscript</sup>\n<code>\ncode block\n</code>\n<li>Bullet point</li>\nEmojis are supported 😁"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-zenqxclfr"
+        "ml46t5g8-ep2sdkccw"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-l7m0i0gzw",
+      "id": "ml46t5g8-8gc9jfocl",
       "name": "Tables",
       "templateId": "FeatureTemplate",
       "data": {
@@ -216,19 +216,19 @@
         "2025-08-19T08:57:55.257Z0m2c3ze": "Tables"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-pklh5xsr7"
+        "ml46t5g8-0e4pz62bm"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-9q72d4uh8",
+      "id": "ml46t5g8-np9jjz6eb",
       "name": "Conditional formatting",
       "templateId": "FeatureTemplate",
       "data": {
@@ -237,40 +237,40 @@
         "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be customized depending on the value of a certain field by writing conditional formatting rules in the template editor"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-zenqxclfr"
+        "ml46t5g8-ep2sdkccw"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-7uulwkk01",
+      "id": "ml46t5g8-2586lgvbe",
       "name": "Internal links",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Internal links",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://mk05e56t-zenqxclfr\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://ml46t5g8-ep2sdkccw\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-zenqxclfr"
+        "ml46t5g8-ep2sdkccw"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
     },
     {
-      "id": "mk05e56t-j4pciuqq4",
+      "id": "ml46t5g8-xup7wk6rh",
       "name": "Git Sync",
       "templateId": "FeatureTemplate",
       "data": {
@@ -279,16 +279,78 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "695ac4db77387b924dc1fbae",
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
       "parentIds": [
-        "mk05e56t-zenqxclfr"
+        "ml46t5g8-ep2sdkccw"
       ],
       "order": [
         4
       ],
-      "createdAt": "2026-01-04T19:51:56.180Z",
-      "updatedAt": "2026-01-04T19:51:56.180Z"
+      "createdAt": "2026-02-01T20:22:20.498Z",
+      "updatedAt": "2026-02-01T20:22:20.498Z"
+    },
+    {
+      "name": "Queries",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Queries",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Custom queries on the tree can be defined in \"Filters\". The query field type allows to dynamically list nodes which satisfy specific criteria directly in the tree.",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Experimental"
+      },
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "parentIds": [
+        "ml46t5g8-ep2sdkccw"
+      ],
+      "order": [
+        5
+      ],
+      "id": "ml4717pi-qgx82gbjy"
+    },
+    {
+      "name": "Nodes containing the word \"edit\"",
+      "templateId": "ml473unk-wjfq2u7k4",
+      "data": {
+        "2026-02-01T20:29:34.017Z0.45140218790145914": [
+          {
+            "id": "ml4745gx-ok5g7fwbz",
+            "targetTemplateId": "FeatureTemplate",
+            "rules": [
+              {
+                "id": "ml4747ht-1jk3e5g2d",
+                "type": "field",
+                "fieldId": "2025-08-19T08:57:55.257Z1ddpobd",
+                "operator": "contains",
+                "value": "edit"
+              }
+            ]
+          },
+          {
+            "id": "ml476e5t-gnqfl8blm",
+            "targetTemplateId": "SectionTemplate",
+            "rules": [
+              {
+                "id": "ml476jk9-6l6v7qoyk",
+                "type": "field",
+                "fieldId": "2025-08-19T08:57:55.257Z0wu6pdt",
+                "operator": "contains",
+                "value": "edit"
+              }
+            ]
+          }
+        ],
+        "2026-02-01T20:29:01.258Z0.9695978368244654": "Nodes containing the word \"edit\""
+      },
+      "userId": "68a99c3dde9b3f9a34859ed8",
+      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "parentIds": [
+        "ml4717pi-qgx82gbjy"
+      ],
+      "order": [
+        0
+      ],
+      "id": "ml474ffg-czm94pf3b"
     }
   ],
   "templates": [
@@ -313,7 +375,8 @@
       ],
       "nameTemplate": "{Title}",
       "bodyTemplate": "{Content}",
-      "conditionalRules": []
+      "conditionalRules": [],
+      "preferredChildTemplates": []
     },
     {
       "id": "FeatureTemplate",
@@ -369,10 +432,32 @@
           "icon": "StarHalf",
           "color": "#1a52d5"
         }
-      ]
+      ],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "ml473unk-wjfq2u7k4",
+      "name": "Query",
+      "icon": "Search",
+      "color": "#a7e13d",
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
+      "fields": [
+        {
+          "id": "2026-02-01T20:29:01.258Z0.9695978368244654",
+          "name": "Name",
+          "type": "text"
+        },
+        {
+          "id": "2026-02-01T20:29:34.017Z0.45140218790145914",
+          "name": "Query",
+          "type": "query"
+        }
+      ],
+      "conditionalRules": []
     }
   ],
   "rootNodeIds": [
-    "mk05e56s-okucnaed7"
+    "ml46t5g8-v0p91sce1"
   ]
 }

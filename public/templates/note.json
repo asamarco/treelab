@@ -1,26 +1,29 @@
 {
-  "id": "2nqu2su",
+  "id": "2025-08-18T14:27:09.205Z2nqu2su",
   "name": "Note",
-  "icon": "Info",
-  "color": "#19e6bd",
+  "icon": "NotebookPen",
+  "color": "#2FBF9A",
+  "nameTemplate": "{Note}",
+  "bodyTemplate": "{Long text}",
   "fields": [
     {
-      "id": "k07y9yo",
+      "id": "2025-08-18T14:27:09.205Zk07y9yo",
       "name": "Note",
       "type": "text",
       "options": []
     },
     {
-      "id": "vjv2ggy",
+      "id": "2025-08-18T14:27:09.205Zvjv2ggy",
       "name": "Long text",
       "type": "textarea",
       "options": []
     },
     {
-      "id": "0qxilez",
+      "id": "2025-08-18T14:27:09.205Z0qxilez",
       "name": "Type",
       "type": "dropdown",
       "options": [
+        "Note",
         "Info",
         "Warning",
         "Success",
@@ -28,53 +31,64 @@
       ]
     },
     {
-      "id": "fhhl510",
-      "name": "Gallery",
-      "type": "picture",
-      "options": [],
-      "width": 600
+      "id": "2026-02-03T19:29:10.689Z0.5972357575257925",
+      "name": "Tasks",
+      "type": "checklist"
     },
     {
-      "id": "njun80s",
+      "id": "2025-08-18T14:27:09.205Zfhhl510",
+      "name": "Gallery",
+      "type": "picture",
+      "options": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Znjun80s",
       "name": "Attachments",
       "type": "attachment",
       "options": []
     }
   ],
-  "nameTemplate": "{Note}",
-  "bodyTemplate": "{Long text}",
   "conditionalRules": [
     {
-      "id": "xr25bub",
-      "fieldId": "0qxilez",
+      "id": "2025-08-18T14:27:09.205Zxr25bub",
+      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
       "operator": "equals",
       "value": "Warning",
       "icon": "TriangleAlert",
-      "color": "#dfce11"
+      "color": "#DF6320"
     },
     {
-      "id": "sdw4ihh",
-      "fieldId": "0qxilez",
+      "id": "2025-08-18T14:27:09.205Zsdw4ihh",
+      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
       "operator": "equals",
       "value": "Failure",
       "icon": "X",
-      "color": "#cd2b0e"
+      "color": "#BA1C2E"
     },
     {
-      "id": "n6dfbdl",
-      "fieldId": "0qxilez",
+      "id": "2025-08-18T14:27:09.205Zn6dfbdl",
+      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
       "operator": "equals",
       "value": "Success",
       "icon": "Check",
-      "color": "#44da1b"
+      "color": "#2EBA1C"
     },
     {
-      "id": "n5g9qx5",
-      "fieldId": "fhhl510",
+      "id": "2025-08-18T14:27:09.205Zn5g9qx5",
+      "fieldId": "2025-08-18T14:27:09.205Zfhhl510",
       "operator": "is_not_empty",
       "value": "",
       "icon": "Image",
-      "color": "#ffdd00"
+      "color": "#FFD24A"
+    },
+    {
+      "id": "2025-11-26T15:18:25.784Z0.47156801310435925",
+      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+      "operator": "equals",
+      "value": "Info",
+      "icon": "Info",
+      "color": "#4ACF9E"
     }
-  ]
+  ],
+  "preferredChildTemplates": []
 }

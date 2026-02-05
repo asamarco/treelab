@@ -1,0 +1,2089 @@
+{
+  "title": "Sample database",
+  "nodes": [
+    {
+      "id": "ml6zpdpf-n2rxy35dm",
+      "name": "Rationale",
+      "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
+      "data": {
+        "2025-08-18T14:27:09.205Zk07y9yo": "Rationale",
+        "2025-08-18T14:27:09.205Zvjv2ggy": "The sample database is structured as a tree to allow complete flexibility in the types of process flows that can be logged.\nEvery entry is a <i>Node</i> its content is defined by a <i>Template</i>. Nodes can be freely moved up and down or across the tree hierarchy to represent correctly the flow of operations.\nEach template contains specific fields which may be the parameters of a process, images or files, text, tables, graphs...\n\nThe example groups samples by location but they can be organized however it seems convenient, templates can be added and improved for specific use cases."
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-pq9w8saqr",
+      "name": "Usage of clones",
+      "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
+      "data": {
+        "2025-08-18T14:27:09.205Zvjv2ggy": "<i>Clone nodes</i> are used in the example with two purposes:\n\n1. A single process acting on multiple samples: node://ml6zpdpf-fz7nhoi71\n2. A dice, being at the same time a descendant of a sample and a sample per se: node://ml6zpdpg-anv9fh6dm\n\nUsage of clones in this way is strongly encouraged.",
+        "2025-08-18T14:27:09.205Zk07y9yo": "Usage of clones",
+        "2025-08-18T14:27:09.205Z0qxilez": "Info"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-n2rxy35dm"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-9bsjh0g3z",
+      "name": "Wafer Box",
+      "templateId": "2025-08-18T14:27:09.205Z2uet3xb",
+      "data": {
+        "2025-08-18T14:27:09.205Zcbx5ubp": "Wafer Box"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [],
+      "order": [
+        1,
+        -1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-4l5guctsp",
+      "name": "Sample1",
+      "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
+      "data": {
+        "2026-01-08T13:34:32.887Z0.8926201083874195": "100 mm",
+        "2025-08-18T14:27:09.205Zpsu7v3u": "Diced",
+        "2025-08-18T14:27:09.205Zulhvcmq": "Sample1",
+        "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-9bsjh0g3z"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-fz7nhoi71",
+      "name": "SiO2/NiFe Deposition",
+      "templateId": "2026-01-09T14:22:29.950Z",
+      "data": {
+        "2025-08-18T14:27:09.205Zwj4znau": "SiO2/NiFe",
+        "2026-01-10T09:17:05.423Z0.36338770983813173": "2026-01-08T23:00:00.000Z"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp",
+        "ml6zpdpg-959qacb2u"
+      ],
+      "order": [
+        0,
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-4yfusu573",
+      "name": "E-beam Evaporation",
+      "templateId": "2025-08-18T14:27:09.205Zt08pzxx",
+      "data": {
+        "2025-08-18T14:27:09.205Zcjw7oub": "E-beam",
+        "2025-08-18T14:27:09.205Zjfa9etw": [
+          "SiO2",
+          "NiFe"
+        ],
+        "2025-08-18T14:27:09.205Zjhsws4k": [
+          "60",
+          "30"
+        ],
+        "2025-08-18T14:27:09.205Zqnqz7m5": [
+          "1",
+          "0.1"
+        ]
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-fz7nhoi71"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-dez0mgbea",
+      "name": "Profilometry",
+      "templateId": "2025-08-18T14:27:09.205Zql33x9g",
+      "data": {
+        "2025-08-18T14:27:09.205Zt4owwjg": "2026-01-09T23:00:00.000Z",
+        "2025-08-18T14:27:09.205Zp9brlh4": "Profilometry"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-w0yivsp1v",
+      "name": "Av. Thickness 90 nm",
+      "templateId": "2025-08-18T14:27:09.205Zspy61an",
+      "data": {
+        "2025-08-18T14:27:09.205Zz1hxy8v": "Av. Thickness",
+        "2025-08-18T14:27:09.205Zmquena6": "90",
+        "2025-08-18T14:27:09.205Zqiblx0r": "nm"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-dez0mgbea"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-r0u5puvbb",
+      "name": "Uniformity 0.5 %",
+      "templateId": "2025-08-18T14:27:09.205Zspy61an",
+      "data": {
+        "2025-08-18T14:27:09.205Zz1hxy8v": "Uniformity",
+        "2025-08-18T14:27:09.205Zmquena6": "0.5",
+        "2025-08-18T14:27:09.205Zqiblx0r": "%"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-dez0mgbea"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-09si5iwqm",
+      "name": "Thickness",
+      "templateId": "mk81yf86-6m9saygqd",
+      "data": {
+        "2025-08-18T14:27:09.205Zz1hxy8v": "Thickness",
+        "2026-01-10T08:38:11.382Z0.09995231207161537": {
+          "points": [
+            {
+              "x": "0",
+              "y": "89.8"
+            },
+            {
+              "x": "2",
+              "y": "89.3"
+            },
+            {
+              "x": "4",
+              "y": "91"
+            },
+            {
+              "x": "6",
+              "y": "91.8"
+            },
+            {
+              "x": "7",
+              "y": "90.5"
+            },
+            {
+              "x": "8",
+              "y": "89.2"
+            },
+            {
+              "x": "9",
+              "y": "90.8"
+            }
+          ],
+          "xAxisLabel": "Distance from center (cm)",
+          "yAxisLabel": "Thickness (nm)"
+        }
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-dez0mgbea"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-q35ujqmnf",
+      "name": "Optical Lithography",
+      "templateId": "2026-01-09T12:05:51.359Z",
+      "data": {
+        "2026-01-09T14:40:21.052Z0.30118703822926485": "Optical"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-z2x892hy6",
+      "name": "HMDS priming",
+      "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
+      "data": {
+        "2025-08-18T14:27:09.205Z0qxilez": "Info",
+        "2025-08-18T14:27:09.205Zk07y9yo": "HMDS priming"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-q35ujqmnf"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-h3oyeo0ij",
+      "name": "Spin coating AZ15nXT 4000 rpm",
+      "templateId": "2025-08-18T14:27:09.205Zavevifg",
+      "data": {
+        "2025-08-18T14:27:09.205Zgtc1dob": "AZ15nXT",
+        "2025-08-18T14:27:09.205Zcwpscba": "4000",
+        "2025-08-18T14:27:09.205Zfsaus4j": "500",
+        "2025-08-18T14:27:09.205Ztc4fy8d": "60"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-q35ujqmnf"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-i11ogb3y8",
+      "name": "Bake 120 °C 120 s",
+      "templateId": "2025-08-18T14:27:09.205Z7selmn3",
+      "data": {
+        "2025-08-18T14:27:09.205Zfubrk1z": "Bake",
+        "2025-08-18T14:27:09.205Zh5k0fht": "120",
+        "2025-08-18T14:27:09.205Zmuuetk6": "120"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-q35ujqmnf"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-v67of4xts",
+      "name": "Exposure 120mW 50%",
+      "templateId": "mk8ueoq8-i362m1e4d",
+      "data": {
+        "2026-01-09T15:44:48.327Z0.7312514064177615": "0",
+        "2026-01-09T15:36:09.927Z0.5652506569330059": "120",
+        "2026-01-10T21:54:49.016Z0.12472844103155944": "50%"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-q35ujqmnf"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-z90wbrgbw",
+      "name": "Bake 120 °C 120 s",
+      "templateId": "2025-08-18T14:27:09.205Z7selmn3",
+      "data": {
+        "2025-08-18T14:27:09.205Zfubrk1z": "Bake",
+        "2025-08-18T14:27:09.205Zh5k0fht": "120",
+        "2025-08-18T14:27:09.205Zmuuetk6": "120"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-q35ujqmnf"
+      ],
+      "order": [
+        4
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-verxhrnp8",
+      "name": "Development AZ726 60 s",
+      "templateId": "2025-08-18T14:27:09.205Z8emtt96",
+      "data": {
+        "2025-08-18T14:27:09.205Z19elh19": "Development",
+        "2025-08-18T14:27:09.205Zioyu81t": "AZ726",
+        "2025-08-18T14:27:09.205Zy44o4qe": "60"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-q35ujqmnf"
+      ],
+      "order": [
+        5
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-3u2j3ultr",
+      "name": "Microscopy",
+      "templateId": "2025-08-18T14:27:09.205Zql33x9g",
+      "data": {
+        "2025-08-18T14:27:09.205Zp9brlh4": "Microscopy"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-6uu5ayfzh",
+      "name": "CD",
+      "templateId": "2026-01-09T15:08:30.384Z",
+      "data": {
+        "2026-01-09T15:07:29.221Z0.5728959779907616": [
+          "F7",
+          "A1",
+          "C3"
+        ],
+        "2026-01-09T15:07:33.661Z0.9660524159871148": [
+          "2",
+          "2.1",
+          "1.9"
+        ],
+        "2026-01-09T15:07:37.743Z0.5845982411157283": [
+          "um",
+          "um",
+          "um"
+        ],
+        "2026-01-09T15:06:59.229Z0.6918932477200717": "CD"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-3u2j3ultr"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-a27nrhvod",
+      "name": "NiFe Etch",
+      "templateId": "mk83hdgv-arjcokuu2",
+      "data": {
+        "2026-01-10T09:17:05.423Z0.36338770983813173": "2026-01-09T23:00:00.000Z",
+        "2025-08-18T14:27:09.205Zwj4znau": "NiFe"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        4
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-5kw3jn6r0",
+      "name": "IBE (200V, 100mA, 30°) 10min",
+      "templateId": "2026-01-09T15:57:17.841Z",
+      "data": {
+        "2026-01-09T15:54:05.999Z0.5109674679369802": "30",
+        "2026-01-09T15:55:33.607Z0.8553731141902465": "200",
+        "2026-01-09T15:55:52.111Z0.5100390454448646": "100",
+        "2026-01-09T15:56:06.999Z0.6126820687427298": "10"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-a27nrhvod"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-ejl4qf8x8",
+      "name": "Resist removal AZ Kwik Strip 7200 s 70 °C",
+      "templateId": "2025-08-18T14:27:09.205Z8emtt96",
+      "data": {
+        "2025-08-18T14:27:09.205Z19elh19": "Resist removal",
+        "2025-08-18T14:27:09.205Zioyu81t": "AZ Kwik Strip",
+        "2025-08-18T14:27:09.205Zy44o4qe": "7200",
+        "2025-08-18T14:27:09.205Zs41rq2c": "70"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        5
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-uj1es1oij",
+      "name": "Optical Lithography",
+      "templateId": "2026-01-09T12:05:51.359Z",
+      "data": {
+        "2026-01-09T14:40:21.052Z0.30118703822926485": "Optical"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        6
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-cq6phoq6i",
+      "name": "Spin coating AZ5214E 4000 rpm",
+      "templateId": "2025-08-18T14:27:09.205Zavevifg",
+      "data": {
+        "2025-08-18T14:27:09.205Zgtc1dob": "AZ5214E",
+        "2025-08-18T14:27:09.205Zcwpscba": "4000",
+        "2025-08-18T14:27:09.205Zfsaus4j": "500",
+        "2025-08-18T14:27:09.205Ztc4fy8d": "60"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-uj1es1oij"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-3s4d69ehp",
+      "name": "Bake 90 °C 110 s",
+      "templateId": "2025-08-18T14:27:09.205Z7selmn3",
+      "data": {
+        "2025-08-18T14:27:09.205Zfubrk1z": "Bake",
+        "2025-08-18T14:27:09.205Zh5k0fht": "90",
+        "2025-08-18T14:27:09.205Zmuuetk6": "110"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-uj1es1oij"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-zj4zv2zri",
+      "name": "Exposure 260mJ/cm^2",
+      "templateId": "2026-01-09T15:45:54.280Z",
+      "data": {
+        "2026-01-09T15:36:09.927Z0.5652506569330059": "260",
+        "2026-01-09T15:44:48.327Z0.7312514064177615": "-2"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-uj1es1oij"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpf-tqk0um8t2",
+      "name": "Development AZ726 60 s",
+      "templateId": "2025-08-18T14:27:09.205Z8emtt96",
+      "data": {
+        "2025-08-18T14:27:09.205Z19elh19": "Development",
+        "2025-08-18T14:27:09.205Zioyu81t": "AZ726",
+        "2025-08-18T14:27:09.205Zy44o4qe": "60"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-uj1es1oij"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-icjrwzlq2",
+      "name": "Cr/Au Deposition",
+      "templateId": "2026-01-09T14:22:29.950Z",
+      "data": {
+        "2026-01-10T09:17:05.423Z0.36338770983813173": "2026-01-10T23:00:00.000Z",
+        "2025-08-18T14:27:09.205Zwj4znau": "Cr/Au"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        7
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-mc105mx9q",
+      "name": "Thermal Evaporation",
+      "templateId": "2025-08-18T14:27:09.205Zt08pzxx",
+      "data": {
+        "2025-08-18T14:27:09.205Zcjw7oub": "Thermal",
+        "2025-08-18T14:27:09.205Zjfa9etw": [
+          "Cr",
+          "Au"
+        ],
+        "2025-08-18T14:27:09.205Zjhsws4k": [
+          "2",
+          "30"
+        ],
+        "2025-08-18T14:27:09.205Zqnqz7m5": [
+          "0.05",
+          "0.1"
+        ]
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-icjrwzlq2"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-zhy592exc",
+      "name": "Resist removal AZ Kwik Strip 7200 s 70 °C",
+      "templateId": "2025-08-18T14:27:09.205Z8emtt96",
+      "data": {
+        "2025-08-18T14:27:09.205Z19elh19": "Resist removal",
+        "2025-08-18T14:27:09.205Zioyu81t": "AZ Kwik Strip",
+        "2025-08-18T14:27:09.205Zy44o4qe": "7200",
+        "2025-08-18T14:27:09.205Zs41rq2c": "70"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        8
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-1n1b79mug",
+      "name": "Sonication 75 % 20 min 20 °C",
+      "templateId": "2025-08-18T14:27:09.205Z0h39mc8",
+      "data": {
+        "2025-08-18T14:27:09.205Zuyygp8n": "75",
+        "2025-08-18T14:27:09.205Zwerhxvz": "20",
+        "2025-08-18T14:27:09.205Zk247b04": "20"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-zhy592exc"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-vkjedql0s",
+      "name": "Automatic Dicing",
+      "templateId": "mk840ej4-0jxd5oo1z",
+      "data": {
+        "2026-01-10T09:34:01.489Z0.9020625561347209": "Automatic"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-4l5guctsp"
+      ],
+      "order": [
+        9
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-anv9fh6dm",
+      "name": "S1",
+      "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
+      "data": {
+        "2026-01-08T13:34:32.887Z0.8926201083874195": "Coupon",
+        "2025-08-18T14:27:09.205Zpsu7v3u": "In storage",
+        "2025-08-18T14:27:09.205Zulhvcmq": "S1",
+        "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
+      },
+      "isStarred": true,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-vkjedql0s",
+        "ml6zpdpg-d62oo1wir"
+      ],
+      "order": [
+        0,
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-u1fljc490",
+      "name": "Electrical characterization",
+      "templateId": "2025-08-18T14:27:09.205Zql33x9g",
+      "data": {
+        "2025-08-18T14:27:09.205Zt4owwjg": "2026-01-13T23:00:00.000Z",
+        "2025-08-18T14:27:09.205Zp9brlh4": "Electrical characterization"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-anv9fh6dm"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-4u489530b",
+      "name": "AMR 4.5 %",
+      "templateId": "2025-08-18T14:27:09.205Zspy61an",
+      "data": {
+        "2025-08-18T14:27:09.205Zz1hxy8v": "AMR",
+        "2025-08-18T14:27:09.205Zmquena6": "4.5",
+        "2025-08-18T14:27:09.205Zqiblx0r": "%"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-u1fljc490"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-o89i6i5vh",
+      "name": "S2",
+      "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
+      "data": {
+        "2026-01-08T13:34:32.887Z0.8926201083874195": "Coupon",
+        "2025-08-18T14:27:09.205Zpsu7v3u": "Disposed",
+        "2025-08-18T14:27:09.205Zulhvcmq": "S2",
+        "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-vkjedql0s"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-qc0q43wcb",
+      "name": "S3",
+      "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
+      "data": {
+        "2026-01-08T13:34:32.887Z0.8926201083874195": "Coupon",
+        "2025-08-18T14:27:09.205Zpsu7v3u": "In storage",
+        "2025-08-18T14:27:09.205Zulhvcmq": "S3",
+        "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-vkjedql0s"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-959qacb2u",
+      "name": "Sample2",
+      "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
+      "data": {
+        "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100",
+        "2025-08-18T14:27:09.205Zpsu7v3u": "In storage",
+        "2026-01-08T13:34:32.887Z0.8926201083874195": "100 mm",
+        "2025-08-18T14:27:09.205Zulhvcmq": "Sample2"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpf-9bsjh0g3z"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-qf1mvuyvx",
+      "name": "Resistivity",
+      "templateId": "2025-08-18T14:27:09.205Zql33x9g",
+      "data": {
+        "2025-08-18T14:27:09.205Zt4owwjg": "2026-01-09T23:00:00.000Z",
+        "2025-08-18T14:27:09.205Zp9brlh4": "Resistivity"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-959qacb2u"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-eao7j5r70",
+      "name": "Sheet resistance",
+      "templateId": "mk81yf86-6m9saygqd",
+      "data": {
+        "2025-08-18T14:27:09.205Zz1hxy8v": "Sheet resistance",
+        "2026-01-10T08:38:11.382Z0.09995231207161537": {
+          "points": [
+            {
+              "x": "0",
+              "y": "12.81"
+            },
+            {
+              "x": "2",
+              "y": "12.17"
+            },
+            {
+              "x": "4",
+              "y": "11.89"
+            }
+          ],
+          "xAxisLabel": "Distance from center (cm)",
+          "yAxisLabel": "Rs (Ohm/sq)"
+        }
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "ml6zpdpg-qf1mvuyvx"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "id": "ml6zpdpg-d62oo1wir",
+      "name": "Sample tray",
+      "templateId": "2025-08-18T14:27:09.205Z2uet3xb",
+      "data": {
+        "2025-08-18T14:27:09.205Zcbx5ubp": "Sample tray"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-02-03T19:26:45.473Z",
+      "updatedAt": "2026-02-03T19:26:45.473Z"
+    },
+    {
+      "name": "Available diced samples",
+      "templateId": "ml6zto5a-jnnowv02j",
+      "data": {
+        "2026-02-03T19:29:44.601Z0.8059504708435051": "Available diced samples",
+        "2026-02-03T19:29:55.409Z0.29815905701436307": [
+          {
+            "id": "ml6zwrsi-rpzwhuv6l",
+            "targetTemplateId": "2025-08-18T14:27:09.205Zbm4wrn4",
+            "rules": [
+              {
+                "id": "ml6zwzyp-fplsody77",
+                "type": "ancestor",
+                "relationTemplateId": "mk840ej4-0jxd5oo1z"
+              },
+              {
+                "id": "ml6zysnu-c9h3f98jx",
+                "type": "field",
+                "fieldId": "2025-08-18T14:27:09.205Zpsu7v3u",
+                "operator": "equals",
+                "value": "In Storage"
+              }
+            ]
+          }
+        ]
+      },
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "69824bf583b39e209b17230f",
+      "parentIds": [
+        "root"
+      ],
+      "order": [
+        3
+      ],
+      "id": "ml6zx4ca-71evdzd9l"
+    }
+  ],
+  "templates": [
+    {
+      "id": "2025-08-18T14:27:09.205Z2uet3xb",
+      "name": "Folder",
+      "icon": "Folder",
+      "color": "#F6C85F",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zcbx5ubp",
+          "name": "Identifier",
+          "type": "text",
+          "options": []
+        }
+      ],
+      "nameTemplate": "{Identifier}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Zbm4wrn4"
+      ]
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Z2nqu2su",
+      "name": "Note",
+      "icon": "NotebookPen",
+      "color": "#2FBF9A",
+      "nameTemplate": "{Note}",
+      "bodyTemplate": "{Long text}",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zk07y9yo",
+          "name": "Note",
+          "type": "text",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zvjv2ggy",
+          "name": "Long text",
+          "type": "textarea",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z0qxilez",
+          "name": "Type",
+          "type": "dropdown",
+          "options": [
+            "Note",
+            "Info",
+            "Warning",
+            "Success",
+            "Failure"
+          ]
+        },
+        {
+          "id": "2026-02-03T19:29:10.689Z0.5972357575257925",
+          "name": "Tasks",
+          "type": "checklist"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zfhhl510",
+          "name": "Gallery",
+          "type": "picture",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Znjun80s",
+          "name": "Attachments",
+          "type": "attachment",
+          "options": []
+        }
+      ],
+      "conditionalRules": [
+        {
+          "id": "2025-08-18T14:27:09.205Zxr25bub",
+          "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+          "operator": "equals",
+          "value": "Warning",
+          "icon": "TriangleAlert",
+          "color": "#DF6320"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zsdw4ihh",
+          "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+          "operator": "equals",
+          "value": "Failure",
+          "icon": "X",
+          "color": "#BA1C2E"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zn6dfbdl",
+          "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+          "operator": "equals",
+          "value": "Success",
+          "icon": "Check",
+          "color": "#2EBA1C"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zn5g9qx5",
+          "fieldId": "2025-08-18T14:27:09.205Zfhhl510",
+          "operator": "is_not_empty",
+          "value": "",
+          "icon": "Image",
+          "color": "#FFD24A"
+        },
+        {
+          "id": "2025-11-26T15:18:25.784Z0.47156801310435925",
+          "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+          "operator": "equals",
+          "value": "Info",
+          "icon": "Info",
+          "color": "#4ACF9E"
+        }
+      ],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Zbm4wrn4",
+      "name": "Sample",
+      "icon": "Circle",
+      "color": "#0B63D9",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zulhvcmq",
+          "name": "Name",
+          "type": "text",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zdf8re2o",
+          "name": "Substrate",
+          "type": "dynamic-dropdown",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zpsu7v3u",
+          "name": "Status",
+          "type": "dropdown",
+          "options": [
+            "In storage",
+            "Disposed",
+            "Shipped",
+            "Diced"
+          ]
+        },
+        {
+          "id": "2026-01-08T13:34:32.887Z0.8926201083874195",
+          "name": "Size",
+          "type": "dropdown",
+          "options": [
+            "Coupon",
+            "100 mm",
+            "150 mm",
+            "200 mm"
+          ]
+        }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "Substrate: {Substrate}",
+      "conditionalRules": [
+        {
+          "id": "2025-08-18T14:27:09.205Zbjjfmn4",
+          "fieldId": "2025-08-18T14:27:09.205Zpsu7v3u",
+          "operator": "equals",
+          "value": "Disposed",
+          "icon": "CircleOff",
+          "color": "#808080"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zty8qtql",
+          "fieldId": "2025-08-18T14:27:09.205Zpsu7v3u",
+          "operator": "equals",
+          "value": "Shipped",
+          "icon": "CircleArrowOutUpRight",
+          "color": "#2EBA1C"
+        },
+        {
+          "id": "2026-01-10T09:37:27.984Z0.4417574348362132",
+          "fieldId": "2025-08-18T14:27:09.205Zpsu7v3u",
+          "operator": "equals",
+          "value": "Diced",
+          "icon": "CircleOff",
+          "color": "#0C6AED"
+        },
+        {
+          "id": "2026-01-08T13:35:47.671Z0.5440012490258929",
+          "fieldId": "2026-01-08T13:34:32.887Z0.8926201083874195",
+          "operator": "equals",
+          "value": "Coupon",
+          "icon": "ChartPie",
+          "color": "#15A2D1"
+        }
+      ],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Zql33x9g",
+        "2026-01-09T12:05:51.359Z",
+        "2026-01-09T14:22:29.950Z",
+        "mk83hdgv-arjcokuu2",
+        "2025-08-18T14:27:09.205Z7selmn3",
+        "2025-08-18T14:27:09.205Z8emtt96",
+        "mk840ej4-0jxd5oo1z"
+      ]
+    },
+    {
+      "id": "2026-01-09T12:05:51.359Z",
+      "name": "Lithography",
+      "icon": "Pencil",
+      "color": "#F0C33A",
+      "fields": [
+        {
+          "id": "2026-01-10T09:17:50.895Z0.6273317140214377",
+          "name": "Date",
+          "type": "date",
+          "options": []
+        },
+        {
+          "id": "2026-01-09T14:40:21.052Z0.30118703822926485",
+          "name": "Type",
+          "type": "dropdown",
+          "options": [
+            "Optical",
+            "Electron beam"
+          ]
+        }
+      ],
+      "nameTemplate": "{Type} Lithography",
+      "bodyTemplate": "{Date}",
+      "conditionalRules": [],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Zavevifg",
+        "2025-08-18T14:27:09.205Z7selmn3",
+        "2025-08-18T14:27:09.205Z8emtt96",
+        "2026-01-09T15:45:54.280Z",
+        "2025-08-18T14:27:09.205Z8zdhpuf",
+        "mkgs17y4-vjuhfcwui"
+      ]
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Zql33x9g",
+      "name": "Measurement",
+      "icon": "ClipboardCheck",
+      "color": "#F6C85F",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zt4owwjg",
+          "name": "Date",
+          "type": "date",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zp9brlh4",
+          "name": "Type",
+          "type": "dynamic-dropdown",
+          "options": [
+            "Optical",
+            "Electron"
+          ]
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zw5w53ro",
+          "name": "Free text",
+          "type": "textarea",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z7th888o",
+          "name": "Gallery",
+          "type": "picture",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zcvo8xq3",
+          "name": "Attachments",
+          "type": "attachment",
+          "options": []
+        }
+      ],
+      "nameTemplate": "{Type}",
+      "bodyTemplate": "{Date}\n{Free text}",
+      "conditionalRules": [
+        {
+          "id": "2025-08-18T14:27:09.205Z6jn21jg",
+          "fieldId": "2025-08-18T14:27:09.205Zp9brlh4",
+          "operator": "contains",
+          "value": "microscopy",
+          "icon": "Search",
+          "color": "#F6C85F"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z7zkb3jx",
+          "fieldId": "2025-08-18T14:27:09.205Zp9brlh4",
+          "operator": "contains",
+          "value": "X",
+          "icon": "Radiation",
+          "color": "#F6C85F"
+        }
+      ],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Zspy61an",
+        "mk81yf86-6m9saygqd",
+        "2026-01-09T15:08:30.384Z"
+      ]
+    },
+    {
+      "id": "2026-01-09T14:22:29.950Z",
+      "name": "Deposition",
+      "icon": "CirclePlus",
+      "color": "#10B981",
+      "fields": [
+        {
+          "id": "2026-01-10T09:17:05.423Z0.36338770983813173",
+          "name": "Date",
+          "type": "date",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zwj4znau",
+          "name": "Stack",
+          "type": "text",
+          "options": []
+        }
+      ],
+      "nameTemplate": "{Stack} Deposition",
+      "bodyTemplate": "{Date}",
+      "conditionalRules": [],
+      "preferredChildTemplates": [
+        "mkwr1toj-0dpdcgnlp",
+        "2025-08-18T14:27:09.205Zt08pzxx",
+        "mkgs17y4-vjuhfcwui",
+        "2025-08-18T14:27:09.205Z15c9ek7",
+        "2025-08-18T14:27:09.205Zavevifg"
+      ]
+    },
+    {
+      "id": "mk83hdgv-arjcokuu2",
+      "name": "Etch",
+      "icon": "CircleMinus",
+      "color": "#EF4444",
+      "fields": [
+        {
+          "id": "2026-01-10T09:17:05.423Z0.36338770983813173",
+          "name": "Date",
+          "type": "date",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zwj4znau",
+          "name": "Stack",
+          "type": "text",
+          "options": []
+        }
+      ],
+      "nameTemplate": "{Stack} Etch",
+      "bodyTemplate": "{Date}",
+      "conditionalRules": [],
+      "preferredChildTemplates": [
+        "2026-01-09T15:57:17.841Z",
+        "2025-08-18T14:27:09.205Z8emtt96"
+      ]
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Zavevifg",
+      "name": "Spin coating",
+      "icon": "RotateCw",
+      "color": "#0FA04A",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zgtc1dob",
+          "name": "Polymer",
+          "type": "dynamic-dropdown",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zcwpscba",
+          "name": "Speed",
+          "type": "number",
+          "options": [],
+          "postfix": " rpm"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zfsaus4j",
+          "name": "Acceleration",
+          "type": "number",
+          "options": [],
+          "postfix": " rpm/s"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Ztc4fy8d",
+          "name": "Time",
+          "type": "number",
+          "options": [],
+          "postfix": " s"
+        }
+      ],
+      "nameTemplate": "Spin coating {Polymer} {Speed}",
+      "bodyTemplate": "Acceleration: {Acceleration}\nTime: {Time} ",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Z7selmn3",
+      "name": "Thermal treatment",
+      "icon": "Flame",
+      "color": "#FF5A3C",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zfubrk1z",
+          "name": "Type",
+          "type": "dropdown",
+          "options": [
+            "RTP",
+            "Furnace",
+            "Muffle",
+            "In situ",
+            "Bake"
+          ]
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zh5k0fht",
+          "name": "Temperature",
+          "type": "number",
+          "options": [],
+          "postfix": " °C"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zmuuetk6",
+          "name": "Duration",
+          "type": "number",
+          "options": [],
+          "postfix": " s"
+        }
+      ],
+      "nameTemplate": "{Type} {Temperature} {Duration}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Z2nqu2su"
+      ]
+    },
+    {
+      "id": "mk840ej4-0jxd5oo1z",
+      "name": "Dicing",
+      "icon": "Scissors",
+      "color": "#7F7F7F",
+      "fields": [
+        {
+          "id": "2026-01-10T09:34:01.489Z0.9020625561347209",
+          "name": "Type",
+          "type": "dropdown",
+          "options": [
+            "Automatic",
+            "Manual"
+          ]
+        }
+      ],
+      "nameTemplate": "{Type} Dicing",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Zbm4wrn4"
+      ]
+    },
+    {
+      "id": "2026-01-09T15:45:54.280Z",
+      "name": "Optical exposure (MLA)",
+      "icon": "Lightbulb",
+      "color": "#D9B400",
+      "fields": [
+        {
+          "id": "2026-01-09T15:36:09.927Z0.5652506569330059",
+          "name": "Dose",
+          "type": "number",
+          "options": [],
+          "postfix": "mJ/cm^2"
+        },
+        {
+          "id": "2026-01-09T15:44:48.327Z0.7312514064177615",
+          "name": "Defoc",
+          "type": "number",
+          "options": []
+        }
+      ],
+      "nameTemplate": "Exposure {Dose}",
+      "bodyTemplate": "Defoc: {Defoc}",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "mk8ueoq8-i362m1e4d",
+      "name": "Optical exposure (DWL)",
+      "icon": "Lightbulb",
+      "color": "#D9B400",
+      "fields": [
+        {
+          "id": "2026-01-09T15:36:09.927Z0.5652506569330059",
+          "name": "Power",
+          "type": "number",
+          "options": [],
+          "postfix": "mW"
+        },
+        {
+          "id": "2026-01-10T21:54:49.016Z0.12472844103155944",
+          "name": "Filter",
+          "type": "dropdown",
+          "options": [
+            "25%",
+            "50%",
+            "75%",
+            "100%"
+          ]
+        },
+        {
+          "id": "2026-01-09T15:44:48.327Z0.7312514064177615",
+          "name": "Defoc",
+          "type": "number",
+          "options": []
+        }
+      ],
+      "nameTemplate": "Exposure {Power} {Filter}",
+      "bodyTemplate": "Defoc: {Defoc}",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Z8zdhpuf",
+      "name": "EBL exposure (Voyager)",
+      "icon": "Atom",
+      "color": "#005CE6",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zwmuzrvd",
+          "name": "Dose",
+          "type": "number",
+          "options": [],
+          "postfix": "uC/cm^2"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Ztmijbl5",
+          "name": "Current",
+          "type": "dropdown",
+          "options": [
+            "LC",
+            "MC",
+            "HMC",
+            "HC"
+          ]
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zsot255m",
+          "name": "Aperture",
+          "type": "dropdown",
+          "options": [
+            "40",
+            "60",
+            "70"
+          ],
+          "postfix": " um"
+        }
+      ],
+      "nameTemplate": "Exposure {Dose}",
+      "bodyTemplate": "Current: {Current}\nAperture: {Aperture}",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Z8emtt96",
+      "name": "Wet process",
+      "icon": "Droplet",
+      "color": "#1496C9",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Z19elh19",
+          "name": "Type",
+          "type": "dropdown",
+          "options": [
+            "Cleaning",
+            "Etch",
+            "Development",
+            "Resist removal"
+          ]
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zioyu81t",
+          "name": "Chemical",
+          "type": "dynamic-dropdown",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zy44o4qe",
+          "name": "Time",
+          "type": "text",
+          "options": [],
+          "postfix": " s"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zs41rq2c",
+          "name": "Temperature",
+          "type": "number",
+          "options": [],
+          "postfix": " °C"
+        }
+      ],
+      "nameTemplate": "{Type} {Chemical} {Time} {Temperature}",
+      "bodyTemplate": "",
+      "conditionalRules": [
+        {
+          "id": "2025-08-18T14:27:09.205Z2grjgb6",
+          "fieldId": "2025-08-18T14:27:09.205Z19elh19",
+          "operator": "equals",
+          "value": "Development",
+          "icon": "Droplet",
+          "color": "#FFD24A"
+        },
+        {
+          "id": "2026-01-09T15:32:29.006Z0.7353920844436632",
+          "fieldId": "2025-08-18T14:27:09.205Z19elh19",
+          "operator": "equals",
+          "value": "Resist removal",
+          "icon": "RotateCcw",
+          "color": "#BA1C2E"
+        }
+      ],
+      "preferredChildTemplates": [
+        "2025-08-18T14:27:09.205Z0h39mc8",
+        "2025-08-18T14:27:09.205Z2nqu2su"
+      ]
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Zspy61an",
+      "name": "Value",
+      "icon": "SquareSigma",
+      "color": "#1496C9",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zz1hxy8v",
+          "name": "Tag",
+          "type": "dynamic-dropdown",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zmquena6",
+          "name": "Value",
+          "type": "number",
+          "options": []
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zqiblx0r",
+          "name": "Unit",
+          "type": "text",
+          "options": []
+        }
+      ],
+      "nameTemplate": "{Tag} {Value} {Unit}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "mk81yf86-6m9saygqd",
+      "name": "Chart",
+      "icon": "ChartLine",
+      "color": "#1496C9",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zz1hxy8v",
+          "name": "Tag",
+          "type": "dynamic-dropdown",
+          "options": []
+        },
+        {
+          "id": "2026-01-10T08:38:11.382Z0.09995231207161537",
+          "name": "Chart",
+          "type": "xy-chart",
+          "options": []
+        }
+      ],
+      "nameTemplate": "{Tag}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2026-01-09T15:08:30.384Z",
+      "name": "Table",
+      "icon": "Table2",
+      "color": "#1496C9",
+      "fields": [
+        {
+          "id": "2026-01-09T15:06:59.229Z0.6918932477200717",
+          "name": "Name",
+          "type": "text",
+          "options": []
+        },
+        {
+          "id": "2026-01-09T15:07:29.221Z0.5728959779907616",
+          "name": "Tag",
+          "type": "table-header",
+          "options": [],
+          "columnType": "text"
+        },
+        {
+          "id": "2026-01-09T15:07:33.661Z0.9660524159871148",
+          "name": "Value",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2026-01-09T15:07:37.743Z0.5845982411157283",
+          "name": "Unit",
+          "type": "table-header",
+          "options": [],
+          "columnType": "text"
+        }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Zt08pzxx",
+      "name": "Evaporation",
+      "icon": "CirclePlus",
+      "color": "#FF8A1A",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zcjw7oub",
+          "name": "Type",
+          "type": "dropdown",
+          "options": [
+            "Thermal",
+            "E-beam"
+          ]
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zjfa9etw",
+          "name": "Material",
+          "type": "table-header",
+          "options": [],
+          "columnType": "text"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zjhsws4k",
+          "name": "Thickness",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number",
+          "postfix": " nm"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zqnqz7m5",
+          "name": "Rate",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number",
+          "postfix": " nm/s"
+        }
+      ],
+      "nameTemplate": "{Type} Evaporation",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "mkwr1toj-0dpdcgnlp",
+      "name": "Sputtering",
+      "icon": "CirclePlus",
+      "color": "#53d0aa",
+      "fields": [
+        {
+          "id": "2025-10-27T09:01:04.834Z0.5646942305978848",
+          "name": "Material",
+          "type": "table-header",
+          "options": [],
+          "columnType": "text"
+        },
+        {
+          "id": "2025-10-27T09:10:00.075Z0.5900691981394243",
+          "name": "Ar (SCCM)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:11:23.235Z0.8346048512495617",
+          "name": "O2 (SCCM)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:11:55.819Z0.2720534848478371",
+          "name": "N2 (SCCM)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-30T11:24:06.886Z0.3703979134626819",
+          "name": "Pressure (mbar)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:12:27.923Z0.5981790740741281",
+          "name": "DC Power (W)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:13:13.059Z0.9431070502447436",
+          "name": "f (kHz)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:13:30.771Z0.0880097569402527",
+          "name": "T (us)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:13:43.131Z0.29311799723079657",
+          "name": "Target DC (V)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-10-27T09:14:43.531Z0.722455379081026",
+          "name": "Time (s)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-11-12T16:20:03.385Z0.30648343710026105",
+          "name": "Angle (°)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        }
+      ],
+      "nameTemplate": "Sputtering",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Z15c9ek7",
+      "name": "Remote Plasma Sputtering",
+      "icon": "CirclePlus",
+      "color": "#b950b9",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Z2wkrex2",
+          "name": "Material",
+          "type": "table-header",
+          "options": [],
+          "columnType": "text"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zxa3me2s",
+          "name": "Ar (SCCM)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z39hve08",
+          "name": "O2 (SCCM)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Ziefjspf",
+          "name": "Pres. (mbar)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z6kf8r1z",
+          "name": "P. Plasma (W)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z5wsd3ze",
+          "name": "Source Coil (A)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zl9jk2kg",
+          "name": "Target Coil (A)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zs8h3tzf",
+          "name": "DC Power (W)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zd8g9n1r",
+          "name": "f (kHz)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zqdw3hp1",
+          "name": "T (us)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zc94qa2k",
+          "name": "Target DC (V)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zika9pmg",
+          "name": "RF Bias (W)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zi24fbf6",
+          "name": "Substrate DC (V)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Znxwsesm",
+          "name": "Height (mm)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zqsvkz1r",
+          "name": "Time (s)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zx9bg8qc",
+          "name": "Temperature (°C)",
+          "type": "table-header",
+          "options": [],
+          "columnType": "number"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Z5s16xgz",
+          "name": "Logs",
+          "type": "attachment",
+          "options": []
+        }
+      ],
+      "nameTemplate": "Remote Plasma Sputtering",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2026-01-09T15:57:17.841Z",
+      "name": "Ion Beam Etching",
+      "icon": "CircleMinus",
+      "color": "#8F6FE6",
+      "fields": [
+        {
+          "id": "2026-01-09T15:54:05.999Z0.5109674679369802",
+          "name": "Angle",
+          "type": "number",
+          "options": [],
+          "postfix": "°"
+        },
+        {
+          "id": "2026-01-09T15:55:33.607Z0.8553731141902465",
+          "name": "Energy",
+          "type": "number",
+          "options": [],
+          "postfix": "V"
+        },
+        {
+          "id": "2026-01-09T15:55:52.111Z0.5100390454448646",
+          "name": "Current",
+          "type": "number",
+          "options": [],
+          "postfix": "mA"
+        },
+        {
+          "id": "2026-01-09T15:56:06.999Z0.6126820687427298",
+          "name": "Time",
+          "type": "number",
+          "options": [],
+          "postfix": "min"
+        }
+      ],
+      "nameTemplate": "IBE ({Energy}, {Current}, {Angle}) {Time}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "2025-08-18T14:27:09.205Z0h39mc8",
+      "name": "Sonication",
+      "icon": "Music4",
+      "color": "#111111",
+      "fields": [
+        {
+          "id": "2025-08-18T14:27:09.205Zuyygp8n",
+          "name": "Power",
+          "type": "number",
+          "options": [],
+          "postfix": " %"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zwerhxvz",
+          "name": "Time",
+          "type": "number",
+          "options": [],
+          "postfix": " min"
+        },
+        {
+          "id": "2025-08-18T14:27:09.205Zk247b04",
+          "name": "Temperature",
+          "type": "number",
+          "options": [],
+          "postfix": " °C"
+        }
+      ],
+      "nameTemplate": "Sonication {Power} {Time} {Temperature}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "mkgs17y4-vjuhfcwui",
+      "name": "Plasma",
+      "icon": "Atom",
+      "color": "#A56CFF",
+      "fields": [
+        {
+          "id": "2026-01-16T11:07:23.323Z0.5744275849707264",
+          "name": "Gas",
+          "type": "dropdown",
+          "options": [
+            "O2",
+            "Ar"
+          ]
+        },
+        {
+          "id": "2026-01-16T11:08:44.811Z0.38836499623644827",
+          "name": "Power",
+          "type": "number",
+          "options": [],
+          "postfix": "W"
+        },
+        {
+          "id": "2026-01-16T11:08:56.692Z0.03675596033210926",
+          "name": "Time",
+          "type": "number",
+          "options": [],
+          "postfix": "s"
+        }
+      ],
+      "nameTemplate": "Plasma {Gas} {Power} {Time}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "ml6zto5a-jnnowv02j",
+      "name": "Query",
+      "icon": "SearchCode",
+      "color": "#2b956a",
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
+      "fields": [
+        {
+          "id": "2026-02-03T19:29:44.601Z0.8059504708435051",
+          "name": "Name",
+          "type": "text"
+        },
+        {
+          "id": "2026-02-03T19:29:55.409Z0.29815905701436307",
+          "name": "Matching nodes:",
+          "type": "query"
+        }
+      ],
+      "conditionalRules": []
+    }
+  ],
+  "rootNodeIds": [
+    "ml6zpdpf-n2rxy35dm",
+    "ml6zpdpf-9bsjh0g3z",
+    "ml6zpdpg-d62oo1wir",
+    "ml6zx4ca-71evdzd9l"
+  ]
+}
