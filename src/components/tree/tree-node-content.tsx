@@ -133,7 +133,12 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
             }
         });
 
-        return { field, results: Array.from(combinedResults.values()) };
+        // Sort query results alphabetically by node name
+        const sortedResults = Array.from(combinedResults.values()).sort((a, b) => 
+            (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: 'base' })
+        );
+
+        return { field, results: sortedResults };
     });
   }, [queryFields, nodeData, findNodesByQuery]);
 
