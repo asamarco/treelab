@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This component renders the header section of the main tree page, including
@@ -8,10 +7,10 @@
 
 import { useState } from "react";
 import { 
-    Edit, Download, FileJson, FileText, ChevronDown, Rows, Columns, 
+    Edit, Download, FileJson, FileText, ChevronDown, Rows, Rows3, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
     CheckCircle, AlertCircle, PlusCircle, Undo2, FileCode, Check,
-    Redo2, ListOrdered, Users, RefreshCcw, Menu
+    Redo2, ListOrdered, Users, RefreshCcw, Menu, LayoutPanelLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/components/../contexts/auth-context";
@@ -69,7 +68,7 @@ export function TreePageHeader({
         activeTreeId,
         setActiveTreeId,
     } = useTreeContext();
-    const { isCompactView, setIsCompactView, showNodeOrder, setShowNodeOrder, setDialogState } = useUIContext();
+    const { isCompactView, setIsCompactView, showNodeOrder, setShowNodeOrder, setDialogState, isTwoPanelMode, setIsTwoPanelMode } = useUIContext();
     const isMobile = useIsMobile();
 
     const { toast } = useToast();
@@ -195,8 +194,22 @@ export function TreePageHeader({
                     </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <Button 
+                        variant={isTwoPanelMode ? 'secondary' : 'outline'} 
+                        size="icon" 
+                        onClick={() => setIsTwoPanelMode(!isTwoPanelMode)}
+                    >
+                      <LayoutPanelLeft className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isTwoPanelMode ? "Single-panel Mode" : "Two-Panel Mode"} (p)</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button variant="outline" size="icon" onClick={() => setIsCompactView(!isCompactView)}>
-                      {isCompactView ? <Rows className="h-4 w-4" /> : <Columns className="h-4 w-4" />}
+                      {isCompactView ? <Rows className="h-4 w-4" /> : <Rows3 className="h-4 w-4" />}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>

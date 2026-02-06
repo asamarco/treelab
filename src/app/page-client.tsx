@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This is the main client component of the application, responsible for displaying and
@@ -17,7 +15,7 @@ import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { ConditionalRuleOperator, QueryDefinition, QueryRule, SimpleQueryRule, Template, TreeNode } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle, Menu, Undo2, Redo2, History, GitPullRequest, GitCommit, Download, FileJson, Archive, FileCode, ListOrdered, Rows, Columns, RefreshCcw } from "lucide-react";
+import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle, Menu, Undo2, Redo2, History, GitPullRequest, GitCommit, Download, FileJson, Archive, FileCode, ListOrdered, Rows, Rows3, RefreshCcw, LayoutPanelLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Label } from "@/components/ui/label";
@@ -62,6 +60,12 @@ import { useUIContext } from "@/contexts/ui-context";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 
 const operatorLabels: Record<ConditionalRuleOperator, string> = {
@@ -180,11 +184,11 @@ function filterTree(
                 }
                 if (type === 'ancestor') {
                     if (!rule.relationTemplateId) return false;
-                    return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules);
+                    return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules!);
                 }
                 if (type === 'descendant') {
                     if (!rule.relationTemplateId) return false;
-                    return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules);
+                    return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules!);
                 }
                 return false;
             });
@@ -237,6 +241,7 @@ export function TreePage() {
     getTemplateById, 
     setTreeTitle,
     syncFromRepo,
+    selectedNodeIds,
     setSelectedNodeIds,
     conflictState,
     resolveConflict,
@@ -256,7 +261,7 @@ export function TreePage() {
     exportNodesAsHtml,
     exportNodesAsJson,
   } = useTreeContext();
-  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder } = useUIContext();
+  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode } = useUIContext();
   const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -390,6 +395,11 @@ export function TreePage() {
           event.preventDefault();
           reloadActiveTree();
           break;
+        case 'p':
+          if (isMobile) return;
+          event.preventDefault();
+          setIsTwoPanelMode(prev => !prev);
+          break;
       }
     };
 
@@ -397,7 +407,7 @@ export function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, dialogState, currentUser, isMobile]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, dialogState, currentUser, isMobile, setIsTwoPanelMode]);
 
   const filteredTree = useMemo(() => {
       try {
@@ -456,6 +466,34 @@ export function TreePage() {
         }
     };
 
+  const [detailsExpandedNodeIds, setDetailsExpandedNodeIds] = useState<string[]>([]);
+
+  const nodesForDetails = useMemo(() => {
+    if (!isTwoPanelMode || selectedNodeIds.length === 0) return [];
+    
+    const nodes = selectedNodeIds
+        .map(id => findNodeAndParent(id.split('_')[0])?.node)
+        .filter((n): n is TreeNode => !!n);
+    
+    return nodes;
+  }, [isTwoPanelMode, selectedNodeIds, findNodeAndParent]);
+
+  useEffect(() => {
+    if (isTwoPanelMode && nodesForDetails.length > 0) {
+        const allIds = new Set<string>();
+        const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
+            for (const node of nodesToTraverse) {
+                allIds.add(`${node.id}_${parentId || 'root'}`);
+                if (node.children) {
+                    traverse(node.children, node.id);
+                }
+            }
+        };
+        traverse(nodesForDetails, null);
+        setDetailsExpandedNodeIds(Array.from(allIds));
+    }
+  }, [isTwoPanelMode, nodesForDetails]);
+
   const renderMainContent = () => {
     if (isLoading) {
       return (
@@ -483,6 +521,45 @@ export function TreePage() {
       );
     }
     
+    if (isTwoPanelMode && !isMobile) {
+        return (
+            <div className="h-[calc(100vh-14rem)]">
+                <ResizablePanelGroup direction="horizontal" className="flex h-full">
+                    <ResizablePanel defaultSize={25} minSize={20}>
+                        <ScrollArea className="h-full rounded-lg border bg-card/30 p-1 mr-2">
+                            <TreeView nodes={filteredTree} isCompactOverride={true} />
+                        </ScrollArea>
+                    </ResizablePanel>
+                    
+                    <ResizableHandle withHandle />
+                    
+                    <ResizablePanel defaultSize={75} minSize={30}>
+                        <ScrollArea className="h-full rounded-lg border bg-card p-6 ml-2">
+                            {nodesForDetails.length > 0 ? (
+                                <TreeView 
+                                    nodes={nodesForDetails} 
+                                    overrideExpandedIds={detailsExpandedNodeIds}
+                                    onExpandedChange={(updater) => setDetailsExpandedNodeIds(updater as any)}
+                                    disableSelection={true}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                                    <div className="rounded-full bg-muted p-4">
+                                        <LayoutPanelLeft className="h-8 w-8 text-muted-foreground" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-semibold">No node selected</h3>
+                                        <p className="text-muted-foreground">Select a node on the left to view its details here.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </ScrollArea>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
+            </div>
+        );
+    }
+
     // Show the tree view if nodes exist
     return <TreeView nodes={filteredTree} />;
   }
@@ -529,6 +606,9 @@ export function TreePage() {
       if (key === 'type') {
         // Reset other fields when type changes
         if (value === 'field') {
+            delete newRule.fieldId;
+            delete newRule.operator;
+            delete newRule.value;
             delete newRule.relationTemplateId;
             delete newRule.relationRules;
         } else {
@@ -542,11 +622,11 @@ export function TreePage() {
       handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
-  const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relationRuleIndex: number, key: keyof SimpleQueryRule, value: any) => {
+  const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relRuleIndex: number, key: keyof SimpleQueryRule, value: any) => {
     const newQueryFilter = [...queryFilter];
     const newRules = [...newQueryFilter[queryIndex].rules];
     const newRelationRules = [...(newRules[ruleIndex].relationRules || [])];
-    newRelationRules[relationRuleIndex] = { ...newRelationRules[relationRuleIndex], [key]: value };
+    newRelationRules[relRuleIndex] = { ...newRelationRules[relRuleIndex], [key]: value };
     newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
     handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
@@ -577,10 +657,10 @@ export function TreePage() {
     handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
-  const removeRelationRule = (queryIndex: number, ruleIndex: number, relationRuleIndex: number) => {
+  const removeRelationRule = (queryIndex: number, ruleIndex: number, relRuleIndex: number) => {
       const newQueryFilter = [...queryFilter];
       const newRules = [...newQueryFilter[queryIndex].rules];
-      const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relationRuleIndex);
+      const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relRuleIndex);
       newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
       handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
@@ -848,8 +928,12 @@ export function TreePage() {
                         <ListOrdered className="mr-2 h-4 w-4" /> {showNodeOrder ? "Hide" : "Show"} Numbering
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setIsCompactView(!isCompactView)}>
-                        {isCompactView ? <Rows className="h-4 w-4 mr-2" /> : <Columns className="h-4 w-4 mr-2" />}
+                        {isCompactView ? <Rows className="h-4 w-4 mr-2" /> : <Rows3 className="h-4 w-4 mr-2" />}
                         {isCompactView ? "Normal View" : "Compact View"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsTwoPanelMode(!isTwoPanelMode)}>
+                        <LayoutPanelLeft className="mr-2 h-4 w-4" />
+                        {isTwoPanelMode ? "Single-panel Mode" : "Two-Panel Mode"}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => reloadActiveTree()}>
                         <RefreshCcw className="mr-2 h-4 w-4" /> Reload Tree

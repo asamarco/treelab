@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This component renders the interactive header of a single tree node.
@@ -33,8 +31,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
   DropdownMenuPortal,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -60,6 +58,9 @@ interface TreeNodeHeaderProps {
   onMenuOpenChange: (open: boolean) => void;
   contextMenuPosition: { x: number; y: number } | null;
   onExpandedChange: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
+  isCompactOverride?: boolean;
+  readOnly?: boolean;
+  disableSelection?: boolean;
 }
 
 export function TreeNodeHeader({
@@ -77,12 +78,18 @@ export function TreeNodeHeader({
   onMenuOpenChange,
   contextMenuPosition,
   onExpandedChange,
+  isCompactOverride,
+  readOnly = false,
+  disableSelection = false,
 }: TreeNodeHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentUser } = useAuthContext();
-  const { isCompactView, showNodeOrder, setDialogState } = useUIContext();
+  const { isCompactView: globalIsCompactView, showNodeOrder, setDialogState } = useUIContext();
   const isMobile = useIsMobile();
+  
+  const isCompactView = isCompactOverride ?? globalIsCompactView;
+
   const {
     clipboard, setClipboard, findNodeAndParent, setExpandedNodeIds, expandAllFromNode,
     collapseAllFromNode, updateNode, deleteNode, moveNodeOrder, moveNodes,
@@ -99,10 +106,7 @@ export function TreeNodeHeader({
   const { icon, color } = getConditionalStyle(node, template);
   const nodeHasAttachments = hasAttachments(node, template);
   
-  // A node is a clone if it has more than one parent.
-  // The parentIds array is now authoritative from the database via buildTreeHierarchy.
   const isClone = Array.isArray(node.parentIds) && node.parentIds.length > 1;
-
   const clonePaths = isClone ? getNodeInstancePaths(node.id) : [];
   
   const parentIndex = contextualParentId ? (node.parentIds || []).indexOf(contextualParentId) : (node.parentIds || []).indexOf('root');
@@ -112,22 +116,20 @@ export function TreeNodeHeader({
 
   const { minOrder, maxOrder } = getSiblingOrderRange(siblings, contextualParentId);
 
-
   const hasContentToToggle =
     (node.children && node.children.length > 0) ||
-    nodeHasAttachments ||
-    template.fields.some(f => f.type === 'picture' && node.data[f.id] && node.data[f.id].length > 0) ||
-    template.fields.some(f => f.type === 'table-header') ||
-    template.fields.some(f => f.type === 'xy-chart') ||
-    template.fields.some(f => f.type === 'query') ||
-    template.fields.some(f => f.type === 'checkbox') ||
-    template.fields.some(f => f.type === 'checklist') ||
-    (template.bodyTemplate && template.bodyTemplate.trim() !== '');
-
+    (!isCompactOverride && (
+      nodeHasAttachments ||
+      template.fields.some(f => f.type === 'picture' && node.data[f.id] && node.data[f.id].length > 0) ||
+      template.fields.some(f => f.type === 'table-header') ||
+      template.fields.some(f => f.type === 'xy-chart') ||
+      template.fields.some(f => f.type === 'query') ||
+      template.fields.some(f => f.type === 'checkbox') ||
+      template.fields.some(f => f.type === 'checklist') ||
+      (template.bodyTemplate && template.bodyTemplate.trim() !== '')
+    ));
 
   const handleCopy = () => {
-    // IMPORTANT: Always get the full node from the context, not the filtered `node` prop,
-    // to ensure all children are included in the copy.
     const fullNode = findNodeAndParent(node.id)?.node;
     if (!fullNode) {
         toast({ variant: 'destructive', title: 'Copy Failed', description: 'Could not find the node to copy.' });
@@ -170,12 +172,9 @@ export function TreeNodeHeader({
       await pasteNodes(node.id, as, contextualParentId);
     }
   
-    // Clear clipboard and selection after paste
     setClipboard({ nodes: null, operation: null });
     setSelectedNodeIds([]);
   };
-  
-  
 
   const handlePasteAsClone = (as: 'child' | 'sibling') => {
     if (!clipboard.nodes || clipboard.operation === 'cut') return;
@@ -218,94 +217,101 @@ export function TreeNodeHeader({
       exportNodesAsArchive([node], `${node.name}_archive`);
   };
 
+  const handleToggleStar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateNode(node.id, { isStarred: !node.isStarred });
+  };
+
   return (
     <>
-      <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
-        <DropdownMenuTrigger
-          className="fixed"
-          style={{
-            left: contextMenuPosition?.x,
-            top: contextMenuPosition?.y,
-          }}
-        />
-        <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onSelect={() => router.push(`/templates?edit=${template.id}`)}>
-              <Edit className="mr-2 h-4 w-4" /> Edit Template
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onOpenModal('changeTemplate')}>
-              <RefreshCcw className="mr-2 h-4 w-4" /> Change Template
-            </DropdownMenuItem>
-            <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                    <Download className="mr-2 h-4 w-4" />
-                    <span>Export As...</span>
+      {!readOnly && (
+        <DropdownMenu open={isMenuOpen} onOpenChange={onMenuOpenChange}>
+          <DropdownMenuTrigger
+            className="fixed"
+            style={{
+              left: contextMenuPosition?.x,
+              top: contextMenuPosition?.y,
+            }}
+          />
+          <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onSelect={() => router.push(`/templates?edit=${template.id}`)}>
+                <Edit className="mr-2 h-4 w-4" /> Edit Template
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onOpenModal('changeTemplate')}>
+                <RefreshCcw className="mr-2 h-4 w-4" /> Change Template
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                      <Download className="mr-2 h-4 w-4" />
+                      <span>Export As...</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                          <DropdownMenuItem onSelect={() => exportNodesAsJson([node], node.name)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={handleHtmlExport} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={handleArchiveExport} disabled={!currentUser}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+              </DropdownMenuSub>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={handleCopy}>
+                <Copy className="mr-2 h-4 w-4" /> Copy
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleCut}>
+                <Scissors className="mr-2 h-4 w-4" /> Cut
+              </DropdownMenuItem>
+               <DropdownMenuItem onSelect={handleCopyLink}>
+                <LinkIcon className="mr-2 h-4 w-4" /> Copy Link
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger disabled={!clipboard.nodes}>
+                  <ClipboardPaste className="mr-2 h-4 w-4" />
+                  <span>Paste</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                        <DropdownMenuItem onSelect={() => exportNodesAsJson([node], node.name)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={handleHtmlExport} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={handleArchiveExport} disabled={!currentUser}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
-                    </DropdownMenuSubContent>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onSelect={() => handlePaste('child')} disabled={!clipboard.nodes}>
+                      <ClipboardPlus className="mr-2 h-4 w-4" /> Paste as child
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handlePaste('sibling')} disabled={!clipboard.nodes}>
+                      <ClipboardList className="mr-2 h-4 w-4" /> Paste as sibling
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator/>
+                     <DropdownMenuItem onSelect={() => handlePasteAsClone('child')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
+                      <ClipboardPlus className="mr-2 h-4 w-4 text-primary" /> Paste as clone (child)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handlePasteAsClone('sibling')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
+                      <ClipboardList className="mr-2 h-4 w-4 text-primary" /> Paste as clone (sibling)
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator/>
+                    <DropdownMenuItem onSelect={() => onOpenModal('pasteTemplate')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
+                      <Sheet className="mr-2 h-4 w-4" /> Paste Template
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
                 </DropdownMenuPortal>
-            </DropdownMenuSub>
-
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={handleCopy}>
-              <Copy className="mr-2 h-4 w-4" /> Copy
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleCut}>
-              <Scissors className="mr-2 h-4 w-4" /> Cut
-            </DropdownMenuItem>
-             <DropdownMenuItem onSelect={handleCopyLink}>
-              <LinkIcon className="mr-2 h-4 w-4" /> Copy Link
-            </DropdownMenuItem>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger disabled={!clipboard.nodes}>
-                <ClipboardPaste className="mr-2 h-4 w-4" />
-                <span>Paste</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onSelect={() => handlePaste('child')} disabled={!clipboard.nodes}>
-                    <ClipboardPlus className="mr-2 h-4 w-4" /> Paste as child
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handlePaste('sibling')} disabled={!clipboard.nodes}>
-                    <ClipboardList className="mr-2 h-4 w-4" /> Paste as sibling
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator/>
-                   <DropdownMenuItem onSelect={() => handlePasteAsClone('child')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
-                    <ClipboardPlus className="mr-2 h-4 w-4 text-primary" /> Paste as clone (child)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handlePasteAsClone('sibling')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
-                    <ClipboardList className="mr-2 h-4 w-4 text-primary" /> Paste as clone (sibling)
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator/>
-                  <DropdownMenuItem onSelect={() => onOpenModal('pasteTemplate')} disabled={!clipboard.nodes || clipboard.operation === 'cut'}>
-                    <Sheet className="mr-2 h-4 w-4" /> Paste Template
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-            <DropdownMenuSeparator />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>This action will permanently delete this instance of the "{node.name}" node. If this is the last instance, the node and all its children will be deleted.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteNode(node.id, contextualParentId)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-        </DropdownMenuContent>
-      </DropdownMenu>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>This action will permanently delete this instance of the "{node.name}" node. If this is the last instance, the node and all its children will be deleted.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => deleteNode(node.id, contextualParentId)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <div className="flex items-start gap-1 group/treenode">
         <Button
@@ -314,7 +320,7 @@ export function TreeNodeHeader({
           className={cn(
             "cursor-grab shrink-0 no-print read-only-hidden transition-opacity opacity-0 group-hover/treenode:opacity-100", 
             isCompactView ? 'h-6 w-6' : 'h-8 w-8',
-            isMobile && 'hidden'
+            (isMobile || readOnly || disableSelection) && 'hidden'
           )}
           onClick={(e) => e.stopPropagation()}
           onDoubleClick={(e) => e.stopPropagation()}
@@ -343,9 +349,9 @@ export function TreeNodeHeader({
                 <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 shrink-0 no-print", isCompactView && 'h-3 w-3', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
               </button>
             </CollapsibleTrigger>
-            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0", isCompactView && "h-4 w-4 mr-1", isMobile && "h-6 w-6 mr-3")} style={{ color: color || "hsl(var(--primary))" }} />
-            <div className="flex-grow flex items-center gap-1">
-              <p className={cn("font-semibold", isCompactView && "text-sm", isMobile && "text-base")}>
+            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0", isCompactView && "h-4 w-4 mr-1", isMobile && "h-4 w-4 mr-1")} style={{ color: color || "hsl(var(--primary))" }} />
+            <div className="flex-grow flex items-center gap-1 min-w-0">
+              <p className={cn("font-semibold truncate", isCompactView && "text-sm", isMobile && "text-base")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
                 {node.name}
               </p>
@@ -364,8 +370,48 @@ export function TreeNodeHeader({
                     </Tooltip>
                  </TooltipProvider>
               )}
-              {nodeHasAttachments && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />)}
-              {!isMobile && (
+              {nodeHasAttachments && !isCompactOverride && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />)}
+              
+              {/* Actions Button - Unified for High-Density Explorer */}
+              {!readOnly && (isCompactOverride || isMobile) && (
+                <div className="flex items-center gap-1 opacity-0 group-hover/treenode:opacity-100 transition-opacity ml-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onSelect={() => setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] })}>
+                        <Eye className="mr-2 h-4 w-4" /> Preview
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => onOpenModal('edit')}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => onOpenModal('addChild')}>
+                        <CornerDownRight className="mr-2 h-4 w-4" /> Add Child
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => onOpenModal('addSibling')}>
+                        <Plus className="mr-2 h-4 w-4" /> Add Sibling
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => { if (isExpanded) collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); else expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); }} disabled={!node.children || node.children.length === 0}>
+                        <ChevronsUpDown className="mr-2 h-4 w-4" /> {isExpanded ? 'Collapse All' : 'Expand All'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => moveNodeOrder(node.id, 'up', contextualParentId)} disabled={contextualOrder === minOrder}>
+                        <ArrowUp className="mr-2 h-4 w-4" /> Move Up
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => moveNodeOrder(node.id, 'down', contextualParentId)} disabled={contextualOrder === maxOrder}>
+                        <ArrowDown className="mr-2 h-4 w-4" /> Move Down
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+
+              {/* Individual Desktop Hover Actions (only in standard mode) */}
+              {!isMobile && !isCompactOverride && !readOnly && (
                 <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control">
                   <TooltipProvider>
                       <Tooltip><TooltipTrigger asChild>
@@ -430,50 +476,17 @@ export function TreeNodeHeader({
            )}
         </div>
         <div className="flex items-center ml-auto pl-2 read-only-control" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-          <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className={cn("h-7 w-7 transition-colors no-print", isCompactView && "h-6 w-6", isMobile && "h-10 w-10")} onClick={(e) => { e.stopPropagation(); updateNode(node.id, { isStarred: !node.isStarred }); }}>
-                        <Star className={cn("h-4 w-4 no-print", node.isStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground/50 hover:text-muted-foreground", isMobile && "h-5 w-5")} />
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>{node.isStarred ? 'Unstar' : 'Star'} (*)</p></TooltipContent>
-              </Tooltip>
-          </TooltipProvider>
-           {isMobile && (
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className={cn("h-7 w-7", isCompactView && "h-6 w-6", isMobile && "h-10 w-10")}>
-                          <MoreHorizontal className="h-4 w-4" />
+          {!readOnly && (
+            <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className={cn("h-7 w-7 transition-colors no-print", isCompactView && "h-6 w-6", isMobile && "h-10 w-10")} onClick={handleToggleStar}>
+                          <Star className={cn("h-4 w-4 no-print", node.isStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground/50 hover:text-muted-foreground", isMobile && "h-5 w-5")} />
                       </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
-                          <Eye className="mr-2 h-4 w-4" /> Preview
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
-                          <CornerDownRight className="mr-2 h-4 w-4" /> Add Child
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
-                          <Plus className="mr-2 h-4 w-4" /> Add Sibling
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
-                          <ArrowUp className="mr-2 h-4 w-4" /> Move Up
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
-                          <ArrowDown className="mr-2 h-4 w-4" /> Move Down
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } else { expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } }} disabled={!node.children || node.children.length === 0}>
-                          <ChevronsUpDown className="mr-2 h-4 w-4" /> {isExpanded ? 'Collapse All' : 'Expand All'}
-                      </DropdownMenuItem>
-                  </DropdownMenuContent>
-              </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent><p>{node.isStarred ? 'Unstar' : 'Star'} (*)</p></TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>

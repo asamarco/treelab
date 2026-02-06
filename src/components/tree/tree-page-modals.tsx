@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This component manages all the dialogs (modals) for the main tree page.
@@ -428,6 +426,7 @@ export function TreePageModals({
                                 nodes={nodesForPreview} 
                                 overrideExpandedIds={previewExpandedNodeIds}
                                 onExpandedChange={setPreviewExpandedNodeIds}
+                                readOnly={true}
                             />
                         )}
                     </div>
@@ -566,7 +565,7 @@ export function TreePageModals({
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
                                                     <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you sure you want to restore?</AlertDialogTitle>
+                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                                         <AlertDialogDescription>
                                                             This will replace your current tree with the version from this commit. All local changes made since the last commit will be lost. This action will create a new commit for the restoration.
                                                         </AlertDialogDescription>

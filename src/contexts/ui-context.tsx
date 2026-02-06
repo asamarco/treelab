@@ -35,6 +35,8 @@ export interface DialogState {
 interface UIContextType {
   isCompactView: boolean;
   setIsCompactView: (isCompact: boolean | ((prevState: boolean) => boolean)) => void;
+  isTwoPanelMode: boolean;
+  setIsTwoPanelMode: (isTwoPanel: boolean | ((prevState: boolean) => boolean)) => void;
   showNodeOrder: boolean;
   setShowNodeOrder: (show: boolean | ((prevState: boolean) => boolean)) => void;
   dialogState: Partial<DialogState>;
@@ -47,16 +49,14 @@ export const UIContext = createContext<UIContextType | undefined>(undefined);
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
   const [isCompactView, setIsCompactView] = useLocalStorage<boolean>('isCompactView', false);
+  const [isTwoPanelMode, setIsTwoPanelMode] = useLocalStorage<boolean>('isTwoPanelMode', false);
   const [showNodeOrder, setShowNodeOrder] = useLocalStorage<boolean>('showNodeOrder', false);
   const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
   const [ignoreClicksUntil, setIgnoreClicksUntil] = useState(0);
   
   const setDialogState = (newState: Partial<DialogState>) => {
-    //console.log('[UIContext] Setting dialog state:', newState);
     setDialogStateInternal(prev => {
         const nextState = {...prev, ...newState};
-        //console.log('[UIContext] Previous state:', prev);
-        //console.log('[UIContext] Next state:', nextState);
         return nextState;
     });
   };
@@ -64,6 +64,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const value: UIContextType = {
     isCompactView,
     setIsCompactView,
+    isTwoPanelMode,
+    setIsTwoPanelMode,
     showNodeOrder,
     setShowNodeOrder,
     dialogState,

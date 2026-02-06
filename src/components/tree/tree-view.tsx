@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the `TreeView` component, which is the main container for
@@ -37,9 +35,12 @@ interface TreeViewProps {
   nodes: TreeNode[];
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: SetStateAction<string[]>) => void;
+  isCompactOverride?: boolean;
+  readOnly?: boolean;
+  disableSelection?: boolean;
 }
 
-export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeViewProps) {
+export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, readOnly = false, disableSelection = false }: TreeViewProps) {
   const { currentUser } = useAuthContext();
   const { 
       tree, 
@@ -60,7 +61,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
       redoLastAction,
       clipboard,
   } = useTreeContext();
-  const { dialogState, setDialogState } = useUIContext();
+  const { dialogState, setDialogState, setIsTwoPanelMode, isTwoPanelMode } = useUIContext();
 
   const isUsingLocalExpansion = !!overrideExpandedIds && !!onExpandedChange;
 
@@ -70,6 +71,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
   const { toast } = useToast();
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (readOnly || disableSelection) return;
     const { active, over, activatorEvent } = event;
     
     if (!active || !over) return;
@@ -200,6 +202,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
   }, [nodes, expandedNodeIds]);
 
   const handleSelect = (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => {
+    if (readOnly || disableSelection) return;
     if (isShiftClick && lastSelectedNodeId) {
       const lastIndex = flattenedInstances.findIndex(i => i.instanceId === lastSelectedNodeId);
       const currentIndex = flattenedInstances.findIndex(i => i.instanceId === instanceId);
@@ -233,6 +236,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
   };
   
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (readOnly || disableSelection) return;
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
       return;
@@ -264,6 +268,13 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
         setSelectedNodeIds([]);
       }
       return;
+    }
+
+    // Toggle Two Panel mode
+    if (event.key === 'p' || event.key === 'P') {
+        event.preventDefault();
+        setIsTwoPanelMode(prev => !prev);
+        return;
     }
     
     // Shortcuts only for authenticated users
@@ -431,7 +442,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
         element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
-  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, dialogState, currentUser, clipboard, pasteNodes, pasteNodesAsClones]);
+  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, dialogState, currentUser, clipboard, pasteNodes, pasteNodesAsClones, setIsTwoPanelMode, readOnly, disableSelection]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -458,12 +469,15 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange }: TreeV
               contextualParentId={null}
               overrideExpandedIds={expandedNodeIds}
               onExpandedChange={setExpandedNodeIds}
+              isCompactOverride={isCompactOverride}
+              readOnly={readOnly}
+              disableSelection={disableSelection}
             />
-            <TreeNodeDropZone id={`gap_${node.id}_root`} />
+            {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${node.id}_root`} />}
           </div>
         ))}
         {/* Add a final drop zone at the end of the root list */}
-        <TreeNodeDropZone id={`gap_end_root`} className="h-4"/> 
+        {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_end_root`} className="h-4"/>}
       </div>
     </DndContext>
   );

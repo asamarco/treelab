@@ -104,6 +104,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
   }, [openModal, template, clipboard.nodes, getTemplateById, node.id, findNodeAndParent]);
 
   const handleClose = () => {
+    setIgnoreClicksUntil(Date.now() + 500);
     setDialogState({ 
         isAddChildOpen: false, 
         isAddSiblingOpen: false,
@@ -114,12 +115,10 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
     });
     setSelectedTemplateForNewNode(null);
     setSelectedNewTemplateId(null);
-    setSelectedNodeIds([]);
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setIgnoreClicksUntil(Date.now() + 500);
       handleClose();
     }
   };

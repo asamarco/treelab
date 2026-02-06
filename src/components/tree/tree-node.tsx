@@ -48,6 +48,9 @@ interface TreeNodeProps {
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
+  isCompactOverride?: boolean;
+  readOnly?: boolean;
+  disableSelection?: boolean;
 }
 
 export function TreeNodeComponent({
@@ -58,6 +61,9 @@ export function TreeNodeComponent({
   contextualParentId,
   overrideExpandedIds,
   onExpandedChange,
+  isCompactOverride,
+  readOnly = false,
+  disableSelection = false,
 }: TreeNodeProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -79,7 +85,9 @@ export function TreeNodeComponent({
     selectedNodeIds,
     deleteNode,
   } = useTreeContext();
-  const { isCompactView } = useUIContext();
+  const { isCompactView: globalIsCompactView } = useUIContext();
+
+  const isCompactView = isCompactOverride ?? globalIsCompactView;
 
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
   
@@ -87,7 +95,7 @@ export function TreeNodeComponent({
   const setExpandedNodeIds = onExpandedChange || setGlobalExpandedNodeIds;
 
   const expandedNodeIdSet = useMemo(() => new Set(expandedNodeIds), [expandedNodeIds]);
-  const isSelected = useMemo(() => selectedNodeIds.includes(instanceId), [selectedNodeIds, instanceId]);
+  const isSelected = useMemo(() => !readOnly && !disableSelection && selectedNodeIds.includes(instanceId), [selectedNodeIds, instanceId, readOnly, disableSelection]);
   const isExpanded = expandedNodeIdSet.has(instanceId);
 
   const template = getTemplateById(node.templateId);
@@ -104,11 +112,12 @@ export function TreeNodeComponent({
         nodeId: node.id,
         parentId: contextualParentId,
     },
-    disabled: !isMounted || isMobile
+    disabled: !isMounted || isMobile || readOnly || disableSelection
   });
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
     id: `node_${instanceId}`,
+    disabled: readOnly || disableSelection,
   });
 
   const setNodeRef = (el: HTMLDivElement | null) => {
@@ -126,7 +135,7 @@ export function TreeNodeComponent({
   );
 
   const handleContextMenu = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.read-only-view')) return;
+    if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
     e.preventDefault();
     e.stopPropagation();
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
@@ -149,7 +158,7 @@ export function TreeNodeComponent({
 
   if (!template) {
     return (
-      <div style={{ paddingLeft: `${level * 1.5}rem` }} className="pl-6 my-1">
+      <div style={{ paddingLeft: `${isCompactView ? '10px' : '1.5rem'}` }} className={cn("my-1", !isCompactView && "pl-6")}>
         <Card className="border-destructive/50 bg-destructive/10 w-full">
           <CardContent className="p-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -160,42 +169,48 @@ export function TreeNodeComponent({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => handleOpenModal('changeTemplate')}>
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Change Template
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+              {!readOnly && (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => handleOpenModal('changeTemplate')}>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Change Template
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this node and all its children.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => deleteNode(node.id, contextualParentId)}
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete this node and all its children.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteNode(node.id, contextualParentId)}
+                          className="bg-destructive hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
-        <TreeNodeModals
-          node={node}
-          template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} // Dummy template
-        />
+        {!readOnly && (
+          <TreeNodeModals
+            node={node}
+            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} // Dummy template
+          />
+        )}
       </div>
     );
   }
@@ -206,7 +221,7 @@ export function TreeNodeComponent({
     <div
       className={cn(
         "relative transition-opacity",
-        isMobile ? "pl-[5px]" : "pl-6",
+        isCompactView ? "pl-[10px]" : "pl-6",
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
@@ -226,20 +241,22 @@ export function TreeNodeComponent({
         ref={setNodeRef}
         style={style}
         className={cn(
-          "bg-card/60 transition-all my-1 cursor-pointer",
+          "bg-card/60 transition-all",
+          isCompactView ? "my-0 border-0 shadow-none" : "my-1",
+          (!readOnly && !disableSelection) && "cursor-pointer",
           isSelected && "border-primary ring-2 ring-primary ring-offset-2",
           isDragging && "shadow-xl opacity-80",
           isOver && "outline-2 outline-dashed outline-primary"
         )}
         onClick={(e) => {
             e.stopPropagation();
-            if (Date.now() < ignoreClicksUntil) {
+            if (Date.now() < ignoreClicksUntil || readOnly || disableSelection) {
               return;
             }
             onSelect(instanceId, e.shiftKey, e.ctrlKey || e.metaKey);
         }}
         onDoubleClick={(e) => {
-          if ((e.target as HTMLElement).closest('.read-only-view')) return;
+          if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
           
           const isAnyModalOpen = activeModal !== null || Object.values(dialogState).some(state => state === true);
           if (isAnyModalOpen) {
@@ -250,7 +267,7 @@ export function TreeNodeComponent({
           handleOpenModal('edit');
         }}
       >
-        <CardContent className={cn("p-1", isMobile && "p-0")}>
+        <CardContent className={cn("p-1", isCompactView && "p-0")}>
           <Collapsible open={isExpanded}>
             <TreeNodeHeader
               node={node}
@@ -267,6 +284,9 @@ export function TreeNodeComponent({
               onMenuOpenChange={setIsMenuOpen}
               contextMenuPosition={contextMenuPosition}
               onExpandedChange={setExpandedNodeIds}
+              isCompactOverride={isCompactOverride}
+              readOnly={readOnly}
+              disableSelection={disableSelection}
             />
             <TreeNodeContent 
               node={node} 
@@ -277,16 +297,19 @@ export function TreeNodeComponent({
               contextualParentId={node.id}
               overrideExpandedIds={overrideExpandedIds}
               onExpandedChange={setExpandedNodeIds}
+              isCompactOverride={isCompactOverride}
+              readOnly={readOnly}
+              disableSelection={disableSelection}
             />
           </Collapsible>
         </CardContent>
       </Card>
-      <TreeNodeModals
-        node={node}
-        template={template}
-      />
+      {!readOnly && (
+        <TreeNodeModals
+          node={node}
+          template={template}
+        />
+      )}
     </div>
   );
 }
-
-    
