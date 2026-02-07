@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useState, useEffect, useMemo, useRef, SetStateAction } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { TreeNode } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
@@ -44,7 +44,6 @@ interface TreeNodeProps {
   level: number;
   siblings: TreeNode[];
   onSelect: (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
-  // This helps identify which parent this instance belongs to in the UI
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
@@ -92,7 +91,7 @@ export function TreeNodeComponent({
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
   
   const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
-  const setExpandedNodeIds = onExpandedChange || setGlobalExpandedNodeIds;
+  const setExpandedNodeIds = (onExpandedChange || setGlobalExpandedNodeIds) as unknown as (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 
   const expandedNodeIdSet = useMemo(() => new Set(expandedNodeIds), [expandedNodeIds]);
   const isSelected = useMemo(() => !readOnly && !disableSelection && selectedNodeIds.includes(instanceId), [selectedNodeIds, instanceId, readOnly, disableSelection]);
@@ -107,7 +106,7 @@ export function TreeNodeComponent({
     transform,
     isDragging,
   } = useDraggable({
-    id: instanceId, // Make ID unique per instance
+    id: instanceId, 
     data: {
         nodeId: node.id,
         parentId: contextualParentId,
@@ -208,7 +207,7 @@ export function TreeNodeComponent({
         {!readOnly && (
           <TreeNodeModals
             node={node}
-            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} // Dummy template
+            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} 
           />
         )}
       </div>
@@ -221,7 +220,7 @@ export function TreeNodeComponent({
     <div
       className={cn(
         "relative transition-opacity",
-        isCompactView ? "pl-[10px]" : "pl-6",
+        isCompactView ? "pl-[10px] p-1" : "pl-6",
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}

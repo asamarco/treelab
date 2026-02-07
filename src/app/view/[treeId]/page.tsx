@@ -14,6 +14,7 @@ type PageProps = {
   params: Promise<{
     treeId: string;
   }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export async function generateMetadata({
@@ -28,8 +29,10 @@ export async function generateMetadata({
 
 export default async function PublicTreeViewPage({
   params,
+  searchParams,
 }: PageProps) {
   const { treeId } = await params;
+  const { view } = await searchParams;
   const tree = await loadPublicTreeFile(treeId);
 
   if (!tree) {
@@ -51,5 +54,8 @@ export default async function PublicTreeViewPage({
   }
 
   // The client component handles all providers and state
-  return <PublicTreeViewClient initialTree={JSON.parse(JSON.stringify(tree))} />;
+  return <PublicTreeViewClient 
+    initialTree={JSON.parse(JSON.stringify(tree))} 
+    initialView={typeof view === 'string' ? view : undefined}
+  />;
 }

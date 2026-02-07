@@ -56,7 +56,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
   
   const isCompactView = isCompactOverride ?? globalIsCompactView;
 
-  const nodeData = node.data || {}; // Ensure node.data is an object
+  const nodeData = node.data || {}; 
   const [imageViewModes, setImageViewModes] = useState<Record<string, 'carousel' | 'grid'>>({});
   const [containerWidths, setContainerWidths] = useState<Record<string, number>>({});
   const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -254,10 +254,10 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                         const totalImageWidth = images.reduce((acc, src) => {
                             const dims = imageDimensions[src];
                             if (!dims || dims.height === 0) {
-                                return acc + (maxHeight * (4/3)) + 8; // (width estimate + gap)
+                                return acc + (maxHeight * (4/3)) + 8; 
                             }
                             const renderedWidth = (dims.width / dims.height) * maxHeight;
-                            return acc + renderedWidth + 8; // (actual rendered width + gap)
+                            return acc + renderedWidth + 8; 
                         }, 0);
 
                         const indentation = level * 24;

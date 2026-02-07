@@ -1,8 +1,3 @@
-/**
- * @fileoverview
- * This component renders the header section of the main tree page, including
- * the tree title, actions like export, sync, and add node.
- */
 "use client";
 
 import { useState } from "react";
@@ -10,10 +5,11 @@ import {
     Edit, Download, FileJson, FileText, ChevronDown, Rows, Rows3, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
     CheckCircle, AlertCircle, PlusCircle, Undo2, FileCode, Check,
-    Redo2, ListOrdered, Users, RefreshCcw, Menu, LayoutPanelLeft
+    Redo2, ListOrdered, Users, RefreshCcw, Menu, LayoutPanelLeft, Search, Star, Filter,
+    Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuthContext } from "@/components/../contexts/auth-context";
+import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
 import { TreeFile } from "@/lib/types";
@@ -30,6 +26,11 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -41,6 +42,13 @@ interface TreePageHeaderProps {
     onSync: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
     onCommit: () => void;
     onReload: () => void;
+    searchTerm: string;
+    setSearchTerm: (val: string) => void;
+    showStarred: boolean;
+    setShowStarred: (val: boolean) => void;
+    activeFilterCount: number;
+    onFilterClick: () => void;
+    renderFilterContent: () => React.ReactNode;
 }
 
 export function TreePageHeader({ 
@@ -50,7 +58,14 @@ export function TreePageHeader({
     onTitleSave,
     onSync,
     onCommit,
-    onReload
+    onReload,
+    searchTerm,
+    setSearchTerm,
+    showStarred,
+    setShowStarred,
+    activeFilterCount,
+    onFilterClick,
+    renderFilterContent
 }: TreePageHeaderProps) {
     const { currentUser, users } = useAuthContext();
     const {
@@ -77,16 +92,6 @@ export function TreePageHeader({
     const isOutOfSync = remoteSha && tree.gitSync?.lastSyncSha !== remoteSha;
     const isOwner = tree.userId === currentUser?.id;
     
-    const owner = users.find(u => u.id === tree.userId);
-    const collaboratorNames = tree.sharedWith
-        ?.map(userId => users.find(u => u.id === userId)?.username)
-        .filter((name): name is string => !!name);
-
-    const allParticipants = [
-        owner ? `${owner.username} (Owner)` : 'Unknown Owner',
-        ...(collaboratorNames || [])
-    ];
-    
     const handleSync = async () => {
         if (!tree || !currentUser?.gitSettings?.githubPat) return;
         setIsSyncing(true);
@@ -110,184 +115,231 @@ export function TreePageHeader({
             });
         }
     };
+
+    const areFiltersActive = activeFilterCount > 0;
     
     return (
-        <div className="flex flex-col md:flex-row justify-between items-start mb-6 gap-4">
-            <div className="group flex items-center gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="text-3xl font-bold p-2 -ml-2 h-auto">
-                            {tree.title}
-                            <ChevronDown className="ml-2 h-6 w-6 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 md:gap-4 flex-wrap md:flex-nowrap">
+                {/* Title and Root Selector */}
+                <div className="group flex items-center gap-1 flex-1 min-w-0">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="text-xl md:text-2xl font-bold px-2 -ml-2 h-auto hover:bg-accent/50 max-w-full flex items-center gap-1">
+                                <span className="truncate">{tree.title}</span>
+                                <div className="flex items-center gap-1 shrink-0 px-1">
+                                    {tree.isPublic && (
+                                        <Globe className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                    {tree.sharedWith && tree.sharedWith.length > 0 && (
+                                        <Users className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                </div>
+                                <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 shrink-0" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            {allTrees.map(t => (
+                                <DropdownMenuItem key={t.id} onSelect={() => setActiveTreeId(t.id)}>
+                                    <Check className={cn("mr-2 h-4 w-4", activeTreeId === t.id ? 'opacity-100' : 'opacity-0')} />
+                                    {t.title}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {isOwner && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity read-only-hidden shrink-0" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
+                            <Edit className="h-4 w-4" />
                         </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                        {allTrees.map(t => (
-                            <DropdownMenuItem key={t.id} onSelect={() => setActiveTreeId(t.id)}>
-                                <Check className={cn("mr-2 h-4 w-4", activeTreeId === t.id ? 'opacity-100' : 'opacity-0')} />
-                                {t.title}
+                    )}
+                </div>
+
+                {/* Search Bar */}
+                {isMobile ? (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9">
+                                <Search className="h-5 w-5" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[calc(100vw-2rem)] mx-4" align="center">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    autoFocus
+                                    type="search"
+                                    placeholder="Search..."
+                                    className="pl-9"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                ) : (
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search..."
+                            className="pl-9 h-9 md:h-10 bg-muted/30 focus:bg-background transition-colors w-full"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                )}
+
+                {/* Filters & Favorites (Desktop) */}
+                {!isMobile && (
+                    <div className="flex items-center gap-3 shrink-0">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm" className={cn("h-9", areFiltersActive && "border-primary text-primary bg-primary/5")}>
+                                    <Filter className={cn("mr-2 h-4 w-4", areFiltersActive && "fill-current")} />
+                                    Filters {areFiltersActive && `(${activeFilterCount})`}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-96" align="end">
+                                {renderFilterContent()}
+                            </PopoverContent>
+                        </Popover>
+                        
+                        <div className="flex items-center space-x-2 px-2 py-1 rounded-md bg-muted/20 border">
+                            <Switch 
+                                id="header-starred-filter" 
+                                checked={showStarred}
+                                onCheckedChange={setShowStarred}
+                                className="scale-75 origin-right"
+                            />
+                            <Label htmlFor="header-starred-filter" className="flex items-center gap-1 text-xs cursor-pointer">
+                                <Star className={cn("h-3.5 w-3.5", showStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")}/>
+                                Favorites
+                            </Label>
+                        </div>
+                    </div>
+                )}
+
+                {/* Mobile Menu Trigger */}
+                {isMobile && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon"><Menu className="h-5 w-5" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={onFilterClick}>
+                                <Filter className={cn("mr-2 h-4 w-4", areFiltersActive && "text-primary")} />
+                                Filters {areFiltersActive && `(${activeFilterCount})`}
                             </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                {isOwner && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity read-only-hidden" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
-                        <Edit className="h-5 w-5" />
-                    </Button>
+                            <DropdownMenuItem onSelect={() => setShowStarred(!showStarred)}>
+                                <div className="flex items-center gap-2">
+                                    <Star className={cn("h-4 w-4", showStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")}/>
+                                    Favorites
+                                </div>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => setDialogState({ isAddNodeOpen: true })} className="read-only-hidden">
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Node
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={undoLastAction} disabled={!canUndo}>
+                                <Undo2 className="mr-2 h-4 w-4" /> Undo
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={redoLastAction} disabled={!canRedo}>
+                                <Redo2 className="mr-2 h-4 w-4" /> Redo
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
-                {collaboratorNames && collaboratorNames.length > 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-bold">Shared with:</p>
-                        <ul className="list-disc pl-4 mt-1">
-                            {allParticipants.map(name => <li key={name}>{name}</li>)}
-                        </ul>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+
+                {/* Action Buttons (Desktop) */}
+                {!isMobile && (
+                    <div className="flex items-center gap-1 shrink-0 ml-auto">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={undoLastAction} disabled={!canUndo}>
+                                        <Undo2 className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{undoActionDescription || 'Undo'} (Ctrl+Z)</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={redoLastAction} disabled={!canRedo}>
+                                        <Redo2 className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{redoActionDescription || 'Redo'} (Ctrl+Y)</p></TooltipContent>
+                            </Tooltip>
+                            <Separator orientation="vertical" className="h-6 mx-1" />
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsTwoPanelMode(!isTwoPanelMode)}>
+                                        <LayoutPanelLeft className={cn("h-4 w-4", isTwoPanelMode && "text-primary")} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Two-Panel Mode (p)</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsCompactView(!isCompactView)}>
+                                        {isCompactView ? <Rows className="h-4 w-4 text-primary" /> : <Rows3 className="h-4 w-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Compact View (Space)</p></TooltipContent>
+                            </Tooltip>
+                            <Separator orientation="vertical" className="h-6 mx-1" />
+                            <DropdownMenu>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9">
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Export</p></TooltipContent>
+                                </Tooltip>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => exportNodesAsJson(allNodes, tree.title)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsArchive(allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsHtml('tree-view-container', allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            {tree.gitSync && (
+                                <DropdownMenu>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-9 w-9">
+                                                    <Github className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Git Sync</p></TooltipContent>
+                                    </Tooltip>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setDialogState({ isHistoryOpen: true })}><History className="mr-2 h-4 w-4" /> View History</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={handleSync} disabled={!isOutOfSync || isSyncing}>
+                                            {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <GitPullRequest className="mr-2 h-4 w-4" />}
+                                            Sync {isOutOfSync && "(Update Available)"}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => setDialogState({ isCommitOpen: true })}><GitCommit className="mr-2 h-4 w-4" /> Commit Changes</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button size="sm" onClick={() => setDialogState({ isAddNodeOpen: true })} className="ml-2 read-only-hidden h-9">
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add Node
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Add root node</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                 )}
-            </div>
-            
-            {/* Desktop Header Actions */}
-            <div className="hidden md:flex flex-row flex-wrap gap-2 w-full md:w-auto justify-end">
-               <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={undoLastAction} disabled={!canUndo} className="read-only-hidden">
-                                <Undo2 className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{undoActionDescription || 'Undo'} (Ctrl+Z)</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={redoLastAction} disabled={!canRedo} className="read-only-hidden">
-                                <Redo2 className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>{redoActionDescription || 'Redo'} (Ctrl+Y)</p>
-                        </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={() => setShowNodeOrder(!showNodeOrder)}>
-                                <ListOrdered className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>Show numbering (o)</p></TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={onReload}>
-                                <RefreshCcw className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>Reload Tree (r)</p></TooltipContent>
-                    </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                        variant={isTwoPanelMode ? 'secondary' : 'outline'} 
-                        size="icon" 
-                        onClick={() => setIsTwoPanelMode(!isTwoPanelMode)}
-                    >
-                      <LayoutPanelLeft className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isTwoPanelMode ? "Single-panel Mode" : "Two-Panel Mode"} (p)</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={() => setIsCompactView(!isCompactView)}>
-                      {isCompactView ? <Rows className="h-4 w-4" /> : <Rows3 className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isCompactView ? "Normal View" : "Compact View"} (Space)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" /> Export <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onSelect={() => exportNodesAsJson(allNodes, tree.title)}>
-                    <FileJson className="mr-2 h-4 w-4" />
-                    Export as JSON
-                  </DropdownMenuItem>
-                   <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsArchive(allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}>
-                    <Archive className="mr-2 h-4 w-4" />
-                    Export as Archive
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsHtml('tree-view-container', allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}>
-                    <FileCode className="mr-2 h-4 w-4" />
-                    Export as HTML
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-               {tree.gitSync && (
-                 <div className="flex gap-2 read-only-hidden">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" onClick={() => setDialogState({ isHistoryOpen: true })}>
-                              <History className="mr-2 h-4 w-4" /> History
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent><p>View commit history</p></TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" onClick={handleSync} disabled={!isOutOfSync || isSyncing}>
-                                {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <GitPullRequest className="mr-2 h-4 w-4" />}
-                                Sync
-                                {isCheckingSync ? <Loader2 className="animate-spin ml-2 h-3 w-3" /> : (isOutOfSync ? <AlertCircle className="text-destructive ml-2 h-3 w-3"/> : <CheckCircle className="text-primary ml-2 h-3 w-3"/>)}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Sync with remote repository</p></TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <TooltipProvider>
-                         <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button onClick={() => setDialogState({ isCommitOpen: true })}>
-                                  <GitCommit className="mr-2 h-4 w-4" /> Commit
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Commit changes</p></TooltipContent>
-                         </Tooltip>
-                      </TooltipProvider>
-                    </>
-                 </div>
-               )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={() => setDialogState({ isAddNodeOpen: true })} className="read-only-hidden">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add Node
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Add a new root node</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
         </div>
     );

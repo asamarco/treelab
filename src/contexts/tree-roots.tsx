@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file is the single source of truth for all tree-related state management.
@@ -386,10 +384,12 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         _setActiveTreeId(id);
         setCommandHistory(() => []);
         setHistoryIndex(-1);
+        setSelectedNodeIds([]);
+        setLastSelectedNodeId(null);
         if (currentUser) {
             setLastActiveTreeIdForUser(id);
         }
-    }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser, currentUser]);
+    }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser, currentUser, setSelectedNodeIds, setLastSelectedNodeId]);
 
   
   const createNewTree = useCallback(

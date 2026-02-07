@@ -17,10 +17,10 @@ import { useEffect } from "react";
 
 interface PublicTreeViewClientProps {
   initialTree: TreeFile;
+  initialView?: string;
 }
 
-export function PublicTreeViewClient({ initialTree }: PublicTreeViewClientProps) {
-  // Hardcoded config for public view as we can't read files on the client
+export function PublicTreeViewClient({ initialTree, initialView }: PublicTreeViewClientProps) {
   const isAuthRequired = true;
   const defaultUserId = "test";
   
@@ -31,9 +31,16 @@ export function PublicTreeViewClient({ initialTree }: PublicTreeViewClientProps)
     }
   }, []);
 
+  const initialCompact = initialView === 'compact';
+  const initialTwoPanel = initialView === 'two-panel';
+
   return (
     <AuthProvider isAuthRequired={isAuthRequired} defaultUserId={defaultUserId}>
-      <UIProvider>
+      <UIProvider 
+        initialStandardView={true} 
+        initialCompact={initialCompact} 
+        initialTwoPanel={initialTwoPanel}
+      >
         <TreeProvider initialTree={initialTree}>
           <PublicViewBanner />
           <TreePage />

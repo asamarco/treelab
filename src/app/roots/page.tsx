@@ -1,14 +1,6 @@
-
-
 /**
  * @fileoverview
  * This file defines the "Manage Roots" page.
- * This page serves as a dashboard for users to view, create, select, and delete
- * their various root structures. It is a protected route, requiring authentication.
- *
- * It displays a list of all available roots, highlighting the active one.
- * Users can initiate the creation of a new root via a dialog form and can delete
- * existing roots with a confirmation dialog.
  */
 "use client";
 
@@ -163,6 +155,7 @@ function ManageRootsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
   const [orderedTrees, setOrderedTrees] = useState(allTrees);
+  const [selectedViewMode, setSelectedViewMode] = useState<string>("standard");
 
   useEffect(() => {
     setOrderedTrees(allTrees);
@@ -371,12 +364,19 @@ function ManageRootsPage() {
 
   const handlePublicToggle = async (treeId: string, isPublic: boolean) => {
     await setTreePublicStatus(treeId, isPublic);
-    // Optimistically update local state for immediate feedback in the dialog
     setSelectedTreeToShare(prev => prev ? { ...prev, isPublic } : null);
   };
   
+  const getPublicUrl = (treeId: string) => {
+    let url = `${window.location.origin}/view/${treeId}`;
+    if (selectedViewMode !== 'standard') {
+        url += `?view=${selectedViewMode}`;
+    }
+    return url;
+  }
+
   const handleCopyPublicLink = (treeId: string) => {
-    const url = `${window.location.origin}/view/${treeId}`;
+    const url = getPublicUrl(treeId);
     navigator.clipboard.writeText(url);
     toast({ title: "Link Copied", description: "Public link copied to clipboard." });
   };
@@ -572,7 +572,7 @@ function ManageRootsPage() {
                   </div>
                 </CardFooter>
               </Card>
-            </DraggableTreeCard>
+              </DraggableTreeCard>
             )})}
           </div>
         </SortableContext>
@@ -785,7 +785,10 @@ function ManageRootsPage() {
           </Dialog>
 
           <Dialog open={isShareDialogOpen} onOpenChange={(open) => {
-              if (!open) setSelectedTreeToShare(null);
+              if (!open) {
+                  setSelectedTreeToShare(null);
+                  setSelectedViewMode("standard");
+              }
               setIsShareDialogOpen(open);
           }}>
               <DialogContent>
@@ -840,11 +843,26 @@ function ManageRootsPage() {
                         />
                       </div>
                       {selectedTreeToShare?.isPublic && (
-                         <div className="flex gap-2">
-                            <Input readOnly value={`${window.location.origin}/view/${selectedTreeToShare.id}`} />
-                            <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare!.id)}>
-                                <Copy className="mr-2 h-4 w-4" /> Copy Link
-                            </Button>
+                         <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Initial View Mode</Label>
+                                <Select value={selectedViewMode} onValueChange={setSelectedViewMode}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="standard">Standard View</SelectItem>
+                                        <SelectItem value="compact">Compact View</SelectItem>
+                                        <SelectItem value="two-panel">Two-Panel View</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex gap-2">
+                                <Input readOnly value={getPublicUrl(selectedTreeToShare.id)} />
+                                <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare!.id)}>
+                                    <Copy className="mr-2 h-4 w-4" /> Copy Link
+                                </Button>
+                            </div>
                         </div>
                       )}
                     </div>

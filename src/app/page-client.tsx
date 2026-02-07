@@ -2,9 +2,6 @@
  * @fileoverview
  * This is the main client component of the application, responsible for displaying and
  * interacting with the active data tree.
- *
- * It uses child components to render the header, modals, and selection bar,
- * keeping the main component focused on state management and data flow.
  */
 "use client";
 
@@ -15,7 +12,7 @@ import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { ConditionalRuleOperator, QueryDefinition, QueryRule, SimpleQueryRule, Template, TreeNode } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle, Menu, Undo2, Redo2, History, GitPullRequest, GitCommit, Download, FileJson, Archive, FileCode, ListOrdered, Rows, Rows3, RefreshCcw, LayoutPanelLeft } from "lucide-react";
+import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle, Menu, Undo2, Redo2, History, LayoutPanelLeft, ListOrdered, Rows, Rows3, RefreshCcw, GitPullRequest, GitCommit, Download, FileJson, Archive, FileCode } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Label } from "@/components/ui/label";
@@ -100,11 +97,11 @@ function filterTree(
     while(true) {
         const parentInfo = findNodeAndParent(current.id);
         if (!parentInfo || !parentInfo.parent) {
-            return false; // Reached root
+            return false; 
         }
         const parent = parentInfo.parent;
         if (parent.templateId === relationTemplateId) {
-            if (!relationRules || relationRules.length === 0) return true; // Match if just template id is specified
+            if (!relationRules || relationRules.length === 0) return true; 
             const matches = (relationRules || []).every(rule => {
                 const fieldValue = (parent.data || {})[rule.fieldId];
                 return evaluateCondition(rule.operator, fieldValue, rule.value);
@@ -212,13 +209,10 @@ function filterTree(
       const matches = doesNodeMatch(node, nodeIsEffectivelyStarred);
 
       if (matches) {
-        // If the node matches, we include it and all its children.
         results.push(node);
       } else {
-        // If the node doesn't match, we check its children.
         const filteredChildren = search(node.children || [], nodeIsEffectivelyStarred, newPath);
         if (filteredChildren.length > 0) {
-          // If any child (or descendant) matches, we include the current node but with only the filtered children.
           results.push({ ...node, children: filteredChildren });
         }
       }
@@ -246,7 +240,6 @@ export function TreePage() {
     conflictState,
     resolveConflict,
     addRootNode,
-    commitToRepo,
     reloadActiveTree,
     tree,
     findNodeAndParent,
@@ -272,7 +265,6 @@ export function TreePage() {
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // New filter states
   const [templateFilter, setTemplateFilter] = useState<string | null>(null);
   const [createdFrom, setCreatedFrom] = useState<Date | undefined>(undefined);
   const [createdTo, setCreatedTo] = useState<Date | undefined>(undefined);
@@ -280,7 +272,6 @@ export function TreePage() {
   const [modifiedTo, setModifiedTo] = useState<Date | undefined>(undefined);
   const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
   const [queryFilter, setQueryFilter] = useState<QueryDefinition[]>([]);
-  const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
   const activeFilterCount = useMemo(() => {
@@ -297,9 +288,6 @@ export function TreePage() {
   }, [showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
 
   const areFiltersActive = activeFilterCount > 0;
-  const isOutOfSync = remoteSha && activeTree?.gitSync?.lastSyncSha !== remoteSha;
-
-  const templates = activeTree?.templates || [];
 
   useEffect(() => {
     setIsClient(true);
@@ -308,7 +296,6 @@ export function TreePage() {
   const isLoading = isTreeDataLoading || !activeTree;
   
   useEffect(() => {
-    // Only redirect if a user is logged in. Public views should not redirect.
     if (currentUser && isClient && !isLoading && !activeTree) {
         router.replace('/roots');
     }
@@ -318,14 +305,15 @@ export function TreePage() {
     const previewNodeId = searchParams.get('previewNode');
     if (previewNodeId) {
       setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [previewNodeId] });
-      // Clean up the URL
       router.replace(pathname, { scroll: false });
     }
   }, [searchParams, setDialogState, router, pathname]);
 
   useEffect(() => {
-    setSelectedNodeIds([]);
-  }, [activeTree?.id, setSelectedNodeIds]);
+    if (isTwoPanelMode && selectedNodeIds.length === 0 && tree && tree.length > 0) {
+      setSelectedNodeIds([`${tree[0].id}_root`]);
+    }
+  }, [isTwoPanelMode, selectedNodeIds.length, tree, setSelectedNodeIds]);
 
   const checkSyncStatus = useCallback(async () => {
     if (!currentUser || !activeTree?.gitSync || !currentUser?.gitSettings?.githubPat || isTokenInvalid) {
@@ -354,10 +342,8 @@ export function TreePage() {
     checkSyncStatus();
   }, [activeTree?.gitSync, currentUser?.gitSettings?.githubPat, checkSyncStatus]);
 
-    // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Check if focus is on an input, textarea, or contentEditable element
       const activeElement = document.activeElement as HTMLElement;
       if (
         activeElement &&
@@ -368,7 +354,6 @@ export function TreePage() {
         return;
       }
       
-      // Check if any modal is open before processing shortcuts
       const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
       if (isAnyModalOpen) {
         return;
@@ -381,7 +366,7 @@ export function TreePage() {
           setIsCompactView(prev => !prev);
           break;
         case 's':
-           if (event.ctrlKey || event.metaKey) return; // ignore save
+           if (event.ctrlKey || event.metaKey) return; 
            event.preventDefault();
            setShowStarred(prev => !prev);
            break;
@@ -391,7 +376,7 @@ export function TreePage() {
           setShowNodeOrder(prev => !prev);
           break;
         case 'r':
-          if (!currentUser) return; // Prevent public users from reloading
+          if (!currentUser) return; 
           event.preventDefault();
           reloadActiveTree();
           break;
@@ -415,7 +400,7 @@ export function TreePage() {
           return filterTree(tree, getTemplateById, findNodeAndParent, searchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter, queryFilter);
       } catch (error) {
           if (error instanceof RangeError && error.message.includes("Maximum call stack size exceeded")) {
-              console.warn("A cyclical reference was detected in the tree structure during filtering. This can happen if a node is cloned as a child of itself. Search is disabled until this is resolved.");
+              console.warn("A cyclical reference was detected in the tree structure during filtering.");
               return [];
           }
           throw error;
@@ -441,30 +426,6 @@ export function TreePage() {
     if (!activeTree) return;
     setTreeTitle(activeTree.id, newTitle);
   }
-
-    const handleSync = async () => {
-        if (!activeTree || !currentUser?.gitSettings?.githubPat) return;
-        setIsSyncing(true);
-        toast({ title: "Syncing...", description: "Fetching latest version from repository." });
-        try {
-            const result = await syncFromRepo(activeTree, currentUser.gitSettings.githubPat);
-            toast({ title: "Sync Complete", description: result.message });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Sync Failed", description: (error as Error).message });
-        } finally {
-            setIsSyncing(false);
-        }
-    };
-    
-    const handlePublicExportClick = () => {
-        if (!currentUser) {
-            toast({
-                variant: 'destructive',
-                title: 'Feature Disabled',
-                description: 'This export option is not available on public pages.',
-            });
-        }
-    };
 
   const [detailsExpandedNodeIds, setDetailsExpandedNodeIds] = useState<string[]>([]);
 
@@ -505,7 +466,6 @@ export function TreePage() {
       );
     }
     
-    // Show "No nodes" message if loading is complete and tree is empty
     if (filteredTree.length === 0 && (!isLoading || isClient)) {
       return (
         <Card className="flex flex-col items-center justify-center h-64 border-dashed">
@@ -526,8 +486,10 @@ export function TreePage() {
             <div className="h-[calc(100vh-14rem)]">
                 <ResizablePanelGroup direction="horizontal" className="flex h-full">
                     <ResizablePanel defaultSize={25} minSize={20}>
-                        <ScrollArea className="h-full rounded-lg border bg-card/30 p-1 mr-2">
-                            <TreeView nodes={filteredTree} isCompactOverride={true} />
+                        <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
+                            <div className="p-2">
+                                <TreeView nodes={filteredTree} isCompactOverride={true} />
+                            </div>
                         </ScrollArea>
                     </ResizablePanel>
                     
@@ -560,7 +522,6 @@ export function TreePage() {
         );
     }
 
-    // Show the tree view if nodes exist
     return <TreeView nodes={filteredTree} />;
   }
 
@@ -604,7 +565,6 @@ export function TreePage() {
       const newRule = { ...newRules[ruleIndex], [key]: value };
       
       if (key === 'type') {
-        // Reset other fields when type changes
         if (value === 'field') {
             delete newRule.fieldId;
             delete newRule.operator;
@@ -678,7 +638,7 @@ export function TreePage() {
               </SelectTrigger>
               <SelectContent>
                   <SelectItem value="all">All Templates</SelectItem>
-                  {templates.map(t => (
+                  {activeTree?.templates.map(t => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                   ))}
               </SelectContent>
@@ -715,22 +675,23 @@ export function TreePage() {
       <div className="space-y-2">
         <h4 className="font-medium leading-none">Query Builder</h4>
         <p className="text-sm text-muted-foreground">
-            Find nodes matching specific criteria. Groups are combined with OR, conditions within a group are combined with AND.
+            Find nodes matching specific criteria.
         </p>
       </div>
       <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
           {queryFilter.map((queryDef, queryIndex) => {
             const targetTemplate = queryDef.targetTemplateId ? getTemplateById(queryDef.targetTemplateId) : null;
+            const templates = activeTree?.templates || [];
             return (
                 <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
                     <div className="flex justify-between items-center">
-                        <Label>Search for nodes with template:</Label>
+                        <Label>Search nodes with template:</Label>
                         <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
                             <Trash2 className="h-4 w-4"/>
                         </Button>
                     </div>
                     <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
-                        <SelectTrigger><SelectValue placeholder="Select a template..."/></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select template..."/></SelectTrigger>
                         <SelectContent>
                             {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                         </SelectContent>
@@ -775,7 +736,7 @@ export function TreePage() {
                                         </div>
                                      ) : (
                                         <div className="space-y-2">
-                                           <span className="text-sm p-2 block">has {ruleType} with template:</span>
+                                           <span className="text-sm p-2 block">has {String(ruleType)} with template:</span>
                                             <Select value={rule.relationTemplateId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'relationTemplateId', val)}>
                                                 <SelectTrigger><SelectValue placeholder="Template..."/></SelectTrigger>
                                                 <SelectContent>
@@ -811,7 +772,7 @@ export function TreePage() {
                                              </Card>
                                          ))}
                                          <Button type="button" variant="outline" size="sm" onClick={() => addRelationRule(queryIndex, ruleIndex)}>
-                                             <PlusCircle className="mr-2 h-4 w-4" /> Add condition for {ruleType}
+                                             <PlusCircle className="mr-2 h-4 w-4" /> Add condition
                                          </Button>
                                      </div>
                                  )}
@@ -842,144 +803,42 @@ export function TreePage() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-        {activeTree && (
-          <TreePageHeader 
-            tree={activeTree}
-            isCheckingSync={isCheckingSync}
-            remoteSha={remoteSha}
-            onTitleSave={handleTitleSave}
-            onSync={syncFromRepo}
-            onCommit={checkSyncStatus}
-            onReload={() => reloadActiveTree()}
-          />
-        )}
-       
-        <div className="relative mb-6 flex gap-4 items-center">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+        <div className="sticky top-16 z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-4 border-b">
+          {activeTree && (
+            <TreePageHeader 
+              tree={activeTree}
+              isCheckingSync={isCheckingSync}
+              remoteSha={remoteSha}
+              onTitleSave={handleTitleSave}
+              onSync={syncFromRepo}
+              onCommit={checkSyncStatus}
+              onReload={() => reloadActiveTree()}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              showStarred={showStarred}
+              setShowStarred={setShowStarred}
+              activeFilterCount={activeFilterCount}
+              onFilterClick={() => setIsFilterDialogOpen(true)}
+              renderFilterContent={renderFilterContent}
             />
-          </div>
-          {isMobile ? (
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon"><Menu className="h-5 w-5" /></Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setDialogState({ isAddNodeOpen: true })} className="read-only-hidden">
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Node
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                     <DropdownMenuItem onSelect={() => setIsFilterDialogOpen(true)}>
-                        <Filter className={cn("mr-2 h-4 w-4", areFiltersActive && "fill-current text-primary")} />
-                        Filters {areFiltersActive && `(${activeFilterCount})`}
-                    </DropdownMenuItem>
-                    <DropdownMenuCheckboxItem checked={showStarred} onCheckedChange={setShowStarred}>
-                        <Star className="mr-2 h-4 w-4 text-yellow-400"/> Favorites
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={undoLastAction} disabled={!canUndo}>
-                        <Undo2 className="mr-2 h-4 w-4" /> Undo {undoActionDescription && `(${undoActionDescription})`}
-                    </DropdownMenuItem>
-                     <DropdownMenuItem onClick={redoLastAction} disabled={!canRedo}>
-                        <Redo2 className="mr-2 h-4 w-4" /> Redo {redoActionDescription && `(${redoActionDescription})`}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {activeTree?.gitSync && (
-                        <>
-                        <DropdownMenuItem onClick={() => setDialogState({ isHistoryOpen: true })}>
-                            <History className="mr-2 h-4 w-4" /> View History
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleSync} disabled={!isOutOfSync || isSyncing}>
-                            {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <GitPullRequest className="mr-2 h-4 w-4" />}
-                            Sync Now
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDialogState({ isCommitOpen: true })}>
-                            <GitCommit className="mr-2 h-4 w-4" /> Commit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        </>
-                    )}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger disabled={!activeTree}>
-                      <Download className="mr-2 h-4 w-4" /> Export
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuItem onSelect={() => { if (activeTree) exportNodesAsJson(tree, activeTree.title)}}>
-                          <FileJson className="mr-2 h-4 w-4" />JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => { if (activeTree) currentUser ? exportNodesAsArchive(tree, activeTree.title) : handlePublicExportClick()}} disabled={!currentUser}>
-                          <Archive className="mr-2 h-4 w-4" />Archive (.zip)
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => { if (activeTree) currentUser ? exportNodesAsHtml('tree-view-container', tree, activeTree.title) : handlePublicExportClick()}} disabled={!currentUser}>
-                          <FileCode className="mr-2 h-4 w-4" />HTML
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setShowNodeOrder(!showNodeOrder)}>
-                        <ListOrdered className="mr-2 h-4 w-4" /> {showNodeOrder ? "Hide" : "Show"} Numbering
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsCompactView(!isCompactView)}>
-                        {isCompactView ? <Rows className="h-4 w-4 mr-2" /> : <Rows3 className="h-4 w-4 mr-2" />}
-                        {isCompactView ? "Normal View" : "Compact View"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsTwoPanelMode(!isTwoPanelMode)}>
-                        <LayoutPanelLeft className="mr-2 h-4 w-4" />
-                        {isTwoPanelMode ? "Single-panel Mode" : "Two-Panel Mode"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => reloadActiveTree()}>
-                        <RefreshCcw className="mr-2 h-4 w-4" /> Reload Tree
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <>
-              <Popover open={isFilterPopoverOpen} onOpenChange={setIsFilterPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn(areFiltersActive && "border-primary text-primary")}>
-                    <Filter className={cn("mr-2 h-4 w-4", areFiltersActive && "fill-current")} />
-                    Filters {areFiltersActive && `(${activeFilterCount})`}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-96" align="end">
-                    {renderFilterContent()}
-                </PopoverContent>
-              </Popover>
-              <div className="flex items-center space-x-2">
-                  <Switch 
-                      id="starred-filter" 
-                      checked={showStarred}
-                      onCheckedChange={setShowStarred}
-                  />
-                  <Label htmlFor="starred-filter" className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-400"/> Favorites
-                  </Label>
-              </div>
-            </>
           )}
         </div>
         
-        {activeTree && (
-          <TreePageModals 
-            activeTree={activeTree}
-            templates={templates}
-            getTemplateById={getTemplateById}
-            onSaveNewRootNode={handleSaveNewRootNode}
-            conflictState={conflictState}
-            onConflictResolve={resolveConflict}
-            syncFromRepo={syncFromRepo}
-          />
-        )}
+        <div className="mt-6">
+          {activeTree && (
+            <TreePageModals 
+              activeTree={activeTree}
+              templates={activeTree.templates}
+              getTemplateById={getTemplateById}
+              onSaveNewRootNode={handleSaveNewRootNode}
+              conflictState={conflictState}
+              onConflictResolve={resolveConflict}
+              syncFromRepo={syncFromRepo}
+            />
+          )}
 
-        {renderMainContent()}
+          {renderMainContent()}
+        </div>
 
         <TreeSelectionBar />
       </main>

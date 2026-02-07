@@ -1,9 +1,8 @@
-
-
 /**
  * @fileoverview
- * Renders a floating action bar at the bottom of the screen when one or more
+ * Renders a floating action bar at the bottom of the screen when multiple
  * nodes are selected, providing bulk actions like copy, cut, and delete.
+ * It also handles selection-related keyboard shortcuts.
  */
 "use client";
 
@@ -81,17 +80,12 @@ export function TreeSelectionBar() {
     const getSelectedTopLevelNodes = useCallback((): {node: TreeNode, parentId: string | null}[] => {
       const topLevelInstanceIds = new Set(selectedNodeIds);
 
-      // For each selected node, if its parent is also selected, it's not a top-level node.
       for (const instanceId of selectedNodeIds) {
           const [nodeId, parentIdStr] = instanceId.split('_');
           const nodeInfo = findNodeAndParent(nodeId, tree);
           
           if (nodeInfo?.parent) {
-              const parentInstanceId = `${nodeInfo.parent.id}_${findNodeAndParent(nodeInfo.parent.id, tree)?.parent?.id || 'root'}`;
-              // This logic is imperfect for multi-parent nodes but a good start.
-              // We check if *any* potential parent instance is in the selection.
               const parentIsSelected = selectedNodeIds.some(id => id.startsWith(`${nodeInfo.parent?.id}_`));
-
               if(parentIsSelected) {
                  topLevelInstanceIds.delete(instanceId);
               }
@@ -106,7 +100,6 @@ export function TreeSelectionBar() {
     }, [selectedNodeIds, findNodeAndParent, tree]);
 
     const handleCopySelection = useCallback(() => {
-        // To preserve order, we must get the visual order of all nodes first.
         const visuallyOrderedInstances: { instanceId: string; node: TreeNode }[] = [];
         const traverse = (nodes: TreeNode[], parentId: string | null) => {
             nodes.forEach(node => {
@@ -117,17 +110,14 @@ export function TreeSelectionBar() {
         };
         traverse(tree, null);
 
-        // Then, filter this ordered list to get only the selected nodes.
         const orderedSelectedInstanceIds = visuallyOrderedInstances
             .map(i => i.instanceId)
             .filter(id => selectedNodeIds.includes(id));
         
-        // Now, find the top-level nodes *from this ordered selection*.
         const topLevelInstanceIds = new Set(orderedSelectedInstanceIds);
         for (const instanceId of orderedSelectedInstanceIds) {
             const nodeInfo = findNodeAndParent(instanceId.split('_')[0]);
             if (nodeInfo?.parent) {
-                // A node is not top-level if any of its possible parents are also in the selection.
                 const parentIsSelected = selectedNodeIds.some(id => id.startsWith(`${nodeInfo.parent?.id}_`));
                 if (parentIsSelected) {
                     topLevelInstanceIds.delete(instanceId);
@@ -154,7 +144,6 @@ export function TreeSelectionBar() {
             const parentId = parentIdStr === 'root' ? null : parentIdStr;
             const node = findNodeAndParent(nodeId)?.node;
             if (!node) return null;
-            // Store the specific parentId in the parentIds array for the cut operation
             return { ...node, parentIds: [parentId!] };
         }).filter((n): n is TreeNode => !!n);
 
@@ -223,7 +212,7 @@ export function TreeSelectionBar() {
               const targetInstanceId = selectedNodeIds[0];
               const [targetNodeId, contextualParentId] = targetInstanceId.split('_');
               
-              if (event.altKey) { // Paste as Clone: CTRL+ALT+V
+              if (event.altKey) {
                 if (clipboard.operation === 'cut') return;
                 const nodeIdsToClone = clipboard.nodes.map(n => n.id);
                 pasteNodesAsClones(targetNodeId, 'child', nodeIdsToClone, contextualParentId === 'root' ? null : contextualParentId).then(() => {
@@ -231,7 +220,7 @@ export function TreeSelectionBar() {
                     setClipboard({ nodes: null, operation: null });
                     setSelectedNodeIds([]);
                 });
-              } else { // Standard Paste: CTRL+V
+              } else {
                   if (clipboard.operation === 'cut') {
                     const moves = clipboard.nodes.map(sourceNode => ({
                         nodeId: sourceNode.id,
@@ -274,8 +263,12 @@ export function TreeSelectionBar() {
         return null;
     }
 
+    // Hide UI for single node selection, but keep component mounted for shortcuts
+    if (selectedNodeIds.length === 1) {
+        return <></>;
+    }
+
     const handleDeleteSelection = () => {
-        const nodeIdsToDelete = Array.from(new Set(selectedNodeIds.map(id => id.split('_')[0])));
         deleteNodes(selectedNodeIds);
         toast({ title: 'Deleted', description: `${selectedNodeIds.length} node instance(s) deleted.` });
     };
@@ -327,7 +320,7 @@ export function TreeSelectionBar() {
         <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-lg z-20 shadow-lg animate-in slide-in-from-bottom-2 read-only-control">
             <CardContent className="p-2">
                 <div className="flex items-center gap-4">
-                    <p className="text-sm font-medium">{selectedNodeIds.length} node{selectedNodeIds.length !== 1 && 's'} selected</p>
+                    <p className="text-sm font-medium">{selectedNodeIds.length} nodes selected</p>
                     <div className="flex-grow border-l pl-2 flex items-center gap-1">
                         <TooltipProvider>
                             <Tooltip>

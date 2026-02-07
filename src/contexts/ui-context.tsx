@@ -6,7 +6,7 @@
  */
 "use client";
 
-import React, { createContext, useContext, ReactNode, useState } from "react";
+import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { TreeNode } from "@/lib/types";
 
@@ -47,13 +47,38 @@ interface UIContextType {
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
 
-export function UIProvider({ children }: { children: React.ReactNode }) {
-  const [isCompactView, setIsCompactView] = useLocalStorage<boolean>('isCompactView', false);
-  const [isTwoPanelMode, setIsTwoPanelMode] = useLocalStorage<boolean>('isTwoPanelMode', false);
-  const [showNodeOrder, setShowNodeOrder] = useLocalStorage<boolean>('showNodeOrder', false);
+export function UIProvider({ 
+  children, 
+  initialStandardView = false,
+  initialCompact = false,
+  initialTwoPanel = false
+}: { 
+  children: React.ReactNode, 
+  initialStandardView?: boolean,
+  initialCompact?: boolean,
+  initialTwoPanel?: boolean
+}) {
+  const [isCompactViewPersistent, setIsCompactViewPersistent] = useLocalStorage<boolean>('isCompactView', false);
+  const [isTwoPanelModePersistent, setIsTwoPanelModePersistent] = useLocalStorage<boolean>('isTwoPanelMode', false);
+  const [showNodeOrderPersistent, setShowNodeOrderPersistent] = useLocalStorage<boolean>('showNodeOrder', false);
+
+  const [isCompactViewLocal, setIsCompactViewLocal] = useState(initialCompact);
+  const [isTwoPanelModeLocal, setIsTwoPanelModeLocal] = useState(initialTwoPanel);
+  const [showNodeOrderLocal, setShowNodeOrderLocal] = useState(false);
+
   const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
   const [ignoreClicksUntil, setIgnoreClicksUntil] = useState(0);
   
+  // Use non-persistent state if initialStandardView is true (e.g. for consistent first impression on public pages)
+  const isCompactView = initialStandardView ? isCompactViewLocal : isCompactViewPersistent;
+  const setIsCompactView = initialStandardView ? setIsCompactViewLocal : setIsCompactViewPersistent;
+  
+  const isTwoPanelMode = initialStandardView ? isTwoPanelModeLocal : isTwoPanelModePersistent;
+  const setIsTwoPanelMode = initialStandardView ? setIsTwoPanelModeLocal : setIsTwoPanelModePersistent;
+
+  const showNodeOrder = initialStandardView ? showNodeOrderLocal : showNodeOrderPersistent;
+  const setShowNodeOrder = initialStandardView ? setShowNodeOrderLocal : setShowNodeOrderPersistent;
+
   const setDialogState = (newState: Partial<DialogState>) => {
     setDialogStateInternal(prev => {
         const nextState = {...prev, ...newState};
