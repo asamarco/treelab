@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useCallback } from "react";
 import { User, GlobalSettings, GitSettings } from "@/lib/types";
 import {
@@ -49,6 +47,13 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     await logoutOnClient();
     setCurrentUser(null);
     setUsers([]); // Clear users on logout
+    
+    // Fail-safe redirect for idle logout
+    if (isIdle) {
+      window.location.href = '/login?reason=idle';
+    } else {
+      window.location.href = '/login';
+    }
   }, [currentUser, toast]);
 
   const inactivityTimeoutMinutes = currentUser?.inactivityTimeoutMinutes;
