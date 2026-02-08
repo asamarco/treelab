@@ -52,7 +52,6 @@ services:
         container_name: mongodb
         image: mongo:8.0
         restart: unless-stopped
-        network_mode: swag
         volumes:
            - ./db:/data/db
 ```
