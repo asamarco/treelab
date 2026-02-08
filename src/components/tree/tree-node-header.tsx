@@ -319,7 +319,7 @@ export function TreeNodeHeader({
           size="icon"
           className={cn(
             "cursor-grab shrink-0 no-print read-only-hidden transition-opacity opacity-0 group-hover/treenode:opacity-100", 
-            isCompactView ? 'h-6 w-6' : 'h-8 w-8',
+            isCompactView ? 'h-6 w-6 mt-0.5' : 'h-8 w-8 mt-1',
             (isMobile || readOnly || disableSelection) && 'hidden'
           )}
           onClick={(e) => e.stopPropagation()}
@@ -330,9 +330,9 @@ export function TreeNodeHeader({
           <GripVertical className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4', isMobile && 'h-6 w-6')} />
         </Button>
         <div
-          className="flex-1"
+          className="flex-1 min-w-0"
         >
-          <div className={cn("flex items-center gap-1", isMobile && "py-2 min-h-[3.5rem]")}>
+          <div className={cn("flex items-start gap-1", isMobile && "py-2 min-h-[3.5rem]")}>
             <CollapsibleTrigger asChild>
               <button
                 onClick={(e) => {
@@ -344,14 +344,14 @@ export function TreeNodeHeader({
                     });
                 }}
                 aria-label="Toggle node"
-                className={cn("p-1 rounded-md hover:bg-accent no-print", isCompactView && 'p-0.5', !hasContentToToggle && "invisible", isMobile && "p-2")}
+                className={cn("p-1 rounded-md hover:bg-accent no-print mt-0.5", isCompactView && 'p-0.5', !hasContentToToggle && "invisible", isMobile && "p-2")}
               >
                 <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 shrink-0 no-print", isCompactView && 'h-3 w-3', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
               </button>
             </CollapsibleTrigger>
-            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0", isCompactView && "h-4 w-4 mr-1", isMobile && "h-4 w-4 mr-1")} style={{ color: color || "hsl(var(--primary))" }} />
-            <div className="flex-grow flex items-center gap-1 min-w-0">
-              <p className={cn("font-semibold truncate", isCompactView && "text-sm", isMobile && "text-base")}>
+            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0 mt-1.5", isCompactView && "h-4 w-4 mr-1 mt-1", isMobile && "h-4 w-4 mr-1 mt-2.5")} style={{ color: color || "hsl(var(--primary))" }} />
+            <div className="flex-grow flex items-start gap-1 min-w-0 py-1">
+              <p className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", isMobile && "text-base")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
                 {node.name}
               </p>
@@ -359,7 +359,7 @@ export function TreeNodeHeader({
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger onClick={(e) => e.stopPropagation()}>
-                            <Copy className="h-3 w-3 text-muted-foreground ml-1 shrink-0 read-only-control" />
+                            <Copy className="h-3 w-3 text-muted-foreground ml-1 mt-1 shrink-0 read-only-control" />
                         </TooltipTrigger>
                         <TooltipContent>
                             <p className="font-bold">This node is a clone. It also exists at:</p>
@@ -370,11 +370,11 @@ export function TreeNodeHeader({
                     </Tooltip>
                  </TooltipProvider>
               )}
-              {nodeHasAttachments && !isCompactOverride && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 shrink-0" />)}
+              {nodeHasAttachments && !isCompactOverride && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 mt-1 shrink-0" />)}
               
               {/* Actions Button - Unified for High-Density Explorer */}
               {!readOnly && (isCompactOverride || isMobile) && (
-                <div className="flex items-center gap-1 opacity-0 group-hover/treenode:opacity-100 transition-opacity ml-1">
+                <div className="flex items-center gap-1 opacity-0 group-hover/treenode:opacity-100 transition-opacity ml-1 mt-0.5">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -412,7 +412,7 @@ export function TreeNodeHeader({
 
               {/* Individual Desktop Hover Actions (only in standard mode) */}
               {!isMobile && !isCompactOverride && !readOnly && (
-                <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control">
+                <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control mt-0.5">
                   <TooltipProvider>
                       <Tooltip><TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
@@ -475,7 +475,7 @@ export function TreeNodeHeader({
             </div>
            )}
         </div>
-        <div className="flex items-center ml-auto pl-2 read-only-control" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center ml-auto pl-2 read-only-control mt-1" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
           {!readOnly && (
             <TooltipProvider>
                 <Tooltip>
