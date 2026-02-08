@@ -803,7 +803,7 @@ export function TreePage() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-        <div className="sticky top-16 z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-4 border-b">
+        <div className={cn("sticky z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-4 border-b", currentUser ? "top-16" : "top-0")}>
           {activeTree && (
             <TreePageHeader 
               tree={activeTree}
