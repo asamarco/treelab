@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the `NodeForm` component, which is a dynamic form used for
@@ -47,7 +45,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, Loader2, ImagePlus, X, Paperclip, File as FileIcon, Link, GripVertical } from "lucide-react";
 import { format, parse, isValid, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
-import { DialogFooter, DialogClose } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from "../ui/dialog";
 import { Label } from "../ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -72,7 +77,7 @@ import { useUIContext } from "@/contexts/ui-context";
 import { DatePicker } from "../ui/date-picker";
 
 
-const DraggableImage = ({ id, src, onRemove, onDoubleClick }: { id: string; src: string; onRemove: () => void; onDoubleClick: () => void; }) => {
+const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: string; onRemove: () => void; onClick: () => void; }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     const style = {
@@ -87,8 +92,8 @@ const DraggableImage = ({ id, src, onRemove, onDoubleClick }: { id: string; src:
             <img 
               src={src} 
               alt="preview" 
-              className="w-full h-full object-cover rounded-md" 
-              onDoubleClick={onDoubleClick}
+              className="w-full h-full object-cover rounded-md cursor-pointer" 
+              onClick={onClick}
             />
             <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-6 w-6 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background/80">
                 <GripVertical className="h-4 w-4" />
@@ -150,11 +155,8 @@ export const NodeForm = ({
   const { tree, uploadAttachment, activeTree, findNodeAndParent, getSiblingOrderRange, templates } = useTreeContext();
   const { setDialogState } = useUIContext();
   
-  //console.log('[NodeForm] Rendering form for:', node?.name || 'New Node');
-  
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     if (isMultiEdit) return {};
-    //console.log('[NodeForm] Initializing state with node data:', node?.data);
     const initialData = { ...(node?.data || {}) };
     
     // Convert ISO date strings from DB to yyyy-MM-dd for DatePicker
@@ -184,6 +186,7 @@ export const NodeForm = ({
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const [dragOverStates, setDragOverStates] = useState<Record<string, boolean>>({});
   const sensors = useSensors(useSensor(PointerSensor));
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   const parentIndex = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
   const contextualOrder = (parentIndex !== -1 && node?.order && (node.order.length > parentIndex))
@@ -227,7 +230,6 @@ export const NodeForm = ({
   }, [tree]);
 
   const handleFileUpload = async (file: File, field: Field) => {
-    //console.log(`[NodeForm] handleFileUpload started for field ${field.id}, file: ${file.name}`);
     if (!activeTree || !currentUser) return;
     if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
@@ -238,7 +240,6 @@ export const NodeForm = ({
         return;
     }
     
-    // Client-side validation for image types before attempting upload
     if (field.type === 'picture') {
         const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/tiff', 'image/bmp'];
         const isValidMime = validImageTypes.includes(file.type);
@@ -274,19 +275,15 @@ export const NodeForm = ({
         const { attachmentInfo } = await response.json();
         
         if (attachmentInfo) {
-            //console.log('[NodeForm] File upload successful, attachmentInfo:', attachmentInfo);
             if (field.type === 'picture') {
                  setFormData(prev => {
-                  //console.log(`[NodeForm] Updating form data for picture field ${field.id}. Prev state:`, prev[field.id]);
                   const currentImages = Array.isArray(prev[field.id]) ? prev[field.id] : (prev[field.id] ? [prev[field.id]] : []);
                   const newState = { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
-                  //console.log(`[NodeForm] New picture state for ${field.id}:`, newState[field.id]);
                   return newState;
               });
               toast({ title: "Image Uploaded", description: "The image has been saved successfully." });
             } else if (field.type === 'attachment') {
                setFormData(prev => {
-                  //console.log(`[NodeForm] Updating form data for attachment field ${field.id}.`);
                   const currentAttachments = prev[field.id] || [];
                   return { ...prev, [field.id]: [...currentAttachments, attachmentInfo] };
               });
@@ -296,7 +293,6 @@ export const NodeForm = ({
     } catch(error) {
         toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message || "Could not save the file to the server." });
     } finally {
-        //console.log(`[NodeForm] handleFileUpload finished for field ${field.id}`);
         setUploadingStates(prev => ({...prev, [field.id]: false}));
     }
   };
@@ -335,7 +331,6 @@ export const NodeForm = ({
   };
 
   const handlePicturePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>, fieldId: string) => {
-    //console.log(`[NodeForm] handlePicturePaste for field ${fieldId}`);
     const clipboardItems = e.clipboardData.items;
     const textItem = e.clipboardData.getData('text/plain');
 
@@ -354,7 +349,6 @@ export const NodeForm = ({
 
     const file = imageItem.getAsFile();
     if (file) {
-        //console.log('[NodeForm] Pasted an image file from clipboard.');
         const field = template.fields.find(f => f.id === fieldId);
         if (field) {
             handleFileUpload(file, field);
@@ -482,7 +476,6 @@ export const NodeForm = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    //console.log('[NodeForm] handleSubmit triggered. Current form data:', formData);
     
     if (isMultiEdit) {
         const dirtyData: Record<string, any> = {};
@@ -559,7 +552,6 @@ export const NodeForm = ({
     if (parentIndex !== -1) {
         newOrderArray[parentIndex] = isNaN(newOrderValue) ? contextualOrder : newOrderValue;
     } else if (node?.parentIds) {
-        // This case should ideally not happen if we're editing contextually, but as a fallback:
         newOrderArray.push(isNaN(newOrderValue) ? 0 : newOrderValue);
     } else {
         newOrderArray[0] = isNaN(newOrderValue) ? 0 : newOrderValue;
@@ -577,7 +569,6 @@ export const NodeForm = ({
       parentIds: node?.parentIds || [],
       order: newOrderArray,
     };
-    //console.log('[NodeForm] Calling onSave with new node data:', newNode);
     onSave(newNode);
   };
   
@@ -632,6 +623,7 @@ export const NodeForm = ({
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit}>
       <div className="space-y-4 p-1 max-h-[60vh] overflow-y-auto">
         {!isMultiEdit && node?.id && (node.createdAt || node.updatedAt) && (
@@ -703,7 +695,7 @@ export const NodeForm = ({
                           {currentImages.length > 0 && (
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
                               {currentImages.map((imgSrc: string) => (
-                                <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onDoubleClick={() => window.open(imgSrc, '_blank')} />
+                                <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onClick={() => setFullScreenImage(imgSrc)} />
                               ))}
                             </div>
                           )}
@@ -918,6 +910,25 @@ export const NodeForm = ({
         <Button type="submit">{isMultiEdit ? `Update ${node?.id ? 1 : 'nodes'}` : 'Save'}</Button>
       </DialogFooter>
     </form>
+
+    {/* Image Lightbox */}
+    <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Full Screen Image</DialogTitle>
+        </DialogHeader>
+        <div className="relative w-full h-full flex items-center justify-center group/lightbox">
+          {fullScreenImage && (
+            <img 
+              src={fullScreenImage} 
+              alt="Full screen view" 
+              className="max-w-full max-h-[90vh] object-contain"
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

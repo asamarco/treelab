@@ -321,7 +321,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                                           alt={`${field.name} ${index + 1}`} 
                                                           className="object-contain w-full cursor-zoom-in"
                                                           style={{ maxHeight: `${maxHeight}px` }} 
-                                                          onDoubleClick={(e) => { e.stopPropagation(); setFullScreenImage(src); }} 
+                                                          onClick={(e) => { e.stopPropagation(); setFullScreenImage(src); }} 
                                                           onLoad={(e) => {
                                                               const img = e.currentTarget;
                                                               setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
@@ -348,7 +348,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                           alt={`${field.name} ${index + 1}`}
                                           className="object-contain max-w-full h-auto rounded-md cursor-zoom-in"
                                           style={{ maxHeight: `${maxHeight}px` }}
-                                          onDoubleClick={(e) => { e.stopPropagation(); setFullScreenImage(src); }}
+                                          onClick={(e) => { e.stopPropagation(); setFullScreenImage(src); }}
                                           onLoad={(e) => {
                                               const img = e.currentTarget;
                                               setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
@@ -560,14 +560,6 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                 className="max-w-full max-h-[90vh] object-contain"
               />
             )}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-4 right-4 h-10 w-10 text-white hover:bg-white/20 rounded-full"
-              onClick={() => setFullScreenImage(null)}
-            >
-              <X className="h-6 w-6" />
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
