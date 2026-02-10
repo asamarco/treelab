@@ -43,24 +43,25 @@ interface TreeViewProps {
 
 export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeViewProps) {
   const { currentUser } = useAuthContext();
-  const { 
-      tree, 
-      moveNodes, 
-      selectedNodeIds,
-      setSelectedNodeIds,
-      lastSelectedNodeId,
-      setLastSelectedNodeId,
-      expandedNodeIds: globalExpandedNodeIds,
-      setExpandedNodeIds: setGlobalExpandedNodeIds,
-      pasteNodesAsClones,
-      findNodeAndParent,
-      pasteNodes,
-      expandAllFromNode,
-      collapseAllFromNode,
-      moveNodeOrder,
-      undoLastAction,
-      redoLastAction,
-      clipboard,
+  const {
+    tree,
+    moveNodes,
+    selectedNodeIds,
+    setSelectedNodeIds,
+    lastSelectedNodeId,
+    setLastSelectedNodeId,
+    expandedNodeIds: globalExpandedNodeIds,
+    setExpandedNodeIds: setGlobalExpandedNodeIds,
+    pasteNodesAsClones,
+    findNodeAndParent,
+    pasteNodes,
+    expandAllFromNode,
+    collapseAllFromNode,
+    moveNodeOrder,
+    undoLastAction,
+    redoLastAction,
+    clipboard,
+    deleteNodes,
   } = useTreeContext();
   const { dialogState, setDialogState, setIsTwoPanelMode, isTwoPanelMode } = useUIContext();
 
@@ -68,54 +69,54 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
 
   const setExpandedNodeIds = (onExpandedChange || setGlobalExpandedNodeIds) as unknown as (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
   const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
-  
+
   const { toast } = useToast();
 
   const handleDragEnd = (event: DragEndEvent) => {
     if (readOnly || disableSelection) return;
     const { active, over, activatorEvent } = event;
-    
+
     if (!active || !over) return;
-    
+
     const findNodeAndParentInTree = (nodeId: string, searchNodes: TreeNode[]): { node: TreeNode, parent: TreeNode | null } | null => {
-        for(const node of searchNodes) {
-            if (node.id === nodeId) return { node, parent: null };
-            if (node.children) {
-                const found = findNodeAndParentInTree(nodeId, node.children);
-                if (found) return { ...found, parent: found.parent || node };
-            }
+      for (const node of searchNodes) {
+        if (node.id === nodeId) return { node, parent: null };
+        if (node.children) {
+          const found = findNodeAndParentInTree(nodeId, node.children);
+          if (found) return { ...found, parent: found.parent || node };
         }
-        return null;
+      }
+      return null;
     };
-    
+
     if (!currentUser) {
-        // Allow local-only drag-drop for public users, without modifiers
-        const { nodeId: activeId } = active.data.current ?? {};
-        const overIdWithContext = over.id as string;
-        const isDroppingOnGap = overIdWithContext.startsWith('gap_');
-        const overNodeId = overIdWithContext.replace(/^(gap_|node_)/, '').split('_')[0];
+      // Allow local-only drag-drop for public users, without modifiers
+      const { nodeId: activeId } = active.data.current ?? {};
+      const overIdWithContext = over.id as string;
+      const isDroppingOnGap = overIdWithContext.startsWith('gap_');
+      const overNodeId = overIdWithContext.replace(/^(gap_|node_)/, '').split('_')[0];
 
-        const activeNodeFromContext = findNodeAndParentInTree(activeId, tree)?.node;
-        if (activeNodeFromContext && findNodeAndParentInTree(overNodeId, [activeNodeFromContext])) {
-          toast({
-            variant: "destructive",
-            title: "Invalid Move",
-            description: "You cannot move a node into one of its own descendants.",
-          });
-          return;
-        }
-
-        const [targetNodeId, overParentIdStr] = overIdWithContext.replace(/^(gap_|node_)/, '').split('_');
-        const targetContextualParentId = overParentIdStr === 'root' ? null : overParentIdStr;
-        
-        moveNodes([{ 
-            nodeId: activeId, 
-            targetNodeId: targetNodeId, 
-            position: isDroppingOnGap ? 'sibling' : 'child-bottom', 
-            sourceContextualParentId: active.data.current?.parentId,
-            targetContextualParentId: targetContextualParentId,
-        }]);
+      const activeNodeFromContext = findNodeAndParentInTree(activeId, tree)?.node;
+      if (activeNodeFromContext && findNodeAndParentInTree(overNodeId, [activeNodeFromContext])) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Move",
+          description: "You cannot move a node into one of its own descendants.",
+        });
         return;
+      }
+
+      const [targetNodeId, overParentIdStr] = overIdWithContext.replace(/^(gap_|node_)/, '').split('_');
+      const targetContextualParentId = overParentIdStr === 'root' ? null : overParentIdStr;
+
+      moveNodes([{
+        nodeId: activeId,
+        targetNodeId: targetNodeId,
+        position: isDroppingOnGap ? 'sibling' : 'child-bottom',
+        sourceContextualParentId: active.data.current?.parentId,
+        targetContextualParentId: targetContextualParentId,
+      }]);
+      return;
     }
 
     const typedActivatorEvent = activatorEvent as (KeyboardEvent);
@@ -124,12 +125,12 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
 
     const isCloneOperation = isCtrlPressed && isShiftPressed;
     const isCopyOperation = isCtrlPressed && !isShiftPressed;
-    
+
     const { nodeId: activeId, parentId: sourceContextualParentId } = active.data.current ?? {};
     const overIdWithContext = over.id as string;
-    
+
     const isDroppingOnGap = overIdWithContext.startsWith('gap_');
-    
+
     const overNodeInstanceId = overIdWithContext.replace(/^(gap_|node_)/, '');
     const [overNodeId, overParentIdStr] = overNodeInstanceId.split('_');
     const targetContextualParentId = overParentIdStr === 'root' ? null : overParentIdStr;
@@ -143,16 +144,16 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     if (!activeNodeInfo) return;
 
     if (isCloneOperation) {
-        pasteNodesAsClones(overNodeId, isDroppingOnGap ? 'sibling' : 'child', [activeNodeId], targetContextualParentId);
-        return;
+      pasteNodesAsClones(overNodeId, isDroppingOnGap ? 'sibling' : 'child', [activeNodeId], targetContextualParentId);
+      return;
     }
 
     if (isCopyOperation) {
-        const fullNodeToCopy = findNodeAndParent(activeNodeId)?.node;
-        if (fullNodeToCopy) {
-            pasteNodes(overNodeId, isDroppingOnGap ? 'sibling' : 'child', null, [fullNodeToCopy]);
-        }
-        return;
+      const fullNodeToCopy = findNodeAndParent(activeNodeId)?.node;
+      if (fullNodeToCopy) {
+        pasteNodes(overNodeId, isDroppingOnGap ? 'sibling' : 'child', null, [fullNodeToCopy]);
+      }
+      return;
     }
 
     const activeNodeFromContext = findNodeAndParentInTree(activeId, tree)?.node;
@@ -164,13 +165,13 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       });
       return;
     }
-    
-    moveNodes([{ 
-        nodeId: activeId, 
-        targetNodeId: overNodeId, 
-        position: isDroppingOnGap ? 'sibling' : 'child-bottom', 
-        sourceContextualParentId: sourceContextualParentId,
-        targetContextualParentId: targetContextualParentId,
+
+    moveNodes([{
+      nodeId: activeId,
+      targetNodeId: overNodeId,
+      position: isDroppingOnGap ? 'sibling' : 'child-bottom',
+      sourceContextualParentId: sourceContextualParentId,
+      targetContextualParentId: targetContextualParentId,
     }]);
   };
 
@@ -182,20 +183,20 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     }),
     useSensor(KeyboardSensor)
   );
-  
+
   const flattenedInstances = useMemo(() => {
     const result: { instanceId: string; node: TreeNode }[] = [];
     const expandedIdSet = new Set(expandedNodeIds);
 
     const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
-        for (const node of nodesToTraverse) {
-            const instanceId = `${node.id}_${parentId || 'root'}`;
-            result.push({ instanceId, node });
+      for (const node of nodesToTraverse) {
+        const instanceId = `${node.id}_${parentId || 'root'}`;
+        result.push({ instanceId, node });
 
-            if (expandedIdSet.has(instanceId) && node.children) {
-                traverse(node.children, node.id);
-            }
+        if (expandedIdSet.has(instanceId) && node.children) {
+          traverse(node.children, node.id);
         }
+      }
     };
     traverse(nodes, null);
     return result;
@@ -206,7 +207,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     if (isShiftClick && lastSelectedNodeId) {
       const lastIndex = flattenedInstances.findIndex(i => i.instanceId === lastSelectedNodeId);
       const currentIndex = flattenedInstances.findIndex(i => i.instanceId === instanceId);
-      
+
       if (lastIndex !== -1 && currentIndex !== -1) {
         const start = Math.min(lastIndex, currentIndex);
         const end = Math.max(lastIndex, currentIndex);
@@ -225,16 +226,16 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
         return Array.from(newSelection);
       });
     } else {
-        const isAlreadySelected = selectedNodeIds.includes(instanceId);
-        if (isAlreadySelected && selectedNodeIds.length === 1) {
-            setSelectedNodeIds([]); 
-        } else {
-            setSelectedNodeIds([instanceId]); 
-        }
-        setLastSelectedNodeId(instanceId);
+      const isAlreadySelected = selectedNodeIds.includes(instanceId);
+      if (isAlreadySelected && selectedNodeIds.length === 1) {
+        setSelectedNodeIds([]);
+      } else {
+        setSelectedNodeIds([instanceId]);
+      }
+      setLastSelectedNodeId(instanceId);
     }
   };
-  
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly || disableSelection) return;
     const activeElement = document.activeElement as HTMLElement;
@@ -246,20 +247,20 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     if (isAnyModalOpen) {
       return;
     }
-    
+
     if (event.ctrlKey || event.metaKey) {
-        if (event.key === 'z' && currentUser) {
-            event.preventDefault();
-            undoLastAction();
-            return;
-        }
-        if ((event.key === 'y' || (event.key === 'Z' && event.shiftKey)) && currentUser) {
-            event.preventDefault();
-            redoLastAction();
-            return;
-        }
+      if (event.key === 'z' && currentUser) {
+        event.preventDefault();
+        undoLastAction();
+        return;
+      }
+      if ((event.key === 'y' || (event.key === 'Z' && event.shiftKey)) && currentUser) {
+        event.preventDefault();
+        redoLastAction();
+        return;
+      }
     }
-    
+
     if (event.key === 'Escape') {
       if (selectedNodeIds.length > 0) {
         event.preventDefault();
@@ -268,75 +269,82 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       return;
     }
 
-    if (event.key === 'p' || event.key === 'P') {
-        event.preventDefault();
-        setIsTwoPanelMode(prev => !prev);
-        return;
+    if (event.key === 'Delete' && currentUser && selectedNodeIds.length > 0) {
+      event.preventDefault();
+      deleteNodes(selectedNodeIds);
+      setSelectedNodeIds([]);
+      return;
     }
-    
+
+    if (event.key === 'p' || event.key === 'P') {
+      event.preventDefault();
+      setIsTwoPanelMode(prev => !prev);
+      return;
+    }
+
     if (currentUser) {
-       if (event.ctrlKey || event.metaKey) {
-          if (event.key === 'v') { 
-              event.preventDefault();
-              if (selectedNodeIds.length !== 1 || !clipboard.nodes) return;
-              const targetInstanceId = selectedNodeIds[0];
-              const [targetNodeId, contextualParentIdStr] = targetInstanceId.split('_');
-              const contextualParentId = contextualParentIdStr === 'root' ? null : contextualParentIdStr;
-              
-              if (event.altKey) {
-                if (clipboard.operation === 'cut') return;
-                pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes!.map(n => n.id), contextualParentId);
-              } else {
-                  if (clipboard.operation === 'cut') {
-                    const moves = clipboard.nodes!.map(sourceNode => ({
-                        nodeId: sourceNode.id,
-                        targetNodeId: targetNodeId,
-                        position: 'child' as 'child' | 'sibling',
-                        sourceContextualParentId: sourceNode.parentIds[0] ?? null,
-                        targetContextualParentId: contextualParentId,
-                        isCutOperation: true,
-                    }));
-                    moveNodes(moves);
-                  } else {
-                    pasteNodes(targetNodeId, 'child', contextualParentId);
-                  }
-              }
+      if (event.ctrlKey || event.metaKey) {
+        if (event.key === 'v') {
+          event.preventDefault();
+          if (selectedNodeIds.length !== 1 || !clipboard.nodes) return;
+          const targetInstanceId = selectedNodeIds[0];
+          const [targetNodeId, contextualParentIdStr] = targetInstanceId.split('_');
+          const contextualParentId = contextualParentIdStr === 'root' ? null : contextualParentIdStr;
+
+          if (event.altKey) {
+            if (clipboard.operation === 'cut') return;
+            pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes!.map(n => n.id), contextualParentId);
+          } else {
+            if (clipboard.operation === 'cut') {
+              const moves = clipboard.nodes!.map(sourceNode => ({
+                nodeId: sourceNode.id,
+                targetNodeId: targetNodeId,
+                position: 'child' as 'child' | 'sibling',
+                sourceContextualParentId: sourceNode.parentIds[0] ?? null,
+                targetContextualParentId: contextualParentId,
+                isCutOperation: true,
+              }));
+              moveNodes(moves);
+            } else {
+              pasteNodes(targetNodeId, 'child', contextualParentId);
+            }
           }
-       } else if (selectedNodeIds.length === 1) {
-          const instanceId = selectedNodeIds[0];
-          const [nodeId, parentIdStr] = instanceId.split('_');
-          const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;
-          if (event.key === 'e') {
-              event.preventDefault();
-              setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
-              return;
-          }
-          if (event.key === 'Enter') {
-              event.preventDefault();
-              setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
-              return;
-          }
-          if (event.key === 'Ky' || event.key === '+') {
-              event.preventDefault();
-              setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
-              return;
-          }
-          if (event.key === 'i') {
-              event.preventDefault();
-              moveNodeOrder(nodeId, 'up', contextualParentId);
-              return;
-          }
-          if (event.key === 'k') {
-              event.preventDefault();
-              moveNodeOrder(nodeId, 'down', contextualParentId);
-              return;
-          }
-       }
+        }
+      } else if (selectedNodeIds.length === 1) {
+        const instanceId = selectedNodeIds[0];
+        const [nodeId, parentIdStr] = instanceId.split('_');
+        const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;
+        if (event.key === 'e') {
+          event.preventDefault();
+          setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
+          return;
+        }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
+          return;
+        }
+        if (event.key === 'Ky' || event.key === '+') {
+          event.preventDefault();
+          setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
+          return;
+        }
+        if (event.key === 'i') {
+          event.preventDefault();
+          moveNodeOrder(nodeId, 'up', contextualParentId);
+          return;
+        }
+        if (event.key === 'k') {
+          event.preventDefault();
+          moveNodeOrder(nodeId, 'down', contextualParentId);
+          return;
+        }
+      }
     }
 
 
     let nextInstanceId: string | null = null;
-    
+
     if (selectedNodeIds.length === 0) {
       if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && flattenedInstances.length > 0) {
         event.preventDefault();
@@ -345,89 +353,89 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
         setLastSelectedNodeId(nextInstanceId);
       }
     } else if (selectedNodeIds.length > 0) {
-        const isCtrlPressed = event.ctrlKey || event.metaKey;
-        const currentInstanceId = lastSelectedNodeId || selectedNodeIds[selectedNodeIds.length - 1];
-        const [currentNodeId, currentParentIdStr] = currentInstanceId.split('_');
-        const currentContextualParentId = currentParentIdStr === 'root' ? null : currentParentIdStr;
+      const isCtrlPressed = event.ctrlKey || event.metaKey;
+      const currentInstanceId = lastSelectedNodeId || selectedNodeIds[selectedNodeIds.length - 1];
+      const [currentNodeId, currentParentIdStr] = currentInstanceId.split('_');
+      const currentContextualParentId = currentParentIdStr === 'root' ? null : currentParentIdStr;
 
-        switch (event.key) {
-            case 'ArrowUp':
-            case 'ArrowDown':
-                event.preventDefault();
-                if (isCtrlPressed && currentUser) { 
-                    if (selectedNodeIds.length !== 1) break;
-                    
-                    const parentInfo = currentContextualParentId ? findNodeAndParent(currentContextualParentId, tree) : null;
-                    const siblings = parentInfo ? parentInfo.node.children : tree;
+      switch (event.key) {
+        case 'ArrowUp':
+        case 'ArrowDown':
+          event.preventDefault();
+          if (isCtrlPressed && currentUser) {
+            if (selectedNodeIds.length !== 1) break;
 
-                    if (!siblings || siblings.length < 2) break;
-                    
-                    const sortedSiblings = [...siblings].sort((a,b) => getContextualOrder(a, siblings, currentContextualParentId) - getContextualOrder(b, siblings, currentContextualParentId));
-                    const currentIndex = sortedSiblings.findIndex(s => s.id === currentNodeId);
-                    
-                    const nextIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
-                    if (nextIndex >= 0 && nextIndex < sortedSiblings.length) {
-                        nextInstanceId = `${sortedSiblings[nextIndex].id}_${currentContextualParentId || 'root'}`;
-                        setSelectedNodeIds([nextInstanceId]);
-                        setLastSelectedNodeId(nextInstanceId);
-                    }
+            const parentInfo = currentContextualParentId ? findNodeAndParent(currentContextualParentId, tree) : null;
+            const siblings = parentInfo ? parentInfo.node.children : tree;
 
-                } else { 
-                    const currentIndex = flattenedInstances.findIndex(i => i.instanceId === currentInstanceId);
-                    if (currentIndex === -1) break;
+            if (!siblings || siblings.length < 2) break;
 
-                    const nextIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
-                    if (nextIndex >= 0 && nextIndex < flattenedInstances.length) {
-                        nextInstanceId = flattenedInstances[nextIndex].instanceId;
-                        if (event.shiftKey) {
-                            setSelectedNodeIds(prev => {
-                                const newSelection = new Set(prev);
-                                if (newSelection.has(nextInstanceId!)) {
-                                    newSelection.delete(currentInstanceId);
-                                } else {
-                                    newSelection.add(nextInstanceId!);
-                                }
-                                return Array.from(newSelection);
-                            });
-                        } else {
-                            setSelectedNodeIds([nextInstanceId]);
-                        }
-                        setLastSelectedNodeId(nextInstanceId);
-                    }
-                }
-                break;
-            case 'ArrowRight':
-                event.preventDefault();
-                if (isCtrlPressed) {
-                    selectedNodeIds.forEach(instanceId => {
-                        const [nodeId, parentId] = instanceId.split('_');
-                        expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
-                    });
-                } else if (selectedNodeIds.length === 1) {
-                    setExpandedNodeIds((draft) => {
-                        if (!draft.includes(currentInstanceId)) {
-                            draft.push(currentInstanceId);
-                        }
-                    }, false);
-                }
-                break;
-            case 'ArrowLeft':
-                event.preventDefault();
-                if (isCtrlPressed) {
-                    selectedNodeIds.forEach(instanceId => {
-                        const [nodeId, parentId] = instanceId.split('_');
-                        expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
-                    });
-                } else if (selectedNodeIds.length === 1) {
-                    setExpandedNodeIds((draft) => {
-                        const index = draft.indexOf(currentInstanceId);
-                        if (index > -1) {
-                            draft.splice(index, 1);
-                        }
-                    }, false);
-                }
-                break;
-        }
+            const sortedSiblings = [...siblings].sort((a, b) => getContextualOrder(a, siblings, currentContextualParentId) - getContextualOrder(b, siblings, currentContextualParentId));
+            const currentIndex = sortedSiblings.findIndex(s => s.id === currentNodeId);
+
+            const nextIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+            if (nextIndex >= 0 && nextIndex < sortedSiblings.length) {
+              nextInstanceId = `${sortedSiblings[nextIndex].id}_${currentContextualParentId || 'root'}`;
+              setSelectedNodeIds([nextInstanceId]);
+              setLastSelectedNodeId(nextInstanceId);
+            }
+
+          } else {
+            const currentIndex = flattenedInstances.findIndex(i => i.instanceId === currentInstanceId);
+            if (currentIndex === -1) break;
+
+            const nextIndex = event.key === 'ArrowUp' ? currentIndex - 1 : currentIndex + 1;
+            if (nextIndex >= 0 && nextIndex < flattenedInstances.length) {
+              nextInstanceId = flattenedInstances[nextIndex].instanceId;
+              if (event.shiftKey) {
+                setSelectedNodeIds(prev => {
+                  const newSelection = new Set(prev);
+                  if (newSelection.has(nextInstanceId!)) {
+                    newSelection.delete(currentInstanceId);
+                  } else {
+                    newSelection.add(nextInstanceId!);
+                  }
+                  return Array.from(newSelection);
+                });
+              } else {
+                setSelectedNodeIds([nextInstanceId]);
+              }
+              setLastSelectedNodeId(nextInstanceId);
+            }
+          }
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          if (isCtrlPressed) {
+            selectedNodeIds.forEach(instanceId => {
+              const [nodeId, parentId] = instanceId.split('_');
+              expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
+            });
+          } else if (selectedNodeIds.length === 1) {
+            setExpandedNodeIds((draft) => {
+              if (!draft.includes(currentInstanceId)) {
+                draft.push(currentInstanceId);
+              }
+            }, false);
+          }
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          if (isCtrlPressed) {
+            selectedNodeIds.forEach(instanceId => {
+              const [nodeId, parentId] = instanceId.split('_');
+              expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
+            });
+          } else if (selectedNodeIds.length === 1) {
+            setExpandedNodeIds((draft) => {
+              const index = draft.indexOf(currentInstanceId);
+              if (index > -1) {
+                draft.splice(index, 1);
+              }
+            }, false);
+          }
+          break;
+      }
     }
 
 
@@ -472,7 +480,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
             {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${node.id}_root`} />}
           </div>
         ))}
-        {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_end_root`} className="h-4"/>}
+        {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_end_root`} className="h-4" />}
       </div>
     </DndContext>
   );
