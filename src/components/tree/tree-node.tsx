@@ -77,7 +77,7 @@ export function TreeNodeComponent({
   useEffect(() => {
     setIsMounted(true);
   }, []);
-  
+
   const {
     getTemplateById,
     clipboard,
@@ -91,7 +91,7 @@ export function TreeNodeComponent({
   const isCompactView = isCompactOverride ?? globalIsCompactView;
 
   const instanceId = `${node.id}_${contextualParentId || 'root'}`;
-  
+
   const expandedNodeIds = overrideExpandedIds || globalExpandedNodeIds;
   const setExpandedNodeIds = (onExpandedChange || setGlobalExpandedNodeIds) as unknown as (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
 
@@ -108,10 +108,10 @@ export function TreeNodeComponent({
     transform,
     isDragging,
   } = useDraggable({
-    id: instanceId, 
+    id: instanceId,
     data: {
-        nodeId: node.id,
-        parentId: contextualParentId,
+      nodeId: node.id,
+      parentId: contextualParentId,
     },
     disabled: !isMounted || isMobile || readOnly || disableSelection // In Explorer mode, the Chevron button will use the listeners
   });
@@ -130,14 +130,14 @@ export function TreeNodeComponent({
   const style = {
     transform: CSS.Translate.toString(transform),
   };
-  
+
   const isCut = clipboard.operation === 'cut' && !!clipboard.nodes?.some(
     n => n.id === node.id && n.parentIds.includes(contextualParentId!)
   );
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
-    
+
     // Allow browser context menu on images
     if ((e.target as HTMLElement).tagName === 'IMG') {
       return;
@@ -148,7 +148,7 @@ export function TreeNodeComponent({
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
     setIsMenuOpen(true);
   };
-  
+
   const handleOpenModal = (modalType: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => {
     setDialogState({ [modalType === 'addChild' ? 'isAddChildOpen' : modalType === 'addSibling' ? 'isAddSiblingOpen' : modalType === 'edit' ? 'isNodeEditOpen' : modalType === 'changeTemplate' ? 'isChangeTemplateOpen' : 'isPasteTemplateOpen']: true, nodeInstanceIdForAction: instanceId });
   };
@@ -205,7 +205,7 @@ export function TreeNodeComponent({
         {!readOnly && (
           <TreeNodeModals
             node={node}
-            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] } as any} 
+            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] } as any}
           />
         )}
       </div>
@@ -218,7 +218,7 @@ export function TreeNodeComponent({
     <div
       className={cn(
         "relative transition-opacity",
-        isCompactView ? "pl-0 pr-1" : "pl-0 pr-1",
+        isExplorer ? "pl-0 pr-0 py-0 my-0 leading-none" : (isCompactView ? "pl-0 pr-1" : "pl-0 pr-1"),
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
@@ -230,22 +230,22 @@ export function TreeNodeComponent({
         style={style}
         className={cn(
           "bg-card/60 transition-all rounded-md overflow-hidden",
-          isCompactView ? "my-0.5 border-0 shadow-none hover:bg-accent/30" : "my-1",
+          isCompactView ? "my-0.5 border-0 shadow-none hover:bg-accent/30" : (isExplorer ? "my-0 border-0 shadow-none hover:bg-accent/50 rounded-none w-full" : "my-1"),
           (!readOnly && !disableSelection) && "cursor-pointer",
           isSelected && "border-primary ring-2 ring-primary ring-offset-2 z-10",
           isDragging && "shadow-xl opacity-80",
           isOver && "outline-2 outline-dashed outline-primary"
         )}
         onClick={(e) => {
-            e.stopPropagation();
-            if (Date.now() < ignoreClicksUntil || readOnly || disableSelection) {
-              return;
-            }
-            onSelect(instanceId, e.shiftKey, e.ctrlKey || e.metaKey);
+          e.stopPropagation();
+          if (Date.now() < ignoreClicksUntil || readOnly || disableSelection) {
+            return;
+          }
+          onSelect(instanceId, e.shiftKey, e.ctrlKey || e.metaKey);
         }}
         onDoubleClick={(e) => {
           if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
-          
+
           const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
           if (isAnyModalOpen) {
             return;
@@ -277,9 +277,9 @@ export function TreeNodeComponent({
               readOnly={readOnly}
               disableSelection={disableSelection}
             />
-            <TreeNodeContent 
-              node={node} 
-              template={template} 
+            <TreeNodeContent
+              node={node}
+              template={template}
               isExpanded={isExpanded}
               level={level}
               onSelect={onSelect as any}
@@ -299,6 +299,28 @@ export function TreeNodeComponent({
           node={node}
           template={template}
         />
+      )}
+      {isExplorer && node.children && node.children.length > 0 && isExpanded && (
+        <div className="pl-3 ml-[7px] border-l border-border/50">
+          {node.children.map((childNode) => (
+            <div key={`${childNode.id}_${node.id}`}>
+              <TreeNodeComponent
+                node={childNode}
+                level={level + 1}
+                siblings={node.children}
+                onSelect={onSelect}
+                contextualParentId={node.id}
+                overrideExpandedIds={overrideExpandedIds}
+                onExpandedChange={onExpandedChange}
+                isCompactOverride={isCompactOverride}
+                isExplorer={isExplorer}
+                readOnly={readOnly}
+                disableSelection={disableSelection}
+              />
+              {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
