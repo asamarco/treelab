@@ -36,11 +36,12 @@ interface TreeViewProps {
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: SetStateAction<string[]>) => void;
   isCompactOverride?: boolean;
+  isExplorer?: boolean;
   readOnly?: boolean;
   disableSelection?: boolean;
 }
 
-export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, readOnly = false, disableSelection = false }: TreeViewProps) {
+export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeViewProps) {
   const { currentUser } = useAuthContext();
   const { 
       tree, 
@@ -128,7 +129,6 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     const overIdWithContext = over.id as string;
     
     const isDroppingOnGap = overIdWithContext.startsWith('gap_');
-    const isDroppingOnNode = overIdWithContext.startsWith('node_');
     
     const overNodeInstanceId = overIdWithContext.replace(/^(gap_|node_)/, '');
     const [overNodeId, overParentIdStr] = overNodeInstanceId.split('_');
@@ -227,9 +227,9 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     } else {
         const isAlreadySelected = selectedNodeIds.includes(instanceId);
         if (isAlreadySelected && selectedNodeIds.length === 1) {
-            setSelectedNodeIds([]); // Deselect if it's the only one selected
+            setSelectedNodeIds([]); 
         } else {
-            setSelectedNodeIds([instanceId]); // Select only this one
+            setSelectedNodeIds([instanceId]); 
         }
         setLastSelectedNodeId(instanceId);
     }
@@ -242,13 +242,11 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       return;
     }
 
-    // Check if any modal is open before processing shortcuts
     const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
     if (isAnyModalOpen) {
       return;
     }
     
-    // Shortcuts that work for both public and authenticated users
     if (event.ctrlKey || event.metaKey) {
         if (event.key === 'z' && currentUser) {
             event.preventDefault();
@@ -270,17 +268,15 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       return;
     }
 
-    // Toggle Two Panel mode
     if (event.key === 'p' || event.key === 'P') {
         event.preventDefault();
         setIsTwoPanelMode(prev => !prev);
         return;
     }
     
-    // Shortcuts only for authenticated users
     if (currentUser) {
        if (event.ctrlKey || event.metaKey) {
-          if (event.key === 'v') { // Paste
+          if (event.key === 'v') { 
               event.preventDefault();
               if (selectedNodeIds.length !== 1 || !clipboard.nodes) return;
               const targetInstanceId = selectedNodeIds[0];
@@ -289,10 +285,10 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
               
               if (event.altKey) {
                 if (clipboard.operation === 'cut') return;
-                pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes.map(n => n.id), contextualParentId);
+                pasteNodesAsClones(targetNodeId, 'child', clipboard.nodes!.map(n => n.id), contextualParentId);
               } else {
                   if (clipboard.operation === 'cut') {
-                    const moves = clipboard.nodes.map(sourceNode => ({
+                    const moves = clipboard.nodes!.map(sourceNode => ({
                         nodeId: sourceNode.id,
                         targetNodeId: targetNodeId,
                         position: 'child' as 'child' | 'sibling',
@@ -320,7 +316,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
               setDialogState({ isAddChildOpen: true, nodeInstanceIdForAction: instanceId });
               return;
           }
-          if (event.key === '+') {
+          if (event.key === 'Ky' || event.key === '+') {
               event.preventDefault();
               setDialogState({ isAddSiblingOpen: true, nodeInstanceIdForAction: instanceId });
               return;
@@ -358,7 +354,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
             case 'ArrowUp':
             case 'ArrowDown':
                 event.preventDefault();
-                if (isCtrlPressed && currentUser) { // Sibling navigation
+                if (isCtrlPressed && currentUser) { 
                     if (selectedNodeIds.length !== 1) break;
                     
                     const parentInfo = currentContextualParentId ? findNodeAndParent(currentContextualParentId, tree) : null;
@@ -376,7 +372,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
                         setLastSelectedNodeId(nextInstanceId);
                     }
 
-                } else { // Standard/Shift navigation
+                } else { 
                     const currentIndex = flattenedInstances.findIndex(i => i.instanceId === currentInstanceId);
                     if (currentIndex === -1) break;
 
@@ -420,7 +416,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
                 if (isCtrlPressed) {
                     selectedNodeIds.forEach(instanceId => {
                         const [nodeId, parentId] = instanceId.split('_');
-                        collapseAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
+                        expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
                     });
                 } else if (selectedNodeIds.length === 1) {
                     setExpandedNodeIds((draft) => {
@@ -436,7 +432,6 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
 
 
     if (nextInstanceId) {
-      // Use requestAnimationFrame to ensure the DOM has updated with the new selection
       requestAnimationFrame(() => {
         const element = document.getElementById(`node-card-${nextInstanceId}`);
         element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -458,7 +453,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       onDragEnd={handleDragEnd}
       collisionDetection={closestCenter}
     >
-      <div id="tree-view-container">
+      <div id="tree-view-container" className="pr-1 pb-1">
         {nodes.map((node, index) => (
           <div key={`${node.id}-root-wrapper`}>
             <TreeNodeComponent
@@ -468,15 +463,15 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
               onSelect={handleSelect}
               contextualParentId={null}
               overrideExpandedIds={expandedNodeIds}
-              onExpandedChange={setExpandedNodeIds}
+              onExpandedChange={setExpandedNodeIds as any}
               isCompactOverride={isCompactOverride}
+              isExplorer={isExplorer}
               readOnly={readOnly}
               disableSelection={disableSelection}
             />
             {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${node.id}_root`} />}
           </div>
         ))}
-        {/* Add a final drop zone at the end of the root list */}
         {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_end_root`} className="h-4"/>}
       </div>
     </DndContext>

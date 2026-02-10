@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This is the main client component of the application, responsible for displaying and
@@ -488,7 +489,7 @@ export function TreePage() {
                     <ResizablePanel defaultSize={25} minSize={20}>
                         <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
                             <div className="p-2">
-                                <TreeView nodes={filteredTree} isCompactOverride={true} />
+                                <TreeView nodes={filteredTree} isCompactOverride={true} isExplorer={true} />
                             </div>
                         </ScrollArea>
                     </ResizablePanel>

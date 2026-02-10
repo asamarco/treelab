@@ -3,6 +3,7 @@
  * This component renders the interactive header of a single tree node.
  * It includes the selection checkbox, drag handle, expand/collapse trigger,
  * icon, name, and a dropdown menu with various actions.
+ * Optimized for IDE interactions in Explorer mode.
  */
 "use client";
 
@@ -49,7 +50,7 @@ interface TreeNodeHeaderProps {
   isExpanded: boolean;
   isSelected: boolean;
   siblings: TreeNode[];
-  onSelect: (nodeId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
+  onSelect: (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
   onOpenModal: (modal: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => void;
   dndAttributes: any;
   dndListeners: any;
@@ -59,6 +60,7 @@ interface TreeNodeHeaderProps {
   contextMenuPosition: { x: number; y: number } | null;
   onExpandedChange: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
   isCompactOverride?: boolean;
+  isExplorer?: boolean;
   readOnly?: boolean;
   disableSelection?: boolean;
 }
@@ -79,6 +81,7 @@ export function TreeNodeHeader({
   contextMenuPosition,
   onExpandedChange,
   isCompactOverride,
+  isExplorer = false,
   readOnly = false,
   disableSelection = false,
 }: TreeNodeHeaderProps) {
@@ -222,6 +225,8 @@ export function TreeNodeHeader({
     updateNode(node.id, { isStarred: !node.isStarred });
   };
 
+  const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer;
+
   return (
     <>
       {!readOnly && (
@@ -313,25 +318,26 @@ export function TreeNodeHeader({
         </DropdownMenu>
       )}
 
-      <div className="flex items-start gap-1 group/treenode">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "cursor-grab shrink-0 no-print read-only-hidden transition-opacity opacity-0 group-hover/treenode:opacity-100", 
-            isCompactView ? 'h-6 w-6 mt-0.5' : 'h-8 w-8 mt-1',
-            (isMobile || readOnly || disableSelection) && 'hidden'
-          )}
-          onClick={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-          {...dndAttributes}
-          {...dndListeners}
-        >
-          <GripVertical className={cn(isCompactView ? 'h-3 w-3' : 'h-4 w-4', isMobile && 'h-6 w-6')} />
-        </Button>
-        <div
-          className="flex-1 min-w-0"
-        >
+      <div className="flex items-start gap-0.5 group/treenode">
+        {!isExplorer && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "shrink-0 no-print read-only-hidden transition-opacity cursor-grab", 
+              isCompactView ? 'h-7 w-7' : 'h-8 w-8 mt-1',
+              isHandleHidden && 'hidden',
+              !isMobile && "opacity-0 group-hover/treenode:opacity-100"
+            )}
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            {...dndAttributes}
+            {...dndListeners}
+          >
+            <GripVertical className={cn(isCompactView ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
+          </Button>
+        )}
+        <div className="flex-1 min-w-0">
           <div className={cn("flex items-start gap-1", isMobile && "py-2 min-h-[3.5rem]")}>
             <CollapsibleTrigger asChild>
               <button
@@ -344,17 +350,36 @@ export function TreeNodeHeader({
                     });
                 }}
                 aria-label="Toggle node"
-                className={cn("p-1 rounded-md hover:bg-accent no-print mt-0.5", isCompactView && 'p-0.5', !hasContentToToggle && "invisible", isMobile && "p-2")}
+                className={cn(
+                  "flex items-center justify-center rounded-md hover:bg-accent no-print shrink-0", 
+                  isCompactView ? 'h-7 w-7' : 'h-8 w-8 mt-1',
+                  (!hasContentToToggle && !isExplorer) && "invisible", 
+                  isMobile && "h-10 w-10",
+                  isExplorer && "cursor-grab"
+                )}
+                {...(isExplorer ? dndAttributes : {})}
+                {...(isExplorer ? dndListeners : {})}
               >
-                <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 shrink-0 no-print", isCompactView && 'h-3 w-3', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
+                {hasContentToToggle ? (
+                  <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 no-print", isCompactView && 'h-3.5 w-3.5', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
+                ) : isExplorer ? (
+                  <div className="w-4 h-4" />
+                ) : null}
               </button>
             </CollapsibleTrigger>
-            <Icon name={(icon as keyof typeof icons) || "FileText"} className={cn("mr-2 h-5 w-5 shrink-0 mt-1.5", isCompactView && "h-4 w-4 mr-1 mt-1", isMobile && "h-4 w-4 mr-1 mt-2.5")} style={{ color: color || "hsl(var(--primary))" }} />
-            <div className="flex-grow flex items-start gap-1 min-w-0 py-1">
-              <p className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", isMobile && "text-base")}>
+            <Icon 
+              name={(icon as keyof typeof icons) || "FileText"} 
+              className={cn("mr-2 h-5 w-5 shrink-0", isCompactView ? "h-4 w-4 mt-1.5 ml-3" : "h-5 w-5 mt-2.5")} 
+              style={{ color: color || "hsl(var(--primary))" }} 
+            />
+            <div className="flex-grow flex items-start gap-1 min-w-0 py-1.5 md:py-1">
+              <p className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm mt-0.5", !isCompactView && "mt-1", isMobile && "text-base mt-1.5")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
                 {node.name}
               </p>
+              {isExplorer && node.isStarred && (
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-500 ml-1 mt-1 shrink-0" />
+              )}
               {isClone && (
                  <TooltipProvider>
                     <Tooltip>
@@ -372,7 +397,6 @@ export function TreeNodeHeader({
               )}
               {nodeHasAttachments && !isCompactOverride && (<Paperclip className="h-3 w-3 text-muted-foreground ml-1 mt-1 shrink-0" />)}
               
-              {/* Actions Button - Unified for High-Density Explorer */}
               {!readOnly && (isCompactOverride || isMobile) && (
                 <div className="flex items-center gap-1 opacity-0 group-hover/treenode:opacity-100 transition-opacity ml-1 mt-0.5">
                   <DropdownMenu>
@@ -410,7 +434,6 @@ export function TreeNodeHeader({
                 </div>
               )}
 
-              {/* Individual Desktop Hover Actions (only in standard mode) */}
               {!isMobile && !isCompactOverride && !readOnly && (
                 <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control mt-0.5">
                   <TooltipProvider>
@@ -476,7 +499,7 @@ export function TreeNodeHeader({
            )}
         </div>
         <div className="flex items-center ml-auto pl-2 read-only-control mt-1" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-          {!readOnly && (
+          {!readOnly && !isExplorer && (
             <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

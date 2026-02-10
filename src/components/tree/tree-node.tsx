@@ -23,7 +23,7 @@ import { TreeNodeContent } from "./tree-node-content";
 import { TreeNodeModals } from "./tree-node-modals";
 import { TreeNodeDropZone } from "./tree-node-dropzone";
 import type { WritableDraft } from "immer";
-import { AlertTriangle, Trash2, RefreshCcw } from "lucide-react";
+import { AlertTriangle, Trash2, RefreshCcw, GripVertical } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   AlertDialog,
@@ -48,6 +48,7 @@ interface TreeNodeProps {
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
   isCompactOverride?: boolean;
+  isExplorer?: boolean;
   readOnly?: boolean;
   disableSelection?: boolean;
 }
@@ -61,6 +62,7 @@ export function TreeNodeComponent({
   overrideExpandedIds,
   onExpandedChange,
   isCompactOverride,
+  isExplorer,
   readOnly = false,
   disableSelection = false,
 }: TreeNodeProps) {
@@ -111,7 +113,7 @@ export function TreeNodeComponent({
         nodeId: node.id,
         parentId: contextualParentId,
     },
-    disabled: !isMounted || isMobile || readOnly || disableSelection
+    disabled: !isMounted || isMobile || readOnly || disableSelection // In Explorer mode, the Chevron button will use the listeners
   });
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
@@ -135,6 +137,12 @@ export function TreeNodeComponent({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
+    
+    // Allow browser context menu on images
+    if ((e.target as HTMLElement).tagName === 'IMG') {
+      return;
+    }
+
     e.preventDefault();
     e.stopPropagation();
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
@@ -144,21 +152,11 @@ export function TreeNodeComponent({
   const handleOpenModal = (modalType: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => {
     setDialogState({ [modalType === 'addChild' ? 'isAddChildOpen' : modalType === 'addSibling' ? 'isAddSiblingOpen' : modalType === 'edit' ? 'isNodeEditOpen' : modalType === 'changeTemplate' ? 'isChangeTemplateOpen' : 'isPasteTemplateOpen']: true, nodeInstanceIdForAction: instanceId });
   };
-  
-  const activeModal = useMemo(() => {
-    if (dialogState.nodeInstanceIdForAction !== instanceId) return null;
-    if (dialogState.isAddChildOpen) return 'addChild';
-    if (dialogState.isAddSiblingOpen) return 'addSibling';
-    if (dialogState.isNodeEditOpen) return 'edit';
-    if (dialogState.isChangeTemplateOpen) return 'changeTemplate';
-    if (dialogState.isPasteTemplateOpen) return 'pasteTemplate';
-    return null;
-  }, [dialogState, instanceId]);
 
   if (!template) {
     return (
-      <div style={{ paddingLeft: `${isCompactView ? '10px' : '1.5rem'}` }} className={cn("my-1", !isCompactView && "pl-6")}>
-        <Card className="border-destructive/50 bg-destructive/10 w-full">
+      <div className={cn("my-1", isCompactView ? "pl-0" : "pl-0")}>
+        <Card className="border-destructive/50 bg-destructive/10 w-full rounded-md">
           <CardContent className="p-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -207,7 +205,7 @@ export function TreeNodeComponent({
         {!readOnly && (
           <TreeNodeModals
             node={node}
-            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] }} 
+            template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] } as any} 
           />
         )}
       </div>
@@ -220,30 +218,21 @@ export function TreeNodeComponent({
     <div
       className={cn(
         "relative transition-opacity",
-        isCompactView ? "pl-[10px] p-1" : "pl-6",
+        isCompactView ? "pl-0 pr-1" : "pl-0 pr-1",
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
       onContextMenu={handleContextMenu}
     >
-      <div
-        className={cn(
-            "absolute left-0 top-[2.5rem] h-[calc(100%-2.5rem)] w-px bg-border -translate-x-3",
-            "group-last/treenode:hidden",
-            (isExpanded || !node.children || node.children.length === 0) && "hidden",
-            isCompactView && "hidden",
-            isMobile && "hidden"
-        )}
-      />
       <Card
         id={uniqueCardId}
         ref={setNodeRef}
         style={style}
         className={cn(
-          "bg-card/60 transition-all",
-          isCompactView ? "my-0 border-0 shadow-none" : "my-1",
+          "bg-card/60 transition-all rounded-md overflow-hidden",
+          isCompactView ? "my-0.5 border-0 shadow-none hover:bg-accent/30" : "my-1",
           (!readOnly && !disableSelection) && "cursor-pointer",
-          isSelected && "border-primary ring-2 ring-primary ring-offset-2",
+          isSelected && "border-primary ring-2 ring-primary ring-offset-2 z-10",
           isDragging && "shadow-xl opacity-80",
           isOver && "outline-2 outline-dashed outline-primary"
         )}
@@ -257,7 +246,7 @@ export function TreeNodeComponent({
         onDoubleClick={(e) => {
           if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
           
-          const isAnyModalOpen = activeModal !== null || Object.values(dialogState).some(state => state === true);
+          const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
           if (isAnyModalOpen) {
             return;
           }
@@ -284,6 +273,7 @@ export function TreeNodeComponent({
               contextMenuPosition={contextMenuPosition}
               onExpandedChange={setExpandedNodeIds}
               isCompactOverride={isCompactOverride}
+              isExplorer={isExplorer}
               readOnly={readOnly}
               disableSelection={disableSelection}
             />
@@ -292,11 +282,12 @@ export function TreeNodeComponent({
               template={template} 
               isExpanded={isExpanded}
               level={level}
-              onSelect={onSelect}
+              onSelect={onSelect as any}
               contextualParentId={node.id}
               overrideExpandedIds={overrideExpandedIds}
-              onExpandedChange={setExpandedNodeIds}
+              onExpandedChange={setExpandedNodeIds as any}
               isCompactOverride={isCompactOverride}
+              isExplorer={isExplorer}
               readOnly={readOnly}
               disableSelection={disableSelection}
             />
