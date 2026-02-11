@@ -4,7 +4,7 @@ import { useState } from "react";
 import { 
     Edit, Download, FileJson, FileText, ChevronDown, Rows, Rows3, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
-    CheckCircle, AlertCircle, PlusCircle, Undo2, FileCode, Check,
+    PlusCircle, Undo2, FileCode, Check,
     Redo2, ListOrdered, Users, RefreshCcw, Menu, LayoutPanelLeft, Search, Star, Filter,
     Globe
 } from "lucide-react";
@@ -27,8 +27,6 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -67,7 +65,7 @@ export function TreePageHeader({
     onFilterClick,
     renderFilterContent
 }: TreePageHeaderProps) {
-    const { currentUser, users } = useAuthContext();
+    const { currentUser } = useAuthContext();
     const {
         canUndo,
         undoLastAction,
@@ -192,7 +190,7 @@ export function TreePageHeader({
 
                 {/* Filters & Favorites (Desktop) */}
                 {!isMobile && (
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button variant="outline" size="sm" className={cn("h-9", areFiltersActive && "border-primary text-primary bg-primary/5")}>
@@ -205,18 +203,16 @@ export function TreePageHeader({
                             </PopoverContent>
                         </Popover>
                         
-                        <div className="flex items-center space-x-2 px-2 py-1 rounded-md bg-muted/20 border">
-                            <Switch 
-                                id="header-starred-filter" 
-                                checked={showStarred}
-                                onCheckedChange={setShowStarred}
-                                className="scale-75 origin-right"
-                            />
-                            <Label htmlFor="header-starred-filter" className="flex items-center gap-1 text-xs cursor-pointer">
-                                <Star className={cn("h-3.5 w-3.5", showStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")}/>
-                                Favorites
-                            </Label>
-                        </div>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowStarred(!showStarred)}>
+                                        <Star className={cn("h-4 w-4", showStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{showStarred ? 'Show All' : 'Show Favorites'} (s)</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                 )}
 
@@ -226,27 +222,75 @@ export function TreePageHeader({
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="icon"><Menu className="h-5 w-5" /></Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem onSelect={onFilterClick}>
                                 <Filter className={cn("mr-2 h-4 w-4", areFiltersActive && "text-primary")} />
                                 Filters {areFiltersActive && `(${activeFilterCount})`}
                             </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => setShowStarred(!showStarred)}>
-                                <div className="flex items-center gap-2">
-                                    <Star className={cn("h-4 w-4", showStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")}/>
-                                    Favorites
-                                </div>
+                                <Star className={cn("mr-2 h-4 w-4", showStarred ? "fill-yellow-400 text-yellow-500" : "text-muted-foreground")}/>
+                                Favorites
                             </DropdownMenuItem>
+                            
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setDialogState({ isAddNodeOpen: true })} className="read-only-hidden">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Node
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            
                             <DropdownMenuItem onClick={undoLastAction} disabled={!canUndo}>
                                 <Undo2 className="mr-2 h-4 w-4" /> Undo
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={redoLastAction} disabled={!canRedo}>
                                 <Redo2 className="mr-2 h-4 w-4" /> Redo
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem onSelect={() => setShowNodeOrder(!showNodeOrder)}>
+                                <ListOrdered className={cn("mr-2 h-4 w-4", showNodeOrder && "text-primary")} />
+                                Show Node Numbers
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setIsCompactView(!isCompactView)}>
+                                {isCompactView ? <Rows className="mr-2 h-4 w-4 text-primary" /> : <Rows3 className="mr-2 h-4 w-4" />}
+                                Compact View
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Export
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                        <DropdownMenuItem onSelect={() => exportNodesAsJson(allNodes, tree.title)}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsArchive(allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                                        <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsHtml('tree-view-container', allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                            
+                            {tree.gitSync && (
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <Github className="mr-2 h-4 w-4" />
+                                        Git Sync
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuItem onClick={() => setDialogState({ isHistoryOpen: true })}><History className="mr-2 h-4 w-4" /> View History</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={handleSync} disabled={!isOutOfSync || isSyncing}>
+                                                <GitPullRequest className="mr-2 h-4 w-4" />
+                                                Sync {isOutOfSync && "(Update)"}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setDialogState({ isCommitOpen: true })}><GitCommit className="mr-2 h-4 w-4" /> Commit Changes</DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                            )}
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem onClick={() => setDialogState({ isAddNodeOpen: true })} className="read-only-hidden">
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Node
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -255,6 +299,7 @@ export function TreePageHeader({
                 {/* Action Buttons (Desktop) */}
                 {!isMobile && (
                     <div className="flex items-center gap-1 shrink-0 ml-auto">
+                        <Separator orientation="vertical" className="h-6 mx-2" />
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -273,6 +318,14 @@ export function TreePageHeader({
                                 <TooltipContent><p>{redoActionDescription || 'Redo'} (Ctrl+Y)</p></TooltipContent>
                             </Tooltip>
                             <Separator orientation="vertical" className="h-6 mx-1" />
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setShowNodeOrder(!showNodeOrder)}>
+                                        <ListOrdered className={cn("h-4 w-4", showNodeOrder && "text-primary")} />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Show Node Numbers (o)</p></TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setIsTwoPanelMode(!isTwoPanelMode)}>
