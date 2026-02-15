@@ -24,7 +24,7 @@ import { TreeNodeContent } from "./tree-node-content";
 import { TreeNodeModals } from "./tree-node-modals";
 import { TreeNodeDropZone } from "./tree-node-dropzone";
 import type { WritableDraft } from "immer";
-import { AlertTriangle, Trash2, RefreshCcw, GripVertical } from "lucide-react";
+import { AlertTriangle, Trash2, RefreshCcw } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   AlertDialog,
@@ -114,7 +114,7 @@ export function TreeNodeComponent({
       nodeId: node.id,
       parentId: contextualParentId,
     },
-    disabled: !isMounted || isMobile || readOnly || disableSelection // In Explorer mode, the Chevron button will use the listeners
+    disabled: !isMounted || isMobile || readOnly || disableSelection 
   });
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
@@ -139,7 +139,6 @@ export function TreeNodeComponent({
   const handleContextMenu = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
 
-    // Allow browser context menu on images
     if ((e.target as HTMLElement).tagName === 'IMG') {
       return;
     }
@@ -246,8 +245,8 @@ export function TreeNodeComponent({
   return (
     <div
       className={cn(
-        "relative transition-opacity",
-        isExplorer ? "pl-0 pr-0 py-0 my-0 leading-none" : (isCompactView ? "pl-0 pr-1" : "pl-0 pr-1"),
+        "relative transition-opacity min-w-0",
+        isExplorer ? "pl-0 pr-0 py-0 my-0 leading-none" : (isCompactView ? "pl-0 pr-0" : "pl-0 pr-0"),
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
@@ -258,8 +257,8 @@ export function TreeNodeComponent({
         ref={setNodeRef}
         style={style}
         className={cn(
-          "bg-card/60 transition-all rounded-md overflow-hidden",
-          isCompactView ? "my-0.5 border-0 shadow-none hover:bg-accent/30" : (isExplorer ? "my-0 border-0 shadow-none hover:bg-accent/50 rounded-none w-full" : "my-1"),
+          "bg-card/60 transition-all rounded-md overflow-hidden min-w-0",
+          isCompactView ? "my-0.5 border-0 shadow-none hover:bg-accent/30" : (isExplorer ? "my-0 border-0 shadow-none hover:bg-accent/50 rounded-none" : "my-1"),
           (!readOnly && !disableSelection) && "cursor-pointer",
           isSelected && "border-primary ring-2 ring-primary ring-offset-2 z-10",
           isDragging && "shadow-xl opacity-80",

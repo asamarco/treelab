@@ -44,7 +44,7 @@ import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, Loader2, ImagePlus, X, Paperclip, File as FileIcon, Link, GripVertical } from "lucide-react";
 import { format, parse, isValid, parseISO } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, generateClientSideId } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -69,7 +69,7 @@ import {
 import { useTreeContext } from "@/contexts/tree-context";
 import { useAuthContext } from "@/contexts/auth-context";
 import { Combobox } from "../ui/combobox";
-import { generateNodeName, formatDate, generateClientSideId } from "@/lib/utils";
+import { generateNodeName, formatDate } from "@/lib/utils";
 import { Card, CardContent } from "../ui/card";
 import path from "path";
 import { Separator } from "../ui/separator";
@@ -95,7 +95,7 @@ const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: strin
               className="w-full h-full object-cover rounded-md cursor-pointer" 
               onClick={onClick}
             />
-            <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-6 w-6 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background/80">
+            <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-66 w-6 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background/80">
                 <GripVertical className="h-4 w-4" />
             </Button>
             <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={onRemove}>
@@ -152,14 +152,13 @@ export const NodeForm = ({
   contextualParentId: string | null;
   isMultiEdit?: boolean;
 }) => {
-  const { tree, uploadAttachment, activeTree, findNodeAndParent, getSiblingOrderRange, templates } = useTreeContext();
+  const { tree, activeTree, findNodeAndParent, templates, updateNode } = useTreeContext();
   const { setDialogState } = useUIContext();
   
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     if (isMultiEdit) return {};
     const initialData = { ...(node?.data || {}) };
     
-    // Convert ISO date strings from DB to yyyy-MM-dd for DatePicker
     template.fields.forEach(field => {
       if (field.type === 'date' && initialData[field.id] && typeof initialData[field.id] === 'string') {
         const parsed = parseISO(initialData[field.id]);
@@ -196,15 +195,17 @@ export const NodeForm = ({
   const [orderString, setOrderString] = useState(contextualOrder.toString());
 
   useEffect(() => {
-      const parentIndex = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
-      const contextualOrder = (parentIndex !== -1 && node?.order && (node.order.length > parentIndex))
-        ? node.order[parentIndex]
+      const pIdx = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
+      const cOrder = (pIdx !== -1 && node?.order && (node.order.length > pIdx))
+        ? node.order[pIdx]
         : 0;
-      setOrderString(contextualOrder.toString());
+      setOrderString(cOrder.toString());
   }, [node, contextualParentId]);
 
 
   const tableHeaderFields = useMemo(() => template.fields.filter(f => f.type === 'table-header'), [template.fields]);
+
+  const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
 
   const getDynamicOptions = useMemo(() => {
     return (fieldId: string, templateId: string): {value: string, label: string}[] => {
@@ -231,7 +232,7 @@ export const NodeForm = ({
 
   const handleFileUpload = async (file: File, field: Field) => {
     if (!activeTree || !currentUser) return;
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
         toast({
             variant: "destructive",
             title: "File too large",
@@ -278,8 +279,7 @@ export const NodeForm = ({
             if (field.type === 'picture') {
                  setFormData(prev => {
                   const currentImages = Array.isArray(prev[field.id]) ? prev[field.id] : (prev[field.id] ? [prev[field.id]] : []);
-                  const newState = { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
-                  return newState;
+                  return { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
               });
               toast({ title: "Image Uploaded", description: "The image has been saved successfully." });
             } else if (field.type === 'attachment') {
@@ -519,7 +519,7 @@ export const NodeForm = ({
 
             if (isValid(parsedDate)) {
                 return parsedDate.toISOString();
-            } else if (dateValue) { // if there's a value but it's not valid
+            } else if (dateValue) {
                 toast({
                     variant: 'destructive',
                     title: 'Invalid Date',
@@ -572,7 +572,7 @@ export const NodeForm = ({
     onSave(newNode);
   };
   
-  const formatBytes = (bytes: number, decimals = 2) => {
+  const formatBytesUtility = (bytes: number, decimals = 2) => {
     if (!+bytes) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
@@ -598,7 +598,7 @@ export const NodeForm = ({
             size="sm"
             disabled={!linkedNodeInfo}
             onClick={() => {
-              onClose(); // Close the current edit dialog first
+              onClose();
               setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [nodeId] });
             }}
           >
@@ -739,7 +739,7 @@ export const NodeForm = ({
                                 <FileIcon className="h-5 w-5 text-muted-foreground shrink-0"/>
                                 <div className="flex-1 overflow-hidden">
                                     <p className="text-sm font-medium truncate">{att.name}</p>
-                                    <p className="text-xs text-muted-foreground">{formatBytes(att.size)}</p>
+                                    <p className="text-xs text-muted-foreground">{formatBytesUtility(att.size)}</p>
                                 </div>
                             </div>
                             <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleRemoveAttachment(field.id, index)}>
@@ -864,15 +864,15 @@ export const NodeForm = ({
                                       <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
                                     </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                                   </div>
-                                  {tableHeaderFields.map(field => {
-                                    const dateString = formData[field.id]?.[rowIndex]; let dateValue: Date | undefined;
+                                  {tableHeaderFields.map(f => {
+                                    const dateString = formData[f.id]?.[rowIndex]; let dateValue: Date | undefined;
                                     if (dateString && typeof dateString === 'string') { const parsed = parse(dateString, 'yyyy-MM-dd', new Date()); if (isValid(parsed)) dateValue = parsed; }
                                     return (
-                                      <div key={`${field.id}-${rowIndex}`} className="space-y-2"><Label className="text-sm font-medium">{field.name}</Label>
+                                      <div key={`${f.id}-${rowIndex}`} className="space-y-2"><Label className="text-sm font-medium">{f.name}</Label>
                                         <div className="flex items-center gap-1">
-                                          {field.prefix && <span className="text-muted-foreground text-sm">{field.prefix}</span>}
-                                          {field.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, field.id, d)} placeholder="Select a date" />) : (<Input type={field.columnType || 'text'} value={formData[field.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, field.id, e.target.value)} className="h-8 flex-grow" />)}
-                                          {field.postfix && <span className="text-muted-foreground text-sm">{field.postfix}</span>}
+                                          {f.prefix && <span className="text-muted-foreground text-sm">{f.prefix}</span>}
+                                          {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow" />)}
+                                          {f.postfix && <span className="text-muted-foreground text-sm">{f.postfix}</span>}
                                         </div>
                                       </div>
                                     )
@@ -913,7 +913,7 @@ export const NodeForm = ({
 
     {/* Image Lightbox */}
     <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black/50 [&>button]:text-white [&>button]:hover:bg-black/70 [&>button]:opacity-100 [&>button]:transition-colors">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
         <DialogHeader className="sr-only">
           <DialogTitle>Full Screen Image</DialogTitle>
         </DialogHeader>
@@ -1108,7 +1108,7 @@ const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, on
                                             </div>
                                         )}
                                     </Card>
-                                )
+                                );
                            })}
                           <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
                               <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition

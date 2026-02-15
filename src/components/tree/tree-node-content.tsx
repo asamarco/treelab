@@ -3,7 +3,7 @@
  * This component renders the collapsible content area of a tree node.
  * It displays complex fields like image carousels, attachment lists, and tables,
  * as well as the formatted body text and recursively rendered child nodes.
- * It now reacts dynamically to the isCompactView state.
+ * Optimized for mobile to prevent horizontal overflow on indented content.
  */
 "use client";
 
@@ -40,7 +40,7 @@ interface TreeNodeContentProps {
     template: Template;
     isExpanded: boolean;
     level: number;
-    onSelect: (instanceId: string, isChecked: boolean, isShiftClick: boolean) => void;
+    onSelect: (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
     contextualParentId: string | null;
     overrideExpandedIds?: string[];
     onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
@@ -160,10 +160,10 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
     return (
         <CollapsibleContent className="min-w-0 w-full overflow-hidden">
-            <div className={cn("min-w-0 w-full", isCompactView ? "pl-0 pt-0" : "pl-0 pt-2", isExplorer && "pt-0")} onClick={(e) => e.stopPropagation()}>
-                <div className={cn("min-w-0 w-full transition-all pr-1 pb-1", verticalLineClass, leftMargin, isExplorer && "pb-0 pr-0")}>
+            <div className={cn("min-w-0 pt-2", isCompactView && "pt-0", isExplorer && "pt-0")} onClick={(e) => e.stopPropagation()}>
+                <div className={cn("min-w-0 transition-all pb-1", verticalLineClass, leftMargin, isExplorer && "pb-0 pr-0", !isExplorer && "pr-0")}>
                     {!isCompactOverride && (
-                        <div className={cn("pl-3 pb-1 pr-1 min-w-0 w-full flex flex-col")}>
+                        <div className={cn("pl-3 pb-1 pr-1 min-w-0 flex flex-col")}>
                             {template.bodyTemplate && (
                                 <div className={cn("text-foreground/90 whitespace-pre-wrap pt-2", isCompactView ? "text-xs" : "text-sm")} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                     <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
@@ -394,7 +394,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                         if (tableRowCountMemo === 0) return null;
 
                                         return (
-                                            <div key="table-block" className="mt-2 text-sm min-w-0 w-full" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                                            <div key="table-block" className="mt-2 text-sm min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                                 <div className="overflow-x-auto rounded-md border min-w-0">
                                                     <Table>
                                                         <TableHeader>
@@ -519,8 +519,8 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                     {node.children && node.children.length > 0 && !isExplorer && (
                         <div
                             className={cn(
-                                "children-container transition-all pr-1 pb-1",
-                                "pl-3 space-y-0 pb-1 pr-1"
+                                "children-container transition-all pr-0 pb-1",
+                                "pl-3 space-y-0 pb-1 pr-0"
                             )}
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -549,7 +549,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
             {/* Image Lightbox */}
             <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
-                <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black/50 [&>button]:text-white [&>button]:hover:bg-black/70 [&>button]:opacity-100 [&>button]:transition-colors">
+                <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
                     <DialogHeader className="sr-only">
                         <DialogTitle>Full Screen Image</DialogTitle>
                     </DialogHeader>
