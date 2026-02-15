@@ -7,6 +7,7 @@
  * It uses the `useAuthContext` to call the `login` function and handles both
  * successful and failed login attempts, showing a toast notification on failure.
  * It is wrapped in the `AuthLayout`.
+ * Includes a footer displaying the application version.
  */
 "use client";
 
@@ -26,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/contexts/auth-context";
 import { AuthLayout } from "@/components/auth-layout";
 import { useToast } from "@/hooks/use-toast";
+import { APP_VERSION } from "@/lib/version";
 
 export default function LoginPage() {
   const { login, isAuthRequired, isAuthLoading } = useAuthContext();
@@ -73,7 +75,7 @@ export default function LoginPage() {
   };
 
   if (isAuthLoading) {
-    return null; // or a loading skeleton
+    return null;
   }
   
   if (!isAuthRequired) {
@@ -92,6 +94,9 @@ export default function LoginPage() {
             </Button>
           </CardContent>
         </Card>
+        <div className="mt-8 text-center text-xs text-muted-foreground">
+          Treelab {APP_VERSION}
+        </div>
       </AuthLayout>
     )
   }
@@ -144,6 +149,9 @@ export default function LoginPage() {
           </div>
         </CardContent>
       </Card>
+      <div className="mt-8 text-center text-xs text-muted-foreground">
+        Treelab {APP_VERSION}
+      </div>
     </AuthLayout>
   );
 }
