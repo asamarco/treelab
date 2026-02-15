@@ -6,10 +6,11 @@
  *
  * It is composed of smaller sub-components to handle the header, content, and modals,
  * keeping the main component focused on layout and state.
+ * Implements long-press for multi-selection on touch devices.
  */
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { TreeNode } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
@@ -153,6 +154,34 @@ export function TreeNodeComponent({
     setDialogState({ [modalType === 'addChild' ? 'isAddChildOpen' : modalType === 'addSibling' ? 'isAddSiblingOpen' : modalType === 'edit' ? 'isNodeEditOpen' : modalType === 'changeTemplate' ? 'isChangeTemplateOpen' : 'isPasteTemplateOpen']: true, nodeInstanceIdForAction: instanceId });
   };
 
+  // --- Long Press Logic ---
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+
+  const startLongPress = useCallback((e: React.PointerEvent) => {
+    if (readOnly || disableSelection) return;
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    
+    // Stop propagation to prevent ancestors from starting their own timers
+    e.stopPropagation();
+    
+    setIsLongPressing(false);
+    longPressTimer.current = setTimeout(() => {
+      setIsLongPressing(true);
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+      onSelect(instanceId, false, true); // Toggle selection (Ctrl behavior)
+    }, 500);
+  }, [instanceId, onSelect, readOnly, disableSelection]);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
   if (!template) {
     return (
       <div className={cn("my-1", isCompactView ? "pl-0" : "pl-0")}>
@@ -236,8 +265,16 @@ export function TreeNodeComponent({
           isDragging && "shadow-xl opacity-80",
           isOver && "outline-2 outline-dashed outline-primary"
         )}
+        onPointerDown={startLongPress}
+        onPointerUp={clearLongPress}
+        onPointerLeave={clearLongPress}
+        onPointerCancel={clearLongPress}
         onClick={(e) => {
           e.stopPropagation();
+          if (isLongPressing) {
+            setIsLongPressing(false);
+            return;
+          }
           if (Date.now() < ignoreClicksUntil || readOnly || disableSelection) {
             return;
           }
