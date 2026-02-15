@@ -1,3 +1,12 @@
+v0.5.0
+
+Feature: two panel view
+Feature: long press for multiple nodes selection on mobile
+Improvement: UI redesign of header bar, standard view and compact view
+Improvement: fullscreen images now open within the app and not in a new tab (open in new tab possible with standard browser actions with left mouse click)
+Bugfix: restored 'Del' as keyboard shortcut for deleting nodes
+
+
 v0.4.1
 Improvement: sort query field type results alphabetically
 Updated reference guide.
