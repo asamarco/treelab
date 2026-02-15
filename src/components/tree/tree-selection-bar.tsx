@@ -3,6 +3,7 @@
  * Renders a floating action bar at the bottom of the screen when multiple
  * nodes are selected, providing bulk actions like copy, cut, and delete.
  * It also handles selection-related keyboard shortcuts.
+ * Optimized for mobile screens with a stacking layout.
  */
 "use client";
 
@@ -23,7 +24,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Copy, Scissors, Trash2, ChevronsUpDown, ChevronsDownUp, X, Download,
-  FileJson, FileCode, FileText, Archive, ChevronDown, Eye, RefreshCcw,
+  FileJson, FileCode, Archive, ChevronDown, Eye, RefreshCcw,
   ClipboardPlus,
   Pencil,
 } from "lucide-react";
@@ -37,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUIContext } from "@/contexts/ui-context";
 import { useAuthContext } from "@/contexts/auth-context";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useEffect, useCallback, useRef, useMemo } from "react";
 import { HtmlExportView } from "./html-export-view";
 
 
@@ -68,7 +69,8 @@ export function TreeSelectionBar() {
 
     const areAllSameTemplate = useMemo(() => {
         if (selectedNodeIds.length < 2) return false;
-        const firstNodeInfo = findNodeAndParent(selectedNodeIds[0].split('_')[0]);
+        const firstNodeId = selectedNodeIds[0].split('_')[0];
+        const firstNodeInfo = findNodeAndParent(firstNodeId);
         if (!firstNodeInfo) return false;
         const firstTemplateId = firstNodeInfo.node.templateId;
         return selectedNodeIds.every(id => {
@@ -81,7 +83,7 @@ export function TreeSelectionBar() {
       const topLevelInstanceIds = new Set(selectedNodeIds);
 
       for (const instanceId of selectedNodeIds) {
-          const [nodeId, parentIdStr] = instanceId.split('_');
+          const [nodeId] = instanceId.split('_');
           const nodeInfo = findNodeAndParent(nodeId, tree);
           
           if (nodeInfo?.parent) {
@@ -317,11 +319,11 @@ export function TreeSelectionBar() {
     };
 
     return (
-        <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-lg z-20 shadow-lg animate-in slide-in-from-bottom-2 read-only-control">
+        <Card className="fixed bottom-4 left-1/2 -translate-x-1/2 w-auto max-w-[95vw] sm:max-w-lg z-20 shadow-lg animate-in slide-in-from-bottom-2 read-only-control overflow-hidden">
             <CardContent className="p-2">
-                <div className="flex items-center gap-4">
-                    <p className="text-sm font-medium">{selectedNodeIds.length} nodes selected</p>
-                    <div className="flex-grow border-l pl-2 flex items-center gap-1">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                    <p className="text-xs sm:text-sm font-medium whitespace-nowrap">{selectedNodeIds.length} nodes selected</p>
+                    <div className="flex-grow border-t sm:border-t-0 sm:border-l w-full sm:w-auto pt-2 sm:pt-0 sm:pl-2 flex items-center justify-center sm:justify-start gap-1">
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePreviewSelection}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
@@ -392,19 +394,19 @@ export function TreeSelectionBar() {
                                 </AlertDialogContent>
                             </AlertDialog>
                         </TooltipProvider>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedNodeIds([])}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Clear selection</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
-                     <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedNodeIds([])}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Clear selection</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
                 </div>
             </CardContent>
         </Card>
