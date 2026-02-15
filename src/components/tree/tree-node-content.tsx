@@ -159,11 +159,11 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
         : "ml-0";
 
     return (
-        <CollapsibleContent>
-            <div className={cn(isCompactView ? "pl-0 pt-0" : "pl-0 pt-2", isExplorer && "pt-0")} onClick={(e) => e.stopPropagation()}>
-                <div className={cn("transition-all pr-1 pb-1", verticalLineClass, leftMargin, isExplorer && "pb-0 pr-0")}>
+        <CollapsibleContent className="min-w-0 w-full overflow-hidden">
+            <div className={cn("min-w-0 w-full", isCompactView ? "pl-0 pt-0" : "pl-0 pt-2", isExplorer && "pt-0")} onClick={(e) => e.stopPropagation()}>
+                <div className={cn("min-w-0 w-full transition-all pr-1 pb-1", verticalLineClass, leftMargin, isExplorer && "pb-0 pr-0")}>
                     {!isCompactOverride && (
-                        <div className={cn("pl-3 pb-1 pr-1")}>
+                        <div className={cn("pl-3 pb-1 pr-1 min-w-0 w-full flex flex-col")}>
                             {template.bodyTemplate && (
                                 <div className={cn("text-foreground/90 whitespace-pre-wrap pt-2", isCompactView ? "text-xs" : "text-sm")} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                     <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
@@ -394,8 +394,8 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                         if (tableRowCountMemo === 0) return null;
 
                                         return (
-                                            <div key="table-block" className="mt-2 text-sm" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                                                <div className="overflow-x-auto rounded-md border">
+                                            <div key="table-block" className="mt-2 text-sm min-w-0 w-full" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                                                <div className="overflow-x-auto rounded-md border min-w-0">
                                                     <Table>
                                                         <TableHeader>
                                                             <TableRow className={cn(isCompactView && "h-8")}>
