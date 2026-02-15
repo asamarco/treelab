@@ -549,7 +549,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
             {/* Image Lightbox */}
             <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
-                <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none">
+                <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black/50 [&>button]:text-white [&>button]:hover:bg-black/70 [&>button]:opacity-100 [&>button]:transition-colors">
                     <DialogHeader className="sr-only">
                         <DialogTitle>Full Screen Image</DialogTitle>
                     </DialogHeader>
