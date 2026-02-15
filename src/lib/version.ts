@@ -1,6 +1,7 @@
-
 /**
  * @fileoverview
- * Standard file for managing application version information.
+ * Dynamically exports the application version from package.json.
  */
-export const APP_VERSION = 'v0.5.0';
+import packageJson from '../../package.json';
+
+export const APP_VERSION = `v${packageJson.version}`;
