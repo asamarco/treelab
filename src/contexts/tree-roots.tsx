@@ -11,63 +11,63 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useImmer } from "use-immer";
 import { produce, WritableDraft } from "immer";
 import { useToast } from '@/hooks/use-toast';
-import { 
-    TreeFile,
-    User,
-    Field,
-    ExampleInfo,
-    AttachmentInfo,
-    GitCommit,
-    StorageInfo,
-    PurgeResult,
-    TreeNode,
-    Template,
-    AddNodesCommand,
-    DeleteNodesCommand,
-    MoveNodesCommand,
-    UpdateNodesCommand,
-    UpdateTreeFileCommand,
-    ExpandCollapseCommand,
-    ClipboardState,
-    ReorderNodesCommand,
-    ActionContext,
-    PasteAsClonesCommand,
-    Command,
-    UseTreeRootsResult,
-    TreeContextType,
-    QueryDefinition,
-    ConditionalRuleOperator,
-    SimpleQueryRule,
+import {
+  TreeFile,
+  User,
+  Field,
+  ExampleInfo,
+  AttachmentInfo,
+  GitCommit,
+  StorageInfo,
+  PurgeResult,
+  TreeNode,
+  Template,
+  AddNodesCommand,
+  DeleteNodesCommand,
+  MoveNodesCommand,
+  UpdateNodesCommand,
+  UpdateTreeFileCommand,
+  ExpandCollapseCommand,
+  ClipboardState,
+  ReorderNodesCommand,
+  ActionContext,
+  PasteAsClonesCommand,
+  Command,
+  UseTreeRootsResult,
+  TreeContextType,
+  QueryDefinition,
+  ConditionalRuleOperator,
+  SimpleQueryRule,
 } from '@/lib/types';
 import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
 import { HtmlExportView } from "@/components/tree/html-export-view";
-import { 
-    loadAllTreeFiles,
-    createTreeFile as createTreeFileInDb,
-    loadTreeFile,
-    saveTreeFile,
-    deleteTreeFile as deleteTreeFileFromDb,
-    listExamples as listExamplesFromDataService,
-    loadExampleFromFile,
-    shareTreeWithUser,
-    revokeShareFromUser,
-    setTreePublicStatus as setTreePublicStatusInDb,
-    createRepo,
-    getRepoCommits,
-    getLatestCommitSha,
-    getTreeFromGit,
-    saveAttachment as uploadAttachmentToServer,
-    fetchFileAsBuffer,
-    batchCreateNodes,
-    batchDeleteNodes,
-    updateTreeOrder as updateTreeOrderInDb,
-    reorderSiblingsForAdd,
-    resequenceSiblings,
-    addParentToNode,
-    removeParentFromNode,
-    batchUpdateNodes,
-    findNodeById,
+import {
+  loadAllTreeFiles,
+  createTreeFile as createTreeFileInDb,
+  loadTreeFile,
+  saveTreeFile,
+  deleteTreeFile as deleteTreeFileFromDb,
+  listExamples as listExamplesFromDataService,
+  loadExampleFromFile,
+  shareTreeWithUser,
+  revokeShareFromUser,
+  setTreePublicStatus as setTreePublicStatusInDb,
+  createRepo,
+  getRepoCommits,
+  getLatestCommitSha,
+  getTreeFromGit,
+  saveAttachment as uploadAttachmentToServer,
+  fetchFileAsBuffer,
+  batchCreateNodes,
+  batchDeleteNodes,
+  updateTreeOrder as updateTreeOrderInDb,
+  reorderSiblingsForAdd,
+  resequenceSiblings,
+  addParentToNode,
+  removeParentFromNode,
+  batchUpdateNodes,
+  findNodeById,
 } from '@/lib/data-service';
 import { getStorageInfo, purgeUnusedFiles } from '@/lib/storage-service';
 import { readArchive } from "@/lib/archive";
@@ -77,22 +77,22 @@ import { useDebouncedCallback } from "use-debounce";
 import { useGitSync } from "@/hooks/useGitSync";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
-    addNodesAction as executeAddNodes,
-    addRootNodeAction,
-    addChildNodeAction,
-    addSiblingNodeAction,
-    updateNodeAction,
-    updateNodeNamesForTemplateAction,
-    changeNodeTemplateAction,
-    changeMultipleNodesTemplateAction,
-    deleteNodeAction,
-    deleteNodesAction,
-    copyNodesAction,
-    moveNodesAction,
-    moveNodeOrderAction,
-    pasteNodesAsClonesAction,
-    toggleStarredForSelectedNodesAction,
-    batchUpdateNodesDataAction,
+  addNodesAction as executeAddNodes,
+  addRootNodeAction,
+  addChildNodeAction,
+  addSiblingNodeAction,
+  updateNodeAction,
+  updateNodeNamesForTemplateAction,
+  changeNodeTemplateAction,
+  changeMultipleNodesTemplateAction,
+  deleteNodeAction,
+  deleteNodesAction,
+  copyNodesAction,
+  moveNodesAction,
+  moveNodeOrderAction,
+  pasteNodesAsClonesAction,
+  toggleStarredForSelectedNodesAction,
+  batchUpdateNodesDataAction,
 } from '@/lib/node-actions';
 import ReactDOMServer from "react-dom/server";
 import { TreeContext } from './tree-context';
@@ -131,7 +131,7 @@ async function createDefaultTreeFile(title: string, userId: string, order: numbe
 
 
 interface UseTreeRootsProps {
-    initialTree?: TreeFile;
+  initialTree?: TreeFile;
 }
 
 export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRootsResult {
@@ -141,7 +141,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const router = useRouter();
   const pathname = usePathname();
   const [allTrees, setAllTrees] = useImmer<TreeFile[]>(initialTree ? [JSON.parse(JSON.stringify(initialTree))] : []);
-  
+
   const [commandHistory, setCommandHistory] = useImmer<Command[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
@@ -154,14 +154,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const [lastSelectedNodeId, setLastSelectedNodeId] = useState<string | null>(null);
 
   const { toast } = useToast();
-  
+
   const performAction = useCallback((updater: (draft: WritableDraft<TreeFile[]>) => TreeFile[] | void, isUndoable: boolean = true) => {
     setAllTrees(updater as (draft: WritableDraft<TreeFile[]>) => WritableDraft<TreeFile[]> | void);
     if (currentUser) {
-        if (isUndoable) {
-          console.warn("performAction called directly with isUndoable=true for an authenticated user. This should be handled by executeCommand.");
-        }
-        setIsDirty(true);
+      if (isUndoable) {
+        console.warn("performAction called directly with isUndoable=true for an authenticated user. This should be handled by executeCommand.");
+      }
+      setIsDirty(true);
     }
   }, [setAllTrees, currentUser]);
 
@@ -169,16 +169,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     async (treeIdToLoad?: string) => {
       const idToLoad = treeIdToLoad || activeTreeId;
       if (!idToLoad) return;
-      
+
       const reloadedTree = await loadTreeFile(idToLoad);
       if (reloadedTree) {
         setAllTrees((draft: WritableDraft<TreeFile[]>) => {
-            const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
-            if (index > -1) {
-                // Preserve expanded state while updating everything else
-                const oldExpanded = draft[index].expandedNodeIds;
-                draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
-            }
+          const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
+          if (index > -1) {
+            // Preserve expanded state while updating everything else
+            const oldExpanded = draft[index].expandedNodeIds;
+            draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
+          }
         });
         toast({ title: "Tree Reloaded", description: "The latest version of the tree has been loaded." });
         console.log('INFO: Reloaded tree due to external change.')
@@ -192,51 +192,51 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const executeCommand = useCallback(async (command: Command, isUndoable: boolean = true) => {
     if (!activeTreeId || !currentUser) { // CRITICAL: Stop if no user
-        performAction(command.execute, false);
-        return;
+      performAction(command.execute, false);
+      return;
     }
-    
+
     const newTimestamp = new Date().toISOString();
-    
+
     const finalTreeSnapshot = produce(allTrees, draft => {
-        const treeToUpdate = draft.find(t => t.id === activeTreeId);
-        if (treeToUpdate) {
-            command.execute(draft); 
-            treeToUpdate.updatedAt = newTimestamp; 
-        }
+      const treeToUpdate = draft.find(t => t.id === activeTreeId);
+      if (treeToUpdate) {
+        command.execute(draft);
+        treeToUpdate.updatedAt = newTimestamp;
+      }
     });
 
     const finalTreeFile = finalTreeSnapshot.find(t => t.id === activeTreeId);
 
     setAllTrees(() => finalTreeSnapshot as WritableDraft<TreeFile[]>);
-    
+
     if (command.post && finalTreeFile) {
-        try {
-            await command.post(finalTreeFile, newTimestamp);
-        } catch (error) {
-            console.error("Database operation failed:", error);
-            toast({ 
-                variant: 'destructive', 
-                title: 'Save Failed', 
-                description: 'Your change could not be saved. Reloading the tree to ensure data consistency.' 
-            });
-            await reloadActiveTree(); 
-            return; // Important to stop further execution like history update
-        }
-    }
-    
-    if (isUndoable) {
-        const newHistory = commandHistory.slice(0, historyIndex + 1);
-        newHistory.push(command);
-        if (newHistory.length > 30) {
-            newHistory.shift();
-        }
-        setCommandHistory(() => newHistory);
-        setHistoryIndex(newHistory.length - 1);
+      try {
+        await command.post(finalTreeFile, newTimestamp);
+      } catch (error) {
+        console.error("Database operation failed:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Save Failed',
+          description: 'Your change could not be saved. Reloading the tree to ensure data consistency.'
+        });
+        await reloadActiveTree();
+        return; // Important to stop further execution like history update
+      }
     }
 
-}, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, currentUser, performAction, toast, reloadActiveTree]);
-  
+    if (isUndoable) {
+      const newHistory = commandHistory.slice(0, historyIndex + 1);
+      newHistory.push(command);
+      if (newHistory.length > 30) {
+        newHistory.shift();
+      }
+      setCommandHistory(() => newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+
+  }, [allTrees, activeTreeId, commandHistory, historyIndex, setAllTrees, setCommandHistory, currentUser, performAction, toast, reloadActiveTree]);
+
   const canUndo = historyIndex >= 0;
   const canRedo = historyIndex < commandHistory.length - 1;
 
@@ -255,9 +255,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       return [initialTree];
     }
     if (!currentUser) return allTrees; // For demo mode
-    return allTrees.filter(tree => 
-        tree.userId === currentUser.id || 
-        (tree.sharedWith && tree.sharedWith.includes(currentUser.id))
+    return allTrees.filter(tree =>
+      tree.userId === currentUser.id ||
+      (tree.sharedWith && tree.sharedWith.includes(currentUser.id))
     );
   }, [allTrees, currentUser, initialTree]);
 
@@ -269,25 +269,25 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     },
     [activeTree]
   );
-  
+
   const findNodeAndParent = useCallback((nodeId: string, nodes?: TreeNode[]): { node: TreeNode; parent: TreeNode | null } | null => {
     const searchNodes = nodes || activeTree?.tree;
     if (!searchNodes) return null;
 
     for (const node of searchNodes) {
-        if (node.id === nodeId) {
-            return { node, parent: null };
+      if (node.id === nodeId) {
+        return { node, parent: null };
+      }
+      if (node.children) {
+        const found = findNodeAndParent(nodeId, node.children);
+        if (found) {
+          return { ...found, parent: found.parent || node };
         }
-        if (node.children) {
-            const found = findNodeAndParent(nodeId, node.children);
-            if (found) {
-                return { ...found, parent: found.parent || node };
-            }
-        }
+      }
     }
     return null;
   }, [activeTree?.tree]);
-  
+
   const findNodesByQuery = useCallback((query: QueryDefinition): TreeNode[] => {
     if (!activeTree || !query || !query.targetTemplateId) return [];
 
@@ -295,79 +295,79 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     if (!targetTemplate) return [];
 
     const hasMatchingAncestor = (node: TreeNode, relationTemplateId: string, relationRules: SimpleQueryRule[]): boolean => {
-        let current = node;
-        while (true) {
-            const parentInfo = findNodeAndParent(current.id, activeTree.tree);
-            if (!parentInfo || !parentInfo.parent) {
-                return false; // Reached root
-            }
-            const parent = parentInfo.parent;
-            if (parent.templateId === relationTemplateId) {
-                const matches = (relationRules || []).every(rule => {
-                    const fieldValue = (parent.data || {})[rule.fieldId!];
-                    return evaluateCondition(rule.operator, fieldValue, rule.value!);
-                });
-                if (matches) return true;
-            }
-            current = parent;
+      let current = node;
+      while (true) {
+        const parentInfo = findNodeAndParent(current.id, activeTree.tree);
+        if (!parentInfo || !parentInfo.parent) {
+          return false; // Reached root
         }
+        const parent = parentInfo.parent;
+        if (parent.templateId === relationTemplateId) {
+          const matches = (relationRules || []).every(rule => {
+            const fieldValue = (parent.data || {})[rule.fieldId!];
+            return evaluateCondition(rule.operator, fieldValue, rule.value!);
+          });
+          if (matches) return true;
+        }
+        current = parent;
+      }
     };
 
     const hasMatchingDescendant = (node: TreeNode, relationTemplateId: string, relationRules: SimpleQueryRule[]): boolean => {
-        const queue: TreeNode[] = [...(node.children || [])];
-        while (queue.length > 0) {
-            const currentNode = queue.shift()!;
-            if (currentNode.templateId === relationTemplateId) {
-                const matches = (relationRules || []).every(rule => {
-                    const fieldValue = (currentNode.data || {})[rule.fieldId!];
-                    return evaluateCondition(rule.operator, fieldValue, rule.value!);
-                });
-                if (matches) return true;
-            }
-            if (currentNode.children) {
-                queue.push(...currentNode.children);
-            }
+      const queue: TreeNode[] = [...(node.children || [])];
+      while (queue.length > 0) {
+        const currentNode = queue.shift()!;
+        if (currentNode.templateId === relationTemplateId) {
+          const matches = (relationRules || []).every(rule => {
+            const fieldValue = (currentNode.data || {})[rule.fieldId!];
+            return evaluateCondition(rule.operator, fieldValue, rule.value!);
+          });
+          if (matches) return true;
         }
-        return false;
+        if (currentNode.children) {
+          queue.push(...currentNode.children);
+        }
+      }
+      return false;
     };
 
     const results: TreeNode[] = [];
     const allNodes: TreeNode[] = [];
 
     const flatten = (nodes: TreeNode[]) => {
-        for (const node of nodes) {
-            allNodes.push(node);
-            if (node.children) {
-                flatten(node.children);
-            }
+      for (const node of nodes) {
+        allNodes.push(node);
+        if (node.children) {
+          flatten(node.children);
         }
+      }
     };
     flatten(activeTree.tree);
 
     for (const node of allNodes) {
-        if (node.templateId === query.targetTemplateId) {
-            const matches = (query.rules || []).every(rule => {
-                const { type = 'field' } = rule;
-                if (type === 'field') {
-                    if (!rule.fieldId) return false;
-                    const fieldValue = (node.data || {})[rule.fieldId];
-                    return evaluateCondition(rule.operator as ConditionalRuleOperator, fieldValue, rule.value!);
-                }
-                if (type === 'ancestor') {
-                    if (!rule.relationTemplateId) return false;
-                    return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules!);
-                }
-                if (type === 'descendant') {
-                    if (!rule.relationTemplateId) return false;
-                    return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules!);
-                }
-                return false;
-            });
+      if (node.templateId === query.targetTemplateId) {
+        const matches = (query.rules || []).every(rule => {
+          const { type = 'field' } = rule;
+          if (type === 'field') {
+            if (!rule.fieldId) return false;
+            const fieldValue = (node.data || {})[rule.fieldId];
+            return evaluateCondition(rule.operator as ConditionalRuleOperator, fieldValue, rule.value!);
+          }
+          if (type === 'ancestor') {
+            if (!rule.relationTemplateId) return false;
+            return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules!);
+          }
+          if (type === 'descendant') {
+            if (!rule.relationTemplateId) return false;
+            return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules!);
+          }
+          return false;
+        });
 
-            if (matches) {
-                results.push(node);
-            }
+        if (matches) {
+          results.push(node);
         }
+      }
     }
     return results;
   }, [activeTree, getTemplateById, findNodeAndParent]);
@@ -376,22 +376,22 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     if (!currentUser) return;
     console.log("INFO: Reloading all trees from server...");
     const loadedTrees = await loadAllTreeFiles();
-    loadedTrees.sort((a,b) => (a.order || 0) - (b.order || 0));
+    loadedTrees.sort((a, b) => (a.order || 0) - (b.order || 0));
     setAllTrees(() => loadedTrees);
   }, [currentUser, setAllTrees]);
-  
-    const setActiveTreeId = useCallback((id: string | null) => {
-        _setActiveTreeId(id);
-        setCommandHistory(() => []);
-        setHistoryIndex(-1);
-        setSelectedNodeIds([]);
-        setLastSelectedNodeId(null);
-        if (currentUser) {
-            setLastActiveTreeIdForUser(id);
-        }
-    }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser, currentUser, setSelectedNodeIds, setLastSelectedNodeId]);
 
-  
+  const setActiveTreeId = useCallback((id: string | null) => {
+    _setActiveTreeId(id);
+    setCommandHistory(() => []);
+    setHistoryIndex(-1);
+    setSelectedNodeIds([]);
+    setLastSelectedNodeId(null);
+    if (currentUser) {
+      setLastActiveTreeIdForUser(id);
+    }
+  }, [setCommandHistory, setHistoryIndex, setLastActiveTreeIdForUser, currentUser, setSelectedNodeIds, setLastSelectedNodeId]);
+
+
   const createNewTree = useCallback(
     async (title: string, user?: User): Promise<string | null> => {
       const userToCreateFor = user || currentUser;
@@ -406,7 +406,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
       const fullCreatedTree = await loadTreeFile(createdTree.id);
       if (fullCreatedTree) {
-        setAllTrees((draft) => {draft.push(fullCreatedTree)});
+        setAllTrees((draft) => { draft.push(fullCreatedTree) });
         setActiveTreeId(fullCreatedTree.id);
         return fullCreatedTree.id;
       }
@@ -414,7 +414,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     },
     [currentUser, allTrees, setAllTrees, setActiveTreeId]
   );
-  
+
   const importTreeFromJson = useCallback(
     async (jsonData: any, user?: User, rewriteAttachmentPaths: boolean = false): Promise<string | null> => {
       const userToImportFor = user || currentUser;
@@ -460,13 +460,13 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
             template.fields.forEach((field: Field) => {
               if (node.data![field.id]) {
                 const processValue = (value: string): string => {
-                    return value.replace(linkRegex, (match: string, oldId: string) => {
-                        return idMap.get(oldId) ? `node://${idMap.get(oldId)}` : match;
-                    });
+                  return value.replace(linkRegex, (match: string, oldId: string) => {
+                    return idMap.get(oldId) ? `node://${idMap.get(oldId)}` : match;
+                  });
                 };
-                
+
                 if ((field.type === "link" || field.type === "textarea") && typeof node.data![field.id] === 'string') {
-                    node.data![field.id] = processValue(node.data![field.id]);
+                  node.data![field.id] = processValue(node.data![field.id]);
                 }
                 // Only rewrite attachment paths if explicitly told to (i.e., for ZIP imports)
                 else if (rewriteAttachmentPaths && (field.type === "picture" || field.type === "attachment")) {
@@ -515,7 +515,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
       const finalTree = await loadTreeFile(treeId);
       if (finalTree) {
-        setAllTrees((draft) => {draft.push(finalTree)});
+        setAllTrees((draft) => { draft.push(finalTree) });
         setActiveTreeId(treeId);
         return finalTree.id;
       }
@@ -523,7 +523,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     },
     [currentUser, allTrees, setAllTrees, setActiveTreeId]
   );
-  
+
   const deleteTree = async (id: string) => {
     if (!currentUser) return;
     const treeToDelete = allTrees.find((t: TreeFile) => t.id === id);
@@ -554,19 +554,19 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     if (!currentUser) return;
     const treeToDuplicate = allTrees.find(t => t.id === treeId);
     if (!treeToDuplicate) {
-        toast({ variant: "destructive", title: "Error", description: "Could not find the tree to duplicate." });
-        return;
+      toast({ variant: "destructive", title: "Error", description: "Could not find the tree to duplicate." });
+      return;
     }
 
     try {
-        const treeJson = generateJsonForExport(treeToDuplicate.title, treeToDuplicate.tree, treeToDuplicate.templates);
-        treeJson.title = `${treeToDuplicate.title} - Copy`;
-        
-        await importTreeFromJson(treeJson, currentUser);
-        toast({ title: "Tree Duplicated", description: `A copy of "${treeToDuplicate.title}" has been created.` });
-    } catch(err) {
-        const error = err as Error;
-        toast({ variant: "destructive", title: "Duplication Failed", description: error.message });
+      const treeJson = generateJsonForExport(treeToDuplicate.title, treeToDuplicate.tree, treeToDuplicate.templates);
+      treeJson.title = `${treeToDuplicate.title} - Copy`;
+
+      await importTreeFromJson(treeJson, currentUser);
+      toast({ title: "Tree Duplicated", description: `A copy of "${treeToDuplicate.title}" has been created.` });
+    } catch (err) {
+      const error = err as Error;
+      toast({ variant: "destructive", title: "Duplication Failed", description: error.message });
     }
   }, [allTrees, currentUser, importTreeFromJson, toast]);
 
@@ -586,7 +586,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     },
     [activeTree]
   );
-  
+
   const {
     conflictState,
     setConflictState,
@@ -608,9 +608,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     reloadAllTrees,
     setActiveTreeId,
     replaceTree: async (oldTreeId: string, newTreeId: string, metaToKeep: Partial<TreeFile>) => {
-        await deleteTreeFileFromDb(oldTreeId);
-        const { tree, ...rest } = metaToKeep as any;
-        await saveTreeFile({ ...rest, id: newTreeId });
+      await deleteTreeFileFromDb(oldTreeId);
+      const { tree, ...rest } = metaToKeep as any;
+      await saveTreeFile({ ...rest, id: newTreeId });
     },
   });
 
@@ -618,79 +618,79 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     if (!canUndo || !currentUser) return; // Must be logged in to undo
     const commandToUndo = commandHistory[historyIndex];
     if (!commandToUndo) return;
-  
+
     const newTimestamp = new Date().toISOString();
-  
+
     const undoSnapshot = produce(allTrees, draft => {
-        if (commandToUndo.getUndoState) {
-            commandToUndo.getUndoState(draft, commandToUndo);
-        }
-        const treeToUpdate = draft.find(t => t.id === activeTreeId);
-        if (treeToUpdate) {
-            treeToUpdate.updatedAt = newTimestamp;
-        }
+      if (commandToUndo.getUndoState) {
+        commandToUndo.getUndoState(draft, commandToUndo);
+      }
+      const treeToUpdate = draft.find(t => t.id === activeTreeId);
+      if (treeToUpdate) {
+        treeToUpdate.updatedAt = newTimestamp;
+      }
     });
 
     try {
-        await commandToUndo.undo(newTimestamp);
+      await commandToUndo.undo(newTimestamp);
     } catch (error) {
-        console.error("Undo operation failed in database:", error);
-        toast({ variant: 'destructive', title: 'Undo Failed', description: 'Could not save the undo operation. Reloading to prevent data inconsistency.' });
-        await reloadActiveTree();
-        return;
+      console.error("Undo operation failed in database:", error);
+      toast({ variant: 'destructive', title: 'Undo Failed', description: 'Could not save the undo operation. Reloading to prevent data inconsistency.' });
+      await reloadActiveTree();
+      return;
     }
 
     setAllTrees(() => undoSnapshot);
     setHistoryIndex((prev) => prev - 1);
-  
+
     toast({
       title: "Undo",
       description: `Reversed action: ${getActionDescription(commandToUndo)}`,
     });
-  
+
   }, [canUndo, commandHistory, historyIndex, setAllTrees, setHistoryIndex, toast, allTrees, activeTreeId, currentUser, reloadActiveTree]);
-  
+
   const redoLastAction = useCallback(async () => {
     const newIndex = historyIndex + 1;
     if (!canRedo || newIndex >= commandHistory.length || !currentUser) return; // Must be logged in to redo
 
     const commandToRedo = commandHistory[newIndex];
     if (!commandToRedo) return;
-    
+
     const newTimestamp = new Date().toISOString();
 
     const afterState = produce(allTrees, draft => {
-        const treeToUpdate = draft.find(t => t.id === activeTreeId);
-        if (treeToUpdate) {
-            commandToRedo.execute(draft);
-            treeToUpdate.updatedAt = newTimestamp;
-        }
+      const treeToUpdate = draft.find(t => t.id === activeTreeId);
+      if (treeToUpdate) {
+        commandToRedo.execute(draft);
+        treeToUpdate.updatedAt = newTimestamp;
+      }
     });
-    
+
     const finalTreeFile = afterState.find(t => t.id === activeTreeId);
 
     // Optimistically update UI first.
     setAllTrees(() => afterState);
     setHistoryIndex(newIndex);
-    
+
     toast({
-        title: 'Redo',
-        description: `Re-applied action: ${getActionDescription(commandToRedo)}`,
+      title: 'Redo',
+      description: `Re-applied action: ${getActionDescription(commandToRedo)}`,
     });
-    
+
     try {
-        if (commandToRedo.redo) {
-            await commandToRedo.redo(finalTreeFile, newTimestamp);
-        } else if (commandToRedo.post && finalTreeFile) {
-            await commandToRedo.post(finalTreeFile, newTimestamp);
-        }
+      if (commandToRedo.redo) {
+        await commandToRedo.redo(finalTreeFile, newTimestamp);
+      } else if (commandToRedo.post && finalTreeFile) {
+        await commandToRedo.post(finalTreeFile, newTimestamp);
+      }
     } catch (error) {
-        console.error("Redo operation failed in database:", error);
-        toast({ variant: 'destructive', title: 'Redo Failed', description: 'Could not save the redo operation. Reloading to prevent data inconsistency.' });
-        await reloadActiveTree();
-        return;
+      console.error("Redo operation failed in database:", error);
+      toast({ variant: 'destructive', title: 'Redo Failed', description: 'Could not save the redo operation. Reloading to prevent data inconsistency.' });
+      await reloadActiveTree();
+      return;
     }
-}, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast, currentUser, reloadActiveTree]);
+  }, [canRedo, commandHistory, historyIndex, allTrees, activeTreeId, setAllTrees, setHistoryIndex, toast, currentUser, reloadActiveTree]);
 
 
   const loadUserSpecificData = useCallback(
@@ -708,8 +708,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
             loadedTrees = await loadAllTreeFiles();
           }
         }
-        
-        loadedTrees.sort((a,b) => (a.order || 0) - (b.order || 0));
+
+        loadedTrees.sort((a, b) => (a.order || 0) - (b.order || 0));
 
         setAllTrees(() => loadedTrees);
         const lastActiveTreeId = user.lastActiveTreeId;
@@ -729,41 +729,41 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     [createNewTree, importTreeFromJson, setAllTrees, setActiveTreeId]
   );
 
-  const activeTreeRef = useRef<TreeFile | undefined>();
+  const activeTreeRef = useRef<TreeFile | undefined>(undefined);
   useEffect(() => {
     activeTreeRef.current = activeTree;
   }, [activeTree]);
 
   useEffect(() => {
-      // Don't poll if there's an initialTree (public view) or no user.
-      if (initialTree || !currentUser) return;
-  
-      const intervalId = setInterval(async () => {
-        if (!activeTreeRef.current) return;
-        try {
-          const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
-          if (response.ok) {
-            const { updatedAt: serverUpdatedAt } = await response.json();
-            
-            if (!activeTreeRef.current) return;
-            const localUpdatedAt = activeTreeRef.current.updatedAt;
-  
-            if (serverUpdatedAt && localUpdatedAt) {
-              const serverTime = new Date(serverUpdatedAt).getTime();
-              const localTime = new Date(localUpdatedAt).getTime();
-              
-              if (serverTime > localTime + 1000) {
-                  await reloadActiveTree();
-              }
+    // Don't poll if there's an initialTree (public view) or no user.
+    if (initialTree || !currentUser) return;
+
+    const intervalId = setInterval(async () => {
+      if (!activeTreeRef.current) return;
+      try {
+        const response = await fetch(`/api/tree-status/${activeTreeRef.current.id}`);
+        if (response.ok) {
+          const { updatedAt: serverUpdatedAt } = await response.json();
+
+          if (!activeTreeRef.current) return;
+          const localUpdatedAt = activeTreeRef.current.updatedAt;
+
+          if (serverUpdatedAt && localUpdatedAt) {
+            const serverTime = new Date(serverUpdatedAt).getTime();
+            const localTime = new Date(localUpdatedAt).getTime();
+
+            if (serverTime > localTime + 1000) {
+              await reloadActiveTree();
             }
           }
-        } catch (error) {
-          console.warn("Polling for tree status failed:", error);
         }
-      }, 5000); 
-  
-      return () => clearInterval(intervalId);
-    }, [initialTree, currentUser, reloadActiveTree]);
+      } catch (error) {
+        console.warn("Polling for tree status failed:", error);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [initialTree, currentUser, reloadActiveTree]);
 
 
   useEffect(() => {
@@ -780,25 +780,25 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       setIsTreeDataLoading(true);
     }
   }, [currentUser, isDataLoaded, loadUserSpecificData, setAllTrees, setActiveTreeId, setCommandHistory, setHistoryIndex, initialTree]);
-  
+
   const commitToRepo = useCallback(
     (treeId: string, message: string, token: string, force: boolean = false, treeFileToCommit?: TreeFile): Promise<{ success: boolean; error?: string, commitSha?: string }> => {
-        if (!currentUser) {
-            toast({ variant: 'destructive', title: 'Action Denied', description: 'You must be logged in to commit.' });
-            return Promise.resolve({ success: false, error: 'Not authenticated' });
-        }
-        // Clear history on commit to prevent complex state issues
-        setCommandHistory(() => []);
-        setHistoryIndex(-1);
-        setIsDirty(false);
-        return commitToRepoViaSync(treeId, message, token, force, treeFileToCommit);
+      if (!currentUser) {
+        toast({ variant: 'destructive', title: 'Action Denied', description: 'You must be logged in to commit.' });
+        return Promise.resolve({ success: false, error: 'Not authenticated' });
+      }
+      // Clear history on commit to prevent complex state issues
+      setCommandHistory(() => []);
+      setHistoryIndex(-1);
+      setIsDirty(false);
+      return commitToRepoViaSync(treeId, message, token, force, treeFileToCommit);
     },
     [commitToRepoViaSync, setCommandHistory, setHistoryIndex, currentUser, toast]
   );
 
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
     if (!currentUser || isSaving) return; // CRITICAL: Only save if logged in
-    
+
     const newTimestamp = new Date().toISOString();
     const updatedTree = { ...treeToSave, updatedAt: newTimestamp };
 
@@ -808,27 +808,27 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         draft[treeIndex].updatedAt = newTimestamp;
       }
     });
-    setIsDirty(false); 
+    setIsDirty(false);
     setIsSaving(true);
-    
+
     const { tree, ...metaData } = updatedTree;
 
     saveTreeFile(metaData, newTimestamp)
-    .then(() => {
+      .then(() => {
         console.log(`INFO: Debounced save for tree '${treeToSave.title}' executed successfully.`);
-    })
-    .catch((error) => {
+      })
+      .catch((error) => {
         console.error("Debounced save failed:", error);
         toast({
-            variant: "destructive",
-            title: "Auto-Save Failed",
-            description: "A background save failed. Reloading the tree to ensure data consistency.",
+          variant: "destructive",
+          title: "Auto-Save Failed",
+          description: "A background save failed. Reloading the tree to ensure data consistency.",
         });
         reloadActiveTree();
-    })
-    .finally(() => {
+      })
+      .finally(() => {
         setIsSaving(false);
-    });
+      });
 
   }, 1000);
 
@@ -837,12 +837,12 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       debouncedSave(activeTree);
     }
   }, [currentUser, isDirty, activeTree, debouncedSave, isSaving]);
-  
+
   const findNodeAndContextualParent = useCallback(
     (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[]): { node: TreeNode, parent: TreeNode | null } | null => {
       const searchNodes = nodes || activeTree?.tree;
       if (!searchNodes || !nodeId) return null;
-      
+
       const nodeInfo = findNodeAndParent(nodeId, searchNodes);
       if (!nodeInfo) return null;
 
@@ -851,82 +851,82 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     },
     [activeTree, findNodeAndParent]
   );
-  
+
   const isCloneOrDescendant = useCallback((nodeId: string, nodes?: TreeNode[]): boolean => {
-      const nodeInfo = findNodeAndParent(nodeId, nodes);
-      if (!nodeInfo) return false;
-      const { node, parent } = nodeInfo;
-      if ((node.parentIds || []).length > 1) return true;
-      if (parent) return isCloneOrDescendant(parent.id, nodes);
-      return false;
+    const nodeInfo = findNodeAndParent(nodeId, nodes);
+    if (!nodeInfo) return false;
+    const { node, parent } = nodeInfo;
+    if ((node.parentIds || []).length > 1) return true;
+    if (parent) return isCloneOrDescendant(parent.id, nodes);
+    return false;
   }, [findNodeAndParent]);
 
   const getSiblingOrderRange = (siblings: TreeNode[], parentId: string | null): { minOrder: number; maxOrder: number } => {
     if (!siblings || siblings.length === 0) return { minOrder: 0, maxOrder: 0 };
     const orders = siblings.map(s => getContextualOrder(s, siblings, parentId));
     return {
-        minOrder: Math.min(...orders),
-        maxOrder: Math.max(...orders),
+      minOrder: Math.min(...orders),
+      maxOrder: Math.max(...orders),
     };
   };
 
   const updateTreeOrder = useCallback(async (updates: { id: string; order: number }[]) => {
     if (!currentUser) return;
-    
+
     performAction((draft: WritableDraft<TreeFile[]>) => {
-        updates.forEach(({ id, order }) => {
-            const tree = draft.find((t) => t.id === id);
-            if (tree) {
-                tree.order = order;
-            }
-        });
-        draft.sort((a, b) => (a.order || 0) - (b.order || 0));
+      updates.forEach(({ id, order }) => {
+        const tree = draft.find((t) => t.id === id);
+        if (tree) {
+          tree.order = order;
+        }
+      });
+      draft.sort((a, b) => (a.order || 0) - (b.order || 0));
     }, false);
 
     try {
-        await updateTreeOrderInDb(updates);
+      await updateTreeOrderInDb(updates);
     } catch (error) {
-        console.error("Failed to save tree order:", error);
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not save the new tree order.",
-        });
-        await reloadAllTrees();
+      console.error("Failed to save tree order:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not save the new tree order.",
+      });
+      await reloadAllTrees();
     }
   }, [currentUser, performAction, reloadAllTrees, toast]);
 
   const setTreeTitle = (treeId: string, title: string) => {
     if (!activeTreeId) return;
 
-    const currentTree = allTrees.find(t=>t.id === treeId);
+    const currentTree = allTrees.find(t => t.id === treeId);
     if (!currentTree) return;
     const originalTitle = currentTree.title;
 
     const command: UpdateTreeFileCommand = {
-        type: 'UPDATE_TREE_FILE',
-        payload: { treeId, updates: { title } },
-        originalState: { title: originalTitle },
-        execute: (draft: WritableDraft<TreeFile[]>) => { 
-            const t = draft.find((t: TreeFile) => t.id === treeId); 
-            if (t) t.title = title; 
-        },
-        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
-            await saveTreeFile({ id: treeId, title }, timestamp);
-        },
-        undo: async (timestamp?: string) => {
-            await saveTreeFile({ id: treeId, title: originalTitle }, timestamp);
-        },
-        getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
-          const t = draft.find(t => t.id === treeId);
-          if (t && (command as UpdateTreeFileCommand).originalState.title) {
-            t.title = (command as UpdateTreeFileCommand).originalState.title!;
-          }
+      type: 'UPDATE_TREE_FILE',
+      payload: { treeId, updates: { title } },
+      originalState: { title: originalTitle },
+      execute: (draft: WritableDraft<TreeFile[]>) => {
+        const t = draft.find((t: TreeFile) => t.id === treeId);
+        if (t) t.title = title;
+      },
+      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+        await saveTreeFile({ id: treeId, title }, timestamp);
+      },
+      undo: async (timestamp?: string) => {
+        await saveTreeFile({ id: treeId, title: originalTitle }, timestamp);
+      },
+      getUndoState: (draft: WritableDraft<TreeFile[]>, command: Command) => {
+        const t = draft.find(t => t.id === treeId);
+        if (t && (command as UpdateTreeFileCommand).originalState.title) {
+          t.title = (command as UpdateTreeFileCommand).originalState.title!;
         }
+      }
     };
     executeCommand(command);
   };
-  
+
   const setTemplates = useCallback((updater: Template[] | ((current: Template[]) => Template[])) => {
     if (!activeTreeId) return;
     const currentTree = allTrees.find(t => t.id === activeTreeId);
@@ -936,39 +936,39 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     const newTemplates = typeof updater === 'function' ? updater(originalTemplates) : updater;
 
     const command: UpdateTreeFileCommand = {
-        type: 'UPDATE_TREE_FILE',
-        payload: { treeId: activeTreeId, updates: { templates: newTemplates } },
-        originalState: { templates: originalTemplates },
-        execute: (draft: WritableDraft<TreeFile[]>) => {
-            const tree = draft.find(t => t.id === activeTreeId);
-            if (tree) {
-                tree.templates = typeof updater === 'function' 
-                    ? produce(tree.templates, updater as (draft: WritableDraft<Template[]>) => void) 
-                    : updater;
-            }
-        },
-        post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
-            if (finalTreeFile && activeTreeId) {
-                await saveTreeFile({ id: activeTreeId, templates: finalTreeFile.templates }, timestamp);
-            }
-        },
-        undo: async (timestamp?: string) => {
-            if (activeTreeId) {
-                await saveTreeFile({ id: activeTreeId, templates: originalTemplates }, timestamp);
-            }
-        },
-        getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
-            if (!activeTreeId) return;
-            const tree = draft.find(t => t.id === activeTreeId);
-            const originalState = (cmd as UpdateTreeFileCommand).originalState;
-            if (tree && originalState.templates) {
-                tree.templates = originalState.templates;
-            }
-        },
+      type: 'UPDATE_TREE_FILE',
+      payload: { treeId: activeTreeId, updates: { templates: newTemplates } },
+      originalState: { templates: originalTemplates },
+      execute: (draft: WritableDraft<TreeFile[]>) => {
+        const tree = draft.find(t => t.id === activeTreeId);
+        if (tree) {
+          tree.templates = typeof updater === 'function'
+            ? produce(tree.templates, updater as (draft: WritableDraft<Template[]>) => void)
+            : updater;
+        }
+      },
+      post: async (finalTreeFile?: TreeFile, timestamp?: string) => {
+        if (finalTreeFile && activeTreeId) {
+          await saveTreeFile({ id: activeTreeId, templates: finalTreeFile.templates }, timestamp);
+        }
+      },
+      undo: async (timestamp?: string) => {
+        if (activeTreeId) {
+          await saveTreeFile({ id: activeTreeId, templates: originalTemplates }, timestamp);
+        }
+      },
+      getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
+        if (!activeTreeId) return;
+        const tree = draft.find(t => t.id === activeTreeId);
+        const originalState = (cmd as UpdateTreeFileCommand).originalState;
+        if (tree && originalState.templates) {
+          tree.templates = originalState.templates;
+        }
+      },
     };
     executeCommand(command, true);
   }, [activeTreeId, allTrees, executeCommand]);
-  
+
   const importTemplates = useCallback((newTemplates: Template[]) => {
     setTemplates((currentTemplates: Template[]) => {
       const existingIds = new Set(currentTemplates.map((t) => t.id));
@@ -988,7 +988,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const setExpandedNodeIds = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
     if (!activeTreeId) return;
-  
+
     // Always update local state immediately for UI responsiveness
     const newExpandedIds = produce(activeTree?.expandedNodeIds ?? [], updater as any);
     setAllTrees((draft) => {
@@ -997,7 +997,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         tree.expandedNodeIds = newExpandedIds;
       }
     });
-  
+
     // Only save to DB if a user is logged in
     if (currentUser) {
       // No debouncing, save immediately.
@@ -1012,95 +1012,95 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     // We walk up the tree from the target node to the root.
     while (currentId) {
-        const nodeInfo = findNodeAndParent(currentId, activeTree.tree);
-        if (!nodeInfo) break; // Should not happen in a consistent tree
+      const nodeInfo = findNodeAndParent(currentId, activeTree.tree);
+      if (!nodeInfo) break; // Should not happen in a consistent tree
 
-        const parent = nodeInfo.parent;
-        // If there's a parent, we need to find its instance ID to ensure it's expanded.
-        if (parent) {
-            // To construct the parent's instance ID, we need ITS parent (the grandparent).
-            // This assumes a single primary path for clones, which is acceptable for this feature.
-            const grandParentInfo = findNodeAndParent(parent.id, activeTree.tree);
-            const grandParentId = grandParentInfo?.parent?.id || 'root';
-            const parentInstanceId = `${parent.id}_${grandParentId}`;
-            pathToExpand.unshift(parentInstanceId); // Add to the front to maintain order from root down.
-        }
-        // Move up to the next parent.
-        currentId = parent ? parent.id : null;
+      const parent = nodeInfo.parent;
+      // If there's a parent, we need to find its instance ID to ensure it's expanded.
+      if (parent) {
+        // To construct the parent's instance ID, we need ITS parent (the grandparent).
+        // This assumes a single primary path for clones, which is acceptable for this feature.
+        const grandParentInfo = findNodeAndParent(parent.id, activeTree.tree);
+        const grandParentId = grandParentInfo?.parent?.id || 'root';
+        const parentInstanceId = `${parent.id}_${grandParentId}`;
+        pathToExpand.unshift(parentInstanceId); // Add to the front to maintain order from root down.
+      }
+      // Move up to the next parent.
+      currentId = parent ? parent.id : null;
     }
-    
+
     if (pathToExpand.length > 0) {
-        setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-            const idSet = new Set(currentIds);
-            pathToExpand.forEach(id => idSet.add(id));
-            // No need to check if it's already there, Set handles it.
-            return Array.from(idSet);
-        }, false); // This is a view change, not undoable.
+      setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+        const idSet = new Set(currentIds);
+        pathToExpand.forEach(id => idSet.add(id));
+        // No need to check if it's already there, Set handles it.
+        return Array.from(idSet);
+      }, false); // This is a view change, not undoable.
     }
   }, [activeTree, findNodeAndParent, setExpandedNodeIds]);
 
   const expandAllFromNode = useCallback((nodesToExpand: { nodeId: string, parentId: string | null }[]) => {
     if (!activeTree || nodesToExpand.length === 0) return;
-    
+
     const allIdsToAdd = new Set<string>();
 
     const traverse = (nodes: TreeNode[], parentId: string | null) => {
-        for (const node of nodes) {
-            allIdsToAdd.add(`${node.id}_${parentId || "root"}`);
-            (node.parentIds || []).forEach(pId => {
-                if (pId !== (parentId || 'root')) {
-                    allIdsToAdd.add(`${node.id}_${pId}`);
-                }
-            });
-            if (node.children) {
-                traverse(node.children, node.id);
-            }
+      for (const node of nodes) {
+        allIdsToAdd.add(`${node.id}_${parentId || "root"}`);
+        (node.parentIds || []).forEach(pId => {
+          if (pId !== (parentId || 'root')) {
+            allIdsToAdd.add(`${node.id}_${pId}`);
+          }
+        });
+        if (node.children) {
+          traverse(node.children, node.id);
         }
+      }
     };
-    
+
     for (const { nodeId } of nodesToExpand) {
-        const result = findNodeAndParent(nodeId, activeTree.tree);
-        if (!result) continue;
-        const { node } = result;
-        traverse([node], nodeId);
+      const result = findNodeAndParent(nodeId, activeTree.tree);
+      if (!result) continue;
+      const { node } = result;
+      traverse([node], nodeId);
     }
 
     if (allIdsToAdd.size > 0) {
-        setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
-            const idSet = new Set(currentIds);
-            allIdsToAdd.forEach(id => idSet.add(id));
-            return Array.from(idSet);
-        }, true);
+      setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+        const idSet = new Set(currentIds);
+        allIdsToAdd.forEach(id => idSet.add(id));
+        return Array.from(idSet);
+      }, true);
     }
   }, [activeTree, findNodeAndParent, setExpandedNodeIds]);
 
   const collapseAllFromNode = useCallback((nodesToCollapse: { nodeId: string, parentId: string | null }[]) => {
     if (!activeTree || nodesToCollapse.length === 0) return;
-    
+
     const allIdsToRemove = new Set<string>();
 
     const traverse = (nodes: TreeNode[], parentId: string | null) => {
       for (const node of nodes) {
-          allIdsToRemove.add(`${node.id}_${parentId || "root"}`);
-          (node.parentIds || []).forEach(pId => {
-              if (pId !== (parentId || 'root')) {
-                  allIdsToRemove.add(`${node.id}_${pId}`);
-              }
-          });
-          if (node.children) {
-              traverse(node.children, node.id);
+        allIdsToRemove.add(`${node.id}_${parentId || "root"}`);
+        (node.parentIds || []).forEach(pId => {
+          if (pId !== (parentId || 'root')) {
+            allIdsToRemove.add(`${node.id}_${pId}`);
           }
+        });
+        if (node.children) {
+          traverse(node.children, node.id);
+        }
       }
     };
 
     for (const { nodeId, parentId } of nodesToCollapse) {
-        const result = findNodeAndParent(nodeId, activeTree.tree);
-        if (!result) continue;
-        const { node } = result;
+      const result = findNodeAndParent(nodeId, activeTree.tree);
+      if (!result) continue;
+      const { node } = result;
 
-        traverse([node], parentId);
+      traverse([node], parentId);
     }
-    
+
     if (allIdsToRemove.size > 0) {
       setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
         for (let i = currentIds.length - 1; i >= 0; i--) {
@@ -1145,7 +1145,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const addSiblingNode = async (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => {
     await addSiblingNodeAction(actionContext, siblingNodeId, nodeToAddData, contextualParentId);
   };
-  
+
   const updateNode = async (nodeId: string, newNodeData: Partial<Omit<TreeNode, 'id' | 'children'>>) => {
     await updateNodeAction(actionContext, nodeId, newNodeData);
   };
@@ -1174,18 +1174,18 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     await copyNodesAction(actionContext, targetNodeId, position, contextualParentId, nodes);
   };
 
-  const moveNodes = async (moves: { nodeId: string; targetNodeId: string; position: 'child' | 'sibling' | 'child-bottom'; sourceContextualParentId: string | null; targetContextualParentId: string | null;}[]) => {
+  const moveNodes = async (moves: { nodeId: string; targetNodeId: string; position: 'child' | 'sibling' | 'child-bottom'; sourceContextualParentId: string | null; targetContextualParentId: string | null; }[]) => {
     await moveNodesAction(actionContext, moves);
   };
 
   const moveNodeOrder = async (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => {
     await moveNodeOrderAction(actionContext, nodeId, direction, contextualParentId);
   };
-  
+
   const pasteNodesAsClones = async (targetNodeId: string, as: 'child' | 'sibling', nodeIdsToClone: string[], contextualParentId: string | null) => {
     await pasteNodesAsClonesAction(actionContext, targetNodeId, as, nodeIdsToClone, contextualParentId);
   };
-  
+
   const toggleStarredForSelectedNodes = async () => {
     await toggleStarredForSelectedNodesAction(actionContext);
   };
@@ -1193,7 +1193,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const batchUpdateNodeData = async (instanceIds: string[], data: Record<string, any>) => {
     await batchUpdateNodesDataAction(actionContext, instanceIds, data);
   };
-  
+
   const exportNodesAsJson = (nodesToExport: TreeNode[], baseName: string) => {
     if (!activeTree || nodesToExport.length === 0) return;
     const dataToExport = generateJsonForExport(baseName, nodesToExport, activeTree.templates);
@@ -1309,13 +1309,13 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  
+
   const updateActiveTree = (updater: (draft: TreeFile) => void) => {
     performAction(draft => {
-        const treeIndex = draft.findIndex(t => t.id === activeTreeId);
-        if (treeIndex !== -1) {
-            draft[treeIndex] = produce(draft[treeIndex], updater);
-        }
+      const treeIndex = draft.findIndex(t => t.id === activeTreeId);
+      if (treeIndex !== -1) {
+        draft[treeIndex] = produce(draft[treeIndex], updater);
+      }
     });
   };
 
@@ -1449,15 +1449,15 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
 // Dummy blobToDataURI helper if not already available
 const blobToDataURI = (blob: Blob): Promise<string> =>
-new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    if (e.target && typeof e.target.result === 'string') resolve(e.target.result);
-    else reject(new Error("Failed to read blob as Data URI"));
-  };
-  reader.onerror = reject;
-  reader.readAsDataURL(blob);
-});
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target && typeof e.target.result === 'string') resolve(e.target.result);
+      else reject(new Error("Failed to read blob as Data URI"));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 
 /* -------------------------------- Provider --------------------------------- */
 
@@ -1467,7 +1467,7 @@ interface TreeProviderProps {
 }
 
 export function TreeProvider({ children, initialTree }: TreeProviderProps) {
-  const treeRootsHook = useTreeRoots({initialTree});
+  const treeRootsHook = useTreeRoots({ initialTree });
 
   return <TreeContext.Provider value={treeRootsHook}>{children}</TreeContext.Provider>;
 }

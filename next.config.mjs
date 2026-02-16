@@ -19,12 +19,12 @@ const nextConfig = {
       },
     ],
   },
-  serverActions: {
-    bodySizeLimit: '4mb',
-  },
-  devIndicators: {
-    buildActivity: true,
-  }
+  // serverActions: {
+  //   bodySizeLimit: '4mb',
+  // },
+  // devIndicators: {
+  //   buildActivity: true,
+  // }
 };
 
 export default nextConfig;

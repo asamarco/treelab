@@ -965,9 +965,8 @@ export async function createRepo(
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
-    const fetch = (await import('node-fetch')).default;
     try {
-        const octokit = new Octokit({ auth: token, request: { fetch } });
+        const octokit = new Octokit({ auth: token });
         const response = await octokit.rest.repos.createForAuthenticatedUser({
             name: repoName,
             private: isPrivate,
@@ -1021,7 +1020,6 @@ export async function commitTreeFileToRepo(
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
-    const fetch = (await import('node-fetch')).default;
     const treeFile = treeFileToCommit || await loadTreeFile(treeId);
 
     if (!treeFile || !treeFile.gitSync) {
@@ -1032,7 +1030,7 @@ export async function commitTreeFileToRepo(
         throw new Error("Authorization denied.");
     }
 
-    const octokit = new Octokit({ auth: token, request: { fetch } });
+    const octokit = new Octokit({ auth: token });
     const { repoOwner, repoName, branch } = treeFile.gitSync;
 
     const { data: branchData } = await octokit.rest.repos.getBranch({
@@ -1112,8 +1110,7 @@ export async function commitTreeFileToRepo(
 
 
 export async function getRepoCommits(token: string, owner: string, repo: string, branch: string): Promise<GitCommit[]> {
-    const fetch = (await import('node-fetch')).default;
-    const octokit = new Octokit({ auth: token, request: { fetch } });
+    const octokit = new Octokit({ auth: token });
     const { data: commits } = await octokit.rest.repos.listCommits({
         owner,
         repo,
@@ -1129,15 +1126,13 @@ export async function getRepoCommits(token: string, owner: string, repo: string,
 }
 
 export async function getLatestCommitSha(token: string, owner: string, repo: string, branch: string): Promise<string> {
-    const fetch = (await import('node-fetch')).default;
-    const octokit = new Octokit({ auth: token, request: { fetch } });
+    const octokit = new Octokit({ auth: token });
     const { data: branchData } = await octokit.rest.repos.getBranch({ owner, repo, branch });
     return branchData.commit.sha;
 }
 
 export async function getTreeFromGit(token: string, owner: string, repo: string, sha: string): Promise<Partial<TreeFile>> {
-    const fetch = (await import('node-fetch')).default;
-    const octokit = new Octokit({ auth: token, request: { fetch } });
+    const octokit = new Octokit({ auth: token });
 
     try {
         const { data: content } = await octokit.rest.repos.getContent({

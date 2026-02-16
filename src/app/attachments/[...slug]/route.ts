@@ -12,7 +12,7 @@ import fs from 'fs/promises';
 import { lookup } from 'mime-types';
 
 export async function GET(request: NextRequest, { params }: any) {
-  const { slug } = params;
+  const { slug } = await params;
 
   if (!slug || slug.length === 0) {
     return new NextResponse('Invalid file path', { status: 400 });
