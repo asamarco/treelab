@@ -497,7 +497,7 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
         encryptedUpdates.data = await encrypt(data as any);
     }
 
-    await TreeNodeModel.findByIdAndUpdate(nodeId, encryptedUpdates).exec();
+    await TreeNodeModel.findByIdAndUpdate(nodeId, { $set: encryptedUpdates }).exec();
     await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: newTimestamp });
     return newTimestamp;
 }

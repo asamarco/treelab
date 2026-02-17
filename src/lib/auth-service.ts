@@ -28,7 +28,7 @@ const hashPassword = (password: string, salt: string): Promise<string> => {
 // Helper to convert a Mongoose doc to a plain object.
 const toPlainObject = (doc: any): any => {
     if (!doc) return null;
-    const obj = doc.toObject ? doc.toObject({getters: true, virtuals: true}) : doc;
+    const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
     const plain: any = { id: obj._id.toString() };
     for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
@@ -41,17 +41,17 @@ const toPlainObject = (doc: any): any => {
 // --- User Functions ---
 
 export async function fetchUsers(): Promise<User[]> {
-  // This is critical to prevent Next.js from caching the user list across different user sessions.
+    // This is critical to prevent Next.js from caching the user list across different user sessions.
     noStore();
     const session = await getSession();
-  if (!session?.userId) {
-      // While this returns public info, it should still only be available to logged-in users.
-      throw new Error("Authentication required to fetch users.");
-  }
-  
+    if (!session?.userId) {
+        // While this returns public info, it should still only be available to logged-in users.
+        throw new Error("Authentication required to fetch users.");
+    }
+
     await connectToDatabase();
     const users = await UserModel.find().select('-passwordHash -salt').lean<User[]>().exec();
-  const decryptedUsers = await Promise.all(
+    const decryptedUsers = await Promise.all(
         users.map(async (u: any) => {
             const plainUser = toPlainObject(u);
             if (plainUser.gitSettings?.githubPat) {
@@ -60,13 +60,13 @@ export async function fetchUsers(): Promise<User[]> {
             return plainUser;
         })
     );
-  return decryptedUsers;
+    return decryptedUsers;
 }
 
 
 export async function validateLogin(identifier: string, password: string): Promise<User | null> {
     await connectToDatabase();
-    
+
     // Avoid NoSQL Injection
     const safeIdentifier = String(identifier);
     const safePassword = String(password);
@@ -96,15 +96,15 @@ export async function validateLogin(identifier: string, password: string): Promi
 export async function registerUser(username: string, password: string): Promise<User | null> {
     await connectToDatabase();
     const safeUsername = String(username);
-    
+
     const globalSettings = await loadGlobalSettings();
     if (!globalSettings?.allowPublicRegistration) {
         throw new Error("Registration disabled.");
     }
-    
+
     const exists = await UserModel.exists({ username: safeUsername });
-    if (exists) return null; 
-    
+    if (exists) return null;
+
     const isFirstUser = (await UserModel.countDocuments({})) === 0;
     const salt = crypto.randomBytes(16).toString('hex');
     const passwordHash = await hashPassword(password, salt);
@@ -113,13 +113,13 @@ export async function registerUser(username: string, password: string): Promise<
         username: safeUsername,
         passwordHash,
         salt,
-        isAdmin: isFirstUser, 
+        isAdmin: isFirstUser,
     };
-    
+
     const createdUser = await new UserModel(newUserDoc).save();
     const userToReturn = toPlainObject(createdUser);
     await createSessionInServerAction(userToReturn.id);
-    
+
     return userToReturn;
 }
 
@@ -133,7 +133,7 @@ export async function addUser(userData: Omit<User, 'id' | 'passwordHash' | 'salt
     await connectToDatabase();
     const { password, ...rest } = userData;
     if (!password) throw new Error("Password is required for new user");
-    
+
     const salt = crypto.randomBytes(16).toString('hex');
     const passwordHash = await hashPassword(password, salt);
 
@@ -149,7 +149,7 @@ export async function updateUserAdminStatus(userId: string, isAdmin: boolean): P
 
     const adminUser = await UserModel.findById(session.userId);
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
-    if(session.userId === userId) throw new Error("Admins cannot change their own status.");
+    if (session.userId === userId) throw new Error("Admins cannot change their own status.");
 
     await connectToDatabase();
     await UserModel.findByIdAndUpdate(userId, { isAdmin }).exec();
@@ -161,7 +161,7 @@ export async function deleteUser(userId: string): Promise<void> {
 
     const adminUser = await UserModel.findById(session.userId);
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
-    if(session.userId === userId) throw new Error("Users cannot delete themselves.");
+    if (session.userId === userId) throw new Error("Users cannot delete themselves.");
 
     await connectToDatabase();
     const userToDelete = await UserModel.findById(userId);
@@ -187,7 +187,7 @@ export async function changeUserPassword(currentPassword: string, newPassword: s
     const currentPasswordHash = await hashPassword(currentPassword, user.salt);
 
     if (currentPasswordHash !== user.passwordHash) return false;
-    
+
     // Generate a new salt when changing the password
     const newSalt = crypto.randomBytes(16).toString('hex');
     const newPasswordHash = await hashPassword(newPassword, newSalt);
@@ -223,8 +223,8 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
     if (settingsToSave.gitSettings?.githubPat) {
         settingsToSave.gitSettings.githubPat = await encrypt(settingsToSave.gitSettings.githubPat);
     }
-    
-    await UserModel.findByIdAndUpdate(session.userId, settingsToSave).exec();
+
+    await UserModel.findByIdAndUpdate(session.userId, { $set: settingsToSave }).exec();
 }
 
 
@@ -232,15 +232,15 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
 
 export async function loadGlobalSettings(): Promise<GlobalSettings | null> {
     await connectToDatabase();
-  let settings = await GlobalSettingsModel.findOne().lean<GlobalSettings>().exec();
-  
-  if (settings) {
-    return toPlainObject(settings);
-  }
-  
-  const defaultSettings = new GlobalSettingsModel({ allowPublicRegistration: true });
-  const savedSettings = await defaultSettings.save();
-  return toPlainObject(savedSettings);
+    let settings = await GlobalSettingsModel.findOne().lean<GlobalSettings>().exec();
+
+    if (settings) {
+        return toPlainObject(settings);
+    }
+
+    const defaultSettings = new GlobalSettingsModel({ allowPublicRegistration: true });
+    const savedSettings = await defaultSettings.save();
+    return toPlainObject(savedSettings);
 }
 
 export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Promise<void> {
@@ -248,7 +248,7 @@ export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Pro
     if (!session?.userId) throw new Error("Authentication required.");
     const adminUser = await UserModel.findById(session.userId);
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
-    
+
     await connectToDatabase();
     // Ensure that customLogoPath is not set to an empty string, but rather removed if empty
     const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...settings, updatedAt: new Date().toISOString() };
