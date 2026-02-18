@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file contains utility functions used across the application.
@@ -205,3 +203,27 @@ export const evaluateCondition = (
     default: return false;
   }
 };
+
+/**
+ * Extracts the original human-readable filename from a unique security-prefixed filename.
+ * Supports both modern UUID-based prefixes and legacy random string prefixes.
+ * 
+ * Pattern (Modern): [24-char ISO Timestamp]-[36-char UUID]-[Original Name]
+ * Pattern (Legacy): [24-char ISO Timestamp]-[9-char base36]-[Original Name]
+ * 
+ * @param fileName The unique filename string.
+ * @returns The original filename if it matches a known pattern, otherwise the input string.
+ */
+export function extractOriginalName(fileName: string): string {
+  // New pattern: ISO (24) + Dash (1) + UUID (36) + Dash (1) = 62 chars of security prefix
+  if (fileName.length > 62 && fileName[24] === '-' && fileName[61] === '-') {
+    return fileName.substring(62);
+  }
+  
+  // Legacy pattern: ISO (24) + Dash (1) + 9-random (9) + Dash (1) = 35 chars of security prefix
+  if (fileName.length > 35 && fileName[24] === '-' && fileName[34] === '-') {
+    return fileName.substring(35);
+  }
+
+  return fileName;
+}

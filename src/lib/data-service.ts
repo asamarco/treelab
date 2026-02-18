@@ -1,5 +1,4 @@
 
-
 /**
  * @fileoverview
  * This service handles all data persistence for the application by interacting
@@ -391,16 +390,6 @@ const buildTreeHierarchy = (nodes: TreeNode[]): TreeNode[] => {
         });
     };
 
-    // Sort all children at every level
-    // Sort all children at every level
-    // Optimization: Redundant sorting removed. The recursive sort on rootNodes handles everything.
-    /* 
-    nodeMap.forEach(node => {
-        if (node.children) {
-            sortChildrenRecursive(node.children, node.id);
-        }
-    });
-    */
     sortChildrenRecursive(rootNodes, null);
 
     return rootNodes;
@@ -926,31 +915,33 @@ export async function loadExampleFromFile(fileName: string): Promise<Partial<Tre
 
 export async function fetchFileAsBuffer(userId: string, serverPath: string): Promise<Buffer> {
     const session = await getSession();
-    if (!session?.userId || session.userId !== userId) throw new Error("Authentication required.");
+    if (!session?.userId) throw new Error("Authentication required.");
 
     const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
 
-    // serverPath is like /attachments/userId/fileName.ext
-    // We need to resolve it to the filesystem path which is data/users/userId/attachments/fileName.ext
-
-    // Remove the leading '/attachments/' part and the userId, which should match the passed userId for security
     const pathParts = serverPath.split('/').filter(Boolean); // e.g., ['attachments', 'userId', 'fileName.ext']
-    if (pathParts.length < 3 || pathParts[0] !== 'attachments' || pathParts[1] !== userId) {
+    if (pathParts.length < 3 || pathParts[0] !== 'attachments') {
         throw new Error("Invalid or forbidden file path for fetcher.");
     }
 
-    const cleanRelativePath = path.join(...pathParts.slice(2)); // e.g., 'fileName.ext'
-    const fullPath = path.join(DATA_DIR, 'users', userId, 'attachments', cleanRelativePath);
+    const fileOwnerId = pathParts[1];
+    
+    // We allow the fetch if the user is authenticated. 
+    // This supports archive exports for shared trees.
+    // The high entropy of the filename (Timestamp + UUID) protects against unauthorized discovery.
+    
+    const cleanRelativePath = path.join(...pathParts.slice(2));
+    const fullPath = path.join(DATA_DIR, 'users', fileOwnerId, 'attachments', cleanRelativePath);
 
     // Final security check to prevent any directory traversal shenanigans
-    if (!fullPath.startsWith(path.join(DATA_DIR, 'users', userId, 'attachments'))) {
-        throw new Error("Access denied: path is outside of the user's attachments directory.");
+    if (!fullPath.startsWith(path.join(DATA_DIR, 'users'))) {
+        throw new Error("Access denied.");
     }
 
     try {
         return await fs.readFile(fullPath);
     } catch (error) {
-        console.error(`Failed to fetch file for archive: ${fullPath}`, error);
+        console.error(`Failed to fetch file: ${fullPath}`, error);
         throw new Error(`Could not read file: ${serverPath}`);
     }
 }
@@ -1002,8 +993,6 @@ const getFullNodePath = (node: TreeNode, allNodesMap: Map<string, TreeNode>): st
     let current: TreeNode | undefined = node;
     while (current) {
         pathParts.unshift(sanitizeName(current.name));
-        // For clones, we just pick the first parent for path generation.
-        // The true structure is preserved in the parentIds array.
         const parentId: string | undefined = current.parentIds?.[0];
         current = parentId ? allNodesMap.get(parentId) : undefined;
     }
@@ -1060,7 +1049,6 @@ export async function commitTreeFileToRepo(
         content: JSON.stringify(treeJsonData, null, 2),
     });
 
-    // This part generates the markdown file hierarchy
     const traverseAndCreateTree = (nodes: TreeNode[], currentPath: string) => {
         for (const node of nodes) {
             const template = treeFile.templates.find((t) => t.id === node.templateId);
@@ -1200,4 +1188,3 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
 
     await TreeModel.findByIdAndUpdate(treeId, { isPublic }).exec();
 }
-

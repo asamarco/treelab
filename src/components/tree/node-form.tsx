@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This file defines the `NodeForm` component, which is a dynamic form used for
@@ -254,7 +255,10 @@ export const NodeForm = ({
 
     setUploadingStates(prev => ({...prev, [field.id]: true}));
     
-    const uniqueFileName = `${new Date().toISOString()}-${Math.random().toString(36).substring(2, 11)}-${file.name}`;
+    // Generate a unique filename using ISO timestamp and a UUID v4 for maximum entropy.
+    // Replace colons in the ISO string with dashes for Windows filesystem compatibility.
+    const safeTimestamp = new Date().toISOString().replace(/:/g, '-');
+    const uniqueFileName = `${safeTimestamp}-${crypto.randomUUID()}-${file.name}`;
         
     const formDataPayload = new FormData();
     formDataPayload.append('file', file);

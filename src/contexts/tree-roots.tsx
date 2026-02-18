@@ -39,7 +39,7 @@ import {
   ConditionalRuleOperator,
   SimpleQueryRule,
 } from '@/lib/types';
-import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition } from '@/lib/utils';
+import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition, extractOriginalName } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
 import { HtmlExportView } from "@/components/tree/html-export-view";
 import {
@@ -875,7 +875,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     performAction((draft: WritableDraft<TreeFile[]>) => {
       updates.forEach(({ id, order }) => {
-        const tree = draft.find((t) => t.id === id);
+        const tree = draft.find((t: TreeFile) => t.id === id);
         if (tree) {
           tree.order = order;
         }
@@ -940,7 +940,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       payload: { treeId: activeTreeId, updates: { templates: newTemplates } },
       originalState: { templates: originalTemplates },
       execute: (draft: WritableDraft<TreeFile[]>) => {
-        const tree = draft.find(t => t.id === activeTreeId);
+        const tree = draft.find((t: TreeFile) => t.id === activeTreeId);
         if (tree) {
           tree.templates = typeof updater === 'function'
             ? produce(tree.templates, updater as (draft: WritableDraft<Template[]>) => void)
@@ -959,7 +959,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       },
       getUndoState: (draft: WritableDraft<TreeFile[]>, cmd: Command) => {
         if (!activeTreeId) return;
-        const tree = draft.find(t => t.id === activeTreeId);
+        const tree = draft.find((t: TreeFile) => t.id === activeTreeId);
         const originalState = (cmd as UpdateTreeFileCommand).originalState;
         if (tree && originalState.templates) {
           tree.templates = originalState.templates;
@@ -1246,7 +1246,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         const processItem = (fileOrPath: string | AttachmentInfo) => {
           const serverPath = typeof fileOrPath === 'string' ? fileOrPath : fileOrPath.path;
           if (typeof serverPath === 'string' && serverPath.startsWith('/attachments/')) {
-            const originalFileName = typeof fileOrPath === "string" ? path.basename(serverPath) : fileOrPath.name;
+            const uniqueName = path.basename(serverPath);
+            const originalFileName = typeof fileOrPath === "object" ? fileOrPath.name : extractOriginalName(uniqueName);
+            
             attachmentsMap.set(serverPath, originalFileName);
             const promise = fetch(serverPath)
               .then((res) => res.blob())
@@ -1369,8 +1371,10 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       const uploadPromises = Object.entries(fileBlobs).map(async ([relativePath, blob]) => {
         try {
           const dataUri = await blobToDataURI(blob);
-          const originalFileName = path.basename(relativePath);
-          await uploadAttachmentToServer(currentUser!.id, originalFileName, dataUri, originalFileName);
+          const uniqueName = path.basename(relativePath);
+          const humanName = extractOriginalName(uniqueName);
+          
+          await uploadAttachmentToServer(currentUser!.id, uniqueName, dataUri, humanName);
         } catch (error) {
           console.error(`Failed to upload file ${relativePath} from archive`, error);
         }
