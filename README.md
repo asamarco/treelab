@@ -29,6 +29,20 @@ This software was developed with the assistance of Large Language Models (AI). W
 
 -   As-Is Basis: This software is provided "as-is" without any express or implied warranties. The developer assumes no liability for data loss or security breaches resulting from misuse or unforeseen vulnerabilities.
 
+## Attachment Security and Access
+
+By design, access to uploaded attachments (pictures and files) via the `/attachments/` route is unauthenticated. This choice was made to facilitate seamless sharing of attachments and direct linking to assets without complex permission management for public pages.
+
+To mitigate unauthorized access, the application uses **cryptographically unguessable filenames**. Brute-forcing or guessing a specific attachment URL is statistically impossible.
+
+- **Generation Pattern**: `${ISO_TIMESTAMP}-${UUID_V4}-${ORIGINAL_FILENAME}`
+    - `ISO_TIMESTAMP` (24 chars): Provides historical sequencing and millisecond precision.
+    - `UUID_V4` (36 chars): Provides absolute randomness (122 bits of entropy).
+
+An attacker would need to know the exact millisecond of upload AND correctly guess a 122-bit random string to discover a specific file. This results in approximately $5.3 \times 10^{36}$ (5.3 undecillion) possible combinations per millisecond. This level of collision resistance is considered absolute for any modern computing application.
+
+While the URLs are unguessable, they effectively act as secret keys, anyone with the specific URL can access the file. If this is undesidered please consider not to expose Treelab publicly.
+
 ##   Getting Started & Configuration
 
 The recommended setup is to use docker with docker-compose which will run treelab together with a mongodb container. This is an example docker-compose.yml
