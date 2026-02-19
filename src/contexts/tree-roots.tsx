@@ -1221,8 +1221,22 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     toast({ title: "Generating HTML...", description: "This may take a moment." });
 
-    const cssResponse = await fetch("/globals.css");
-    const cssText = await cssResponse.text();
+    let cssText = '';
+    try {
+      const cssResponse = await fetch("/globals.css");
+      if (cssResponse.ok) {
+        const contentType = cssResponse.headers.get("content-type");
+        if (contentType && contentType.includes("text/css")) {
+          cssText = await cssResponse.text();
+        } else {
+          console.warn("HTML Export: /globals.css returned non-CSS content. Skipping global styles.");
+        }
+      } else {
+        console.warn(`HTML Export: Failed to fetch /globals.css (Status: ${cssResponse.status}). Skipping global styles.`);
+      }
+    } catch (err) {
+      console.warn("HTML Export: Network error fetching /globals.css", err);
+    }
 
     const imagePromises: Promise<{ path: string; dataUri: string }>[] = [];
     const attachmentsMap = new Map<string, string>();
@@ -1248,7 +1262,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
           if (typeof serverPath === 'string' && serverPath.startsWith('/attachments/')) {
             const uniqueName = path.basename(serverPath);
             const originalFileName = typeof fileOrPath === "object" ? fileOrPath.name : extractOriginalName(uniqueName);
-            
+
             attachmentsMap.set(serverPath, originalFileName);
             const promise = fetch(serverPath)
               .then((res) => res.blob())
@@ -1287,12 +1301,40 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
           <title>${title}</title>
           <style>${cssText}</style>
           <style>
-            body { padding: 2rem; }
-            .tree-node-card { border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 8px; }
-            .tree-node-header { padding: 8px; display: flex; align-items: center; gap: 8px; }
-            .tree-node-content { padding-left: 24px; padding-bottom: 8px; padding-right: 8px; }
-            .attachment-link { display: block; margin-top: 4px; }
-            img { max-width: 100%; height: auto; border-radius: 0.375rem; }
+            body { padding: 2rem; font-family: sans-serif; }
+            .tree-node-card-wrapper { margin-bottom: 8px; }
+            .tree-node-card { border: 1px solid #e5e7eb; border-radius: 0 0 0.5rem 0.5rem; border-top: none; }
+            .tree-node-details[open] .tree-node-summary { border-bottom: 1px solid #e5e7eb; border-radius: 0.5rem 0.5rem 0 0; }
+            .tree-node-summary { 
+              padding: 12px; 
+              cursor: pointer; 
+              background: #f9fafb; 
+              border: 1px solid #e5e7eb; 
+              border-radius: 0.5rem;
+              list-style: none; /* Hide default arrow */
+              display: flex;
+              align-items: center;
+            }
+            .tree-node-summary::-webkit-details-marker { display: none; } /* Safari */
+            .tree-node-summary h3::before {
+              content: '▶';
+              display: inline-block;
+              margin-right: 8px;
+              transition: transform 0.2s;
+              font-size: 0.8rem;
+              color: #6b7280;
+            }
+            .tree-node-details[open] .tree-node-summary h3::before {
+              transform: rotate(90deg);
+            }
+            .tree-node-header { padding: 12px; display: flex; align-items: center; gap: 8px; border-radius: 0.5rem; background: #f9fafb; border: 1px solid #e5e7eb; }
+            .tree-node-content { padding: 12px; }
+            .children-container { margin-top: 12px; }
+            .attachment-link { display: block; margin-top: 4px; color: #3b82f6; text-decoration: none; }
+            img { max-width: 100%; height: auto; border-radius: 0.375rem; margin-top: 4px; }
+            table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
           </style>
         </head>
         <body class="font-body antialiased">
@@ -1373,7 +1415,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
           const dataUri = await blobToDataURI(blob);
           const uniqueName = path.basename(relativePath);
           const humanName = extractOriginalName(uniqueName);
-          
+
           await uploadAttachmentToServer(currentUser!.id, uniqueName, dataUri, humanName);
         } catch (error) {
           console.error(`Failed to upload file ${relativePath} from archive`, error);
