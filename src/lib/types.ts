@@ -13,119 +13,119 @@ export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
-  id: string;
-  name: string;
-  type: FieldType;
-  options?: string[]; // For dropdown
-  columnType?: 'text' | 'number' | 'date'; // For table-header
-  height?: number; // for picture
-  prefix?: string;
-  postfix?: string;
+    id: string;
+    name: string;
+    type: FieldType;
+    options?: string[]; // For dropdown
+    columnType?: 'text' | 'number' | 'date'; // For table-header
+    height?: number; // for picture
+    prefix?: string;
+    postfix?: string;
 }
 
 export interface AttachmentInfo {
-  path: string; // Server path to the file
-  name: string; // Original file name
-  size: number; // File size in bytes
-  type: string; // Mime type
+    path: string; // Server path to the file
+    name: string; // Original file name
+    size: number; // File size in bytes
+    type: string; // Mime type
 }
 
 export interface ChecklistItem {
-  id: string;
-  text: string;
-  checked: boolean;
+    id: string;
+    text: string;
+    checked: boolean;
 }
 
-export type ConditionalRuleOperator = 
-  | 'equals' 
-  | 'not_equals' 
-  | 'contains' 
-  | 'not_contains' 
-  | 'is_not_empty'
-  | 'is_empty'
-  | 'greater_than'
-  | 'less_than';
+export type ConditionalRuleOperator =
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'not_contains'
+    | 'is_not_empty'
+    | 'is_empty'
+    | 'greater_than'
+    | 'less_than';
 
 export interface ConditionalRule {
-  id: string;
-  fieldId: string;
-  operator: ConditionalRuleOperator;
-  value: string;
-  icon: string;
-  color: string;
+    id: string;
+    fieldId: string;
+    operator: ConditionalRuleOperator;
+    value: string;
+    icon: string;
+    color: string;
 }
 
 export interface SimpleQueryRule {
-  id: string;
-  fieldId: string;
-  operator: ConditionalRuleOperator;
-  value: string;
+    id: string;
+    fieldId: string;
+    operator: ConditionalRuleOperator;
+    value: string;
 }
 
 export type RuleType = 'field' | 'ancestor' | 'descendant';
 
 export interface QueryRule {
-  id: string;
-  type: RuleType;
+    id: string;
+    type: RuleType;
 
-  // for type: 'field'
-  fieldId?: string;
-  operator?: ConditionalRuleOperator;
-  value?: string;
-  
-  // for type: 'ancestor' | 'descendant'
-  relationTemplateId?: string | null;
-  relationRules?: SimpleQueryRule[];
+    // for type: 'field'
+    fieldId?: string;
+    operator?: ConditionalRuleOperator;
+    value?: string;
+
+    // for type: 'ancestor' | 'descendant'
+    relationTemplateId?: string | null;
+    relationRules?: SimpleQueryRule[];
 }
 
 export interface QueryDefinition {
-  id: string;
-  targetTemplateId: string | null;
-  rules: QueryRule[];
+    id: string;
+    targetTemplateId: string | null;
+    rules: QueryRule[];
 }
 
 
 export interface Template {
-  id: string;
-  name: string;
-  icon?: string;
-  color?: string;
-  fields: Field[];
-  nameTemplate?: string;
-  bodyTemplate?: string;
-  conditionalRules: ConditionalRule[];
-  preferredChildTemplates?: string[];
+    id: string;
+    name: string;
+    icon?: string;
+    color?: string;
+    fields: Field[];
+    nameTemplate?: string;
+    bodyTemplate?: string;
+    conditionalRules: ConditionalRule[];
+    preferredChildTemplates?: string[];
 }
 
 export interface XYChartData {
-  points: { x: string; y: string }[];
-  xAxisLabel?: string;
-  yAxisLabel?: string;
+    points: { x: string; y: string }[];
+    xAxisLabel?: string;
+    yAxisLabel?: string;
 }
 
 export interface TreeNode {
-  id: string;
-  _id?: any;
-  syncId?: string; // The ID used for git syncing, shared across different users/trees
-  name: string;
-  templateId: string;
-  data: Record<string, any>;
-  children: TreeNode[]; // This will be populated in memory
-  isStarred?: boolean;
-  userId: string;
-  treeId: string;
-  parentIds: string[];
-  order: number[];
-  createdAt?: string;
-  updatedAt?: string;
+    id: string;
+    _id?: any;
+    syncId?: string; // The ID used for git syncing, shared across different users/trees
+    name: string;
+    templateId: string;
+    data: Record<string, any>;
+    children: TreeNode[]; // This will be populated in memory
+    isStarred?: boolean;
+    userId: string;
+    treeId: string;
+    parentIds: string[];
+    order: number[];
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface GitSync {
-  repoOwner: string;
-  repoName: string;
-  branch: string;
-  lastSync: string;
-  lastSyncSha?: string;
+    repoOwner: string;
+    repoName: string;
+    branch: string;
+    lastSync: string;
+    lastSyncSha?: string;
 }
 
 export interface TreeFile {
@@ -141,6 +141,7 @@ export interface TreeFile {
     expandedNodeIds: string[];
     gitSync?: GitSync;
     sharedWith?: string[];
+    publicId?: string;
     createdAt: string;
     updatedAt: string;
     // Properties for the new flattened JSON format
@@ -218,12 +219,12 @@ export interface PurgeResult {
 
 // --- Command Pattern Types ---
 interface BaseCommand {
-  type: string;
-  execute: (draft: WritableDraft<TreeFile[]>) => any;
-  undo: (timestamp?: string) => Promise<void>;
-  redo?: (finalTreeFile?: TreeFile, timestamp?: string) => Promise<void>;
-  post?: (finalTreeFile?: TreeFile, timestamp?: string) => Promise<void>;
-  getUndoState?: (draft: WritableDraft<TreeFile[]>, command: Command) => void;
+    type: string;
+    execute: (draft: WritableDraft<TreeFile[]>) => any;
+    undo: (timestamp?: string) => Promise<void>;
+    redo?: (finalTreeFile?: TreeFile, timestamp?: string) => Promise<void>;
+    post?: (finalTreeFile?: TreeFile, timestamp?: string) => Promise<void>;
+    getUndoState?: (draft: WritableDraft<TreeFile[]>, command: Command) => void;
 }
 
 export interface AddNodesCommand extends BaseCommand {
@@ -241,9 +242,9 @@ export interface DeleteNodesCommand extends BaseCommand {
     payload: {
         nodes: { nodeId: string; parentId: string | null }[];
     };
-    originalState: { 
-        node: TreeNode, 
-        parent: TreeNode | null, 
+    originalState: {
+        node: TreeNode,
+        parent: TreeNode | null,
         originalSiblings: TreeNode[],
         allDeletedNodes: TreeNode[],
     }[];
@@ -318,103 +319,103 @@ export interface ClipboardState {
 }
 
 export interface ActionContext {
-  activeTree?: TreeFile;
-  currentUser?: User | null;
-  activeTreeId?: string | null;
-  executeCommand: (command: Command, isUndoable?: boolean) => any;
-  findNodeAndParent: (nodeId: string, nodes?: TreeNode[]) => { node: TreeNode; parent: TreeNode | null; } | null;
-  findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[]) => { node: TreeNode; parent: TreeNode | null; } | null;
-  allTrees: TreeFile[];
-  isCloneOrDescendant?: (nodeId: string, nodes?: TreeNode[]) => boolean;
-  reloadActiveTree?: () => Promise<void>;
-  clipboard?: ClipboardState;
-  toast?: ReturnType<typeof useToast>['toast'];
-  getSiblingOrderRange?: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
-  selectedNodeIds?: string[];
-  getTemplateById?: (id: string) => Template | undefined;
+    activeTree?: TreeFile;
+    currentUser?: User | null;
+    activeTreeId?: string | null;
+    executeCommand: (command: Command, isUndoable?: boolean) => any;
+    findNodeAndParent: (nodeId: string, nodes?: TreeNode[]) => { node: TreeNode; parent: TreeNode | null; } | null;
+    findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[]) => { node: TreeNode; parent: TreeNode | null; } | null;
+    allTrees: TreeFile[];
+    isCloneOrDescendant?: (nodeId: string, nodes?: TreeNode[]) => boolean;
+    reloadActiveTree?: () => Promise<void>;
+    clipboard?: ClipboardState;
+    toast?: ReturnType<typeof useToast>['toast'];
+    getSiblingOrderRange?: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
+    selectedNodeIds?: string[];
+    getTemplateById?: (id: string) => Template | undefined;
 }
 
 export interface UseTreeRootsResult {
-  allTrees: TreeFile[];
-  setAllTrees: Dispatch<SetStateAction<TreeFile[]>>;
-  activeTree: TreeFile | undefined;
-  activeTreeId: string | null;
-  isTreeDataLoading: boolean;
-  conflictState: { localTree: TreeFile, serverTree: TreeFile } | null;
-  setActiveTreeId: (id: string | null) => void;
-  createNewTree: (title: string, user?: User | undefined) => Promise<string | null>;
-  deleteTree: (id: string) => Promise<void>;
-  duplicateTree: (treeId: string) => Promise<void>;
-  updateTreeOrder: (updates: { id: string; order: number; }[]) => Promise<void>;
-  shareTree: (treeId: string, userId: string) => Promise<void>;
-  revokeShare: (treeId: string, userId: string) => Promise<void>;
-  setTreePublicStatus: (treeId: string, isPublic: boolean) => Promise<void>;
-  listExamples: () => Promise<ExampleInfo[]>;
-  loadExample: (fileName: string) => Promise<string | null>;
-  importTreeArchive: (file: File) => Promise<void>;
-  importTreeFromJson: (jsonData: any, user?: User | undefined, rewriteAttachmentPaths?: boolean) => Promise<string | null>;
-  reloadAllTrees: () => Promise<void>;
-  reloadActiveTree: (treeIdToLoad?: string) => Promise<void>;
-  setTreeTitle: (treeId: string, title: string) => void;
-  setTemplates: (updater: Template[] | ((current: Template[]) => Template[])) => void;
-  importTemplates: (newTemplates: Template[]) => void;
-  expandedNodeIds: string[];
-  setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
-  expandAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
-  expandToNode: (nodeId: string) => void;
-  collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
-  addRootNode: (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
-  addChildNode: (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, "id" | "children">>, contextualParentId: string | null) => Promise<void>;
-  addSiblingNode: (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>;
-  updateNode: (nodeId: string, newNodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
-  updateNodeNamesForTemplate: (template: Template) => Promise<void>;
-  changeNodeTemplate: (nodeId: string, newTemplateId: string) => Promise<void>;
-  changeMultipleNodesTemplate: (instanceIds: string[], newTemplateId: string) => Promise<void>;
-  deleteNode: (nodeId: string, contextualParentId: string | null) => Promise<void>;
-  deleteNodes: (instanceIds: string[]) => Promise<void>;
-  pasteNodes: (targetNodeId: string, position: "child" | "sibling", contextualParentId: string | null, nodes?: TreeNode[] | undefined) => Promise<void>;
-  moveNodes: (moves: { nodeId: string; targetNodeId: string; position: "child" | "sibling" | "child-bottom"; sourceContextualParentId: string | null; targetContextualParentId: string | null; }[]) => Promise<void>;
-  moveNodeOrder: (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => Promise<void>;
-  pasteNodesAsClones: (targetNodeId: string, as: "child" | "sibling", nodeIdsToClone: string[], contextualParentId: string | null) => Promise<void>;
-  undoLastAction: () => void;
-  canUndo: boolean;
-  redoLastAction: () => void;
-  canRedo: boolean;
-  undoActionDescription: string | null;
-  redoActionDescription: string | null;
-  getSiblingOrderRange: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number; };
-  findNodeAndParent: (nodeId: string, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
-  findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
-  getNodeInstancePaths: (nodeId: string) => string[];
-  uploadAttachment: (relativePath: string, dataUri: string, fileName: string) => Promise<AttachmentInfo>;
-  commitToRepo: (treeId: string, message: string, token: string, force?: boolean, treeFileToCommit?: TreeFile) => Promise<{ success: boolean; error?: string | undefined; commitSha?: string | undefined; }>;
-  fetchRepoHistory: (treeFile: TreeFile, token: string) => Promise<GitCommit[]>;
-  syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
-  restoreToCommit: (currentTreeId: string, commitSha: string, token: string) => Promise<void>;
-  resolveConflict: (resolution: "local" | "server") => Promise<void>;
-  analyzeStorage: (treeId?: string | undefined) => Promise<StorageInfo>;
-  purgeStorage: (treeId?: string | undefined) => Promise<PurgeResult | null>;
-  toggleStarredForSelectedNodes: () => Promise<void>;
-  batchUpdateNodeData: (instanceIds: string[], data: Record<string, any>) => Promise<void>;
-  clipboard: ClipboardState;
-  setClipboard: Dispatch<SetStateAction<ClipboardState>>;
-  selectedNodeIds: string[];
-  setSelectedNodeIds: Dispatch<SetStateAction<string[]>>;
-  lastSelectedNodeId: string | null;
-  setLastSelectedNodeId: Dispatch<SetStateAction<string | null>>;
-  linkTreeToRepo: (treeId: string, repoOwner: string, repoName: string, branch: string, token: string) => Promise<void>;
-  unlinkTreeFromRepo: (treeId: string) => void;
-  createAndLinkTreeToRepo: (treeId: string, repoName: string, isPrivate: boolean, token: string) => Promise<void>;
-  updateActiveTree: (updater: (draft: TreeFile) => void) => void;
-  // Properties that were missing from TreeContextType
-  templates: Template[];
-  tree: TreeNode[];
-  treeTitle: string;
-  getTemplateById: (id: string) => Template | undefined;
-  findNodesByQuery: (query: QueryDefinition) => TreeNode[];
-  exportNodesAsJson: (nodesToExport: TreeNode[], baseName: string) => void;
-  exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
-  exportNodesAsHtml: (elementId: string, nodes: TreeNode[], title: string) => void;
+    allTrees: TreeFile[];
+    setAllTrees: Dispatch<SetStateAction<TreeFile[]>>;
+    activeTree: TreeFile | undefined;
+    activeTreeId: string | null;
+    isTreeDataLoading: boolean;
+    conflictState: { localTree: TreeFile, serverTree: TreeFile } | null;
+    setActiveTreeId: (id: string | null) => void;
+    createNewTree: (title: string, user?: User | undefined) => Promise<string | null>;
+    deleteTree: (id: string) => Promise<void>;
+    duplicateTree: (treeId: string) => Promise<void>;
+    updateTreeOrder: (updates: { id: string; order: number; }[]) => Promise<void>;
+    shareTree: (treeId: string, userId: string) => Promise<void>;
+    revokeShare: (treeId: string, userId: string) => Promise<void>;
+    setTreePublicStatus: (treeId: string, isPublic: boolean) => Promise<string | undefined>;
+    listExamples: () => Promise<ExampleInfo[]>;
+    loadExample: (fileName: string) => Promise<string | null>;
+    importTreeArchive: (file: File) => Promise<void>;
+    importTreeFromJson: (jsonData: any, user?: User | undefined, rewriteAttachmentPaths?: boolean) => Promise<string | null>;
+    reloadAllTrees: () => Promise<void>;
+    reloadActiveTree: (treeIdToLoad?: string) => Promise<void>;
+    setTreeTitle: (treeId: string, title: string) => void;
+    setTemplates: (updater: Template[] | ((current: Template[]) => Template[])) => void;
+    importTemplates: (newTemplates: Template[]) => void;
+    expandedNodeIds: string[];
+    setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
+    expandAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
+    expandToNode: (nodeId: string) => void;
+    collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
+    addRootNode: (nodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
+    addChildNode: (parentNodeId: string, childNodeData: Partial<Omit<TreeNode, "id" | "children">>, contextualParentId: string | null) => Promise<void>;
+    addSiblingNode: (siblingNodeId: string, nodeToAddData: Partial<Omit<TreeNode, 'id' | 'children'>>, contextualParentId: string | null) => Promise<void>;
+    updateNode: (nodeId: string, newNodeData: Partial<Omit<TreeNode, "id" | "children">>) => Promise<void>;
+    updateNodeNamesForTemplate: (template: Template) => Promise<void>;
+    changeNodeTemplate: (nodeId: string, newTemplateId: string) => Promise<void>;
+    changeMultipleNodesTemplate: (instanceIds: string[], newTemplateId: string) => Promise<void>;
+    deleteNode: (nodeId: string, contextualParentId: string | null) => Promise<void>;
+    deleteNodes: (instanceIds: string[]) => Promise<void>;
+    pasteNodes: (targetNodeId: string, position: "child" | "sibling", contextualParentId: string | null, nodes?: TreeNode[] | undefined) => Promise<void>;
+    moveNodes: (moves: { nodeId: string; targetNodeId: string; position: "child" | "sibling" | "child-bottom"; sourceContextualParentId: string | null; targetContextualParentId: string | null; }[]) => Promise<void>;
+    moveNodeOrder: (nodeId: string, direction: "up" | "down", contextualParentId: string | null) => Promise<void>;
+    pasteNodesAsClones: (targetNodeId: string, as: "child" | "sibling", nodeIdsToClone: string[], contextualParentId: string | null) => Promise<void>;
+    undoLastAction: () => void;
+    canUndo: boolean;
+    redoLastAction: () => void;
+    canRedo: boolean;
+    undoActionDescription: string | null;
+    redoActionDescription: string | null;
+    getSiblingOrderRange: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number; };
+    findNodeAndParent: (nodeId: string, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
+    findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
+    getNodeInstancePaths: (nodeId: string) => string[];
+    uploadAttachment: (relativePath: string, dataUri: string, fileName: string) => Promise<AttachmentInfo>;
+    commitToRepo: (treeId: string, message: string, token: string, force?: boolean, treeFileToCommit?: TreeFile) => Promise<{ success: boolean; error?: string | undefined; commitSha?: string | undefined; }>;
+    fetchRepoHistory: (treeFile: TreeFile, token: string) => Promise<GitCommit[]>;
+    syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
+    restoreToCommit: (currentTreeId: string, commitSha: string, token: string) => Promise<void>;
+    resolveConflict: (resolution: "local" | "server") => Promise<void>;
+    analyzeStorage: (treeId?: string | undefined) => Promise<StorageInfo>;
+    purgeStorage: (treeId?: string | undefined) => Promise<PurgeResult | null>;
+    toggleStarredForSelectedNodes: () => Promise<void>;
+    batchUpdateNodeData: (instanceIds: string[], data: Record<string, any>) => Promise<void>;
+    clipboard: ClipboardState;
+    setClipboard: Dispatch<SetStateAction<ClipboardState>>;
+    selectedNodeIds: string[];
+    setSelectedNodeIds: Dispatch<SetStateAction<string[]>>;
+    lastSelectedNodeId: string | null;
+    setLastSelectedNodeId: Dispatch<SetStateAction<string | null>>;
+    linkTreeToRepo: (treeId: string, repoOwner: string, repoName: string, branch: string, token: string) => Promise<void>;
+    unlinkTreeFromRepo: (treeId: string) => void;
+    createAndLinkTreeToRepo: (treeId: string, repoName: string, isPrivate: boolean, token: string) => Promise<void>;
+    updateActiveTree: (updater: (draft: TreeFile) => void) => void;
+    // Properties that were missing from TreeContextType
+    templates: Template[];
+    tree: TreeNode[];
+    treeTitle: string;
+    getTemplateById: (id: string) => Template | undefined;
+    findNodesByQuery: (query: QueryDefinition) => TreeNode[];
+    exportNodesAsJson: (nodesToExport: TreeNode[], baseName: string) => void;
+    exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
+    exportNodesAsHtml: (elementId: string, nodes: TreeNode[], title: string) => void;
 }
 
 export type TreeContextType = UseTreeRootsResult;

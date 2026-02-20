@@ -16,6 +16,7 @@ import { connectToDatabase } from './mongodb';
 import { UserModel, TreeModel, TreeNodeModel } from './models';
 import { encrypt, decrypt } from './encryption';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import { generateJsonForExport, generateNodeName, getContextualOrder } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSession } from './session';
@@ -180,6 +181,7 @@ export async function updateTreeOrder(updates: { id: string; order: number }[]) 
 }
 
 export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
+    noStore();
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -194,6 +196,13 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
 
     const nodes = await loadTreeNodes(treeId);
 
+    // Ensure publicId exists (for existing trees)
+    if (!treeFileDoc.publicId) {
+        const publicId = crypto.randomUUID();
+        await TreeModel.findByIdAndUpdate(treeId, { publicId }).exec();
+        treeFileDoc.publicId = publicId;
+    }
+
     const plainDoc: TreeFile = {
         id: treeFileDoc._id.toString(),
         userId: treeFileDoc.userId,
@@ -206,6 +215,7 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
         })),
         expandedNodeIds: treeFileDoc.expandedNodeIds,
         gitSync: treeFileDoc.gitSync,
+        publicId: treeFileDoc.publicId,
         order: treeFileDoc.order,
         createdAt: treeFileDoc.createdAt,
         updatedAt: treeFileDoc.updatedAt,
@@ -218,24 +228,51 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
 }
 
 export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | null> {
-    await connectToDatabase();
-    const treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
-    if (!treeFileDoc) return null;
+    noStore();
+    try {
+        await connectToDatabase();
+        console.log(`DEBUG: [loadPublicTreeFile] Identifier: ${treeId}`);
 
-    const nodes = await loadTreeNodes(treeId);
-    const plainDoc: TreeFile = {
-        ...(treeFileDoc as any),
-        id: treeFileDoc._id.toString(),
-        templates: treeFileDoc.templates.map((t: any) => ({
-            ...t,
-            preferredChildTemplates: t.preferredChildTemplates || [],
-        })),
-        tree: nodes
-    };
-    delete (plainDoc as any)._id;
-    delete (plainDoc as any).__v;
+        // Try finding by publicId first
+        let treeFileDoc = await TreeModel.findOne({ publicId: treeId }).lean<Omit<TreeFile, 'tree'>>().exec();
 
-    return plainDoc;
+        if (treeFileDoc) {
+            console.log(`DEBUG: [loadPublicTreeFile] Found by publicId. isPublic: ${treeFileDoc.isPublic}`);
+            if (!treeFileDoc.isPublic) {
+                console.warn(`DEBUG: [loadPublicTreeFile] 404: Tree exists but isPublic=false`);
+                return null;
+            }
+        } else if (mongoose.Types.ObjectId.isValid(treeId)) {
+            console.log(`DEBUG: [loadPublicTreeFile] UUID match failed, trying _id: ${treeId}`);
+            treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
+            if (treeFileDoc) console.log(`DEBUG: [loadPublicTreeFile] Found by old _id.`);
+        }
+
+        if (!treeFileDoc) {
+            console.warn(`DEBUG: [loadPublicTreeFile] 404: No document found for ${treeId}`);
+            return null;
+        }
+
+        const actualTreeId = treeFileDoc._id.toString();
+        const nodes = await loadTreeNodes(actualTreeId);
+        const plainDoc: TreeFile = {
+            ...(treeFileDoc as any),
+            id: actualTreeId,
+            templates: treeFileDoc.templates.map((t: any) => ({
+                ...t,
+                preferredChildTemplates: t.preferredChildTemplates || [],
+            })),
+            tree: nodes,
+            publicId: treeFileDoc.publicId, // Explicitly ensure this is carried over
+        };
+        delete (plainDoc as any)._id;
+        delete (plainDoc as any).__v;
+
+        return plainDoc;
+    } catch (err) {
+        console.error(`ERROR: [loadPublicTreeFile] Fatal database error:`, err);
+        throw err; // Rethrow to see it in Next.js logs
+    }
 }
 
 
@@ -270,10 +307,18 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
         nodesByTreeId.get(treeId)!.push(node);
     }
 
-    const fullTreeFiles = treeFileDocs.map((doc: any) => {
+    const fullTreeFiles = await Promise.all(treeFileDocs.map(async (doc: any) => {
         const treeId = doc._id.toString();
         const nodesForTree = nodesByTreeId.get(treeId) || [];
         const hierarchicalNodes = buildTreeHierarchy(nodesForTree);
+
+        // Ensure publicId exists
+        if (!doc.publicId) {
+            const publicId = crypto.randomUUID();
+            console.log(`DEBUG: [loadAllTreeFiles] Generating missing publicId for ${treeId}: ${publicId}`);
+            await TreeModel.findByIdAndUpdate(treeId, { publicId }).exec();
+            doc.publicId = publicId;
+        }
 
         const plainDoc: TreeFile = {
             id: treeId,
@@ -287,13 +332,14 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
             })),
             expandedNodeIds: doc.expandedNodeIds,
             gitSync: doc.gitSync,
+            publicId: doc.publicId,
             order: doc.order,
             createdAt: doc.createdAt,
             updatedAt: doc.updatedAt,
             tree: hierarchicalNodes
         };
         return plainDoc;
-    });
+    }));
 
     return fullTreeFiles;
 }
@@ -925,11 +971,11 @@ export async function fetchFileAsBuffer(userId: string, serverPath: string): Pro
     }
 
     const fileOwnerId = pathParts[1];
-    
+
     // We allow the fetch if the user is authenticated. 
     // This supports archive exports for shared trees.
     // The high entropy of the filename (Timestamp + UUID) protects against unauthorized discovery.
-    
+
     const cleanRelativePath = path.join(...pathParts.slice(2));
     const fullPath = path.join(DATA_DIR, 'users', fileOwnerId, 'attachments', cleanRelativePath);
 
@@ -1176,7 +1222,7 @@ export async function revokeShareFromUser(treeId: string, userId: string): Promi
     await TreeModel.findByIdAndUpdate(treeId, { $pull: { sharedWith: userId } }).exec();
 }
 
-export async function setTreePublicStatus(treeId: string, isPublic: boolean): Promise<void> {
+export async function setTreePublicStatus(treeId: string, isPublic: boolean): Promise<string | undefined> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -1186,5 +1232,15 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
     if (!tree) throw new Error("Tree not found.");
     if (tree.userId.toString() !== session.userId) throw new Error("Authorization denied.");
 
-    await TreeModel.findByIdAndUpdate(treeId, { isPublic }).exec();
+    // Generate a publicId if the tree doesn't have one yet (Mongoose defaults don't run on findByIdAndUpdate)
+    const updatePayload: Record<string, any> = { isPublic };
+    if (!tree.publicId) {
+        updatePayload.publicId = crypto.randomUUID();
+        console.log(`DEBUG: [setTreePublicStatus] Generating new publicId: ${updatePayload.publicId}`);
+    }
+
+    console.log(`DEBUG: [setTreePublicStatus] Calling findByIdAndUpdate with:`, updatePayload);
+    const updated = await TreeModel.findByIdAndUpdate(treeId, updatePayload, { new: true }).lean<Omit<TreeFile, 'tree'>>();
+    console.log(`DEBUG: [setTreePublicStatus] Result publicId: ${updated?.publicId}`);
+    return updated?.publicId;
 }

@@ -8,6 +8,7 @@
  */
 import mongoose, { Schema, Document, models, model } from 'mongoose';
 import { TreeFile, User, GlobalSettings, TreeNode, Template } from './types';
+import crypto from 'crypto';
 
 // --- Field and Template Schemas (embedded in TreeFile) ---
 const FieldSchema = new Schema({
@@ -44,11 +45,11 @@ const TemplateSchema = new Schema({
 
 // --- GitSync Schema (embedded in TreeFile) ---
 const GitSyncSchema = new Schema({
-    repoOwner: { type: String, required: true },
-    repoName: { type: String, required: true },
-    branch: { type: String, required: true },
-    lastSync: { type: String, required: true },
-    lastSyncSha: String,
+  repoOwner: { type: String, required: true },
+  repoName: { type: String, required: true },
+  branch: { type: String, required: true },
+  lastSync: { type: String, required: true },
+  lastSyncSha: String,
 }, { _id: false });
 
 
@@ -58,6 +59,7 @@ const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
   userId: { type: String, required: true, index: true },
   sharedWith: { type: [String], default: [], index: true },
   isPublic: { type: Boolean, default: false, index: true },
+  publicId: { type: String, unique: true, sparse: true, index: true, default: () => crypto.randomUUID() },
   title: { type: String, required: true },
   templates: [TemplateSchema],
   expandedNodeIds: [String],
@@ -65,14 +67,14 @@ const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
   order: { type: Number, default: 0 },
   createdAt: { type: String, default: () => new Date().toISOString() },
   updatedAt: { type: String, default: () => new Date().toISOString() },
-}); 
+});
 
 TreeFileSchema.pre('save', function (next) {
   if (this.isNew) {
     this._id = this.id;
     this.createdAt = new Date().toISOString();
   }
-  this.updatedAt = new Date().toISOString(); 
+  this.updatedAt = new Date().toISOString();
   next();
 });
 
@@ -100,7 +102,7 @@ TreeNodeSchema.pre('save', function (next) {
   }
   next();
 });
-TreeNodeSchema.virtual('id').get(function() {
+TreeNodeSchema.virtual('id').get(function () {
   return this._id;
 });
 
@@ -109,7 +111,7 @@ export const TreeNodeModel = models.TreeNode || model<Omit<TreeNode, 'children'>
 
 // --- User Schema and Model ---
 const GitSettingsSchema = new Schema({
-    githubPat: String,
+  githubPat: String,
 }, { _id: false });
 
 const UserSchema = new Schema<User>({

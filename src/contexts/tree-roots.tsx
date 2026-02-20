@@ -1388,10 +1388,11 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       toast({ title: "Access Revoked", description: "User access has been removed." });
     },
     setTreePublicStatus: async (treeId: string, isPublic: boolean) => {
-      if (!currentUser) return;
-      performAction(draft => { const tree = draft.find(t => t.id === treeId); if (tree) tree.isPublic = isPublic; });
-      await setTreePublicStatusInDb(treeId, isPublic);
+      if (!currentUser) return undefined;
+      const publicId = await setTreePublicStatusInDb(treeId, isPublic);
+      performAction(draft => { const tree = draft.find(t => t.id === treeId); if (tree) { tree.isPublic = isPublic; if (publicId) tree.publicId = publicId; } });
       toast({ title: `Tree is now ${isPublic ? 'Public' : 'Private'}` });
+      return publicId;
     },
     listExamples: () => listExamplesFromDataService(),
     loadExample: async (fileName: string) => {

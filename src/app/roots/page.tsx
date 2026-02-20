@@ -177,7 +177,7 @@ function ManageRootsPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-  
+
     if (over && active.id !== over.id) {
       setOrderedTrees((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
@@ -203,7 +203,7 @@ function ManageRootsPage() {
   const handleDeleteTree = async (treeId: string) => {
     await deleteTree(treeId);
     if (activeTreeId === treeId) {
-        router.push('/roots');
+      router.push('/roots');
     }
   };
 
@@ -211,16 +211,16 @@ function ManageRootsPage() {
     setActiveTreeId(treeId);
     router.push("/");
   };
-  
+
   const handleLoadExample = async (fileName: string) => {
     await loadExample(fileName);
     toast({
-        title: "Example Loaded",
-        description: "The example has been loaded as a new root."
+      title: "Example Loaded",
+      description: "The example has been loaded as a new root."
     })
     router.push('/');
   }
-  
+
   const handleImportArchive = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.name.endsWith('.zip')) {
@@ -237,45 +237,45 @@ function ManageRootsPage() {
         }
       }
     } else {
-        toast({ variant: "destructive", title: "Invalid File", description: "Please select a .zip archive file." });
+      toast({ variant: "destructive", title: "Invalid File", description: "Please select a .zip archive file." });
     }
   };
 
   const handleImportJson = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.name.endsWith('.json')) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const content = e.target?.result;
-                if (typeof content !== 'string') {
-                    throw new Error('File content is not valid');
-                }
-                const jsonData = JSON.parse(content);
-                await importTreeFromJson(jsonData);
-                toast({
-                    title: 'Tree Imported',
-                    description: 'The tree has been successfully imported from JSON.',
-                });
-            } catch (err) {
-                const error = err as Error;
-                toast({
-                    variant: 'destructive',
-                    title: 'Import Failed',
-                    description: error.message || 'Could not read or parse the JSON file.',
-                });
-            } finally {
-                if (jsonInputRef.current) {
-                    jsonInputRef.current.value = '';
-                }
-            }
-        };
-        reader.readAsText(file);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const content = e.target?.result;
+          if (typeof content !== 'string') {
+            throw new Error('File content is not valid');
+          }
+          const jsonData = JSON.parse(content);
+          await importTreeFromJson(jsonData);
+          toast({
+            title: 'Tree Imported',
+            description: 'The tree has been successfully imported from JSON.',
+          });
+        } catch (err) {
+          const error = err as Error;
+          toast({
+            variant: 'destructive',
+            title: 'Import Failed',
+            description: error.message || 'Could not read or parse the JSON file.',
+          });
+        } finally {
+          if (jsonInputRef.current) {
+            jsonInputRef.current.value = '';
+          }
+        }
+      };
+      reader.readAsText(file);
     } else {
-        toast({ variant: "destructive", title: "Invalid File", description: "Please select a .json file." });
+      toast({ variant: "destructive", title: "Invalid File", description: "Please select a .json file." });
     }
   };
-  
+
   const handleLinkRepoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedTreeForLink && selectedRepo && currentUser?.gitSettings?.githubPat) {
@@ -284,16 +284,16 @@ function ManageRootsPage() {
         setIsLinking(true);
         toast({ title: "Linking Repository...", description: `Initializing sync with ${repo.full_name}.` });
         try {
-            await linkTreeToRepo(selectedTreeForLink, repo.owner.login, repo.name, repo.default_branch, currentUser.gitSettings.githubPat);
-            toast({ title: "Repository Linked!", description: `Tree is now linked to ${repo.full_name}.` });
-            setIsLinkRepoOpen(false);
-            setSelectedTreeForLink(null);
-            setSelectedRepo("");
-        } catch(err) {
-            const error = err as Error;
-            toast({ variant: "destructive", title: "Linking Failed", description: error.message || "An unknown error occurred." });
+          await linkTreeToRepo(selectedTreeForLink, repo.owner.login, repo.name, repo.default_branch, currentUser.gitSettings.githubPat);
+          toast({ title: "Repository Linked!", description: `Tree is now linked to ${repo.full_name}.` });
+          setIsLinkRepoOpen(false);
+          setSelectedTreeForLink(null);
+          setSelectedRepo("");
+        } catch (err) {
+          const error = err as Error;
+          toast({ variant: "destructive", title: "Linking Failed", description: error.message || "An unknown error occurred." });
         } finally {
-            setIsLinking(false);
+          setIsLinking(false);
         }
       }
     }
@@ -323,27 +323,27 @@ function ManageRootsPage() {
     };
     fetchRepos();
   }, [isLinkRepoOpen, currentUser?.gitSettings?.githubPat, toast]);
-  
+
   const handleCreateAndLinkRepo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTreeForLink || !newRepoName.trim() || !currentUser?.gitSettings?.githubPat) {
-        toast({ variant: "destructive", title: "Missing Information", description: "Please provide a repository name and ensure your PAT is set." });
-        return;
+      toast({ variant: "destructive", title: "Missing Information", description: "Please provide a repository name and ensure your PAT is set." });
+      return;
     }
     setIsCreatingRepo(true);
     try {
-        await createAndLinkTreeToRepo(selectedTreeForLink, newRepoName, newRepoIsPrivate, currentUser.gitSettings.githubPat);
-        toast({ title: "Repository Created & Linked!", description: `Successfully created and linked repository.` });
-        setIsLinkRepoOpen(false);
-        setNewRepoName("");
-    } catch(err) {
-        const error = err as Error;
-        toast({ variant: "destructive", title: "Error", description: error.message });
+      await createAndLinkTreeToRepo(selectedTreeForLink, newRepoName, newRepoIsPrivate, currentUser.gitSettings.githubPat);
+      toast({ title: "Repository Created & Linked!", description: `Successfully created and linked repository.` });
+      setIsLinkRepoOpen(false);
+      setNewRepoName("");
+    } catch (err) {
+      const error = err as Error;
+      toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
-        setIsCreatingRepo(false);
+      setIsCreatingRepo(false);
     }
   };
-  
+
   const handleUnlink = async (treeId: string) => {
     await unlinkTreeFromRepo(treeId);
     toast({ title: "Repository Unlinked", description: "The tree is no longer synced with GitHub." });
@@ -351,10 +351,10 @@ function ManageRootsPage() {
 
   const handleShare = async () => {
     if (selectedTreeToShare && selectedUserToShare) {
-        await shareTree(selectedTreeToShare.id, selectedUserToShare);
-        setIsShareDialogOpen(false);
-        setSelectedTreeToShare(null);
-        setSelectedUserToShare("");
+      await shareTree(selectedTreeToShare.id, selectedUserToShare);
+      setIsShareDialogOpen(false);
+      setSelectedTreeToShare(null);
+      setSelectedUserToShare("");
     }
   };
 
@@ -363,217 +363,220 @@ function ManageRootsPage() {
   };
 
   const handlePublicToggle = async (treeId: string, isPublic: boolean) => {
-    await setTreePublicStatus(treeId, isPublic);
-    setSelectedTreeToShare(prev => prev ? { ...prev, isPublic } : null);
+    const publicId = await setTreePublicStatus(treeId, isPublic);
+    setSelectedTreeToShare(prev => prev ? { ...prev, isPublic, publicId: publicId ?? prev.publicId } : null);
   };
-  
-  const getPublicUrl = (treeId: string) => {
-    let url = `${window.location.origin}/view/${treeId}`;
+
+  const getPublicUrl = (tree: TreeFile) => {
+    const identifier = tree.publicId || tree.id;
+    let url = `${window.location.origin}/view/${identifier}`;
     if (selectedViewMode !== 'standard') {
-        url += `?view=${selectedViewMode}`;
+      url += `?view=${selectedViewMode}`;
     }
     return url;
   }
 
   const handleCopyPublicLink = (treeId: string) => {
-    const url = getPublicUrl(treeId);
+    const tree = allTrees.find(t => t.id === treeId);
+    if (!tree) return;
+    const url = getPublicUrl(tree);
     navigator.clipboard.writeText(url);
     toast({ title: "Link Copied", description: "Public link copied to clipboard." });
   };
-  
+
   const handleRenameTree = (e: React.FormEvent) => {
     e.preventDefault();
     if (treeToRename && renamedTitle.trim()) {
-        setTreeTitle(treeToRename.id, renamedTitle.trim());
-        toast({ title: "Renamed", description: `Tree renamed to "${renamedTitle.trim()}".` });
-        setIsRenameDialogOpen(false);
-        setTreeToRename(null);
-        setRenamedTitle("");
+      setTreeTitle(treeToRename.id, renamedTitle.trim());
+      toast({ title: "Renamed", description: `Tree renamed to "${renamedTitle.trim()}".` });
+      setIsRenameDialogOpen(false);
+      setTreeToRename(null);
+      setRenamedTitle("");
     }
   };
-  
+
   const renderContent = () => {
     if (isTreeDataLoading) {
       return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[...Array(3)].map((_, i) => (
-             <Card key={i} className="flex flex-col">
-                  <CardHeader>
-                      <div className="h-6 bg-muted rounded w-3/4 animate-pulse"></div>
-                      <div className="h-4 bg-muted rounded w-1/2 animate-pulse mt-1"></div>
-                  </CardHeader>
-                  <CardContent className="flex-grow space-y-2">
-                     <div className="h-4 bg-muted rounded w-full animate-pulse"></div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between items-center bg-muted/50 p-3 mt-4">
-                     <div className="h-10 bg-muted rounded w-20 animate-pulse"></div>
-                  </CardFooter>
-                </Card>
+            <Card key={i} className="flex flex-col">
+              <CardHeader>
+                <div className="h-6 bg-muted rounded w-3/4 animate-pulse"></div>
+                <div className="h-4 bg-muted rounded w-1/2 animate-pulse mt-1"></div>
+              </CardHeader>
+              <CardContent className="flex-grow space-y-2">
+                <div className="h-4 bg-muted rounded w-full animate-pulse"></div>
+              </CardContent>
+              <CardFooter className="flex justify-between items-center bg-muted/50 p-3 mt-4">
+                <div className="h-10 bg-muted rounded w-20 animate-pulse"></div>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       );
     }
 
     if (allTrees.length === 0) {
-        return (
-            <Card className="col-span-full flex flex-col items-center justify-center h-64 border-dashed">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold">No Roots Found</h3>
-                  <p className="text-muted-foreground">
-                    Get started by creating your first root.
-                  </p>
-                </div>
-              </Card>
-        );
+      return (
+        <Card className="col-span-full flex flex-col items-center justify-center h-64 border-dashed">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">No Roots Found</h3>
+            <p className="text-muted-foreground">
+              Get started by creating your first root.
+            </p>
+          </div>
+        </Card>
+      );
     }
 
     return (
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={filteredTrees.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredTrees.map((tree: TreeFile) => {
+            {filteredTrees.map((tree: TreeFile) => {
               const owner = users.find(u => u.id === tree.userId);
               const isOwner = currentUser?.id === tree.userId;
 
               const sharedWithUsers = (tree.sharedWith || [])
-                  .map(id => users.find(u => u.id === id))
-                  .filter((u): u is User => !!u);
+                .map(id => users.find(u => u.id === id))
+                .filter((u): u is User => !!u);
 
               return (
-              <DraggableTreeCard key={tree.id} tree={tree}>
-              <Card
-                className={`flex flex-col hover:shadow-lg transition-shadow ${
-                  tree.id === activeTreeId ? "border-primary" : ""
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
+                <DraggableTreeCard key={tree.id} tree={tree}>
+                  <Card
+                    className={`flex flex-col hover:shadow-lg transition-shadow ${tree.id === activeTreeId ? "border-primary" : ""
+                      }`}
+                  >
+                    <CardHeader>
+                      <CardTitle className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-primary" /> {tree.title}
-                      </div>
-                      <div className="flex">
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-7 w-7"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTreeToRename(tree);
-                            setRenamedTitle(tree.title);
-                            setIsRenameDialogOpen(true);
-                          }}>
-                           <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" disabled={!isOwner && allTrees.length <= 1}>
+                        </div>
+                        <div className="flex">
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTreeToRename(tree);
+                              setRenamedTitle(tree.title);
+                              setIsRenameDialogOpen(true);
+                            }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" disabled={!isOwner && allTrees.length <= 1}>
                                 <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  {isOwner 
-                                      ? `This will permanently delete the "${tree.title}" root and all its content. This action cannot be undone.`
-                                      : `This will remove the shared tree "${tree.title}" from your list. It will not be deleted for the owner.`
+                                  {isOwner
+                                    ? `This will permanently delete the "${tree.title}" root and all its content. This action cannot be undone.`
+                                    : `This will remove the shared tree "${tree.title}" from your list. It will not be deleted for the owner.`
                                   }
                                 </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDeleteTree(tree.id)} className="bg-destructive hover:bg-destructive/90">
                                   {isOwner ? 'Delete' : 'Remove'}
                                 </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                  </CardTitle>
-                  <CardDescription>
-                    <p>{tree.tree.length} root node{tree.tree.length !== 1 ? 's' : ''}</p>
-                    {!isOwner && owner && <p className="text-xs text-muted-foreground">Owned by {owner.username}</p>}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-2">
-                   {tree.isPublic && (
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </CardTitle>
+                      <CardDescription>
+                        <p>{tree.tree.length} root node{tree.tree.length !== 1 ? 's' : ''}</p>
+                        {!isOwner && owner && <p className="text-xs text-muted-foreground">Owned by {owner.username}</p>}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow space-y-2">
+                      {tree.isPublic && (
                         <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 flex items-center gap-2">
-                            <Globe className="h-4 w-4 shrink-0" />
-                            <span>Public</span>
+                          <Globe className="h-4 w-4 shrink-0" />
+                          <span>Public</span>
                         </div>
-                    )}
-                   {tree.gitSync && (
-                      <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 flex items-center justify-between">
+                      )}
+                      {tree.gitSync && (
+                        <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 flex items-center justify-between">
                           <div className="flex items-center gap-2 overflow-hidden">
-                              <Github className="h-4 w-4 shrink-0" />
-                              <span className="truncate">{tree.gitSync.repoOwner}/{tree.gitSync.repoName}</span>
+                            <Github className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{tree.gitSync.repoOwner}/{tree.gitSync.repoName}</span>
                           </div>
-                           {isOwner && (
-                              <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => handleUnlink(tree.id)}>
-                                  <X className="h-3 w-3" />
-                              </Button>
-                          )}
-                      </div>
-                   )}
-                  {isOwner && sharedWithUsers.length > 0 && (
-                    <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 space-y-1">
-                      <div className="flex items-center gap-2 font-medium">
-                          <Users className="h-4 w-4 shrink-0" />
-                          <span>Shared with:</span>
-                      </div>
-                      {sharedWithUsers.map(user => (
-                        <div key={user.id} className="flex items-center justify-between pl-2">
-                          <span>- {user.username}</span>
-                          <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShare(tree.id, user.id)}>
+                          {isOwner && (
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => handleUnlink(tree.id)}>
                               <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-between items-center bg-muted/50 p-3 mt-4">
-                  <Button
-                    onClick={() => handleSelectTree(tree.id)}
-                    disabled={tree.id === activeTreeId}
-                  >
-                    {tree.id === activeTreeId ? "Active" : "Open"}
-                  </Button>
-                  <div className="flex gap-1">
-                    <TooltipProvider>
-                      {isOwner && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={() => duplicateTree(tree.id)}>
-                                <CopyPlus className="h-4 w-4" />
                             </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Duplicate Tree</p></TooltipContent>
-                        </Tooltip>
+                          )}
+                        </div>
                       )}
-                      {isOwner && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+                      {isOwner && sharedWithUsers.length > 0 && (
+                        <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 space-y-1">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Users className="h-4 w-4 shrink-0" />
+                            <span>Shared with:</span>
+                          </div>
+                          {sharedWithUsers.map(user => (
+                            <div key={user.id} className="flex items-center justify-between pl-2">
+                              <span>- {user.username}</span>
+                              <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShare(tree.id, user.id)}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                    <CardFooter className="flex justify-between items-center bg-muted/50 p-3 mt-4">
+                      <Button
+                        onClick={() => handleSelectTree(tree.id)}
+                        disabled={tree.id === activeTreeId}
+                      >
+                        {tree.id === activeTreeId ? "Active" : "Open"}
+                      </Button>
+                      <div className="flex gap-1">
+                        <TooltipProvider>
+                          {isOwner && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="outline" size="icon" onClick={() => duplicateTree(tree.id)}>
+                                  <CopyPlus className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Duplicate Tree</p></TooltipContent>
+                            </Tooltip>
+                          )}
+                          {isOwner && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
                                 <Button variant="outline" size="icon" onClick={() => { setSelectedTreeToShare(tree); setIsShareDialogOpen(true); }}>
-                                    <Share2 className="h-4 w-4" />
+                                  <Share2 className="h-4 w-4" />
                                 </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Share Tree</p></TooltipContent>
-                        </Tooltip>
-                      )}
-                      {!tree.gitSync && isOwner && (
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Share Tree</p></TooltipContent>
+                            </Tooltip>
+                          )}
+                          {!tree.gitSync && isOwner && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
                                 <Button variant="outline" size="icon" onClick={() => { setSelectedTreeForLink(tree.id); setIsLinkRepoOpen(true); }} disabled={!currentUser?.gitSettings?.githubPat}>
-                                    <Github className="h-4 w-4" />
+                                  <Github className="h-4 w-4" />
                                 </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Link to GitHub</p></TooltipContent>
-                        </Tooltip>
-                      )}
-                    </TooltipProvider>
-                  </div>
-                </CardFooter>
-              </Card>
-              </DraggableTreeCard>
-            )})}
+                              </TooltipTrigger>
+                              <TooltipContent><p>Link to GitHub</p></TooltipContent>
+                            </Tooltip>
+                          )}
+                        </TooltipProvider>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </DraggableTreeCard>
+              )
+            })}
           </div>
         </SortableContext>
       </DndContext>
@@ -599,301 +602,301 @@ function ManageRootsPage() {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row justify-end items-center mb-6 gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
-                          <Upload className="mr-2 h-4 w-4" /> Import <ChevronDown className="ml-2 h-4 w-4" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Upload className="mr-2 h-4 w-4" /> Import <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onSelect={() => jsonInputRef.current?.click()}>
+                  <FileJson className="mr-2 h-4 w-4" />
+                  Import from JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => archiveInputRef.current?.click()}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  Import from Archive
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <input
+              type="file"
+              ref={jsonInputRef}
+              onChange={handleImportJson}
+              accept=".json"
+              className="hidden"
+            />
+            <input
+              type="file"
+              ref={archiveInputRef}
+              onChange={handleImportArchive}
+              accept=".zip"
+              className="hidden"
+            />
+
+            <DropdownMenu onOpenChange={async (open) => {
+              if (open && availableExamples.length === 0) {
+                setIsLoadingExamples(true);
+                try {
+                  const examples = await listExamples();
+                  setAvailableExamples(examples);
+                } catch (error) {
+                  toast({ variant: "destructive", title: "Error", description: "Could not load examples." });
+                } finally {
+                  setIsLoadingExamples(false);
+                }
+              }
+            }}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={isLoadingExamples}>
+                  {isLoadingExamples ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Load Example
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {availableExamples.length > 0 ? availableExamples.map((example) => (
+                  <DropdownMenuItem key={example.fileName} onSelect={() => handleLoadExample(example.fileName)}>
+                    {example.title}
+                  </DropdownMenuItem>
+                )) : (
+                  <DropdownMenuItem disabled>No examples found</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Create New Root
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <form onSubmit={handleCreateTree}>
+                  <DialogHeader>
+                    <DialogTitle>Create a New Root</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="tree-title" className="text-right">
+                        Title
+                      </Label>
+                      <Input
+                        id="tree-title"
+                        value={newTreeTitle}
+                        onChange={(e) => setNewTreeTitle(e.target.value)}
+                        className="col-span-3"
+                        placeholder="e.g., My Novel Outline"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="ghost">
+                        Cancel
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem onSelect={() => jsonInputRef.current?.click()}>
-                          <FileJson className="mr-2 h-4 w-4" />
-                          Import from JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => archiveInputRef.current?.click()}>
-                          <Archive className="mr-2 h-4 w-4" />
-                          Import from Archive
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                 <input
-                    type="file"
-                    ref={jsonInputRef}
-                    onChange={handleImportJson}
-                    accept=".json"
-                    className="hidden"
-                />
-                 <input
-                    type="file"
-                    ref={archiveInputRef}
-                    onChange={handleImportArchive}
-                    accept=".zip"
-                    className="hidden"
-                />
-
-                <DropdownMenu onOpenChange={async (open) => {
-                  if (open && availableExamples.length === 0) {
-                      setIsLoadingExamples(true);
-                      try {
-                          const examples = await listExamples();
-                          setAvailableExamples(examples);
-                      } catch (error) {
-                          toast({ variant: "destructive", title: "Error", description: "Could not load examples." });
-                      } finally {
-                          setIsLoadingExamples(false);
-                      }
-                  }
-                }}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" disabled={isLoadingExamples}>
-                      {isLoadingExamples ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
-                      Load Example
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {availableExamples.length > 0 ? availableExamples.map((example) => (
-                      <DropdownMenuItem key={example.fileName} onSelect={() => handleLoadExample(example.fileName)}>
-                        {example.title}
-                      </DropdownMenuItem>
-                    )) : (
-                       <DropdownMenuItem disabled>No examples found</DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Dialog
-                  open={isCreateDialogOpen}
-                  onOpenChange={setIsCreateDialogOpen}
-                >
-                  <DialogTrigger asChild>
-                    <Button>
-                      <PlusCircle className="mr-2 h-4 w-4" /> Create New Root
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <form onSubmit={handleCreateTree}>
-                      <DialogHeader>
-                        <DialogTitle>Create a New Root</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="tree-title" className="text-right">
-                            Title
-                          </Label>
-                          <Input
-                            id="tree-title"
-                            value={newTreeTitle}
-                            onChange={(e) => setNewTreeTitle(e.target.value)}
-                            className="col-span-3"
-                            placeholder="e.g., My Novel Outline"
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button type="button" variant="ghost">
-                            Cancel
-                          </Button>
-                        </DialogClose>
-                        <Button type="submit">Create</Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                    </DialogClose>
+                    <Button type="submit">Create</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
-          
+
           {renderContent()}
-          
+
           <Dialog open={isLinkRepoOpen} onOpenChange={setIsLinkRepoOpen}>
             <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Link to GitHub Repository</DialogTitle>
-                </DialogHeader>
-                 <Tabs defaultValue="select" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="select"><Github className="mr-2 h-4 w-4"/>Select Existing</TabsTrigger>
-                    <TabsTrigger value="create"><Plus className="mr-2 h-4 w-4"/>Create New</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="select">
-                    <form onSubmit={handleLinkRepoSubmit} className="space-y-4 pt-4">
-                        {isLoadingRepos ? (
-                            <div className="flex items-center justify-center h-24">
-                                <Loader2 className="h-8 w-8 animate-spin" />
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                               <Label htmlFor="repo-select">Select a Repository</Label>
-                               <Select onValueChange={setSelectedRepo} value={selectedRepo}>
-                                    <SelectTrigger id="repo-select">
-                                        <SelectValue placeholder="Choose a repository..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {userRepos.map(repo => (
-                                            <SelectItem key={repo.id} value={repo.full_name}>
-                                                <div className="flex items-center gap-2">
-                                                    <Github className="h-4 w-4" />
-                                                    <span>{repo.full_name}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                               </Select>
-                            </div>
-                        )}
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={!selectedRepo || isLoadingRepos || isLinking}>
-                               {isLinking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Link Repository
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                  </TabsContent>
-                  <TabsContent value="create">
-                    <form onSubmit={handleCreateAndLinkRepo} className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="new-repo-name">Repository Name</Label>
-                            <Input 
-                                id="new-repo-name"
-                                value={newRepoName}
-                                onChange={(e) => setNewRepoName(e.target.value)}
-                                placeholder="e.g., my-tree-data"
-                                required
-                            />
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Switch 
-                                id="private-repo" 
-                                checked={newRepoIsPrivate}
-                                onCheckedChange={setNewRepoIsPrivate}
-                            />
-                            <Label htmlFor="private-repo">Create as private repository</Label>
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                            <Button type="submit" disabled={!newRepoName || isCreatingRepo}>
-                                {isCreatingRepo && <Loader2 className="animate-spin mr-2" />}
-                                Create and Link
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                  </TabsContent>
-                </Tabs>
+              <DialogHeader>
+                <DialogTitle>Link to GitHub Repository</DialogTitle>
+              </DialogHeader>
+              <Tabs defaultValue="select" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="select"><Github className="mr-2 h-4 w-4" />Select Existing</TabsTrigger>
+                  <TabsTrigger value="create"><Plus className="mr-2 h-4 w-4" />Create New</TabsTrigger>
+                </TabsList>
+                <TabsContent value="select">
+                  <form onSubmit={handleLinkRepoSubmit} className="space-y-4 pt-4">
+                    {isLoadingRepos ? (
+                      <div className="flex items-center justify-center h-24">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="repo-select">Select a Repository</Label>
+                        <Select onValueChange={setSelectedRepo} value={selectedRepo}>
+                          <SelectTrigger id="repo-select">
+                            <SelectValue placeholder="Choose a repository..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {userRepos.map(repo => (
+                              <SelectItem key={repo.id} value={repo.full_name}>
+                                <div className="flex items-center gap-2">
+                                  <Github className="h-4 w-4" />
+                                  <span>{repo.full_name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                      <Button type="submit" disabled={!selectedRepo || isLoadingRepos || isLinking}>
+                        {isLinking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Link Repository
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </TabsContent>
+                <TabsContent value="create">
+                  <form onSubmit={handleCreateAndLinkRepo} className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-repo-name">Repository Name</Label>
+                      <Input
+                        id="new-repo-name"
+                        value={newRepoName}
+                        onChange={(e) => setNewRepoName(e.target.value)}
+                        placeholder="e.g., my-tree-data"
+                        required
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="private-repo"
+                        checked={newRepoIsPrivate}
+                        onCheckedChange={setNewRepoIsPrivate}
+                      />
+                      <Label htmlFor="private-repo">Create as private repository</Label>
+                    </div>
+                    <DialogFooter>
+                      <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                      <Button type="submit" disabled={!newRepoName || isCreatingRepo}>
+                        {isCreatingRepo && <Loader2 className="animate-spin mr-2" />}
+                        Create and Link
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
 
           <Dialog open={isShareDialogOpen} onOpenChange={(open) => {
-              if (!open) {
-                  setSelectedTreeToShare(null);
-                  setSelectedViewMode("standard");
-              }
-              setIsShareDialogOpen(open);
+            if (!open) {
+              setSelectedTreeToShare(null);
+              setSelectedViewMode("standard");
+            }
+            setIsShareDialogOpen(open);
           }}>
-              <DialogContent>
-                  <DialogHeader>
-                      <DialogTitle>Share "{selectedTreeToShare?.title}"</DialogTitle>
-                  </DialogHeader>
-                  <div className="py-4 space-y-6">
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Private Sharing</h4>
-                      <p className="text-sm text-muted-foreground">Grant edit access to specific users.</p>
-                      <div className="flex gap-2">
-                        <Select onValueChange={setSelectedUserToShare} value={selectedUserToShare}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a user..."/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {users.filter(u => u.id !== currentUser?.id && !(selectedTreeToShare?.sharedWith || []).includes(u.id)).map(user => (
-                                    <SelectItem key={user.id} value={user.id}>{user.username}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Button onClick={handleShare} disabled={!selectedUserToShare}>Add User</Button>
-                      </div>
-                      {(selectedTreeToShare?.sharedWith?.length || 0) > 0 && (
-                          <div className="space-y-2 pt-2">
-                              <Label>Current Collaborators</Label>
-                               {(selectedTreeToShare?.sharedWith || []).map(userId => {
-                                   const user = users.find(u => u.id === userId);
-                                   return user ? (
-                                    <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
-                                        <span>{user.username}</span>
-                                        <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
-                                            <X className="h-4 w-4"/>
-                                        </Button>
-                                    </div>
-                                   ) : null;
-                               })}
-                          </div>
-                      )}
-                    </div>
-                     <div className="space-y-4 pt-4 border-t">
-                      <h4 className="font-medium">Public Sharing</h4>
-                      <div className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                            <Label htmlFor="public-switch">Make Public</Label>
-                            <p className="text-xs text-muted-foreground">Anyone with the link can view this tree.</p>
-                        </div>
-                         <Switch
-                            id="public-switch"
-                            checked={selectedTreeToShare?.isPublic || false}
-                            onCheckedChange={(checked) => handlePublicToggle(selectedTreeToShare!.id, checked)}
-                        />
-                      </div>
-                      {selectedTreeToShare?.isPublic && (
-                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Initial View Mode</Label>
-                                <Select value={selectedViewMode} onValueChange={setSelectedViewMode}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="standard">Standard View</SelectItem>
-                                        <SelectItem value="compact">Compact View</SelectItem>
-                                        <SelectItem value="two-panel">Two-Panel View</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex gap-2">
-                                <Input readOnly value={getPublicUrl(selectedTreeToShare.id)} />
-                                <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare!.id)}>
-                                    <Copy className="mr-2 h-4 w-4" /> Copy Link
-                                </Button>
-                            </div>
-                        </div>
-                      )}
-                    </div>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Share "{selectedTreeToShare?.title}"</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 space-y-6">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Private Sharing</h4>
+                  <p className="text-sm text-muted-foreground">Grant edit access to specific users.</p>
+                  <div className="flex gap-2">
+                    <Select onValueChange={setSelectedUserToShare} value={selectedUserToShare}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a user..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.filter(u => u.id !== currentUser?.id && !(selectedTreeToShare?.sharedWith || []).includes(u.id)).map(user => (
+                          <SelectItem key={user.id} value={user.id}>{user.username}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button onClick={handleShare} disabled={!selectedUserToShare}>Add User</Button>
                   </div>
-                  <DialogFooter>
-                      <DialogClose asChild><Button variant="outline">Done</Button></DialogClose>
-                  </DialogFooter>
-              </DialogContent>
+                  {(selectedTreeToShare?.sharedWith?.length || 0) > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <Label>Current Collaborators</Label>
+                      {(selectedTreeToShare?.sharedWith || []).map(userId => {
+                        const user = users.find(u => u.id === userId);
+                        return user ? (
+                          <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                            <span>{user.username}</span>
+                            <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="font-medium">Public Sharing</h4>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="public-switch">Make Public</Label>
+                      <p className="text-xs text-muted-foreground">Anyone with the link can view this tree.</p>
+                    </div>
+                    <Switch
+                      id="public-switch"
+                      checked={selectedTreeToShare?.isPublic || false}
+                      onCheckedChange={(checked) => handlePublicToggle(selectedTreeToShare!.id, checked)}
+                    />
+                  </div>
+                  {selectedTreeToShare?.isPublic && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Initial View Mode</Label>
+                        <Select value={selectedViewMode} onValueChange={setSelectedViewMode}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="standard">Standard View</SelectItem>
+                            <SelectItem value="compact">Compact View</SelectItem>
+                            <SelectItem value="two-panel">Two-Panel View</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2">
+                        <Input readOnly value={getPublicUrl(selectedTreeToShare)} />
+                        <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare.id)}>
+                          <Copy className="mr-2 h-4 w-4" /> Copy Link
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Done</Button></DialogClose>
+              </DialogFooter>
+            </DialogContent>
           </Dialog>
 
           <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
-              <DialogContent>
-                  <form onSubmit={handleRenameTree}>
-                      <DialogHeader>
-                          <DialogTitle>Rename Tree</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                          <Label htmlFor="rename-title">New Title</Label>
-                          <Input
-                              id="rename-title"
-                              value={renamedTitle}
-                              onChange={(e) => setRenamedTitle(e.target.value)}
-                              placeholder="Enter new tree title"
-                          />
-                      </div>
-                      <DialogFooter>
-                          <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                          <Button type="submit">Rename</Button>
-                      </DialogFooter>
-                  </form>
-              </DialogContent>
+            <DialogContent>
+              <form onSubmit={handleRenameTree}>
+                <DialogHeader>
+                  <DialogTitle>Rename Tree</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <Label htmlFor="rename-title">New Title</Label>
+                  <Input
+                    id="rename-title"
+                    value={renamedTitle}
+                    onChange={(e) => setRenamedTitle(e.target.value)}
+                    placeholder="Enter new tree title"
+                  />
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                  <Button type="submit">Rename</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
           </Dialog>
 
         </main>
