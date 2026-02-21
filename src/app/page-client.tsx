@@ -484,7 +484,7 @@ export function TreePage() {
     
     if (isTwoPanelMode && !isMobile) {
         return (
-            <div className="h-[calc(100vh-14rem)]">
+            <div className="h-[calc(100vh-9rem)]">
                 <ResizablePanelGroup direction="horizontal" className="flex h-full">
                     <ResizablePanel defaultSize={25} minSize={20}>
                         <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
@@ -708,7 +708,7 @@ export function TreePage() {
                                 <div className="space-y-4">
                                      <div className="flex items-center justify-between">
                                         <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val as any)}>
-                                            <SelectTrigger className="w-auto"><SelectValue/></SelectTrigger>
+                                            <SelectTrigger className="w-auto"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="field">Field</SelectItem>
                                                 <SelectItem value="ancestor">Ancestor</SelectItem>
@@ -758,7 +758,7 @@ export function TreePage() {
                                                          <SelectContent>{relationTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
                                                      </Select>
                                                      <Select value={relRule.operator} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'operator', val as any)}>
-                                                        <SelectTrigger><SelectValue placeholder="Operator..."/></SelectTrigger>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
                                                         <SelectContent>
                                                             {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
                                                         </SelectContent>
@@ -803,8 +803,8 @@ export function TreePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4 md:py-8">
-        <div className={cn("sticky z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pb-4 border-b", currentUser ? "top-16" : "top-0")}>
+      <main className={cn("flex-1 px-4 sm:px-6 lg:px-8 pb-4 md:pb-8 flex flex-col", isTwoPanelMode && !isMobile && "pb-0 md:pb-0")}>
+        <div className={cn("sticky z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-[10px] border-b", currentUser ? "top-16" : "top-0")}>
           {activeTree && (
             <TreePageHeader 
               tree={activeTree}
@@ -813,19 +813,19 @@ export function TreePage() {
               onTitleSave={handleTitleSave}
               onSync={syncFromRepo}
               onCommit={checkSyncStatus}
-              onReload={() => reloadActiveTree()}
+              onFilterClick={() => setIsFilterDialogOpen(true)}
+              renderFilterContent={renderFilterContent}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
               showStarred={showStarred}
               setShowStarred={setShowStarred}
               activeFilterCount={activeFilterCount}
-              onFilterClick={() => setIsFilterDialogOpen(true)}
-              renderFilterContent={renderFilterContent}
+              onReload={() => reloadActiveTree()}
             />
           )}
         </div>
         
-        <div className="mt-6">
+        <div className={cn("flex-1 min-h-0", isTwoPanelMode && !isMobile ? "mt-2" : "mt-6")}>
           {activeTree && (
             <TreePageModals 
               activeTree={activeTree}
