@@ -44,7 +44,7 @@ export default function LoginPage() {
     const success = await login(identifier, password);
     if (success) {
       const redirectUrl = searchParams.get('redirect');
-      
+
       // HARDENING: Sanitize redirect URL to prevent open redirect and XSS vulnerabilities.
       // It must be a relative path within the application and cannot contain protocol schemes.
       const isSafeRedirect = redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//') && !redirectUrl.includes(':');
@@ -54,15 +54,15 @@ export default function LoginPage() {
         try {
           const url = new URL(redirectUrl, window.location.origin);
           if (url.origin === window.location.origin) {
-            router.push(url.pathname + url.search + url.hash);
+            window.location.assign(url.pathname + url.search + url.hash);
           } else {
-             router.push('/');
+            window.location.assign('/');
           }
         } catch (e) {
-          router.push('/');
+          window.location.assign('/');
         }
       } else {
-        router.push("/");
+        window.location.assign("/");
       }
     } else {
       toast({
@@ -77,7 +77,7 @@ export default function LoginPage() {
   if (isAuthLoading) {
     return null;
   }
-  
+
   if (!isAuthRequired) {
     return (
       <AuthLayout>
@@ -89,8 +89,8 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-             <Button onClick={() => router.push('/')} className="w-full">
-                Continue to App
+            <Button onClick={() => router.push('/')} className="w-full">
+              Continue to App
             </Button>
           </CardContent>
         </Card>
