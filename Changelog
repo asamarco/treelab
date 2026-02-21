@@ -1,3 +1,11 @@
+v0.5.1
+Updated Next and React to latest versions
+Improvement: increase randomness for attachments URLs by using UUIDs instead of the previous random key.
+Improvement: use a dedicated UUID for public pages instead of sharing the database ID
+Improvement: exported HTML has collapsable nodes
+Bugfix: exported HTML contains no more errors in <head>
+UI tweaks
+
 v0.5.0
 
 Feature: two panel view
