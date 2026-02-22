@@ -333,6 +333,8 @@ export interface ActionContext {
     getSiblingOrderRange?: (siblings: TreeNode[], parentId: string | null) => { minOrder: number; maxOrder: number };
     selectedNodeIds?: string[];
     getTemplateById?: (id: string) => Template | undefined;
+    isSelectionModeActive?: boolean;
+    setIsSelectionModeActive?: (isActive: boolean) => void;
 }
 
 export interface UseTreeRootsResult {
@@ -403,6 +405,8 @@ export interface UseTreeRootsResult {
     setSelectedNodeIds: Dispatch<SetStateAction<string[]>>;
     lastSelectedNodeId: string | null;
     setLastSelectedNodeId: Dispatch<SetStateAction<string | null>>;
+    isSelectionModeActive: boolean;
+    setIsSelectionModeActive: Dispatch<SetStateAction<boolean>>;
     linkTreeToRepo: (treeId: string, repoOwner: string, repoName: string, branch: string, token: string) => Promise<void>;
     unlinkTreeFromRepo: (treeId: string) => void;
     createAndLinkTreeToRepo: (treeId: string, repoName: string, isPrivate: boolean, token: string) => Promise<void>;

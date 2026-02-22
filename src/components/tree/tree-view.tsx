@@ -55,6 +55,8 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     pasteNodesAsClones,
     findNodeAndParent,
     pasteNodes,
+    isSelectionModeActive,
+    setIsSelectionModeActive,
     expandAllFromNode,
     collapseAllFromNode,
     moveNodeOrder,
@@ -202,8 +204,13 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     return result;
   }, [nodes, expandedNodeIds]);
 
-  const handleSelect = (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => {
+  const handleSelect = (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean, isLongPress: boolean = false) => {
     if (readOnly || disableSelection) return;
+
+    if (isLongPress) {
+      setIsSelectionModeActive(true);
+    }
+
     if (isShiftClick && lastSelectedNodeId) {
       const lastIndex = flattenedInstances.findIndex(i => i.instanceId === lastSelectedNodeId);
       const currentIndex = flattenedInstances.findIndex(i => i.instanceId === instanceId);
@@ -214,7 +221,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
         const rangeInstanceIds = flattenedInstances.slice(start, end + 1).map(i => i.instanceId);
         setSelectedNodeIds(rangeInstanceIds);
       }
-    } else if (isCtrlClick) {
+    } else if (isCtrlClick || isLongPress) {
       setSelectedNodeIds(prev => {
         const newSelection = new Set(prev);
         if (newSelection.has(instanceId)) {
@@ -229,8 +236,10 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       const isAlreadySelected = selectedNodeIds.includes(instanceId);
       if (isAlreadySelected && selectedNodeIds.length === 1) {
         setSelectedNodeIds([]);
+        setIsSelectionModeActive(false);
       } else {
         setSelectedNodeIds([instanceId]);
+        setIsSelectionModeActive(false);
       }
       setLastSelectedNodeId(instanceId);
     }
@@ -265,6 +274,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       if (selectedNodeIds.length > 0) {
         event.preventDefault();
         setSelectedNodeIds([]);
+        setIsSelectionModeActive(false);
       }
       return;
     }
@@ -468,7 +478,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
               node={node}
               level={0}
               siblings={nodes}
-              onSelect={handleSelect}
+              onSelect={handleSelect as any}
               contextualParentId={null}
               overrideExpandedIds={expandedNodeIds}
               onExpandedChange={setExpandedNodeIds as any}

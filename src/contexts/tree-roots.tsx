@@ -152,6 +152,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const [clipboard, setClipboard] = useState<ClipboardState>({ nodes: null, operation: null });
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [lastSelectedNodeId, setLastSelectedNodeId] = useState<string | null>(null);
+  const [isSelectionModeActive, setIsSelectionModeActive] = useState(false);
 
   const { toast } = useToast();
 
@@ -386,6 +387,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     setHistoryIndex(-1);
     setSelectedNodeIds([]);
     setLastSelectedNodeId(null);
+    setIsSelectionModeActive(false);
     if (currentUser) {
       setLastActiveTreeIdForUser(id);
     }
@@ -1478,6 +1480,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     setSelectedNodeIds,
     lastSelectedNodeId,
     setLastSelectedNodeId,
+    isSelectionModeActive,
+    setIsSelectionModeActive,
     linkTreeToRepo,
     unlinkTreeFromRepo,
     createAndLinkTreeToRepo,

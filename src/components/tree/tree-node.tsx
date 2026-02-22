@@ -44,7 +44,7 @@ interface TreeNodeProps {
   node: TreeNode;
   level: number;
   siblings: TreeNode[];
-  onSelect: (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean) => void;
+  onSelect: (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean, isLongPress?: boolean) => void;
   contextualParentId: string | null;
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
@@ -114,7 +114,7 @@ export function TreeNodeComponent({
       nodeId: node.id,
       parentId: contextualParentId,
     },
-    disabled: !isMounted || isMobile || readOnly || disableSelection 
+    disabled: !isMounted || isMobile || readOnly || disableSelection
   });
 
   const { setNodeRef: setDroppableNodeRef, isOver } = useDroppable({
@@ -160,17 +160,17 @@ export function TreeNodeComponent({
   const startLongPress = useCallback((e: React.PointerEvent) => {
     if (readOnly || disableSelection) return;
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    
+
     // Stop propagation to prevent ancestors from starting their own timers
     e.stopPropagation();
-    
+
     setIsLongPressing(false);
     longPressTimer.current = setTimeout(() => {
       setIsLongPressing(true);
       if ('vibrate' in navigator) {
         navigator.vibrate(50);
       }
-      onSelect(instanceId, false, true); // Toggle selection (Ctrl behavior)
+      onSelect(instanceId, false, true, true); // Toggle selection (Ctrl behavior) + isLongPress=true
     }, 500);
   }, [instanceId, onSelect, readOnly, disableSelection]);
 
