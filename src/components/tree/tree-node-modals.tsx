@@ -46,6 +46,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Icon } from "../icon";
 import { icons } from "lucide-react";
 import { Separator } from "../ui/separator";
+import { ChildNodeQuickEdit } from "./child-node-quick-edit";
+import { cn } from "@/lib/utils";
 
 
 interface TreeNodeModalsProps {
@@ -62,19 +64,20 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
   const [selectedTemplateForNewNode, setSelectedTemplateForNewNode] = useState<Template | null>(null);
   const [selectedNewTemplateId, setSelectedNewTemplateId] = useState<string | null>(null);
-  
+  const [showChildPanel, setShowChildPanel] = useState(false);
+
   const isOwner = activeTree?.userId === currentUser?.id;
-  
+
   const { openModal, contextualParentId } = useMemo(() => {
     if (dialogState.nodeInstanceIdForAction?.startsWith(node.id)) {
-        const instanceId = dialogState.nodeInstanceIdForAction;
-        const parentId = instanceId.substring(node.id.length + 1) || 'root';
+      const instanceId = dialogState.nodeInstanceIdForAction;
+      const parentId = instanceId.substring(node.id.length + 1) || 'root';
 
-        if (dialogState.isAddChildOpen) return { openModal: 'addChild', contextualParentId: parentId === 'root' ? null : parentId };
-        if (dialogState.isAddSiblingOpen) return { openModal: 'addSibling', contextualParentId: parentId === 'root' ? null : parentId };
-        if (dialogState.isNodeEditOpen) return { openModal: 'edit', contextualParentId: parentId === 'root' ? null : parentId };
-        if (dialogState.isChangeTemplateOpen) return { openModal: 'changeTemplate', contextualParentId: parentId === 'root' ? null : parentId };
-        if (dialogState.isPasteTemplateOpen) return { openModal: 'pasteTemplate', contextualParentId: parentId === 'root' ? null : parentId };
+      if (dialogState.isAddChildOpen) return { openModal: 'addChild', contextualParentId: parentId === 'root' ? null : parentId };
+      if (dialogState.isAddSiblingOpen) return { openModal: 'addSibling', contextualParentId: parentId === 'root' ? null : parentId };
+      if (dialogState.isNodeEditOpen) return { openModal: 'edit', contextualParentId: parentId === 'root' ? null : parentId };
+      if (dialogState.isChangeTemplateOpen) return { openModal: 'changeTemplate', contextualParentId: parentId === 'root' ? null : parentId };
+      if (dialogState.isPasteTemplateOpen) return { openModal: 'pasteTemplate', contextualParentId: parentId === 'root' ? null : parentId };
     }
     return { openModal: null, contextualParentId: null };
   }, [dialogState, node.id]);
@@ -82,16 +85,16 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
   useEffect(() => {
     if (openModal === 'addSibling') {
-        const parentInfo = findNodeAndParent(node.id);
-        const parentTemplate = parentInfo?.parent ? getTemplateById(parentInfo.parent.templateId) : undefined;
-        setSelectedTemplateForNewNode(template);
+      const parentInfo = findNodeAndParent(node.id);
+      const parentTemplate = parentInfo?.parent ? getTemplateById(parentInfo.parent.templateId) : undefined;
+      setSelectedTemplateForNewNode(template);
     } else if (openModal === 'addChild') {
-        const firstPreferredId = template.preferredChildTemplates?.[0];
-        if (firstPreferredId) {
-            setSelectedTemplateForNewNode(getTemplateById(firstPreferredId) ?? null);
-        } else {
-            setSelectedTemplateForNewNode(null);
-        }
+      const firstPreferredId = template.preferredChildTemplates?.[0];
+      if (firstPreferredId) {
+        setSelectedTemplateForNewNode(getTemplateById(firstPreferredId) ?? null);
+      } else {
+        setSelectedTemplateForNewNode(null);
+      }
     }
     else if (openModal === 'pasteTemplate' && clipboard.nodes && clipboard.nodes.length > 0) {
       const templateFromClipboard = getTemplateById(clipboard.nodes[0].templateId);
@@ -105,16 +108,17 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
   const handleClose = () => {
     setIgnoreClicksUntil(Date.now() + 500);
-    setDialogState({ 
-        isAddChildOpen: false, 
-        isAddSiblingOpen: false,
-        isNodeEditOpen: false,
-        isChangeTemplateOpen: false,
-        isPasteTemplateOpen: false,
-        nodeInstanceIdForAction: undefined 
+    setDialogState({
+      isAddChildOpen: false,
+      isAddSiblingOpen: false,
+      isNodeEditOpen: false,
+      isChangeTemplateOpen: false,
+      isPasteTemplateOpen: false,
+      nodeInstanceIdForAction: undefined
     });
     setSelectedTemplateForNewNode(null);
     setSelectedNewTemplateId(null);
+    setShowChildPanel(false);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -143,7 +147,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
   const handleChangeTemplate = () => {
     if (!isOwner) {
-      toast({variant: 'destructive', title: "Permission Denied", description: "Only the owner can change a node's template."});
+      toast({ variant: 'destructive', title: "Permission Denied", description: "Only the owner can change a node's template." });
       return;
     }
     if (selectedNewTemplateId) {
@@ -158,17 +162,17 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
   const renderAddDialogContent = (onSave: (data: TreeNode) => void) => {
     const currentTemplate = selectedTemplateForNewNode;
-    
+
     // Determine the correct parent template for showing preferred children
     const parentNodeForContext = (openModal === 'addChild' ? node : findNodeAndParent(node.id)?.parent);
     const parentTemplateForContext = parentNodeForContext ? getTemplateById(parentNodeForContext.templateId) : undefined;
-    
+
     const preferredTemplates = (parentTemplateForContext?.preferredChildTemplates || [])
-        .map(id => getTemplateById(id))
-        .filter((t): t is Template => !!t);
+      .map(id => getTemplateById(id))
+      .filter((t): t is Template => !!t);
 
     const otherTemplates = templates.filter(t => !(parentTemplateForContext?.preferredChildTemplates || []).includes(t.id));
-    
+
     const hasPreferred = preferredTemplates.length > 0;
     const hasOthers = otherTemplates.length > 0;
 
@@ -176,15 +180,15 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
       <>
         <div className="space-y-2 pt-4">
           <Label>Template</Label>
-           <Select
+          <Select
             value={currentTemplate?.id}
             onValueChange={(templateId) => {
-                if (templateId === 'create_new') {
-                    router.push('/templates');
-                    handleClose();
-                    return;
-                }
-                setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)
+              if (templateId === 'create_new') {
+                router.push('/templates');
+                handleClose();
+                return;
+              }
+              setSelectedTemplateForNewNode(getTemplateById(templateId) ?? null)
             }}
           >
             <SelectTrigger>
@@ -205,43 +209,43 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
             </SelectTrigger>
             <SelectContent>
               {hasPreferred ? (
-                  <SelectGroup>
-                      <SelectLabel>Preferred</SelectLabel>
-                      {preferredTemplates.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          <div className="flex items-center gap-2">
-                            <Icon
-                              name={(t.icon as keyof typeof icons) || "FileText"}
-                              className="h-4 w-4"
-                              style={{ color: t.color || "hsl(var(--primary))" }}
-                            />
-                            <span>{t.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectGroup>
-                ) : null}
+                <SelectGroup>
+                  <SelectLabel>Preferred</SelectLabel>
+                  {preferredTemplates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <div className="flex items-center gap-2">
+                        <Icon
+                          name={(t.icon as keyof typeof icons) || "FileText"}
+                          className="h-4 w-4"
+                          style={{ color: t.color || "hsl(var(--primary))" }}
+                        />
+                        <span>{t.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ) : null}
 
-                {hasOthers && hasPreferred && <SelectSeparator />}
+              {hasOthers && hasPreferred && <SelectSeparator />}
 
-                {hasOthers ? (
-                  <SelectGroup>
-                    {hasPreferred && <SelectLabel>Other Templates</SelectLabel>}
-                    {otherTemplates.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        <div className="flex items-center gap-2">
-                          <Icon
-                            name={(t.icon as keyof typeof icons) || "FileText"}
-                            className="h-4 w-4"
-                            style={{ color: t.color || "hsl(var(--primary))" }}
-                          />
-                          <span>{t.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ) : null}
-             
+              {hasOthers ? (
+                <SelectGroup>
+                  {hasPreferred && <SelectLabel>Other Templates</SelectLabel>}
+                  {otherTemplates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <div className="flex items-center gap-2">
+                        <Icon
+                          name={(t.icon as keyof typeof icons) || "FileText"}
+                          className="h-4 w-4"
+                          style={{ color: t.color || "hsl(var(--primary))" }}
+                        />
+                        <span>{t.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ) : null}
+
               <Separator className="my-1" />
               <SelectItem value="create_new">
                 <div className="flex items-center gap-2 text-primary">
@@ -253,7 +257,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
           </Select>
         </div>
         {currentTemplate && (
-            <NodeForm template={currentTemplate} onSave={onSave} onClose={handleClose} contextualParentId={contextualParentId} />
+          <NodeForm template={currentTemplate} onSave={onSave} onClose={handleClose} contextualParentId={contextualParentId} />
         )}
       </>
     );
@@ -279,9 +283,49 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
       {/* Edit Node Dialog */}
       <Dialog open={openModal === 'edit'} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Edit Node: {node.name}</DialogTitle></DialogHeader>
-          <NodeForm node={node} template={template} onSave={handleSaveUpdate} onClose={handleClose} contextualParentId={contextualParentId} />
+        <DialogContent className={cn("max-h-[90vh] flex flex-col transition-all duration-300", showChildPanel ? "max-w-5xl" : "max-w-2xl")}>
+          <DialogHeader className="flex flex-row items-center justify-between pr-6">
+            <DialogTitle>Edit Node: {node.name}</DialogTitle>
+            {node.children && node.children.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowChildPanel(!showChildPanel)}
+                className="ml-auto"
+              >
+                {showChildPanel ? "Hide Children" : "Show Children"}
+              </Button>
+            )}
+          </DialogHeader>
+
+          <div className={cn("flex flex-1 overflow-hidden gap-4", showChildPanel ? "flex-row" : "flex-col")}>
+            <div className={cn("flex-1 overflow-y-auto px-1", showChildPanel ? "pr-4 border-r" : "")}>
+              <NodeForm node={node} template={template} onSave={handleSaveUpdate} onClose={handleClose} contextualParentId={contextualParentId} />
+            </div>
+
+            {showChildPanel && node.children && node.children.length > 0 && (
+              <div className="w-[350px] shrink-0 overflow-y-auto pr-1 space-y-4">
+                <div className="text-sm font-medium text-muted-foreground sticky top-0 bg-background pb-2 z-10 border-b">
+                  Children ({node.children.length})
+                </div>
+                {node.children.map(child => {
+                  const childTemplate = getTemplateById(child.templateId);
+                  if (!childTemplate) return null;
+                  return (
+                    <ChildNodeQuickEdit
+                      key={child.id}
+                      node={child}
+                      template={childTemplate}
+                      onSave={(updatedChild) => {
+                        updateNode(updatedChild.id, updatedChild);
+                        toast({ title: "Child Updated", description: `Saved changes to ${updatedChild.name}` });
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
