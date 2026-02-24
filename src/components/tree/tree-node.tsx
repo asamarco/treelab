@@ -150,7 +150,14 @@ export function TreeNodeComponent({
   };
 
   const handleOpenModal = (modalType: 'addChild' | 'addSibling' | 'edit' | 'changeTemplate' | 'pasteTemplate') => {
-    setDialogState({ [modalType === 'addChild' ? 'isAddChildOpen' : modalType === 'addSibling' ? 'isAddSiblingOpen' : modalType === 'edit' ? 'isNodeEditOpen' : modalType === 'changeTemplate' ? 'isChangeTemplateOpen' : 'isPasteTemplateOpen']: true, nodeInstanceIdForAction: instanceId });
+    if (modalType === 'edit') {
+      const currentIds = dialogState.openNodeEditInstanceIds || [];
+      if (!currentIds.includes(instanceId)) {
+        setDialogState({ openNodeEditInstanceIds: [...currentIds, instanceId] });
+      }
+    } else {
+      setDialogState({ [modalType === 'addChild' ? 'isAddChildOpen' : modalType === 'addSibling' ? 'isAddSiblingOpen' : modalType === 'changeTemplate' ? 'isChangeTemplateOpen' : 'isPasteTemplateOpen']: true, nodeInstanceIdForAction: instanceId });
+    }
   };
 
   // --- Long Press Logic ---

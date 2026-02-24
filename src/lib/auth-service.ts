@@ -211,7 +211,7 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
     await UserModel.findByIdAndUpdate(userId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
 }
 
-export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes'>>): Promise<void> {
+export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes' | 'showChildrenInEditForm'>>): Promise<void> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 

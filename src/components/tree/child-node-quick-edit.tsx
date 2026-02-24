@@ -23,18 +23,23 @@ import { DatePicker } from "../ui/date-picker";
 import { format, parse, isValid, parseISO } from "date-fns";
 import { generateNodeName } from "@/lib/utils";
 import { useTreeContext } from "@/contexts/tree-context";
+import { Maximize2 } from "lucide-react";
+import { Combobox } from "../ui/combobox";
 
 interface ChildNodeQuickEditProps {
     node: TreeNode;
     template: Template;
     onSave: (updatedNode: TreeNode) => void;
+    onFullEdit: (nodeId: string) => void;
 }
 
 export const ChildNodeQuickEdit = ({
     node,
     template,
     onSave,
+    onFullEdit,
 }: ChildNodeQuickEditProps) => {
+    const { tree } = useTreeContext();
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initialData = { ...(node?.data || {}) };
 
@@ -82,11 +87,44 @@ export const ChildNodeQuickEdit = ({
         setIsDirty(false);
     };
 
+    const getDynamicOptions = React.useMemo(() => {
+        return (fieldId: string, templateId: string): { value: string, label: string }[] => {
+            const values = new Set<string>();
+            const traverse = (nodes: TreeNode[]) => {
+                nodes.forEach(n => {
+                    if (n.templateId === templateId) {
+                        const value = (n.data || {})[fieldId];
+                        if (typeof value === 'string' && value) {
+                            values.add(value);
+                        }
+                    }
+                    if (n.children) {
+                        traverse(n.children);
+                    }
+                });
+            };
+            traverse(tree);
+            return Array.from(values).map(v => ({ value: v, label: v }));
+        };
+    }, [tree]);
+
     return (
-        <div className="border rounded-md p-3 bg-card space-y-3">
+        <div className="border rounded-md p-3 bg-card space-y-3 relative group">
             <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-sm truncate" title={node.name}>{node.name}</h4>
-                <div className="text-xs text-muted-foreground">{template.name}</div>
+                <div className="flex items-center gap-2">
+                    <div className="text-xs text-muted-foreground">{template.name}</div>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => onFullEdit(node.id)}
+                        title="Open full edit form"
+                    >
+                        <Maximize2 className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
 
             <div className="space-y-3">
@@ -154,6 +192,18 @@ export const ChildNodeQuickEdit = ({
                                         {field.name}
                                     </label>
                                 </div>
+                            );
+                            break;
+                        case 'dynamic-dropdown':
+                            renderedContent = (
+                                <Combobox
+                                    options={getDynamicOptions(field.id, template.id)}
+                                    value={formData[field.id] || ""}
+                                    onChange={(value) => handleDataChange(field.id, value)}
+                                    placeholder={`Select ${field.name}...`}
+                                    searchPlaceholder={`Search ${field.name}...`}
+                                    emptyPlaceholder={`No ${field.name} found.`}
+                                />
                             );
                             break;
                         // Ignore complex fields for quick edit (picture, attachment, table, chart) to save space

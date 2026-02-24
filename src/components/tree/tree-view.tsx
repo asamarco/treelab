@@ -326,7 +326,10 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
         const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;
         if (event.key === 'e') {
           event.preventDefault();
-          setDialogState({ isNodeEditOpen: true, nodeInstanceIdForAction: instanceId });
+          const currentIds = dialogState.openNodeEditInstanceIds || [];
+          if (!currentIds.includes(instanceId)) {
+            setDialogState({ openNodeEditInstanceIds: [...currentIds, instanceId] });
+          }
           return;
         }
         if (event.key === 'Enter') {

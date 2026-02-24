@@ -28,7 +28,7 @@ interface AuthContextType {
   deleteUser: (userId: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   resetPasswordByAdmin: (userId: string, newPassword: string) => Promise<void>;
-  
+
   // User & Global Settings
   theme: Theme;
   setTheme: (theme: Theme) => void;
@@ -39,6 +39,7 @@ interface AuthContextType {
   setGlobalSettings: (settings: GlobalSettings) => Promise<void>;
   setGitSettings: (gitSettings: GitSettings) => Promise<void>;
   setLastActiveTreeId: (treeId: string | null) => void;
+  setShowChildrenInEditForm: (show: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,6 +70,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setLastActiveTreeId,
     setDateFormat: setAuthDateFormat,
     setInactivityTimeout: setAuthInactivityTimeout,
+    setShowChildrenInEditForm,
   } = useAuthHook({ isAuthRequired, defaultUserId });
 
   const [theme, setThemeState] = useState<Theme>("system");
@@ -90,7 +92,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
       root.classList.add(theme);
     }
   }, [theme]);
-  
+
   const handleSetTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     if (isAuthRequired) {
@@ -120,6 +122,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setGlobalSettings: setAppSettings,
     setGitSettings,
     setLastActiveTreeId,
+    setShowChildrenInEditForm,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -133,4 +136,3 @@ export function useAuthContext() {
   return context;
 }
 
-    

@@ -191,6 +191,7 @@ export interface User {
     dateFormat?: string;
     inactivityTimeoutMinutes?: number;
     gitSettings?: GitSettings;
+    showChildrenInEditForm?: boolean;
 }
 
 export interface GlobalSettings {

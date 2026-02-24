@@ -11,25 +11,26 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import { TreeNode } from "@/lib/types";
 
 export interface DialogState {
-    isAddNodeOpen?: boolean;
-    isRenameTreeOpen?: boolean;
-    initialTreeTitle?: string;
-    isCommitOpen?: boolean;
-    isOutOfSyncCommitOpen?: boolean;
-    isHistoryOpen?: boolean;
-    exportNodes?: TreeNode[];
-    exportTitle?: string;
-    exportElementId?: string;
-    isNodePreviewOpen?: boolean;
-    nodeIdsForPreview?: string[];
-    isChangeTemplateMultipleOpen?: boolean;
-    isMultiNodeEditOpen?: boolean;
-    isNodeEditOpen?: boolean;
-    isAddChildOpen?: boolean;
-    isAddSiblingOpen?: boolean;
-    isChangeTemplateOpen?: boolean;
-    isPasteTemplateOpen?: boolean;
-    nodeInstanceIdForAction?: string;
+  isAddNodeOpen?: boolean;
+  isRenameTreeOpen?: boolean;
+  initialTreeTitle?: string;
+  isCommitOpen?: boolean;
+  isOutOfSyncCommitOpen?: boolean;
+  isHistoryOpen?: boolean;
+  exportNodes?: TreeNode[];
+  exportTitle?: string;
+  exportElementId?: string;
+  isNodePreviewOpen?: boolean;
+  nodeIdsForPreview?: string[];
+  isChangeTemplateMultipleOpen?: boolean;
+  isMultiNodeEditOpen?: boolean;
+  isNodeEditOpen?: boolean;
+  isAddChildOpen?: boolean;
+  isAddSiblingOpen?: boolean;
+  isChangeTemplateOpen?: boolean;
+  isPasteTemplateOpen?: boolean;
+  nodeInstanceIdForAction?: string;
+  openNodeEditInstanceIds?: string[];
 }
 
 interface UIContextType {
@@ -47,13 +48,13 @@ interface UIContextType {
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
 
-export function UIProvider({ 
-  children, 
+export function UIProvider({
+  children,
   initialStandardView = false,
   initialCompact = false,
   initialTwoPanel = false
-}: { 
-  children: React.ReactNode, 
+}: {
+  children: React.ReactNode,
   initialStandardView?: boolean,
   initialCompact?: boolean,
   initialTwoPanel?: boolean
@@ -68,11 +69,11 @@ export function UIProvider({
 
   const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
   const [ignoreClicksUntil, setIgnoreClicksUntil] = useState(0);
-  
+
   // Use non-persistent state if initialStandardView is true (e.g. for consistent first impression on public pages)
   const isCompactView = initialStandardView ? isCompactViewLocal : isCompactViewPersistent;
   const setIsCompactView = initialStandardView ? setIsCompactViewLocal : setIsCompactViewPersistent;
-  
+
   const isTwoPanelMode = initialStandardView ? isTwoPanelModeLocal : isTwoPanelModePersistent;
   const setIsTwoPanelMode = initialStandardView ? setIsTwoPanelModeLocal : setIsTwoPanelModePersistent;
 
@@ -81,8 +82,8 @@ export function UIProvider({
 
   const setDialogState = (newState: Partial<DialogState>) => {
     setDialogStateInternal(prev => {
-        const nextState = {...prev, ...newState};
-        return nextState;
+      const nextState = { ...prev, ...newState };
+      return nextState;
     });
   };
 

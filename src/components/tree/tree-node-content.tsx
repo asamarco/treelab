@@ -472,7 +472,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
 
                                                                                             setDialogState({
                                                                                                 isNodePreviewOpen: false,
-                                                                                                isNodeEditOpen: false,
+                                                                                                openNodeEditInstanceIds: [],
                                                                                                 isAddChildOpen: false,
                                                                                                 isAddSiblingOpen: false,
                                                                                             });

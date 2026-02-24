@@ -57,25 +57,30 @@ interface TreeNodeModalsProps {
 
 export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
   const { templates, getTemplateById, addChildNode, addSiblingNode, updateNode, changeNodeTemplate, clipboard, activeTree, setSelectedNodeIds, findNodeAndParent } = useTreeContext();
-  const { currentUser } = useAuthContext();
+  const { currentUser, setShowChildrenInEditForm } = useAuthContext();
   const { toast } = useToast();
   const { dialogState, setDialogState, setIgnoreClicksUntil } = useUIContext();
   const router = useRouter();
 
   const [selectedTemplateForNewNode, setSelectedTemplateForNewNode] = useState<Template | null>(null);
   const [selectedNewTemplateId, setSelectedNewTemplateId] = useState<string | null>(null);
-  const [showChildPanel, setShowChildPanel] = useState(false);
+  const showChildPanel = currentUser?.showChildrenInEditForm ?? false;
 
   const isOwner = activeTree?.userId === currentUser?.id;
 
   const { openModal, contextualParentId } = useMemo(() => {
-    if (dialogState.nodeInstanceIdForAction?.startsWith(node.id)) {
+    const editInstanceId = dialogState.openNodeEditInstanceIds?.find(id => id.startsWith(node.id + "_"));
+    if (editInstanceId) {
+      const parentId = editInstanceId.substring(node.id.length + 1) || 'root';
+      return { openModal: 'edit', contextualParentId: parentId === 'root' ? null : parentId };
+    }
+
+    if (dialogState.nodeInstanceIdForAction?.startsWith(node.id + "_")) {
       const instanceId = dialogState.nodeInstanceIdForAction;
       const parentId = instanceId.substring(node.id.length + 1) || 'root';
 
       if (dialogState.isAddChildOpen) return { openModal: 'addChild', contextualParentId: parentId === 'root' ? null : parentId };
       if (dialogState.isAddSiblingOpen) return { openModal: 'addSibling', contextualParentId: parentId === 'root' ? null : parentId };
-      if (dialogState.isNodeEditOpen) return { openModal: 'edit', contextualParentId: parentId === 'root' ? null : parentId };
       if (dialogState.isChangeTemplateOpen) return { openModal: 'changeTemplate', contextualParentId: parentId === 'root' ? null : parentId };
       if (dialogState.isPasteTemplateOpen) return { openModal: 'pasteTemplate', contextualParentId: parentId === 'root' ? null : parentId };
     }
@@ -108,17 +113,22 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
   const handleClose = () => {
     setIgnoreClicksUntil(Date.now() + 500);
-    setDialogState({
-      isAddChildOpen: false,
-      isAddSiblingOpen: false,
-      isNodeEditOpen: false,
-      isChangeTemplateOpen: false,
-      isPasteTemplateOpen: false,
-      nodeInstanceIdForAction: undefined
-    });
+    if (openModal === 'edit') {
+      const editInstanceId = dialogState.openNodeEditInstanceIds?.find(id => id.startsWith(node.id + "_"));
+      setDialogState({
+        openNodeEditInstanceIds: dialogState.openNodeEditInstanceIds?.filter(id => id !== editInstanceId)
+      });
+    } else {
+      setDialogState({
+        isAddChildOpen: false,
+        isAddSiblingOpen: false,
+        isChangeTemplateOpen: false,
+        isPasteTemplateOpen: false,
+        nodeInstanceIdForAction: undefined
+      });
+    }
     setSelectedTemplateForNewNode(null);
     setSelectedNewTemplateId(null);
-    setShowChildPanel(false);
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -290,7 +300,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowChildPanel(!showChildPanel)}
+                onClick={() => setShowChildrenInEditForm(!showChildPanel)}
                 className="ml-auto"
               >
                 {showChildPanel ? "Hide Children" : "Show Children"}
@@ -319,6 +329,15 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
                       onSave={(updatedChild) => {
                         updateNode(updatedChild.id, updatedChild);
                         toast({ title: "Child Updated", description: `Saved changes to ${updatedChild.name}` });
+                      }}
+                      onFullEdit={(childId) => {
+                        const newInstanceId = `${childId}_${node.id}`;
+                        const currentIds = dialogState.openNodeEditInstanceIds || [];
+                        if (!currentIds.includes(newInstanceId)) {
+                          setDialogState({
+                            openNodeEditInstanceIds: [...currentIds, newInstanceId]
+                          });
+                        }
                       }}
                     />
                   );

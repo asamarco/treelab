@@ -1,20 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { User, GlobalSettings, GitSettings } from "@/lib/types";
 import {
-    fetchUsers,
-    addUser as addUserOnServer,
-    updateUserAdminStatus as updateUserAdminStatusOnServer,
-    deleteUser as deleteUserOnClient,
-    changeUserPassword,
-    resetUserPasswordByAdmin as resetPasswordByAdminOnServer,
-    saveGlobalSettings,
-    updateUserSettings,
+  fetchUsers,
+  addUser as addUserOnServer,
+  updateUserAdminStatus as updateUserAdminStatusOnServer,
+  deleteUser as deleteUserOnClient,
+  changeUserPassword,
+  resetUserPasswordByAdmin as resetPasswordByAdminOnServer,
+  saveGlobalSettings,
+  updateUserSettings,
 } from '@/lib/auth-service';
 import {
-    login as loginOnClient,
-    logout as logoutOnClient,
-    getSessionUser,
-    register as registerOnClient
+  login as loginOnClient,
+  logout as logoutOnClient,
+  getSessionUser,
+  register as registerOnClient
 } from '@/lib/auth-client';
 import { loadGlobalSettings } from "@/lib/auth-service";
 import { useIdleTimer } from "./use-idle-timer";
@@ -23,8 +23,8 @@ import { useToast } from "./use-toast";
 type Theme = "light" | "dark" | "system";
 
 interface UseAuthProps {
-    isAuthRequired: boolean;
-    defaultUserId: string;
+  isAuthRequired: boolean;
+  defaultUserId: string;
 }
 
 export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
@@ -36,18 +36,18 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
 
   const handleLogout = useCallback(async (isIdle: boolean = false) => {
     if (currentUser) {
-        if(isIdle) {
-            toast({
-                title: "You have been logged out",
-                description: "Your session has ended due to inactivity.",
-            });
-        }
-        console.log(`INFO: User '${currentUser.username}' logged out.`);
+      if (isIdle) {
+        toast({
+          title: "You have been logged out",
+          description: "Your session has ended due to inactivity.",
+        });
+      }
+      console.log(`INFO: User '${currentUser.username}' logged out.`);
     }
     await logoutOnClient();
     setCurrentUser(null);
     setUsers([]); // Clear users on logout
-    
+
     // Fail-safe redirect for idle logout
     if (isIdle) {
       window.location.href = '/login?reason=idle';
@@ -57,8 +57,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   }, [currentUser, toast]);
 
   const inactivityTimeoutMinutes = currentUser?.inactivityTimeoutMinutes;
-  const idleTime = typeof inactivityTimeoutMinutes === 'number' && inactivityTimeoutMinutes > 0 
-    ? inactivityTimeoutMinutes * 60 * 1000 
+  const idleTime = typeof inactivityTimeoutMinutes === 'number' && inactivityTimeoutMinutes > 0
+    ? inactivityTimeoutMinutes * 60 * 1000
     : 0;
 
   useIdleTimer(() => handleLogout(true), idleTime);
@@ -66,39 +66,39 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
 
   const initializeAuth = async () => {
     console.log("INFO: Initializing auth state...");
-    
+
     if (!isAuthRequired) {
-        console.log("INFO: Authentication not required. Using default user.");
-        const dummyUser: User = {
-            id: defaultUserId,
-            username: defaultUserId,
-            passwordHash: '',
-            salt: '',
-            isAdmin: true,
-            dateFormat: 'dd/MM/yyyy',
-        };
-        setCurrentUser(dummyUser);
-        setUsers([dummyUser]);
-        setIsAuthLoading(false);
-        return;
+      console.log("INFO: Authentication not required. Using default user.");
+      const dummyUser: User = {
+        id: defaultUserId,
+        username: defaultUserId,
+        passwordHash: '',
+        salt: '',
+        isAdmin: true,
+        dateFormat: 'dd/MM/yyyy',
+      };
+      setCurrentUser(dummyUser);
+      setUsers([dummyUser]);
+      setIsAuthLoading(false);
+      return;
     }
 
     try {
       const [userFromSession, loadedSettings] = await Promise.all([
-          getSessionUser(),
-          loadGlobalSettings(),
+        getSessionUser(),
+        loadGlobalSettings(),
       ]);
-      
+
       if (loadedSettings) {
         setAppSettings(loadedSettings);
       }
-      
+
       setCurrentUser(userFromSession);
-      
+
       if (userFromSession) {
-          const allUsers = await fetchUsers(); // Only fetch all users if logged in
-          setUsers(allUsers);
-          console.log(`INFO: Restored user '${userFromSession.username}' and fetched all users.`);
+        const allUsers = await fetchUsers(); // Only fetch all users if logged in
+        setUsers(allUsers);
+        console.log(`INFO: Restored user '${userFromSession.username}' and fetched all users.`);
       }
 
     } catch (error) {
@@ -107,7 +107,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       setIsAuthLoading(false);
     }
   };
-  
+
   useEffect(() => {
     initializeAuth();
   }, [isAuthRequired, defaultUserId]);
@@ -118,13 +118,13 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     if (!isAuthRequired || typeof window === 'undefined') return;
 
     const interval = setInterval(async () => {
-        if (document.cookie.includes('session=')) {
-            const user = await getSessionUser();
-            if (!user) {
-                console.log("INFO: Session expired, logging out user.");
-                handleLogout();
-            }
+      if (document.cookie.includes('session=')) {
+        const user = await getSessionUser();
+        if (!user) {
+          console.log("INFO: Session expired, logging out user.");
+          handleLogout();
         }
+      }
     }, 60 * 1000); // Check every 60 seconds
 
     return () => clearInterval(interval);
@@ -135,11 +135,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   useEffect(() => {
     if (isAuthRequired && currentUser) {
       updateUserSettings({
-          theme: currentUser.theme,
-          lastActiveTreeId: currentUser.lastActiveTreeId,
-          gitSettings: currentUser.gitSettings,
-          dateFormat: currentUser.dateFormat,
-          inactivityTimeoutMinutes: currentUser.inactivityTimeoutMinutes,
+        theme: currentUser.theme,
+        lastActiveTreeId: currentUser.lastActiveTreeId,
+        gitSettings: currentUser.gitSettings,
+        dateFormat: currentUser.dateFormat,
+        inactivityTimeoutMinutes: currentUser.inactivityTimeoutMinutes,
+        showChildrenInEditForm: currentUser.showChildrenInEditForm,
       });
     }
   }, [isAuthRequired, currentUser]);
@@ -148,10 +149,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   const handleLogin = async (identifier: string, password: string): Promise<boolean> => {
     const user = await loginOnClient(identifier, password);
     if (user) {
-        setCurrentUser(user);
-        const allUsers = await fetchUsers(); // Fetch all users on login
-        setUsers(allUsers);
-        return true;
+      setCurrentUser(user);
+      const allUsers = await fetchUsers(); // Fetch all users on login
+      setUsers(allUsers);
+      return true;
     }
     return false;
   };
@@ -159,12 +160,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   const handleRegister = async (username: string, password: string): Promise<boolean> => {
     const newUser = await registerOnClient(username, password);
     if (newUser) {
-        setCurrentUser(newUser);
-        const allUsers = await fetchUsers(); // Fetch all users on register
-        setUsers(allUsers);
-        console.log(`INFO: User '${username}' registered and logged in.`);
-        window.location.href = '/';
-        return true;
+      setCurrentUser(newUser);
+      const allUsers = await fetchUsers(); // Fetch all users on register
+      setUsers(allUsers);
+      console.log(`INFO: User '${username}' registered and logged in.`);
+      window.location.href = '/';
+      return true;
     }
     return false;
   };
@@ -176,13 +177,13 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
     if (users.some(u => u.username === username)) {
       console.warn(`WARN: Admin failed to create user. Username '${username}' already exists.`);
-      return false; 
+      return false;
     }
     const newUser = await addUserOnServer({ username, password, isAdmin });
     if (newUser) {
-        setUsers([...users, newUser]);
-        console.log(`INFO: Admin '${currentUser.username}' created new user '${username}'.`);
-        return true;
+      setUsers([...users, newUser]);
+      console.log(`INFO: Admin '${currentUser.username}' created new user '${username}'.`);
+      return true;
     }
     return false;
   };
@@ -201,12 +202,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     await deleteUserOnClient(userId);
     setUsers(users.filter(user => user.id !== userId));
   };
-  
+
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
     return await changeUserPassword(currentPassword, newPassword);
   };
-  
+
   const resetPasswordByAdmin = async (userId: string, newPassword: string): Promise<void> => {
     if (!currentUser?.isAdmin) return;
     await resetPasswordByAdminOnServer(userId, newPassword);
@@ -216,7 +217,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     if (!isAuthRequired || !currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, theme: newTheme } : null);
   }
-  
+
   const setDateFormat = (newFormat: string) => {
     if (!isAuthRequired || !currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, dateFormat: newFormat } : null);
@@ -227,12 +228,17 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setCurrentUser(prev => prev ? { ...prev, inactivityTimeoutMinutes: minutes } : null);
   };
 
+  const setShowChildrenInEditForm = (show: boolean) => {
+    if (!isAuthRequired || !currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, showChildrenInEditForm: show } : null);
+  };
+
   const setGlobalSettingsState = async (settings: GlobalSettings) => {
     await saveGlobalSettings(settings);
     setAppSettings(settings);
     console.log(`INFO: Global settings updated: ${JSON.stringify(settings)}`);
   };
-  
+
   const setGitSettings = async (gitSettings: GitSettings) => {
     if (!currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, gitSettings } : null);
@@ -262,5 +268,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setInactivityTimeout,
     setGitSettings,
     setLastActiveTreeId,
+    setShowChildrenInEditForm,
   };
 }

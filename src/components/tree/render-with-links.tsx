@@ -53,44 +53,44 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
 
     const nodeInfo = findNodeAndParent(nodeId);
     if (nodeInfo) {
-        expandToNode(nodeId);
-        
-        const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
-        const instanceId = `${nodeInfo.node.id}_${primaryParentId}`;
-        setSelectedNodeIds([instanceId]);
-        
-        // Close any open dialogs that might be obscuring the view
-        setDialogState({ 
-            isNodePreviewOpen: false, 
-            isNodeEditOpen: false,
-            isAddChildOpen: false,
-            isAddSiblingOpen: false,
-            isAddNodeOpen: false,
-            isCommitOpen: false,
-            isHistoryOpen: false,
-        });
+      expandToNode(nodeId);
 
-        // Allow the UI to update before scrolling
-        requestAnimationFrame(() => {
-            const element = document.getElementById(`node-card-${instanceId}`);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-              // Fallback if the element isn't found immediately
-              setTimeout(() => {
-                document.getElementById(`node-card-${instanceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 100);
-            }
-        });
+      const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
+      const instanceId = `${nodeInfo.node.id}_${primaryParentId}`;
+      setSelectedNodeIds([instanceId]);
+
+      // Close any open dialogs that might be obscuring the view
+      setDialogState({
+        isNodePreviewOpen: false,
+        openNodeEditInstanceIds: [],
+        isAddChildOpen: false,
+        isAddSiblingOpen: false,
+        isAddNodeOpen: false,
+        isCommitOpen: false,
+        isHistoryOpen: false,
+      });
+
+      // Allow the UI to update before scrolling
+      requestAnimationFrame(() => {
+        const element = document.getElementById(`node-card-${instanceId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          // Fallback if the element isn't found immediately
+          setTimeout(() => {
+            document.getElementById(`node-card-${instanceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
+        }
+      });
     } else {
-        toast({
-            variant: 'destructive',
-            title: 'Node not found',
-            description: 'The target node could not be found in the current tree view.'
-        });
+      toast({
+        variant: 'destructive',
+        title: 'Node not found',
+        description: 'The target node could not be found in the current tree view.'
+      });
     }
   };
-  
+
   const nodeData = node.data || {};
   const placeholderRegex = /\{([^}]+)\}|\?\{([^}]+)\}/g;
 
@@ -116,21 +116,21 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
             return parseHtml(part, {
               replace: (domNode) => {
                 if ('attribs' in domNode) {
-                    const props = attributesToProps(domNode.attribs);
-                    // Remove any on* event handlers
-                    for (const prop in props) {
-                        if (prop.toLowerCase().startsWith('on')) {
-                            delete (props as any)[prop];
-                        }
+                  const props = attributesToProps(domNode.attribs);
+                  // Remove any on* event handlers
+                  for (const prop in props) {
+                    if (prop.toLowerCase().startsWith('on')) {
+                      delete (props as any)[prop];
                     }
-                    // Sanitize href attributes
-                    if (domNode.name === 'a' && props.href) {
-                        const href = props.href as string;
-                        if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
-                            delete props.href;
-                        }
+                  }
+                  // Sanitize href attributes
+                  if (domNode.name === 'a' && props.href) {
+                    const href = props.href as string;
+                    if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
+                      delete props.href;
                     }
-                    return React.createElement(domNode.name, props, domToReact((domNode as any).children));
+                  }
+                  return React.createElement(domNode.name, props, domToReact((domNode as any).children));
                 }
               }
             });
@@ -138,21 +138,21 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
         </React.Fragment>
       );
     }
-    
+
     // Logic for handling placeholders...
     let lastIndex = 0;
     const segments = [];
-    
+
     for (const match of placeholders) {
       const isKeepAlive = match[0].startsWith('?{');
       const fieldName = (match[1] || match[2]).trim();
       const field = template.fields.find(f => f.name === fieldName);
-      
+
       const textBefore = line.substring(lastIndex, match.index);
       if (textBefore) segments.push(textBefore);
 
       lastIndex = (match.index ?? 0) + match[0].length;
-      
+
       if (!field || field.type === 'picture' || field.type === 'table-header' || field.type === 'attachment') {
         segments.push(match[0]);
         continue;
@@ -160,7 +160,7 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
 
       let value = nodeData[field.id];
       const valueIsEmpty = value === undefined || value === null || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0);
-      
+
       if (!isKeepAlive && valueIsEmpty) {
         // If it's a standard placeholder and it's empty, we might hide the whole line later
       }
@@ -171,7 +171,7 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
         if (field.type === "date" && typeof value === 'string') {
           formattedValue = formatDate(value, currentUser?.dateFormat);
         }
-        
+
         let finalValue = formattedValue;
         if (finalValue) {
           finalValue = `${field.prefix || ''}${finalValue}${field.postfix || ''}`;
@@ -179,21 +179,21 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
         segments.push(finalValue);
       }
     }
-    
+
     const textAfter = line.substring(lastIndex);
     if (textAfter) segments.push(textAfter);
 
     const renderedLine = segments.join('');
-    
+
     // Check if line should be rendered
-     const hasContent = placeholders.some(match => {
-        const fieldName = (match[1] || match[2]).trim();
-        const field = template.fields.find(f => f.name === fieldName);
-        if (!field) return true; // keep unmatched placeholders
-        const value = nodeData[field.id];
-        return value !== undefined && value !== null && value !== '' && (!Array.isArray(value) || value.length > 0);
-      });
-      
+    const hasContent = placeholders.some(match => {
+      const fieldName = (match[1] || match[2]).trim();
+      const field = template.fields.find(f => f.name === fieldName);
+      if (!field) return true; // keep unmatched placeholders
+      const value = nodeData[field.id];
+      return value !== undefined && value !== null && value !== '' && (!Array.isArray(value) || value.length > 0);
+    });
+
     if (!hasContent && !placeholders.some(m => m[0].startsWith('?{'))) return null;
 
     const parts = renderedLine.split(URL_REGEX).filter(Boolean);
@@ -210,27 +210,27 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
           if (part.match(/https?:\/\//)) {
             return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="underline">{part}</a>;
           }
-           return parseHtml(part, {
-              replace: (domNode) => {
-                if ('attribs' in domNode) {
-                    const props = attributesToProps(domNode.attribs);
-                    // Remove any on* event handlers
-                    for (const prop in props) {
-                        if (prop.toLowerCase().startsWith('on')) {
-                            delete (props as any)[prop];
-                        }
-                    }
-                    // Sanitize href attributes
-                    if (domNode.name === 'a' && props.href) {
-                        const href = props.href as string;
-                        if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
-                            delete props.href;
-                        }
-                    }
-                    return React.createElement(domNode.name, props, domToReact((domNode as any).children));
+          return parseHtml(part, {
+            replace: (domNode) => {
+              if ('attribs' in domNode) {
+                const props = attributesToProps(domNode.attribs);
+                // Remove any on* event handlers
+                for (const prop in props) {
+                  if (prop.toLowerCase().startsWith('on')) {
+                    delete (props as any)[prop];
+                  }
                 }
+                // Sanitize href attributes
+                if (domNode.name === 'a' && props.href) {
+                  const href = props.href as string;
+                  if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
+                    delete props.href;
+                  }
+                }
+                return React.createElement(domNode.name, props, domToReact((domNode as any).children));
               }
-            });
+            }
+          });
         })}
       </React.Fragment>
     );
