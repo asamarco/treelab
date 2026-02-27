@@ -271,7 +271,10 @@ export function TreeNodeComponent({
           isDragging && "shadow-xl opacity-80",
           isOver && "outline-2 outline-dashed outline-primary"
         )}
-        onPointerDown={startLongPress}
+        onPointerDown={(e) => {
+          if (Date.now() < ignoreClicksUntil) return;
+          startLongPress(e);
+        }}
         onPointerUp={clearLongPress}
         onPointerLeave={clearLongPress}
         onPointerCancel={clearLongPress}
@@ -287,6 +290,7 @@ export function TreeNodeComponent({
           onSelect(instanceId, e.shiftKey, e.ctrlKey || e.metaKey);
         }}
         onDoubleClick={(e) => {
+          if (Date.now() < ignoreClicksUntil) return;
           if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
 
           const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
