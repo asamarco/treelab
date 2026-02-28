@@ -8,23 +8,23 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  SelectGroup,
-  SelectLabel,
-  SelectSeparator,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+    SelectGroup,
+    SelectLabel,
+    SelectSeparator,
 } from "../ui/select";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
@@ -58,7 +58,7 @@ interface TreePageModalsProps {
     syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
 }
 
-export function TreePageModals({ 
+export function TreePageModals({
     activeTree,
     templates,
     getTemplateById,
@@ -69,7 +69,7 @@ export function TreePageModals({
 }: TreePageModalsProps) {
     const { currentUser } = useAuthContext();
     const router = useRouter();
-    const { 
+    const {
         exportNodesAsJson,
         exportNodesAsArchive,
         exportNodesAsHtml,
@@ -84,6 +84,8 @@ export function TreePageModals({
         activeTreeId,
         changeMultipleNodesTemplate,
         selectedNodeIds,
+        setSelectedNodeIds,
+        deleteNodes,
         batchUpdateNodeData,
     } = useTreeContext();
     const { dialogState, setDialogState } = useUIContext();
@@ -94,7 +96,7 @@ export function TreePageModals({
 
     // Rename Tree Dialog State
     const [newTitle, setNewTitle] = useState(dialogState.initialTreeTitle || activeTree.title);
-     useEffect(() => {
+    useEffect(() => {
         if (dialogState.isRenameTreeOpen) {
             setNewTitle(dialogState.initialTreeTitle || activeTree.title);
         }
@@ -110,7 +112,7 @@ export function TreePageModals({
     const [history, setHistory] = useState<GitCommit[]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
-    
+
     // Preview Dialog State
     const [previewExpandedNodeIds, setPreviewExpandedNodeIds] = useState<string[]>([]);
 
@@ -118,9 +120,9 @@ export function TreePageModals({
     const [targetTemplateId, setTargetTemplateId] = useState<string | null>(null);
 
     const nodesForPreview = useMemo(() => {
-      if (!dialogState.isNodePreviewOpen || !dialogState.nodeIdsForPreview) return [];
-      
-      return dialogState.nodeIdsForPreview.map(id => findNodeAndParent(id, allNodes)?.node).filter((n): n is TreeNode => !!n);
+        if (!dialogState.isNodePreviewOpen || !dialogState.nodeIdsForPreview) return [];
+
+        return dialogState.nodeIdsForPreview.map(id => findNodeAndParent(id, allNodes)?.node).filter((n): n is TreeNode => !!n);
 
     }, [dialogState.isNodePreviewOpen, dialogState.nodeIdsForPreview, allNodes, findNodeAndParent]);
 
@@ -135,24 +137,24 @@ export function TreePageModals({
     }, [dialogState.isMultiNodeEditOpen, selectedNodeIds, findNodeAndParent, getTemplateById]);
 
     const previewNavigation = useMemo(() => {
-      if (nodesForPreview.length !== 1) {
-        return { prev: null, next: null, parent: null };
-      }
-      const nodeInfo = findNodeAndParent(nodesForPreview[0].id, allNodes);
-      if (!nodeInfo) {
-        return { prev: null, next: null, parent: null };
-      }
-      const { node, parent } = nodeInfo;
-      const siblings = parent ? parent.children : allNodes;
+        if (nodesForPreview.length !== 1) {
+            return { prev: null, next: null, parent: null };
+        }
+        const nodeInfo = findNodeAndParent(nodesForPreview[0].id, allNodes);
+        if (!nodeInfo) {
+            return { prev: null, next: null, parent: null };
+        }
+        const { node, parent } = nodeInfo;
+        const siblings = parent ? parent.children : allNodes;
 
-      // Note: This simple index based navigation might not be ideal for cloned nodes with multiple parents
-      // but for a straightforward preview it's acceptable.
-      const currentIndex = siblings.findIndex(s => s.id === node.id);
+        // Note: This simple index based navigation might not be ideal for cloned nodes with multiple parents
+        // but for a straightforward preview it's acceptable.
+        const currentIndex = siblings.findIndex(s => s.id === node.id);
 
-      const prev = currentIndex > 0 ? siblings[currentIndex - 1] : null;
-      const next = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
+        const prev = currentIndex > 0 ? siblings[currentIndex - 1] : null;
+        const next = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
 
-      return { prev, next, parent };
+        return { prev, next, parent };
     }, [nodesForPreview, findNodeAndParent, allNodes]);
 
     useEffect(() => {
@@ -185,7 +187,7 @@ export function TreePageModals({
             setIsHistoryLoading(false);
         }
     }, [activeTree, currentUser?.gitSettings?.githubPat, fetchRepoHistory, setDialogState, toast]);
-    
+
     useEffect(() => {
         if (dialogState.isHistoryOpen) {
             handleFetchHistory();
@@ -196,7 +198,7 @@ export function TreePageModals({
     // Event Handlers
     const handleTitleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        if(newTitle.trim()){
+        if (newTitle.trim()) {
             setTreeTitle(activeTree.id, newTitle.trim());
             setDialogState({ isRenameTreeOpen: false });
         }
@@ -213,14 +215,14 @@ export function TreePageModals({
         }
 
         setIsCommitting(true);
-        
+
         // Immediately close the appropriate dialog
         if (force) {
             setDialogState({ isOutOfSyncCommitOpen: false });
         } else {
             setDialogState({ isCommitOpen: false });
         }
-        
+
         toast({ title: "Committing...", description: `Pushing changes to ${activeTree.gitSync.repoName}` });
 
         try {
@@ -242,17 +244,17 @@ export function TreePageModals({
             setIsCommitting(false);
         }
     };
-    
+
     const handleRestoreCommit = async (sha: string) => {
         if (!activeTree || !currentUser?.gitSettings?.githubPat) return;
         setIsRestoring(true);
-        toast({title: "Restoring version..."});
+        toast({ title: "Restoring version..." });
         try {
             await restoreToCommit(activeTree.id, sha, currentUser.gitSettings.githubPat);
             setDialogState({ isHistoryOpen: false });
-            toast({title: "Restore Complete", description: "The tree has been restored to the selected version."});
+            toast({ title: "Restore Complete", description: "The tree has been restored to the selected version." });
         } catch (error) {
-            toast({variant: "destructive", title: "Failed to restore version", description: (error as Error).message});
+            toast({ variant: "destructive", title: "Failed to restore version", description: (error as Error).message });
         } finally {
             setIsRestoring(false);
         }
@@ -272,17 +274,17 @@ export function TreePageModals({
             setIsSyncing(false);
         }
     };
-    
+
     const handlePreviewNavigate = (nodeId: string | undefined) => {
         if (nodeId) {
             setDialogState({ nodeIdsForPreview: [nodeId] });
         }
     };
-    
+
     const handlePrint = () => {
-      window.print();
+        window.print();
     }
-    
+
     const handleExport = (format: 'json' | 'archive' | 'html') => {
         if (nodesForPreview.length === 0) {
             toast({ variant: 'destructive', title: 'Export Error', description: 'Could not find any nodes to export.' });
@@ -292,7 +294,7 @@ export function TreePageModals({
         const exportName = `${nodesForPreview.length}-nodes-export`;
         const exportTitle = `${nodesForPreview.length} Selected Nodes`;
         const exportId = 'export-container-selection';
-        
+
         switch (format) {
             case 'json':
                 exportNodesAsJson(nodesForPreview, exportName);
@@ -374,16 +376,16 @@ export function TreePageModals({
                             </SelectTrigger>
                             <SelectContent>
                                 {templates.map((t) => (
-                                <SelectItem key={t.id} value={t.id}>
-                                    <div className="flex items-center gap-2">
-                                    <Icon
-                                        name={(t.icon as keyof typeof icons) || "FileText"}
-                                        className="h-4 w-4"
-                                        style={{ color: t.color || "hsl(var(--primary))" }}
-                                    />
-                                    <span>{t.name}</span>
-                                    </div>
-                                </SelectItem>
+                                    <SelectItem key={t.id} value={t.id}>
+                                        <div className="flex items-center gap-2">
+                                            <Icon
+                                                name={(t.icon as keyof typeof icons) || "FileText"}
+                                                className="h-4 w-4"
+                                                style={{ color: t.color || "hsl(var(--primary))" }}
+                                            />
+                                            <span>{t.name}</span>
+                                        </div>
+                                    </SelectItem>
                                 ))}
                                 <Separator className="my-1" />
                                 <SelectItem value="create_new">
@@ -414,16 +416,16 @@ export function TreePageModals({
                 </DialogContent>
             </Dialog>
 
-             {/* Node Preview Dialog */}
+            {/* Node Preview Dialog */}
             <Dialog open={dialogState.isNodePreviewOpen || false} onOpenChange={(open) => setDialogState({ isNodePreviewOpen: open, nodeIdsForPreview: open ? dialogState.nodeIdsForPreview : undefined })}>
                 <DialogContent className="max-w-[90vw] max-h-[80vh] flex flex-col printable-area">
                     <DialogHeader className="no-print">
-                      <DialogTitle className="sr-only">Node Preview</DialogTitle>
+                        <DialogTitle className="sr-only">Node Preview</DialogTitle>
                     </DialogHeader>
                     <div id="node-preview-content" className="flex-1 overflow-y-auto -mx-6 px-6">
                         {nodesForPreview.length > 0 && (
-                            <TreeView 
-                                nodes={nodesForPreview} 
+                            <TreeView
+                                nodes={nodesForPreview}
                                 overrideExpandedIds={previewExpandedNodeIds}
                                 onExpandedChange={setPreviewExpandedNodeIds}
                                 readOnly={true}
@@ -431,37 +433,37 @@ export function TreePageModals({
                         )}
                     </div>
                     <DialogFooter className="border-t pt-2 -mx-6 px-6 no-print">
-                          <DropdownMenu>
+                        <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="outline">
-                                <Download className="mr-2 h-4 w-4" /> Export <ChevronDown className="ml-2 h-4 w-4" />
-                              </Button>
+                                <Button variant="outline">
+                                    <Download className="mr-2 h-4 w-4" /> Export <ChevronDown className="ml-2 h-4 w-4" />
+                                </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem onSelect={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleExport('archive')}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleExport('archive')}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
                             </DropdownMenuContent>
-                          </DropdownMenu>
-                          <Button variant="outline" onClick={handlePrint}>
-                            <Printer className="mr-2 h-4 w-4"/>
+                        </DropdownMenu>
+                        <Button variant="outline" onClick={handlePrint}>
+                            <Printer className="mr-2 h-4 w-4" />
                             Print
-                          </Button>
-                          <div className="flex-grow"></div>
-                          {nodesForPreview.length === 1 && (
+                        </Button>
+                        <div className="flex-grow"></div>
+                        {nodesForPreview.length === 1 && (
                             <>
-                              <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.prev?.id)} disabled={!previewNavigation.prev}>
-                                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous Node
-                              </Button>
-                               <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.parent?.id)} disabled={!previewNavigation.parent}>
-                                  <ArrowUp className="mr-2 h-4 w-4" /> Parent Node
-                              </Button>
-                              <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.next?.id)} disabled={!previewNavigation.next}>
-                                   Next Node <ArrowRight className="ml-2 h-4 w-4" />
-                              </Button>
+                                <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.prev?.id)} disabled={!previewNavigation.prev}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Node
+                                </Button>
+                                <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.parent?.id)} disabled={!previewNavigation.parent}>
+                                    <ArrowUp className="mr-2 h-4 w-4" /> Parent Node
+                                </Button>
+                                <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.next?.id)} disabled={!previewNavigation.next}>
+                                    Next Node <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
                             </>
-                          )}
-                      </DialogFooter>
+                        )}
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
@@ -512,12 +514,12 @@ export function TreePageModals({
                     </form>
                 </DialogContent>
             </Dialog>
-            
-             {/* Out of Sync Commit Dialog */}
+
+            {/* Out of Sync Commit Dialog */}
             <Dialog open={dialogState.isOutOfSyncCommitOpen || false} onOpenChange={(open) => setDialogState({ isOutOfSyncCommitOpen: open })}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive"/>Remote Changes Detected</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-destructive" />Remote Changes Detected</DialogTitle>
                         <DialogDescription>
                             Your local version is out of sync with the remote repository. To avoid losing data, please choose an option below.
                         </DialogDescription>
@@ -527,11 +529,11 @@ export function TreePageModals({
                             Force Commit (Overwrite Remote)
                         </Button>
                         <Button variant="outline" onClick={handleSyncFromDialog} disabled={isSyncing}>
-                             {isSyncing && <Loader2 className="animate-spin mr-2" />}
+                            {isSyncing && <Loader2 className="animate-spin mr-2" />}
                             Sync (Lose Local Changes)
                         </Button>
                     </div>
-                     <DialogFooter>
+                    <DialogFooter>
                         <DialogClose asChild>
                             <Button type="button" variant="ghost" className="w-full">Cancel</Button>
                         </DialogClose>
@@ -550,7 +552,7 @@ export function TreePageModals({
                             <ul className="space-y-4">
                                 {history.map(commit => (
                                     <li key={commit.sha} className="flex items-start gap-4">
-                                        <Github className="h-5 w-5 mt-1 text-muted-foreground"/>
+                                        <Github className="h-5 w-5 mt-1 text-muted-foreground" />
                                         <div className="flex-1">
                                             <p className="font-medium">{commit.message}</p>
                                             <p className="text-sm text-muted-foreground">{commit.author} committed {formatDistanceToNow(parseISO(commit.date))} ago</p>
@@ -559,7 +561,7 @@ export function TreePageModals({
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <Button variant="outline" size="sm" disabled={isRestoring}>
-                                                        {isRestoring ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <RefreshCcw className="mr-2 h-4 w-4"/>} 
+                                                        {isRestoring ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
                                                         Restore
                                                     </Button>
                                                 </AlertDialogTrigger>
@@ -593,7 +595,7 @@ export function TreePageModals({
                     </div>
                 </DialogContent>
             </Dialog>
-            
+
             {/* Hidden render target for PDF/HTML exports */}
             {dialogState.exportNodes && (
                 <div id={dialogState.exportElementId} className="hidden printable-area">
@@ -650,8 +652,40 @@ export function TreePageModals({
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Nodes Confirmation Dialog */}
+            <AlertDialog
+                open={dialogState.isDeleteNodesConfirmOpen || false}
+                onOpenChange={(open) => setDialogState({ isDeleteNodesConfirmOpen: open })}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will delete {selectedNodeIds.length} selected {selectedNodeIds.length === 1 ? 'node' : 'nodes'} and all their children.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                deleteNodes(selectedNodeIds);
+                                setSelectedNodeIds([]);
+                                setDialogState({ isDeleteNodesConfirmOpen: false });
+                                toast({
+                                    title: 'Deleted',
+                                    description: `${selectedNodeIds.length} node ${selectedNodeIds.length === 1 ? 'instance' : 'instances'} deleted.`
+                                });
+                            }}
+                            className="bg-destructive hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 
-    
+
 }

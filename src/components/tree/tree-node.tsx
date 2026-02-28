@@ -85,6 +85,7 @@ export function TreeNodeComponent({
     expandedNodeIds: globalExpandedNodeIds,
     setExpandedNodeIds: setGlobalExpandedNodeIds,
     selectedNodeIds,
+    setSelectedNodeIds,
     deleteNode,
   } = useTreeContext();
   const { isCompactView: globalIsCompactView } = useUIContext();
@@ -207,31 +208,19 @@ export function TreeNodeComponent({
                     <RefreshCcw className="mr-2 h-4 w-4" />
                     Change Template
                   </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete this node and all its children.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteNode(node.id, contextualParentId)}
-                          className="bg-destructive hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (!selectedNodeIds.includes(instanceId)) {
+                        setSelectedNodeIds([instanceId]);
+                      }
+                      setDialogState({ isDeleteNodesConfirmOpen: true });
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
                 </>
               )}
             </div>

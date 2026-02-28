@@ -281,8 +281,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
 
     if (event.key === 'Delete' && currentUser && selectedNodeIds.length > 0) {
       event.preventDefault();
-      deleteNodes(selectedNodeIds);
-      setSelectedNodeIds([]);
+      setDialogState({ isDeleteNodesConfirmOpen: true });
       return;
     }
 

@@ -31,6 +31,7 @@ export interface DialogState {
   isPasteTemplateOpen?: boolean;
   nodeInstanceIdForAction?: string;
   openNodeEditInstanceIds?: string[];
+  isDeleteNodesConfirmOpen?: boolean;
 }
 
 interface UIContextType {

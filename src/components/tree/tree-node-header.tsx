@@ -99,6 +99,7 @@ export function TreeNodeHeader({
     pasteNodes, getNodeInstancePaths,
     exportNodesAsArchive, exportNodesAsHtml, exportNodesAsJson, getTemplateById,
     getSiblingOrderRange,
+    selectedNodeIds,
     setSelectedNodeIds,
     pasteNodesAsClones,
   } = useTreeContext();
@@ -297,23 +298,18 @@ export function TreeNodeHeader({
               </DropdownMenuPortal>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>This action will permanently delete this instance of the "{node.name}" node. If this is the last instance, the node and all its children will be deleted.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteNode(node.id, contextualParentId)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => {
+                if (!selectedNodeIds.includes(instanceId)) {
+                  setSelectedNodeIds([instanceId]);
+                }
+                setDialogState({ isDeleteNodesConfirmOpen: true });
+              }}
+              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )}

@@ -71,7 +71,6 @@ export function TreeSelectionBar() {
     const { setDialogState } = useUIContext();
     const { currentUser } = useAuthContext();
     const { toast } = useToast();
-    const deleteTriggerRef = useRef<HTMLButtonElement>(null);
 
     const areAllSameTemplate = useMemo(() => {
         if (selectedNodeIds.length === 0) return false;
@@ -250,7 +249,7 @@ export function TreeSelectionBar() {
             } else if (event.key === 'Delete' || event.key === 'Backspace') {
                 if (selectedNodeIds.length === 0) return;
                 event.preventDefault();
-                deleteTriggerRef.current?.click();
+                setDialogState({ isDeleteNodesConfirmOpen: true });
             } else if (event.key === 'v') {
                 if (selectedNodeIds.length === 0) return;
                 event.preventDefault();
@@ -385,26 +384,14 @@ export function TreeSelectionBar() {
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
-                            <AlertDialog>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <AlertDialogTrigger asChild>
-                                            <Button ref={deleteTriggerRef} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                        </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Delete (Del)</p></TooltipContent>
-                                </Tooltip>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>This will delete {selectedNodeIds.length} selected {isPlural ? 'node(s)' : 'node'} and all their children.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDeleteSelection} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => setDialogState({ isDeleteNodesConfirmOpen: true })}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
                         </TooltipProvider>
                         <TooltipProvider>
                             <Tooltip>
