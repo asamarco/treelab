@@ -7,7 +7,7 @@ Treelab is a Next.js application built for flexible, hierarchical data managemen
 In practice, Treelab is used daily to track laboratory activities, fabrication processes, present project progress to customers, and manage lightweight databases.
 
 <p align="center">
-    <img width="960" height="475" alt="image" src="https://github.com/user-attachments/assets/f3791717-3265-41e5-8458-45bba4d1e766" /
+    <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fda8a5ac-fa3e-47fd-a3b6-4882d6668384" />
 </p>
 
 ##  Core Features
