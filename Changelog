@@ -1,3 +1,10 @@
+v0.5.2
+Feature: Node form extension (optional) to make quick edits to immediate children.
+Improvement: On mobile, multiple selection and node actions are handled by the long press gesture
+Bugfix: Confirmation form for node deletion is now shown in all cases (not only if using the node menu)
+Bugfix: page redirects are now correctly working with the current version of React
+
+
 v0.5.1
 Updated Next and React to latest versions
 Improvement: increase randomness for attachments URLs by using UUIDs instead of the previous random key.
