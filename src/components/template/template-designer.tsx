@@ -50,6 +50,7 @@ import {
   Upload,
   Download,
   GripVertical,
+  Settings2,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -240,6 +241,17 @@ export function TemplateDesigner({
   const { updateNodeNamesForTemplate } = useTreeContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [templateForNodeUpdate, setTemplateForNodeUpdate] = useState<Template | null>(null);
+  const [expandedExtraFields, setExpandedExtraFields] = useState<Record<string, boolean>>({});
+
+  const toggleExtraFields = (fieldId: string, index: number) => {
+    const hasValues = !!(form.getValues(`fields.${index}.prefix`) || form.getValues(`fields.${index}.postfix`));
+    const currentlyExpanded = expandedExtraFields[fieldId] ?? hasValues;
+
+    setExpandedExtraFields(prev => ({
+      ...prev,
+      [fieldId]: !currentlyExpanded
+    }));
+  };
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
@@ -250,14 +262,14 @@ export function TemplateDesigner({
     control: form.control,
     name: "fields",
   });
-  
+
   const { fields: conditionalRules, append: appendRule, remove: removeRule, move: moveRule } = useFieldArray({
     control: form.control,
     name: "conditionalRules",
   });
 
   const watchedFields = form.watch('fields');
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -290,7 +302,7 @@ export function TemplateDesigner({
   };
 
   const initialNameTemplateRef = useRef(template.nameTemplate);
-  
+
   useEffect(() => {
     // This effect now only handles the logic for prompting to update existing nodes.
     // The form data loading is handled by the `key` prop on the component.
@@ -300,7 +312,7 @@ export function TemplateDesigner({
     }
     initialNameTemplateRef.current = template.nameTemplate;
   }, [template.nameTemplate, template.id]);
-  
+
   const onSubmit = (data: TemplateFormValues) => {
     toast({
       title: "Template saved!",
@@ -332,7 +344,7 @@ export function TemplateDesigner({
           if (typeof content !== "string")
             throw new Error("File content is not valid");
           const importedData = JSON.parse(content);
-          
+
           const validation = templateSchema.safeParse(importedData);
           if (validation.success) {
             const dataToLoad = validation.data;
@@ -342,7 +354,7 @@ export function TemplateDesigner({
               ...dataToLoad,
               id: currentId,
             });
-            
+
             toast({
               title: "Template Loaded",
               description: `Data from "${dataToLoad.name}" has been loaded into the designer. Click Save to apply.`,
@@ -362,9 +374,9 @@ export function TemplateDesigner({
             description: "Could not read or parse the file.",
           });
         } finally {
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
         }
       };
       reader.readAsText(file);
@@ -373,12 +385,12 @@ export function TemplateDesigner({
 
   const handleConfirmNodeUpdate = () => {
     if (templateForNodeUpdate) {
-        updateNodeNamesForTemplate(templateForNodeUpdate);
-        toast({
-            title: "Node Names Updated",
-            description: `All nodes using the "${templateForNodeUpdate.name}" template will be updated.`
-        });
-        setTemplateForNodeUpdate(null);
+      updateNodeNamesForTemplate(templateForNodeUpdate);
+      toast({
+        title: "Node Names Updated",
+        description: `All nodes using the "${templateForNodeUpdate.name}" template will be updated.`
+      });
+      setTemplateForNodeUpdate(null);
     }
   };
 
@@ -390,306 +402,320 @@ export function TemplateDesigner({
 
   return (
     <>
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>Template Designer</CardTitle>
-                <CardDescription>
-                  {template.id && !template.id.startsWith('new_')
-                    ? "Editing an existing template."
-                    : "Creating a new template."}
-                </CardDescription>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>Template Designer</CardTitle>
+                  <CardDescription>
+                    {template.id && !template.id.startsWith('new_')
+                      ? "Editing an existing template."
+                      : "Creating a new template."}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" /> Import
+                  </Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImport}
+                    accept=".json"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Export
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="mr-2 h-4 w-4" /> Import
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImport}
-                  accept=".json"
-                  className="hidden"
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Template Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Project, Task, User"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                >
-                  <Download className="mr-2 h-4 w-4" /> Export
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Template Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Project, Task, User"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="nameTemplate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Node Name Template</FormLabel>
-                    <FormControl>
-                       <TemplateNameInput
+                <FormField
+                  control={form.control}
+                  name="nameTemplate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Node Name Template</FormLabel>
+                      <FormControl>
+                        <TemplateNameInput
                           value={field.value}
                           onChange={field.onChange}
                           fields={form.watch('fields')}
                           placeholder="e.g., Task: {Title}"
                         />
-                    </FormControl>
-                    <FormDescription>
-                      Define the node name using plain text and field names in curly braces, like `{"{field name}"}`.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bodyTemplate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Body Template</FormLabel>
-                    <FormControl>
-                       <TemplateTextarea
+                      </FormControl>
+                      <FormDescription>
+                        Define the node name using plain text and field names in curly braces, like `{"{field name}"}`.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bodyTemplate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Body Template</FormLabel>
+                      <FormControl>
+                        <TemplateTextarea
                           value={field.value ?? ""}
                           onChange={field.onChange}
                           fields={form.watch('fields')}
                           placeholder="e.g., Assigned to: {Assignee}\nStatus: {Status}"
                         />
-                    </FormControl>
-                    <FormDescription>
-                      Define the node body content using plain text and field names in curly braces.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="icon"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Icon</FormLabel>
-                      <FormControl>
-                        <IconPicker
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
                       </FormControl>
+                      <FormDescription>
+                        Define the node body content using plain text and field names in curly braces.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="icon"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Icon</FormLabel>
+                        <FormControl>
+                          <IconPicker
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="color"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Default Accent Color</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="color"
+                              {...field}
+                              className="h-10 w-12 p-1"
+                            />
+                            <Input
+                              type="text"
+                              placeholder="#RRGGBB"
+                              className="w-full"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <FormField
                   control={form.control}
-                  name="color"
+                  name="preferredChildTemplates"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Default Accent Color</FormLabel>
+                      <FormLabel>Preferred Child Templates</FormLabel>
                       <FormControl>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="color"
-                            {...field}
-                            className="h-10 w-12 p-1"
-                          />
-                          <Input
-                            type="text"
-                            placeholder="#RRGGBB"
-                            className="w-full"
-                            {...field}
-                          />
-                        </div>
+                        <MultiSelect
+                          options={availableChildTemplates}
+                          selected={field.value || []}
+                          onChange={field.onChange}
+                          placeholder="Select preferred templates..."
+                          className="w-full"
+                        />
                       </FormControl>
+                      <FormDescription>
+                        These templates will be shown first when adding a child to a node of this type.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="preferredChildTemplates"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Preferred Child Templates</FormLabel>
-                        <FormControl>
-                            <MultiSelect
-                                options={availableChildTemplates}
-                                selected={field.value || []}
-                                onChange={field.onChange}
-                                placeholder="Select preferred templates..."
-                                className="w-full"
-                            />
-                        </FormControl>
-                        <FormDescription>
-                            These templates will be shown first when adding a child to a node of this type.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            <Separator />
-            <div>
-              <h3 className="text-lg font-medium mb-4">Fields</h3>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleFieldDragEnd}
-              >
-                <SortableContext
-                  items={fields.map((f) => f.id)}
-                  strategy={verticalListSortingStrategy}
+              <Separator />
+              <div>
+                <h3 className="text-lg font-medium mb-4">Fields</h3>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleFieldDragEnd}
                 >
-                  <div className="space-y-4">
-                    {fields.map((field, index) => (
-                      <DraggableFieldWrapper key={field.id} id={field.id}>
-                        <Card className="bg-muted/50 p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name={`fields.${index}.name`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Field Name</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="e.g., Assignee, Due Date"
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Controller
-                              control={form.control}
-                              name={`fields.${index}.type`}
-                              render={({ field: { onChange, value } }) => (
-                                <FormItem>
-                                  <FormLabel>Field Type</FormLabel>
-                                  <Select
-                                    onValueChange={onChange}
-                                    defaultValue={value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select a type" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="text">Text</SelectItem>
-                                      <SelectItem value="textarea">
-                                        Text Area
-                                      </SelectItem>
-                                      <SelectItem value="number">
-                                        Number
-                                      </SelectItem>
-                                      <SelectItem value="date">Date</SelectItem>
-                                      <SelectItem value="link">Link</SelectItem>
-                                      <SelectItem value="query">Query</SelectItem>
-                                      <SelectItem value="picture">Picture</SelectItem>
-                                      <SelectItem value="attachment">Attachment</SelectItem>
-                                      <SelectItem value="checkbox">Checkbox</SelectItem>
-                                      <SelectItem value="checklist">Checklist</SelectItem>
-                                      <SelectItem value="table-header">Table Header</SelectItem>
-                                      <SelectItem value="xy-chart">XY Chart</SelectItem>
-                                      <SelectItem value="dropdown">
-                                        Dropdown
-                                      </SelectItem>
-                                       <SelectItem value="dynamic-dropdown">
-                                        Dynamic Dropdown
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          {prefixPostfixSupportedTypes.includes(form.watch(`fields.${index}.type`)) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <SortableContext
+                    items={fields.map((f) => f.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {fields.map((field, index) => (
+                        <DraggableFieldWrapper key={field.id} id={field.id}>
+                          <Card className="bg-muted/50 p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField
                                 control={form.control}
-                                name={`fields.${index}.prefix`}
+                                name={`fields.${index}.name`}
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel>Prefix</FormLabel>
+                                    <FormLabel>Field Name</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g., $" {...field} />
+                                      <Input
+                                        placeholder="e.g., Assignee, Due Date"
+                                        {...field}
+                                      />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-                              <FormField
+                              <Controller
                                 control={form.control}
-                                name={`fields.${index}.postfix`}
-                                render={({ field }) => (
+                                name={`fields.${index}.type`}
+                                render={({ field: { onChange, value } }) => (
                                   <FormItem>
-                                    <FormLabel>Postfix</FormLabel>
-                                    <FormControl>
-                                      <Input placeholder="e.g., kg" {...field} />
-                                    </FormControl>
+                                    <FormLabel>Field Type</FormLabel>
+                                    <Select
+                                      onValueChange={onChange}
+                                      defaultValue={value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select a type" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="text">Text</SelectItem>
+                                        <SelectItem value="textarea">
+                                          Text Area
+                                        </SelectItem>
+                                        <SelectItem value="number">
+                                          Number
+                                        </SelectItem>
+                                        <SelectItem value="date">Date</SelectItem>
+                                        <SelectItem value="link">Link</SelectItem>
+                                        <SelectItem value="query">Query</SelectItem>
+                                        <SelectItem value="picture">Picture</SelectItem>
+                                        <SelectItem value="attachment">Attachment</SelectItem>
+                                        <SelectItem value="checkbox">Checkbox</SelectItem>
+                                        <SelectItem value="checklist">Checklist</SelectItem>
+                                        <SelectItem value="table-header">Table Header</SelectItem>
+                                        <SelectItem value="xy-chart">XY Chart</SelectItem>
+                                        <SelectItem value="dropdown">
+                                          Dropdown
+                                        </SelectItem>
+                                        <SelectItem value="dynamic-dropdown">
+                                          Dynamic Dropdown
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
                             </div>
-                          )}
-                           {form.watch(`fields.${index}.type`) === 'picture' && (
-                                <div className="mt-4">
-                                  <FormField
-                                    control={form.control}
-                                    name={`fields.${index}.height`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Image Height (px)</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            type="number"
-                                            placeholder="Default: 300"
-                                            {...field}
-                                            value={field.value || ""}
-                                            onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
+                            {prefixPostfixSupportedTypes.includes(form.watch(`fields.${index}.type`)) && (
+                              <div className="mt-2 flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                  onClick={() => toggleExtraFields(field.id, index)}
+                                >
+                                  <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+                                  {(expandedExtraFields[field.id] ?? (form.watch(`fields.${index}.prefix`) || form.watch(`fields.${index}.postfix`))) ? "Hide Prefix/Postfix" : "Set Prefix/Postfix"}
+                                </Button>
+                              </div>
+                            )}
+                            {prefixPostfixSupportedTypes.includes(form.watch(`fields.${index}.type`)) && (expandedExtraFields[field.id] ?? (form.watch(`fields.${index}.prefix`) || form.watch(`fields.${index}.postfix`))) && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-dashed">
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.prefix`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Prefix</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="e.g., $" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.postfix`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Postfix</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="e.g., kg" {...field} />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            )}
+                            {form.watch(`fields.${index}.type`) === 'picture' && (
+                              <div className="mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.height`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Image Height (px)</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="Default: 300"
+                                          {...field}
+                                          value={field.value || ""}
+                                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
                             )}
                             {form.watch(`fields.${index}.type`) === "table-header" && (
                               <div className="mt-4">
-                                 <FormField
+                                <FormField
                                   control={form.control}
                                   name={`fields.${index}.columnType`}
                                   render={({ field }) => (
@@ -733,101 +759,101 @@ export function TemplateDesigner({
                                 />
                               </div>
                             )}
-                          {form.watch(`fields.${index}.type`) ===
-                            "dropdown" && (
-                            <FormField
-                              control={form.control}
-                              name={`fields.${index}.options`}
-                              render={({ field }) => (
-                                <FormItem className="mt-4">
-                                  <FormLabel>Dropdown Options</FormLabel>
-                                  <FormControl>
-                                    <Textarea
-                                      placeholder="Enter options, separated by commas (e.g., To Do, In Progress, Done)"
-                                      name={field.name}
-                                      ref={field.ref}
-                                      value={
-                                        Array.isArray(field.value)
-                                          ? field.value.join(",")
-                                          : ""
-                                      }
-                                      onChange={(e) =>
-                                        field.onChange(
-                                          e.target.value.split(",")
-                                        )
-                                      }
-                                      onBlur={(e) => {
-                                        field.onChange(
-                                          e.target.value
-                                            .split(",")
-                                            .map((s) => s.trim())
-                                            .filter((s) => s.length > 0)
-                                        );
-                                        field.onBlur();
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
+                            {form.watch(`fields.${index}.type`) ===
+                              "dropdown" && (
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.options`}
+                                  render={({ field }) => (
+                                    <FormItem className="mt-4">
+                                      <FormLabel>Dropdown Options</FormLabel>
+                                      <FormControl>
+                                        <Textarea
+                                          placeholder="Enter options, separated by commas (e.g., To Do, In Progress, Done)"
+                                          name={field.name}
+                                          ref={field.ref}
+                                          value={
+                                            Array.isArray(field.value)
+                                              ? field.value.join(",")
+                                              : ""
+                                          }
+                                          onChange={(e) =>
+                                            field.onChange(
+                                              e.target.value.split(",")
+                                            )
+                                          }
+                                          onBlur={(e) => {
+                                            field.onChange(
+                                              e.target.value
+                                                .split(",")
+                                                .map((s) => s.trim())
+                                                .filter((s) => s.length > 0)
+                                            );
+                                            field.onBlur();
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                               )}
-                            />
-                          )}
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="mt-4"
-                            onClick={() => {
-                              remove(index);
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Remove Field
-                          </Button>
-                        </Card>
-                      </DraggableFieldWrapper>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-4"
-                onClick={() =>
-                  append({
-                    id: new Date().toISOString() + Math.random(),
-                    name: "",
-                    type: "text",
-                  })
-                }
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Field
-              </Button>
-            </div>
-            <Separator />
-            <div>
-              <h3 className="text-lg font-medium mb-4">Conditional Formatting</h3>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleRuleDragEnd}
-              >
-                <SortableContext
-                  items={conditionalRules.map((rule) => rule.id)}
-                  strategy={verticalListSortingStrategy}
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="mt-4"
+                              onClick={() => {
+                                remove(index);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Remove Field
+                            </Button>
+                          </Card>
+                        </DraggableFieldWrapper>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() =>
+                    append({
+                      id: new Date().toISOString() + Math.random(),
+                      name: "",
+                      type: "text",
+                    })
+                  }
                 >
-                  <div className="space-y-4">
-                    {conditionalRules.map((rule, index) => (
-                      <DraggableRuleWrapper key={rule.id} id={rule.id}>
-                        <Card className="bg-muted/50 p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <FormField
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Field
+                </Button>
+              </div>
+              <Separator />
+              <div>
+                <h3 className="text-lg font-medium mb-4">Conditional Formatting</h3>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleRuleDragEnd}
+                >
+                  <SortableContext
+                    items={conditionalRules.map((rule) => rule.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-4">
+                      {conditionalRules.map((rule, index) => (
+                        <DraggableRuleWrapper key={rule.id} id={rule.id}>
+                          <Card className="bg-muted/50 p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              <FormField
                                 control={form.control}
                                 name={`conditionalRules.${index}.fieldId`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Field</FormLabel>
-                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                                       <FormControl>
                                         <SelectTrigger><SelectValue placeholder="Select a field..." /></SelectTrigger>
                                       </FormControl>
@@ -841,7 +867,7 @@ export function TemplateDesigner({
                                   </FormItem>
                                 )}
                               />
-                            <FormField
+                              <FormField
                                 control={form.control}
                                 name={`conditionalRules.${index}.operator`}
                                 render={({ field }) => (
@@ -861,7 +887,7 @@ export function TemplateDesigner({
                                   </FormItem>
                                 )}
                               />
-                            <FormField
+                              <FormField
                                 control={form.control}
                                 name={`conditionalRules.${index}.value`}
                                 render={({ field }) => (
@@ -874,9 +900,9 @@ export function TemplateDesigner({
                                   </FormItem>
                                 )}
                               />
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <FormField
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                              <FormField
                                 control={form.control}
                                 name={`conditionalRules.${index}.icon`}
                                 render={({ field }) => (
@@ -889,7 +915,7 @@ export function TemplateDesigner({
                                   </FormItem>
                                 )}
                               />
-                            <FormField
+                              <FormField
                                 control={form.control}
                                 name={`conditionalRules.${index}.color`}
                                 render={({ field }) => (
@@ -897,7 +923,7 @@ export function TemplateDesigner({
                                     <FormLabel>New Color</FormLabel>
                                     <FormControl>
                                       <div className="flex items-center gap-2">
-                                        <Input type="color" {...field} className="h-10 w-12 p-1"/>
+                                        <Input type="color" {...field} className="h-10 w-12 p-1" />
                                         <Input type="text" placeholder="#RRGGBB" {...field} />
                                       </div>
                                     </FormControl>
@@ -905,51 +931,51 @@ export function TemplateDesigner({
                                   </FormItem>
                                 )}
                               />
-                          </div>
-                          <Button type="button" variant="destructive" size="sm" className="mt-4" onClick={() => removeRule(index)}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Remove Rule
-                          </Button>
-                        </Card>
-                      </DraggableRuleWrapper>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-              <Button type="button" variant="outline" className="mt-4" onClick={() => appendRule({
+                            </div>
+                            <Button type="button" variant="destructive" size="sm" className="mt-4" onClick={() => removeRule(index)}>
+                              <Trash2 className="mr-2 h-4 w-4" /> Remove Rule
+                            </Button>
+                          </Card>
+                        </DraggableRuleWrapper>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+                <Button type="button" variant="outline" className="mt-4" onClick={() => appendRule({
                   id: new Date().toISOString() + Math.random(),
                   fieldId: '',
                   operator: 'equals',
                   value: '',
                   icon: 'FileText',
                   color: '#64748b'
-              })}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Rule
+                })}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Rule
+                </Button>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={onCancel}>
+                Cancel
               </Button>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit">Save Template</Button>
-          </CardFooter>
-        </Card>
-      </form>
-    </Form>
-    <AlertDialog open={!!templateForNodeUpdate} onOpenChange={(open) => !open && setTemplateForNodeUpdate(null)}>
+              <Button type="submit">Save Template</Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
+      <AlertDialog open={!!templateForNodeUpdate} onOpenChange={(open) => !open && setTemplateForNodeUpdate(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Update Existing Nodes?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    The "Node Name Template" has changed. Would you like to apply this new naming rule to all existing nodes that use the "{templateForNodeUpdate?.name}" template?
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setTemplateForNodeUpdate(null)}>Leave Them</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmNodeUpdate}>Update Nodes</AlertDialogAction>
-            </AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update Existing Nodes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The "Node Name Template" has changed. Would you like to apply this new naming rule to all existing nodes that use the "{templateForNodeUpdate?.name}" template?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTemplateForNodeUpdate(null)}>Leave Them</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmNodeUpdate}>Update Nodes</AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
+      </AlertDialog>
     </>
   );
 }
