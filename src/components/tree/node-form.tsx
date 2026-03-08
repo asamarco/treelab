@@ -12,7 +12,7 @@
  */
 "use client";
 
-import React, { useState, useRef, useMemo, useEffect } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -138,6 +138,56 @@ const operatorLabels: Record<ConditionalRuleOperator, string> = {
   less_than: 'Less Than',
 };
 
+const XYChartSpreadsheetEditor = ({
+  points,
+  onChange,
+  isDarkMode
+}: {
+  points: { x: string; y: string }[];
+  onChange: (newPoints: { x: string; y: string }[]) => void;
+  isDarkMode: boolean;
+}) => {
+  // We use stable references for the spreadsheet data to avoid infinite loops
+  const spreadsheetData = useMemo(() => {
+    const minRows = Math.max(points.length + 5, 5);
+    return Array.from({ length: minRows }, (_, i) => {
+      const point = points[i];
+      return [
+        { value: point?.x !== undefined ? String(point.x) : '' },
+        { value: point?.y !== undefined ? String(point.y) : '' }
+      ];
+    });
+  }, [points]);
+
+  const handleChange = useCallback((newData: any[][]) => {
+    const newPoints = newData
+      .filter(row => row[0]?.value || row[1]?.value)
+      .map(row => ({
+        x: String(row[0]?.value || ''),
+        y: String(row[1]?.value || '')
+      }));
+
+    // Only trigger parent update if something actually changed
+    // This is CRITICAL to prevent infinite loops if Spreadsheet fires on mount
+    if (JSON.stringify(newPoints) !== JSON.stringify(points)) {
+      onChange(newPoints);
+    }
+  }, [points, onChange]);
+
+  return (
+    <div className="overflow-x-auto rounded-md border w-full bg-background max-h-[400px]">
+      <div className="min-w-full inline-block align-middle">
+        <Spreadsheet
+          darkMode={isDarkMode}
+          data={spreadsheetData}
+          columnLabels={['X', 'Y']}
+          onChange={handleChange}
+        />
+      </div>
+    </div>
+  );
+};
+
 
 export const NodeForm = ({
   node,
@@ -182,7 +232,8 @@ export const NodeForm = ({
   });
 
   const { toast } = useToast();
-  const { currentUser } = useAuthContext();
+  const { currentUser, theme } = useAuthContext();
+  const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const [dragOverStates, setDragOverStates] = useState<Record<string, boolean>>({});
@@ -774,24 +825,28 @@ export const NodeForm = ({
               }
               case 'xy-chart': {
                 const chartData: XYChartData = { points: [], ...formData[field.id] };
+
                 renderedContent = (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2"> <Label htmlFor={`${field.id}-x-label`} className="text-xs">X-Axis Label</Label> <Input id={`${field.id}-x-label`} placeholder="e.g., Time (s)" value={chartData.xAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'xAxisLabel', e.target.value)} /></div>
                       <div className="space-y-2"> <Label htmlFor={`${field.id}-y-label`} className="text-xs">Y-Axis Label</Label> <Input id={`${field.id}-y-label`} placeholder="e.g., Temperature (°C)" value={chartData.yAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'yAxisLabel', e.target.value)} /></div>
                     </div>
+
                     <div className="space-y-2">
-                      {chartData.points.map((dataPoint, index) => (
-                        <Card key={index} className="bg-muted/50 p-2">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs w-8">X:</Label> <Input type="number" value={dataPoint.x} onChange={e => handleChartDataChange(field.id, index, 'x', e.target.value)} className="h-8" />
-                            <Label className="text-xs w-8">Y:</Label> <Input type="number" value={dataPoint.y} onChange={e => handleChartDataChange(field.id, index, 'y', e.target.value)} className="h-8" />
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveChartRow(field.id, index)}> <Trash2 className="h-4 w-4" /> </Button>
-                          </div>
-                        </Card>
-                      ))}
+                      <Label className="text-xs">Data Points (X, Y)</Label>
+                      <p className="text-xs text-muted-foreground mb-2">You can copy and paste 2 columns of numerical data directly here.</p>
+                      <XYChartSpreadsheetEditor
+                        points={chartData.points}
+                        isDarkMode={isDarkMode}
+                        onChange={(newPoints) => {
+                          handleDataChange(field.id, {
+                            ...chartData,
+                            points: newPoints
+                          });
+                        }}
+                      />
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => handleAddChartRow(field.id)} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Data Point</Button>
                   </div>
                 );
                 break;
