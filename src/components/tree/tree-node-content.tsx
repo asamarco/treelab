@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -33,6 +33,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import Spreadsheet from "react-spreadsheet";
 
 
 interface TreeNodeContentProps {
@@ -48,6 +49,86 @@ interface TreeNodeContentProps {
     isExplorer?: boolean;
     readOnly?: boolean;
     disableSelection?: boolean;
+}
+
+interface TreeSpreadsheetFieldProps {
+    field: any;
+    value: any;
+    node: TreeNode;
+    isCompactView: boolean;
+    readOnly: boolean;
+    updateNode?: (nodeId: string, updates: Partial<TreeNode>) => Promise<void>;
+}
+
+function TreeSpreadsheetField({ field, value, node, isCompactView, readOnly, updateNode }: TreeSpreadsheetFieldProps) {
+    const { theme } = useAuthContext();
+    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    // Initial state setup with padding/truncation
+    const getInitialData = useCallback(() => {
+        const data: { value: string }[][] = value || [[{ value: '' }]];
+        const targetRows = field.spreadsheetRowCount || 5;
+        const targetCols = field.spreadsheetColumnCount || 5;
+
+        return Array.from({ length: Math.max(data.length, targetRows) }, (_, rIndex) => {
+            return Array.from({ length: Math.max(data[0]?.length || 0, targetCols) }, (_, cIndex) => {
+                return { value: data?.[rIndex]?.[cIndex]?.value || '' };
+            });
+        });
+    }, [value, field.spreadsheetRowCount, field.spreadsheetColumnCount]);
+
+    // Local state for immediate UI updates
+    const [localData, setLocalData] = useState(getInitialData);
+
+    // Sync local state when external value changes (e.g. from another client or if reset)
+    useEffect(() => {
+        setLocalData(getInitialData());
+    }, [getInitialData]);
+
+    // Debounced persistence logic
+    const persistData = useCallback((newData: { value: string }[][]) => {
+        if (readOnly || !updateNode) return;
+
+        const newTotalData = {
+            ...node.data,
+            [field.id]: newData,
+        };
+        updateNode(node.id, { data: newTotalData });
+    }, [node.id, node.data, field.id, readOnly, updateNode]);
+
+    const debouncedPersist = useMemo(() => {
+        let timeoutId: NodeJS.Timeout;
+        return (newData: { value: string }[][]) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => persistData(newData), 1000);
+        };
+    }, [persistData]);
+
+    return (
+        <div className="mt-2 text-sm min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+            <p className={cn("font-medium mb-1", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
+            <div className={cn("overflow-x-auto rounded-md border w-full bg-background", readOnly && "opacity-80 pointer-events-none")}>
+                <div className="min-w-full inline-block align-middle">
+                    <Spreadsheet
+                        darkMode={isDarkMode}
+                        data={localData}
+                        onChange={(newData) => {
+                            if (readOnly) return;
+                            const cleaned = newData.map(row =>
+                                row.map(cell => ({ value: cell?.value ?? '' }))
+                            );
+
+                            // Update local state immediately for responsiveness
+                            setLocalData(cleaned);
+
+                            // Debounce the persistence call
+                            debouncedPersist(cleaned);
+                        }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function TreeNodeContent({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeNodeContentProps) {
@@ -506,6 +587,19 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                                     <p className="text-sm text-muted-foreground italic px-2 py-1">Query returned no results.</p>
                                                 )}
                                             </div>
+                                        );
+                                    }
+                                    case 'spreadsheet': {
+                                        return (
+                                            <TreeSpreadsheetField
+                                                key={field.id}
+                                                field={field}
+                                                value={value}
+                                                node={node}
+                                                isCompactView={isCompactView}
+                                                readOnly={readOnly}
+                                                updateNode={updateNode}
+                                            />
                                         );
                                     }
                                     default:

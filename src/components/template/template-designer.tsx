@@ -95,12 +95,14 @@ import { MultiSelect } from "../ui/multi-select";
 const fieldSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "Field name is required"),
-  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox"]),
+  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet"]),
   options: z.array(z.string()).optional(),
   columnType: z.enum(["text", "number", "date"]).optional(),
   height: z.number().optional(),
   prefix: z.string().optional(),
   postfix: z.string().optional(),
+  spreadsheetRowCount: z.number().optional(),
+  spreadsheetColumnCount: z.number().optional(),
 });
 
 const conditionalRuleSchema = z.object({
@@ -633,6 +635,7 @@ export function TemplateDesigner({
                                         <SelectItem value="checklist">Checklist</SelectItem>
                                         <SelectItem value="table-header">Table Header</SelectItem>
                                         <SelectItem value="xy-chart">XY Chart</SelectItem>
+                                        <SelectItem value="spreadsheet">Spreadsheet</SelectItem>
                                         <SelectItem value="dropdown">
                                           Dropdown
                                         </SelectItem>
@@ -702,6 +705,48 @@ export function TemplateDesigner({
                                         <Input
                                           type="number"
                                           placeholder="Default: 300"
+                                          {...field}
+                                          value={field.value || ""}
+                                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            )}
+                            {form.watch(`fields.${index}.type`) === 'spreadsheet' && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.spreadsheetRowCount`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Number of Rows</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="Default: 5"
+                                          {...field}
+                                          value={field.value || ""}
+                                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.spreadsheetColumnCount`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Number of Columns</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="Default: 5"
                                           {...field}
                                           value={field.value || ""}
                                           onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}

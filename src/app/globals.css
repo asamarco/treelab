@@ -16,13 +16,16 @@ body {
 
 @layer base {
   :root {
-    --background: 40 33% 96%; /* Lighter beige */
-    --foreground: 195 35% 25%; /* Dark Teal */
+    --background: 40 33% 96%;
+    /* Lighter beige */
+    --foreground: 195 35% 25%;
+    /* Dark Teal */
     --card: 40 33% 100%;
     --card-foreground: 195 35% 25%;
     --popover: 40 33% 100%;
     --popover-foreground: 195 35% 25%;
-    --primary: 158 58% 45%; /* Plant Green */
+    --primary: 158 58% 45%;
+    /* Plant Green */
     --primary-foreground: 40 33% 98%;
     --secondary: 40 25% 90%;
     --secondary-foreground: 195 35% 25%;
@@ -36,9 +39,12 @@ body {
     --input: 40 33% 100%;
     --ring: 158 58% 45%;
     --chart-1: 158 58% 45%;
-    --chart-2: 45 90% 65%; /* Node Yellow */
-    --chart-3: 200 85% 55%; /* Node Blue */
-    --chart-4: 15 95% 65%; /* Node Orange */
+    --chart-2: 45 90% 65%;
+    /* Node Yellow */
+    --chart-3: 200 85% 55%;
+    /* Node Blue */
+    --chart-4: 15 95% 65%;
+    /* Node Orange */
     --chart-5: 195 35% 25%;
     --radius: 0.5rem;
     --sidebar-background: 40 33% 98%;
@@ -49,7 +55,19 @@ body {
     --sidebar-accent-foreground: 158 58% 35%;
     --sidebar-border: 40 20% 88%;
     --sidebar-ring: 158 58% 45%;
+
+    /* react-spreadsheet theming */
+    --rs-cell-bg: hsl(var(--background));
+    --rs-cell-color: hsl(var(--foreground));
+    --rs-header-bg: hsl(var(--muted));
+    --rs-header-color: hsl(var(--muted-foreground));
+    --rs-selection-bg: hsla(var(--primary) / 0.1);
+    --rs-selection-border: hsl(var(--primary));
+    --rs-border-color: hsl(var(--border));
+    --rs-active-cell-bg: hsl(var(--background));
+    --rs-active-cell-color: hsl(var(--foreground));
   }
+
   .dark {
     --background: 195 25% 12%;
     --foreground: 40 33% 96%;
@@ -83,6 +101,17 @@ body {
     --sidebar-accent-foreground: 158 58% 65%;
     --sidebar-border: 195 25% 22%;
     --sidebar-ring: 158 58% 55%;
+
+    /* react-spreadsheet dark theming */
+    --rs-cell-bg: hsl(var(--background));
+    --rs-cell-color: hsl(var(--foreground));
+    --rs-header-bg: hsl(var(--muted));
+    --rs-header-color: hsl(var(--muted-foreground));
+    --rs-selection-bg: hsla(var(--primary) / 0.2);
+    --rs-selection-border: hsl(var(--primary));
+    --rs-border-color: hsl(var(--border) / 0.5);
+    --rs-active-cell-bg: hsl(var(--secondary));
+    --rs-active-cell-color: hsl(var(--foreground));
   }
 }
 
@@ -90,6 +119,7 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -99,9 +129,12 @@ body {
   body * {
     visibility: hidden;
   }
-  .printable-area, .printable-area * {
+
+  .printable-area,
+  .printable-area * {
     visibility: visible;
   }
+
   .printable-area {
     position: absolute !important;
     left: 0 !important;
@@ -114,12 +147,15 @@ body {
     border: none !important;
     box-shadow: none !important;
   }
-  .printable-area [role=dialog] > button {
+
+  .printable-area [role=dialog]>button {
     display: none !important;
   }
+
   .no-print {
     display: none !important;
   }
+
   .printable-area .group\/treenode {
     border: none !important;
     box-shadow: none !important;
@@ -128,4 +164,55 @@ body {
 
 .read-only-view .read-only-hidden {
   display: none !important;
+}
+
+/* Premium Spreadsheet Theming */
+.Spreadsheet {
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  /* text-sm */
+  box-shadow: none !important;
+  min-width: max-content !important;
+}
+
+.Spreadsheet__header {
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.025em !important;
+  font-size: 0.75rem !important;
+  /* text-xs */
+  border-bottom: 2px solid hsl(var(--border)) !important;
+}
+
+.Spreadsheet__cell {
+  border-right: 1px solid hsl(var(--border) / 0.5) !important;
+  border-bottom: 1px solid hsl(var(--border) / 0.5) !important;
+  padding: 0 8px !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.Spreadsheet__cell:hover {
+  background-color: hsla(var(--primary) / 0.02) !important;
+}
+
+.Spreadsheet__cell--selected {
+  background-color: var(--rs-selection-bg) !important;
+  box-shadow: inset 0 0 0 1px var(--rs-selection-border) !important;
+}
+
+.Spreadsheet__cell input {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+.dark .Spreadsheet__header {
+  border-bottom-color: hsl(var(--primary) / 0.3) !important;
+}
+
+.dark .Spreadsheet__cell {
+  border-right-color: hsl(var(--border) / 0.2) !important;
+  border-bottom-color: hsl(var(--border) / 0.2) !important;
 }

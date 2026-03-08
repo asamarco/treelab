@@ -76,54 +76,55 @@ import path from "path";
 import { Separator } from "../ui/separator";
 import { useUIContext } from "@/contexts/ui-context";
 import { DatePicker } from "../ui/date-picker";
+import Spreadsheet from "react-spreadsheet";
 
 
 const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: string; onRemove: () => void; onClick: () => void; }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 100 : 'auto',
-        opacity: isDragging ? 0.5 : 1,
-    };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
 
-    return (
-        <div ref={setNodeRef} style={style} className="relative group aspect-square">
-            <img 
-              src={src} 
-              alt="preview" 
-              className="w-full h-full object-cover rounded-md cursor-pointer" 
-              onClick={onClick}
-            />
-            <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-66 w-6 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background/80">
-                <GripVertical className="h-4 w-4" />
-            </Button>
-            <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={onRemove}>
-                <X className="h-4 w-4" />
-            </Button>
-        </div>
-    );
+  return (
+    <div ref={setNodeRef} style={style} className="relative group aspect-square">
+      <img
+        src={src}
+        alt="preview"
+        className="w-full h-full object-cover rounded-md cursor-pointer"
+        onClick={onClick}
+      />
+      <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-66 w-6 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background/80">
+        <GripVertical className="h-4 w-4" />
+      </Button>
+      <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={onRemove}>
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 };
 
 const DraggableCheckboxItem = ({ id, children }: { id: string; children: React.ReactNode; }) => {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 100 : 'auto',
-        opacity: isDragging ? 0.5 : 1,
-    };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 100 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
 
-    return (
-        <div ref={setNodeRef} style={style} className="flex items-center gap-2 w-full">
-            <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="h-8 w-8 cursor-grab shrink-0">
-                <GripVertical className="h-4 w-4" />
-            </Button>
-            {children}
-        </div>
-    );
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 w-full">
+      <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="h-8 w-8 cursor-grab shrink-0">
+        <GripVertical className="h-4 w-4" />
+      </Button>
+      {children}
+    </div>
+  );
 };
 
 const operatorLabels: Record<ConditionalRuleOperator, string> = {
@@ -155,11 +156,11 @@ export const NodeForm = ({
 }) => {
   const { tree, activeTree, findNodeAndParent, templates, updateNode } = useTreeContext();
   const { setDialogState } = useUIContext();
-  
+
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     if (isMultiEdit) return {};
     const initialData = { ...(node?.data || {}) };
-    
+
     template.fields.forEach(field => {
       if (field.type === 'date' && initialData[field.id] && typeof initialData[field.id] === 'string') {
         const parsed = parseISO(initialData[field.id]);
@@ -192,15 +193,15 @@ export const NodeForm = ({
   const contextualOrder = (parentIndex !== -1 && node?.order && (node.order.length > parentIndex))
     ? node.order[parentIndex]
     : 0;
-  
+
   const [orderString, setOrderString] = useState(contextualOrder.toString());
 
   useEffect(() => {
-      const pIdx = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
-      const cOrder = (pIdx !== -1 && node?.order && (node.order.length > pIdx))
-        ? node.order[pIdx]
-        : 0;
-      setOrderString(cOrder.toString());
+    const pIdx = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
+    const cOrder = (pIdx !== -1 && node?.order && (node.order.length > pIdx))
+      ? node.order[pIdx]
+      : 0;
+    setOrderString(cOrder.toString());
   }, [node, contextualParentId]);
 
 
@@ -209,9 +210,9 @@ export const NodeForm = ({
   const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
 
   const getDynamicOptions = useMemo(() => {
-    return (fieldId: string, templateId: string): {value: string, label: string}[] => {
+    return (fieldId: string, templateId: string): { value: string, label: string }[] => {
       const values = new Set<string>();
-      
+
       const traverse = (nodes: TreeNode[]) => {
         nodes.forEach(n => {
           if (n.templateId === templateId) {
@@ -225,7 +226,7 @@ export const NodeForm = ({
           }
         });
       };
-      
+
       traverse(tree);
       return Array.from(values).map(v => ({ value: v, label: v }));
     };
@@ -234,73 +235,73 @@ export const NodeForm = ({
   const handleFileUpload = async (file: File, field: Field) => {
     if (!activeTree || !currentUser) return;
     if (file.size > 5 * 1024 * 1024) {
-        toast({
-            variant: "destructive",
-            title: "File too large",
-            description: "Please select a file smaller than 5MB.",
-        });
-        return;
+      toast({
+        variant: "destructive",
+        title: "File too large",
+        description: "Please select a file smaller than 5MB.",
+      });
+      return;
     }
-    
+
     if (field.type === 'picture') {
-        const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/tiff', 'image/bmp'];
-        const isValidMime = validImageTypes.includes(file.type);
-        const isValidExtension = /\.(jpe?g|png|gif|svg|tif|tiff|bmp)$/i.test(file.name);
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/tiff', 'image/bmp'];
+      const isValidMime = validImageTypes.includes(file.type);
+      const isValidExtension = /\.(jpe?g|png|gif|svg|tif|tiff|bmp)$/i.test(file.name);
 
-        if (!isValidMime && !isValidExtension) {
-            toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload a valid image file (jpg, png, gif, svg, tiff, webp, bmp)." });
-            return;
-        }
+      if (!isValidMime && !isValidExtension) {
+        toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload a valid image file (jpg, png, gif, svg, tiff, webp, bmp)." });
+        return;
+      }
     }
 
-    setUploadingStates(prev => ({...prev, [field.id]: true}));
-    
+    setUploadingStates(prev => ({ ...prev, [field.id]: true }));
+
     // Generate a unique filename using ISO timestamp and a UUID v4 for maximum entropy.
     // Replace colons in the ISO string with dashes for Windows filesystem compatibility.
     const safeTimestamp = new Date().toISOString().replace(/:/g, '-');
     const uniqueFileName = `${safeTimestamp}-${crypto.randomUUID()}-${file.name}`;
-        
+
     const formDataPayload = new FormData();
     formDataPayload.append('file', file);
     formDataPayload.append('uniqueFileName', uniqueFileName);
     formDataPayload.append('fileName', file.name);
 
     try {
-        const response = await fetch('/api/upload/attachment', {
-            method: 'POST',
-            body: formDataPayload,
-            credentials: 'include',
-        });
+      const response = await fetch('/api/upload/attachment', {
+        method: 'POST',
+        body: formDataPayload,
+        credentials: 'include',
+      });
 
-        if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(errorBody.message || 'Server error');
-        }
+      if (!response.ok) {
+        const errorBody = await response.json();
+        throw new Error(errorBody.message || 'Server error');
+      }
 
-        const { attachmentInfo } = await response.json();
-        
-        if (attachmentInfo) {
-            if (field.type === 'picture') {
-                 setFormData(prev => {
-                  const currentImages = Array.isArray(prev[field.id]) ? prev[field.id] : (prev[field.id] ? [prev[field.id]] : []);
-                  return { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
-              });
-              toast({ title: "Image Uploaded", description: "The image has been saved successfully." });
-            } else if (field.type === 'attachment') {
-               setFormData(prev => {
-                  const currentAttachments = prev[field.id] || [];
-                  return { ...prev, [field.id]: [...currentAttachments, attachmentInfo] };
-              });
-              toast({ title: "Attachment Uploaded", description: `File "${file.name}" has been saved.` });
-            }
+      const { attachmentInfo } = await response.json();
+
+      if (attachmentInfo) {
+        if (field.type === 'picture') {
+          setFormData(prev => {
+            const currentImages = Array.isArray(prev[field.id]) ? prev[field.id] : (prev[field.id] ? [prev[field.id]] : []);
+            return { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
+          });
+          toast({ title: "Image Uploaded", description: "The image has been saved successfully." });
+        } else if (field.type === 'attachment') {
+          setFormData(prev => {
+            const currentAttachments = prev[field.id] || [];
+            return { ...prev, [field.id]: [...currentAttachments, attachmentInfo] };
+          });
+          toast({ title: "Attachment Uploaded", description: `File "${file.name}" has been saved.` });
         }
-    } catch(error) {
-        toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message || "Could not save the file to the server." });
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message || "Could not save the file to the server." });
     } finally {
-        setUploadingStates(prev => ({...prev, [field.id]: false}));
+      setUploadingStates(prev => ({ ...prev, [field.id]: false }));
     }
   };
-  
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, field: Field) => {
     e.preventDefault();
     e.stopPropagation();
@@ -328,10 +329,10 @@ export const NodeForm = ({
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, field: Field) => {
-      const files = e.target.files;
-      if (files) {
-          Array.from(files).forEach(file => handleFileUpload(file, field));
-      }
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach(file => handleFileUpload(file, field));
+    }
   };
 
   const handlePicturePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>, fieldId: string) => {
@@ -339,56 +340,56 @@ export const NodeForm = ({
     const textItem = e.clipboardData.getData('text/plain');
 
     if (textItem && (textItem.startsWith('http') || textItem.startsWith('data:'))) {
-        e.preventDefault();
-        const currentImages = formData[fieldId] ? (Array.isArray(formData[fieldId]) ? formData[fieldId] : [formData[fieldId]]) : [];
-        setFormData({ ...formData, [fieldId]: [...currentImages, textItem] });
-        (e.target as HTMLTextAreaElement).value = '';
-        return;
+      e.preventDefault();
+      const currentImages = formData[fieldId] ? (Array.isArray(formData[fieldId]) ? formData[fieldId] : [formData[fieldId]]) : [];
+      setFormData({ ...formData, [fieldId]: [...currentImages, textItem] });
+      (e.target as HTMLTextAreaElement).value = '';
+      return;
     }
-    
+
     const imageItem = Array.from(clipboardItems).find(item => item.type.startsWith('image/'));
-    
+
     if (!imageItem) return;
     e.preventDefault();
 
     const file = imageItem.getAsFile();
     if (file) {
-        const field = template.fields.find(f => f.id === fieldId);
-        if (field) {
-            handleFileUpload(file, field);
-        }
+      const field = template.fields.find(f => f.id === fieldId);
+      if (field) {
+        handleFileUpload(file, field);
+      }
     }
   };
 
   const handleRemoveImage = (fieldId: string, imageIndex: number) => {
     setFormData(prev => {
-        const currentImages = Array.isArray(prev[fieldId]) ? prev[fieldId] : (prev[fieldId] ? [prev[fieldId]] : []);
-        const newImages = currentImages.filter((_:any, index: number) => index !== imageIndex);
-        return { ...prev, [fieldId]: newImages };
+      const currentImages = Array.isArray(prev[fieldId]) ? prev[fieldId] : (prev[fieldId] ? [prev[fieldId]] : []);
+      const newImages = currentImages.filter((_: any, index: number) => index !== imageIndex);
+      return { ...prev, [fieldId]: newImages };
     });
   };
 
   const handleRemoveAttachment = (fieldId: string, attachmentIndex: number) => {
     setFormData(prev => {
-        const currentAttachments = prev[fieldId] || [];
-        const newAttachments = currentAttachments.filter((_: any, index: number) => index !== attachmentIndex);
-        return { ...prev, [fieldId]: newAttachments };
+      const currentAttachments = prev[fieldId] || [];
+      const newAttachments = currentAttachments.filter((_: any, index: number) => index !== attachmentIndex);
+      return { ...prev, [fieldId]: newAttachments };
     });
   };
 
   const handleImageDragEnd = (event: DragEndEvent, fieldId: string) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-        setFormData(prev => {
-            const currentImages = prev[fieldId];
-            if (Array.isArray(currentImages)) {
-                const oldIndex = currentImages.indexOf(active.id as string);
-                const newIndex = currentImages.indexOf(over.id as string);
-                const newImageOrder = arrayMove(currentImages, oldIndex, newIndex);
-                return { ...prev, [fieldId]: newImageOrder };
-            }
-            return prev;
-        });
+      setFormData(prev => {
+        const currentImages = prev[fieldId];
+        if (Array.isArray(currentImages)) {
+          const oldIndex = currentImages.indexOf(active.id as string);
+          const newIndex = currentImages.indexOf(over.id as string);
+          const newImageOrder = arrayMove(currentImages, oldIndex, newIndex);
+          return { ...prev, [fieldId]: newImageOrder };
+        }
+        return prev;
+      });
     }
   };
 
@@ -402,110 +403,110 @@ export const NodeForm = ({
       return newFormData;
     });
   };
-  
+
   const getTableRowCount = () => {
     if (tableHeaderFields.length === 0) return 0;
     const firstColumnData = formData[tableHeaderFields[0].id];
     return Array.isArray(firstColumnData) ? firstColumnData.length : 0;
   };
-  
+
   const handleAddRow = () => {
     setFormData(prev => {
-        const newFormData = { ...prev };
-        tableHeaderFields.forEach(field => {
-            const currentData = Array.isArray(newFormData[field.id]) ? [...newFormData[field.id]] : [];
-            currentData.push('');
-            newFormData[field.id] = currentData;
-        });
-        return newFormData;
+      const newFormData = { ...prev };
+      tableHeaderFields.forEach(field => {
+        const currentData = Array.isArray(newFormData[field.id]) ? [...newFormData[field.id]] : [];
+        currentData.push('');
+        newFormData[field.id] = currentData;
+      });
+      return newFormData;
     });
   };
 
   const handleRemoveRow = (rowIndex: number) => {
     setFormData(prev => {
-        const newFormData = { ...prev };
-        tableHeaderFields.forEach(field => {
-            if (Array.isArray(newFormData[field.id])) {
-                const newColumnData = [...newFormData[field.id]];
-                newColumnData.splice(rowIndex, 1);
-                newFormData[field.id] = newColumnData;
-            }
-        });
-        return newFormData;
+      const newFormData = { ...prev };
+      tableHeaderFields.forEach(field => {
+        if (Array.isArray(newFormData[field.id])) {
+          const newColumnData = [...newFormData[field.id]];
+          newColumnData.splice(rowIndex, 1);
+          newFormData[field.id] = newColumnData;
+        }
+      });
+      return newFormData;
     });
   };
 
   const handleChartDataChange = (fieldId: string, index: number, key: 'x' | 'y' | 'xAxisLabel' | 'yAxisLabel', value: string) => {
     setFormData(prev => {
-        const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-        if (key === 'xAxisLabel' || key === 'yAxisLabel') {
-            return {
-                ...prev,
-                [fieldId]: { ...currentChartData, [key]: value },
-            };
-        }
-        const newPoints = [...(currentChartData.points || [])];
-        if (newPoints[index]) {
-            newPoints[index] = { ...newPoints[index], [key]: value };
-        }
+      const currentChartData: XYChartData = prev[fieldId] || { points: [] };
+      if (key === 'xAxisLabel' || key === 'yAxisLabel') {
         return {
-            ...prev,
-            [fieldId]: { ...currentChartData, points: newPoints },
+          ...prev,
+          [fieldId]: { ...currentChartData, [key]: value },
         };
+      }
+      const newPoints = [...(currentChartData.points || [])];
+      if (newPoints[index]) {
+        newPoints[index] = { ...newPoints[index], [key]: value };
+      }
+      return {
+        ...prev,
+        [fieldId]: { ...currentChartData, points: newPoints },
+      };
     });
   };
 
   const handleAddChartRow = (fieldId: string) => {
-      setFormData(prev => {
-          const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-          const points = currentChartData.points || [];
-          return {
-              ...prev,
-              [fieldId]: { ...currentChartData, points: [...points, { x: '', y: '' }] },
-          };
-      });
+    setFormData(prev => {
+      const currentChartData: XYChartData = prev[fieldId] || { points: [] };
+      const points = currentChartData.points || [];
+      return {
+        ...prev,
+        [fieldId]: { ...currentChartData, points: [...points, { x: '', y: '' }] },
+      };
+    });
   };
 
   const handleRemoveChartRow = (fieldId: string, index: number) => {
-      setFormData(prev => {
-          const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-          const newPoints = [...(currentChartData.points || [])];
-          newPoints.splice(index, 1);
-          return {
-              ...prev,
-              [fieldId]: { ...currentChartData, points: newPoints },
-          };
-      });
+    setFormData(prev => {
+      const currentChartData: XYChartData = prev[fieldId] || { points: [] };
+      const newPoints = [...(currentChartData.points || [])];
+      newPoints.splice(index, 1);
+      return {
+        ...prev,
+        [fieldId]: { ...currentChartData, points: newPoints },
+      };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isMultiEdit) {
-        const dirtyData: Record<string, any> = {};
-        let isFormValid = true;
 
-        for (const field of template.fields) {
-            const value = formData[field.id];
-            if (value !== undefined && value !== '') {
-                if (field.type === 'date' && typeof value === 'string') {
-                    const parsedDate = parse(value, 'yyyy-MM-dd', new Date());
-                    if (isValid(parsedDate)) {
-                        dirtyData[field.id] = parsedDate.toISOString();
-                    } else {
-                        toast({ variant: 'destructive', title: 'Invalid Date', description: `Date for "${field.name}" is invalid.` });
-                        isFormValid = false;
-                        break;
-                    }
-                } else {
-                    dirtyData[field.id] = value;
-                }
+    if (isMultiEdit) {
+      const dirtyData: Record<string, any> = {};
+      let isFormValid = true;
+
+      for (const field of template.fields) {
+        const value = formData[field.id];
+        if (value !== undefined && value !== '') {
+          if (field.type === 'date' && typeof value === 'string') {
+            const parsedDate = parse(value, 'yyyy-MM-dd', new Date());
+            if (isValid(parsedDate)) {
+              dirtyData[field.id] = parsedDate.toISOString();
+            } else {
+              toast({ variant: 'destructive', title: 'Invalid Date', description: `Date for "${field.name}" is invalid.` });
+              isFormValid = false;
+              break;
             }
+          } else {
+            dirtyData[field.id] = value;
+          }
         }
-        if (isFormValid) {
-            onSave({ data: dirtyData } as TreeNode);
-        }
-        return;
+      }
+      if (isFormValid) {
+        onSave({ data: dirtyData } as TreeNode);
+      }
+      return;
     }
 
     const finalFormData = { ...formData };
@@ -514,25 +515,25 @@ export const NodeForm = ({
     for (const field of template.fields) {
       if (field.type === 'date' || (field.type === 'table-header' && field.columnType === 'date')) {
         const values = Array.isArray(finalFormData[field.id]) ? finalFormData[field.id] : [finalFormData[field.id]];
-        
-        const isoValues = values.map((dateValue: string | undefined) => {
-            if (!dateValue) return undefined;
-            if (typeof dateValue !== 'string') return dateValue;
-            
-            const parsedDate = parse(dateValue, 'yyyy-MM-dd', new Date());
 
-            if (isValid(parsedDate)) {
-                return parsedDate.toISOString();
-            } else if (dateValue) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Invalid Date',
-                    description: `The date for "${field.name}" is not a valid format. Please use the date picker.`,
-                });
-                isFormValid = false;
-                return dateValue;
-            }
-            return undefined;
+        const isoValues = values.map((dateValue: string | undefined) => {
+          if (!dateValue) return undefined;
+          if (typeof dateValue !== 'string') return dateValue;
+
+          const parsedDate = parse(dateValue, 'yyyy-MM-dd', new Date());
+
+          if (isValid(parsedDate)) {
+            return parsedDate.toISOString();
+          } else if (dateValue) {
+            toast({
+              variant: 'destructive',
+              title: 'Invalid Date',
+              description: `The date for "${field.name}" is not a valid format. Please use the date picker.`,
+            });
+            isFormValid = false;
+            return dateValue;
+          }
+          return undefined;
         });
 
         if (!isFormValid) break;
@@ -544,21 +545,21 @@ export const NodeForm = ({
         }
       }
     }
-    
+
     if (!isFormValid) {
-        return;
+      return;
     }
 
     const finalName = generateNodeName(template, finalFormData);
     const newOrderValue = parseInt(orderString, 10);
-    
+
     const newOrderArray = [...(node?.order || [])];
     if (parentIndex !== -1) {
-        newOrderArray[parentIndex] = isNaN(newOrderValue) ? contextualOrder : newOrderValue;
+      newOrderArray[parentIndex] = isNaN(newOrderValue) ? contextualOrder : newOrderValue;
     } else if (node?.parentIds) {
-        newOrderArray.push(isNaN(newOrderValue) ? 0 : newOrderValue);
+      newOrderArray.push(isNaN(newOrderValue) ? 0 : newOrderValue);
     } else {
-        newOrderArray[0] = isNaN(newOrderValue) ? 0 : newOrderValue;
+      newOrderArray[0] = isNaN(newOrderValue) ? 0 : newOrderValue;
     }
 
 
@@ -575,7 +576,7 @@ export const NodeForm = ({
     };
     onSave(newNode);
   };
-  
+
   const formatBytesUtility = (bytes: number, decimals = 2) => {
     if (!+bytes) return '0 Bytes';
     const k = 1024;
@@ -584,7 +585,7 @@ export const NodeForm = ({
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
-  
+
   const renderLinkField = (field: Field) => {
     const value = formData[field.id] || "";
     if (typeof value === 'string' && value.startsWith('node://')) {
@@ -592,13 +593,13 @@ export const NodeForm = ({
       const linkedNodeInfo = findNodeAndParent(nodeId);
       return (
         <div className="flex items-center gap-2">
-          <Input 
-            value={value} 
-            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })} 
+          <Input
+            value={value}
+            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
           />
-          <Button 
+          <Button
             type="button"
-            variant="outline" 
+            variant="outline"
             size="sm"
             disabled={!linkedNodeInfo}
             onClick={() => {
@@ -611,102 +612,102 @@ export const NodeForm = ({
         </div>
       );
     }
-    return <Input type="url" placeholder="https://example.com" value={value} onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}/>;
+    return <Input type="url" placeholder="https://example.com" value={value} onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })} />;
   };
-  
+
   const handleDataChange = (fieldId: string, value: any) => {
-    setFormData(prev => ({...prev, [fieldId]: value}));
+    setFormData(prev => ({ ...prev, [fieldId]: value }));
   }
 
   const { setIgnoreClicksUntil } = useUIContext();
 
   const handleClose = (e?: React.MouseEvent) => {
-    if(e) e.stopPropagation();
+    if (e) e.stopPropagation();
     setIgnoreClicksUntil(Date.now() + 100);
     onClose();
   };
 
   return (
     <>
-    <form onSubmit={handleSubmit}>
-      <div className="space-y-4 p-1 max-h-[60vh] overflow-y-auto">
-        {!isMultiEdit && node?.id && (node.createdAt || node.updatedAt) && (
-             <div className="text-xs text-muted-foreground space-y-1">
-                {node.createdAt && (
-                    <p>Created: {formatDate(node.createdAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
-                )}
-                {node.updatedAt && (
-                    <p>Last Modified: {formatDate(node.updatedAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
-                )}
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-4 p-1 max-h-[60vh] overflow-y-auto">
+          {!isMultiEdit && node?.id && (node.createdAt || node.updatedAt) && (
+            <div className="text-xs text-muted-foreground space-y-1">
+              {node.createdAt && (
+                <p>Created: {formatDate(node.createdAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
+              )}
+              {node.updatedAt && (
+                <p>Last Modified: {formatDate(node.updatedAt, `${currentUser?.dateFormat || 'dd/MM/yyyy'} p`)}</p>
+              )}
             </div>
-        )}
-        {isMultiEdit && (
+          )}
+          {isMultiEdit && (
             <div className="p-3 bg-accent/50 border border-accent rounded-md text-sm text-accent-foreground">
-                You are editing {node?.id ? 1 : 'multiple'} nodes. Only the fields you fill out will be updated on the selected nodes.
+              You are editing {node?.id ? 1 : 'multiple'} nodes. Only the fields you fill out will be updated on the selected nodes.
             </div>
-        )}
-        {template.fields.map((field, fieldIndex) => {
-          let renderedContent = null;
-          switch(field.type) {
-            case 'text':
-              renderedContent = <Input value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
-              break;
-            case 'textarea':
+          )}
+          {template.fields.map((field, fieldIndex) => {
+            let renderedContent = null;
+            switch (field.type) {
+              case 'text':
+                renderedContent = <Input value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
+                break;
+              case 'textarea':
                 renderedContent = <Textarea value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
                 break;
-            case 'number':
-              renderedContent = <Input type="number" value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
-              break;
-            case 'date': {
+              case 'number':
+                renderedContent = <Input type="number" value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
+                break;
+              case 'date': {
                 const dateString = formData[field.id];
                 let dateValue: Date | undefined;
-                if(dateString && typeof dateString === 'string') {
+                if (dateString && typeof dateString === 'string') {
                   const parsedDate = parse(dateString, 'yyyy-MM-dd', new Date());
                   if (isValid(parsedDate)) dateValue = parsedDate;
                 }
                 renderedContent = <DatePicker date={dateValue} setDate={(d) => handleDataChange(field.id, d)} placeholder="Select a date" />;
-              break;
-            }
-            case 'dropdown':
-              renderedContent = (
-                <Select value={formData[field.id]} onValueChange={(value) => handleDataChange(field.id, value)}>
-                  <SelectTrigger><SelectValue placeholder="Select an option" /></SelectTrigger>
-                  <SelectContent>{(field.options || []).filter(Boolean).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                </Select>
-              );
-              break;
-            case 'dynamic-dropdown':
-              renderedContent = (
-                <Combobox
-                  options={getDynamicOptions(field.id, template.id)}
-                  value={formData[field.id] || ""}
-                  onChange={(value) => handleDataChange(field.id, value)}
-                  placeholder={`Select ${field.name}...`}
-                  searchPlaceholder={`Search ${field.name}...`}
-                  emptyPlaceholder={`No ${field.name} found.`}
-                />
-              );
-              break;
-            case 'link':
-              renderedContent = renderLinkField(field);
-              break;
-            case 'picture': {
-              const currentImages = formData[field.id] ? (Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]]) : [];
-              renderedContent = (
+                break;
+              }
+              case 'dropdown':
+                renderedContent = (
+                  <Select value={formData[field.id]} onValueChange={(value) => handleDataChange(field.id, value)}>
+                    <SelectTrigger><SelectValue placeholder="Select an option" /></SelectTrigger>
+                    <SelectContent>{(field.options || []).filter(Boolean).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                  </Select>
+                );
+                break;
+              case 'dynamic-dropdown':
+                renderedContent = (
+                  <Combobox
+                    options={getDynamicOptions(field.id, template.id)}
+                    value={formData[field.id] || ""}
+                    onChange={(value) => handleDataChange(field.id, value)}
+                    placeholder={`Select ${field.name}...`}
+                    searchPlaceholder={`Search ${field.name}...`}
+                    emptyPlaceholder={`No ${field.name} found.`}
+                  />
+                );
+                break;
+              case 'link':
+                renderedContent = renderLinkField(field);
+                break;
+              case 'picture': {
+                const currentImages = formData[field.id] ? (Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]]) : [];
+                renderedContent = (
                   <div>
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleImageDragEnd(e, field.id)}>
-                        <SortableContext items={currentImages} strategy={rectSortingStrategy}>
-                          {currentImages.length > 0 && (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
-                              {currentImages.map((imgSrc: string) => (
-                                <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onClick={() => setFullScreenImage(imgSrc)} />
-                              ))}
-                            </div>
-                          )}
-                        </SortableContext>
-                      </DndContext>
-                    <div 
-                      className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid" )}
+                      <SortableContext items={currentImages} strategy={rectSortingStrategy}>
+                        {currentImages.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
+                            {currentImages.map((imgSrc: string) => (
+                              <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onClick={() => setFullScreenImage(imgSrc)} />
+                            ))}
+                          </div>
+                        )}
+                      </SortableContext>
+                    </DndContext>
+                    <div
+                      className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
                       onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)}
                     >
                       {uploadingStates[field.id] ? (
@@ -728,10 +729,10 @@ export const NodeForm = ({
                       <input type="file" accept="image/*,image/tiff,image/bmp" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
                     </div>
                   </div>
-              )
-              break;
-            }
-             case 'attachment': {
+                )
+                break;
+              }
+              case 'attachment': {
                 const currentAttachments: AttachmentInfo[] = formData[field.id] || [];
                 renderedContent = (
                   <div>
@@ -740,11 +741,11 @@ export const NodeForm = ({
                         {currentAttachments.map((att: AttachmentInfo, index: number) => (
                           <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
                             <div className="flex items-center gap-3 overflow-hidden">
-                                <FileIcon className="h-5 w-5 text-muted-foreground shrink-0"/>
-                                <div className="flex-1 overflow-hidden">
-                                    <p className="text-sm font-medium truncate">{att.name}</p>
-                                    <p className="text-xs text-muted-foreground">{formatBytesUtility(att.size)}</p>
-                                </div>
+                              <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                              <div className="flex-1 overflow-hidden">
+                                <p className="text-sm font-medium truncate">{att.name}</p>
+                                <p className="text-xs text-muted-foreground">{formatBytesUtility(att.size)}</p>
+                              </div>
                             </div>
                             <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleRemoveAttachment(field.id, index)}>
                               <X className="h-4 w-4" />
@@ -761,7 +762,7 @@ export const NodeForm = ({
                         <div className="flex flex-col items-center gap-2">
                           <Paperclip className="h-8 w-8 text-muted-foreground" />
                           <p className="text-muted-foreground">Drag & drop files here</p>
-                          <div className="flex items-center gap-2 w-full"> <div className="flex-grow border-b"/> <span className="text-xs text-muted-foreground">OR</span> <div className="flex-grow border-b"/> </div>
+                          <div className="flex items-center gap-2 w-full"> <div className="flex-grow border-b" /> <span className="text-xs text-muted-foreground">OR</span> <div className="flex-grow border-b" /> </div>
                           <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
                         </div>
                       )}
@@ -770,361 +771,414 @@ export const NodeForm = ({
                   </div>
                 );
                 break;
-            }
-            case 'xy-chart': {
-              const chartData: XYChartData = { points: [], ...formData[field.id] };
-              renderedContent = (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2"> <Label htmlFor={`${field.id}-x-label`} className="text-xs">X-Axis Label</Label> <Input id={`${field.id}-x-label`} placeholder="e.g., Time (s)" value={chartData.xAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'xAxisLabel', e.target.value)} /></div>
-                    <div className="space-y-2"> <Label htmlFor={`${field.id}-y-label`} className="text-xs">Y-Axis Label</Label> <Input id={`${field.id}-y-label`} placeholder="e.g., Temperature (°C)" value={chartData.yAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'yAxisLabel', e.target.value)} /></div>
-                  </div>
+              }
+              case 'xy-chart': {
+                const chartData: XYChartData = { points: [], ...formData[field.id] };
+                renderedContent = (
                   <div className="space-y-2">
-                    {chartData.points.map((dataPoint, index) => (
-                      <Card key={index} className="bg-muted/50 p-2">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs w-8">X:</Label> <Input type="number" value={dataPoint.x} onChange={e => handleChartDataChange(field.id, index, 'x', e.target.value)} className="h-8" />
-                          <Label className="text-xs w-8">Y:</Label> <Input type="number" value={dataPoint.y} onChange={e => handleChartDataChange(field.id, index, 'y', e.target.value)} className="h-8" />
-                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveChartRow(field.id, index)}> <Trash2 className="h-4 w-4"/> </Button>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2"> <Label htmlFor={`${field.id}-x-label`} className="text-xs">X-Axis Label</Label> <Input id={`${field.id}-x-label`} placeholder="e.g., Time (s)" value={chartData.xAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'xAxisLabel', e.target.value)} /></div>
+                      <div className="space-y-2"> <Label htmlFor={`${field.id}-y-label`} className="text-xs">Y-Axis Label</Label> <Input id={`${field.id}-y-label`} placeholder="e.g., Temperature (°C)" value={chartData.yAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'yAxisLabel', e.target.value)} /></div>
+                    </div>
+                    <div className="space-y-2">
+                      {chartData.points.map((dataPoint, index) => (
+                        <Card key={index} className="bg-muted/50 p-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs w-8">X:</Label> <Input type="number" value={dataPoint.x} onChange={e => handleChartDataChange(field.id, index, 'x', e.target.value)} className="h-8" />
+                            <Label className="text-xs w-8">Y:</Label> <Input type="number" value={dataPoint.y} onChange={e => handleChartDataChange(field.id, index, 'y', e.target.value)} className="h-8" />
+                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveChartRow(field.id, index)}> <Trash2 className="h-4 w-4" /> </Button>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => handleAddChartRow(field.id)} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Data Point</Button>
+                  </div>
+                );
+                break;
+              }
+              case 'spreadsheet': {
+                const targetRows = field.spreadsheetRowCount || 5;
+                const targetCols = field.spreadsheetColumnCount || 5;
+                const existingData: { value: string }[][] = formData[field.id] || [];
+
+                // Pad or truncate to the exact dimensions specified by the template initially
+                // Then use the current array size if it has been resized
+                const currentRows = existingData.length > 0 ? existingData.length : targetRows;
+                const currentCols = existingData.length > 0 && existingData[0] ? existingData[0].length : targetCols;
+
+                renderedContent = (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Spreadsheet data can be edited interactively directly from the tree view. Here you can adjust its dimensions.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Number of Rows</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={currentRows}
+                          onChange={(e) => {
+                            const newRows = parseInt(e.target.value, 10) || 1;
+                            const newData = Array.from({ length: newRows }, (_, r) => {
+                              return Array.from({ length: currentCols }, (_, c) => {
+                                return { value: existingData?.[r]?.[c]?.value || '' };
+                              });
+                            });
+                            handleDataChange(field.id, newData);
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Number of Columns</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={currentCols}
+                          onChange={(e) => {
+                            const newCols = parseInt(e.target.value, 10) || 1;
+                            const newData = Array.from({ length: currentRows }, (_, r) => {
+                              return Array.from({ length: newCols }, (_, c) => {
+                                return { value: existingData?.[r]?.[c]?.value || '' };
+                              });
+                            });
+                            handleDataChange(field.id, newData);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+                break;
+              }
+            }
+
+            if (field.type === 'checkbox') {
+              return (
+                <div key={field.id} className="space-y-2">
+                  <div className="flex items-center space-x-2 pt-2 h-10">
+                    <Checkbox id={`form-${field.id}`} checked={!!formData[field.id]} onCheckedChange={(checked) => handleDataChange(field.id, !!checked)} />
+                    <Label htmlFor={`form-${field.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{field.name}</Label>
+                  </div>
+                </div>
+              );
+            }
+            if (field.type === 'checklist') {
+              const items: ChecklistItem[] = formData[field.id] || [];
+              return (
+                <div key={field.id} className="space-y-2">
+                  <Label className="text-sm font-medium">{field.name}</Label>
+                  <div className="space-y-2">
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
+                      const { active, over } = event;
+                      if (over && active.id !== over.id) {
+                        const oldIndex = items.findIndex(item => item.id === active.id);
+                        const newIndex = items.findIndex(item => item.id === over.id);
+                        if (oldIndex !== -1 && newIndex !== -1) {
+                          handleDataChange(field.id, arrayMove(items, oldIndex, newIndex));
+                        }
+                      }
+                    }}>
+                      <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                        {items.map((item, index) => (
+                          <DraggableCheckboxItem key={item.id} id={item.id}>
+                            <div className="flex items-center gap-2 w-full">
+                              <Checkbox checked={item.checked} onCheckedChange={(checked) => {
+                                const newItems = [...items]; newItems[index] = { ...item, checked: !!checked }; handleDataChange(field.id, newItems);
+                              }} />
+                              <Input value={item.text} onChange={(e) => {
+                                const newItems = [...items]; newItems[index] = { ...item, text: e.target.value }; handleDataChange(field.id, newItems);
+                              }} className="h-8" />
+                              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDataChange(field.id, items.filter((_, i) => i !== index))}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </DraggableCheckboxItem>
+                        ))}
+                      </SortableContext>
+                    </DndContext>
+                    <Button type="button" variant="outline" size="sm" onClick={() => handleDataChange(field.id, [...items, { id: generateClientSideId(), text: '', checked: false }])} className="mt-2">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Item
+                    </Button>
+                  </div>
+                </div>
+              );
+            }
+            if (field.type === 'query') {
+              const handleQueryChange = (value: any) => handleDataChange(field.id, value);
+              return <QueryBuilder key={field.id} field={field} value={formData[field.id]} onChange={handleQueryChange} />;
+            }
+            if (field.type === 'table-header') {
+              if (fieldIndex > 0 && template.fields[fieldIndex - 1].type === 'table-header') return null;
+
+              const tableRowCount = getTableRowCount();
+              return (
+                <div key="table-block" className="space-y-2">
+                  <Label className="text-sm font-medium">Table Data</Label>
+                  <div className="space-y-4">
+                    {Array.from({ length: tableRowCount }).map((_, rowIndex) => (
+                      <Card key={rowIndex} className="bg-muted/50">
+                        <CardContent className="p-4 space-y-4">
+                          <div className="flex justify-between items-center"><p className="font-semibold">Row {rowIndex + 1}</p>
+                            <AlertDialog><AlertDialogTrigger asChild>
+                              <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                          </div>
+                          {tableHeaderFields.map(f => {
+                            const dateString = formData[f.id]?.[rowIndex]; let dateValue: Date | undefined;
+                            if (dateString && typeof dateString === 'string') { const parsed = parse(dateString, 'yyyy-MM-dd', new Date()); if (isValid(parsed)) dateValue = parsed; }
+                            return (
+                              <div key={`${f.id}-${rowIndex}`} className="space-y-2"><Label className="text-sm font-medium">{f.name}</Label>
+                                <div className="flex items-center gap-1">
+                                  {f.prefix && <span className="text-muted-foreground text-sm">{f.prefix}</span>}
+                                  {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow" />)}
+                                  {f.postfix && <span className="text-muted-foreground text-sm">{f.postfix}</span>}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </CardContent>
                       </Card>
                     ))}
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => handleAddChartRow(field.id)} className="mt-2"><PlusCircle className="mr-2 h-4 w-4"/> Add Data Point</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddRow} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Row</Button>
                 </div>
               );
-              break;
             }
-          }
-
-          if (field.type === 'checkbox') {
-            return (
-              <div key={field.id} className="space-y-2">
-                <div className="flex items-center space-x-2 pt-2 h-10">
-                  <Checkbox id={`form-${field.id}`} checked={!!formData[field.id]} onCheckedChange={(checked) => handleDataChange(field.id, !!checked)} />
-                  <Label htmlFor={`form-${field.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{field.name}</Label>
-                </div>
-              </div>
-            );
-          }
-          if (field.type === 'checklist') {
-            const items: ChecklistItem[] = formData[field.id] || [];
-            return (
-              <div key={field.id} className="space-y-2">
-                <Label className="text-sm font-medium">{field.name}</Label>
-                <div className="space-y-2">
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
-                    const { active, over } = event;
-                    if (over && active.id !== over.id) {
-                      const oldIndex = items.findIndex(item => item.id === active.id);
-                      const newIndex = items.findIndex(item => item.id === over.id);
-                      if (oldIndex !== -1 && newIndex !== -1) {
-                        handleDataChange(field.id, arrayMove(items, oldIndex, newIndex));
-                      }
-                    }
-                  }}>
-                    <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                      {items.map((item, index) => (
-                        <DraggableCheckboxItem key={item.id} id={item.id}>
-                          <div className="flex items-center gap-2 w-full">
-                            <Checkbox checked={item.checked} onCheckedChange={(checked) => {
-                                const newItems = [...items]; newItems[index] = { ...item, checked: !!checked }; handleDataChange(field.id, newItems);
-                            }} />
-                            <Input value={item.text} onChange={(e) => {
-                                const newItems = [...items]; newItems[index] = { ...item, text: e.target.value }; handleDataChange(field.id, newItems);
-                            }} className="h-8" />
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDataChange(field.id, items.filter((_, i) => i !== index))}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </DraggableCheckboxItem>
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                  <Button type="button" variant="outline" size="sm" onClick={() => handleDataChange(field.id, [...items, { id: generateClientSideId(), text: '', checked: false }])} className="mt-2">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Item
-                  </Button>
-                </div>
-              </div>
-            );
-          }
-          if (field.type === 'query') {
-              const handleQueryChange = (value: any) => handleDataChange(field.id, value);
-              return <QueryBuilder key={field.id} field={field} value={formData[field.id]} onChange={handleQueryChange} />;
-          }
-           if (field.type === 'table-header') {
-              if (fieldIndex > 0 && template.fields[fieldIndex - 1].type === 'table-header') return null;
-              
-              const tableRowCount = getTableRowCount();
+            if (renderedContent) {
               return (
-                  <div key="table-block" className="space-y-2">
-                      <Label className="text-sm font-medium">Table Data</Label>
-                      <div className="space-y-4">
-                          {Array.from({ length: tableRowCount }).map((_, rowIndex) => (
-                              <Card key={rowIndex} className="bg-muted/50">
-                                <CardContent className="p-4 space-y-4">
-                                  <div className="flex justify-between items-center"><p className="font-semibold">Row {rowIndex + 1}</p>
-                                    <AlertDialog><AlertDialogTrigger asChild>
-                                      <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
-                                    </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                                  </div>
-                                  {tableHeaderFields.map(f => {
-                                    const dateString = formData[f.id]?.[rowIndex]; let dateValue: Date | undefined;
-                                    if (dateString && typeof dateString === 'string') { const parsed = parse(dateString, 'yyyy-MM-dd', new Date()); if (isValid(parsed)) dateValue = parsed; }
-                                    return (
-                                      <div key={`${f.id}-${rowIndex}`} className="space-y-2"><Label className="text-sm font-medium">{f.name}</Label>
-                                        <div className="flex items-center gap-1">
-                                          {f.prefix && <span className="text-muted-foreground text-sm">{f.prefix}</span>}
-                                          {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow" />)}
-                                          {f.postfix && <span className="text-muted-foreground text-sm">{f.postfix}</span>}
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
-                                </CardContent>
-                              </Card>
-                          ))}
-                      </div>
-                      <Button type="button" variant="outline" size="sm" onClick={handleAddRow} className="mt-2"><PlusCircle className="mr-2 h-4 w-4"/> Add Row</Button>
-                  </div>
-              );
-          }
-          if (renderedContent) {
-            return (
-              <div key={field.id} className="space-y-2">
+                <div key={field.id} className="space-y-2">
                   <Label className="text-sm font-medium">{field.name}</Label>
                   <div className="flex items-center gap-1">
                     {field.prefix && <span className="text-muted-foreground text-sm">{field.prefix}</span>}
                     <div className="flex-grow">{renderedContent}</div>
                     {field.postfix && <span className="text-muted-foreground text-sm">{field.postfix}</span>}
                   </div>
-              </div>
-            );
-          }
-          return null;
-        })}
-      </div>
-      
-      <DialogFooter className="mt-4">
-        <DialogClose asChild>
-          <Button type="button" variant="ghost" onClick={handleClose}>
-            Cancel
-          </Button>
-        </DialogClose>
-        <Button type="submit">{isMultiEdit ? `Update ${node?.id ? 1 : 'nodes'}` : 'Save'}</Button>
-      </DialogFooter>
-    </form>
-
-    {/* Image Lightbox */}
-    <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Full Screen Image</DialogTitle>
-        </DialogHeader>
-        <div className="relative w-full h-full flex items-center justify-center group/lightbox">
-          {fullScreenImage && (
-            <img 
-              src={fullScreenImage} 
-              alt="Full screen view" 
-              className="max-w-full max-h-[90vh] object-contain"
-            />
-          )}
+                </div>
+              );
+            }
+            return null;
+          })}
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <DialogFooter className="mt-4">
+          <DialogClose asChild>
+            <Button type="button" variant="ghost" onClick={handleClose}>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button type="submit">{isMultiEdit ? `Update ${node?.id ? 1 : 'nodes'}` : 'Save'}</Button>
+        </DialogFooter>
+      </form>
+
+      {/* Image Lightbox */}
+      <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Full Screen Image</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-full flex items-center justify-center group/lightbox">
+            {fullScreenImage && (
+              <img
+                src={fullScreenImage}
+                alt="Full screen view"
+                className="max-w-full max-h-[90vh] object-contain"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
 
 
 const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
-    const { getTemplateById, templates } = useTreeContext();
-    const queryDefs: QueryDefinition[] = Array.isArray(value) ? value : [];
+  const { getTemplateById, templates } = useTreeContext();
+  const queryDefs: QueryDefinition[] = Array.isArray(value) ? value : [];
 
-    const handleQueryChange = (newDefs: QueryDefinition[]) => {
-      onChange(newDefs);
-    };
+  const handleQueryChange = (newDefs: QueryDefinition[]) => {
+    onChange(newDefs);
+  };
 
-    const handleQueryGroupChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
-        const newQueryDefs = [...queryDefs];
-        newQueryDefs[queryIndex] = { ...newQueryDefs[queryIndex], [key]: value };
-        handleQueryChange(newQueryDefs);
-    };
+  const handleQueryGroupChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
+    const newQueryDefs = [...queryDefs];
+    newQueryDefs[queryIndex] = { ...newQueryDefs[queryIndex], [key]: value };
+    handleQueryChange(newQueryDefs);
+  };
 
-    const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, value: any) => {
-        const newQueryDefs = [...queryDefs];
-        const newRules = [...newQueryDefs[queryIndex].rules];
-        newRules[ruleIndex] = { ...newRules[ruleIndex], [key]: value };
-        if (key === 'type') {
-            if (value === 'field') {
-                delete newRules[ruleIndex].relationTemplateId;
-                delete newRules[ruleIndex].relationRules;
-            } else {
-                delete newRules[ruleIndex].fieldId;
-                delete newRules[ruleIndex].operator;
-                delete newRules[ruleIndex].value;
-            }
-        }
-        handleQueryGroupChange(queryIndex, 'rules', newRules);
-    };
+  const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, value: any) => {
+    const newQueryDefs = [...queryDefs];
+    const newRules = [...newQueryDefs[queryIndex].rules];
+    newRules[ruleIndex] = { ...newRules[ruleIndex], [key]: value };
+    if (key === 'type') {
+      if (value === 'field') {
+        delete newRules[ruleIndex].relationTemplateId;
+        delete newRules[ruleIndex].relationRules;
+      } else {
+        delete newRules[ruleIndex].fieldId;
+        delete newRules[ruleIndex].operator;
+        delete newRules[ruleIndex].value;
+      }
+    }
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
 
-    const addQueryGroup = () => {
-        handleQueryChange([...queryDefs, { id: generateClientSideId(), targetTemplateId: null, rules: [] }]);
-    };
-    
-    const removeQueryGroup = (queryIndex: number) => {
-        handleQueryChange(queryDefs.filter((_, index) => index !== queryIndex));
-    };
+  const addQueryGroup = () => {
+    handleQueryChange([...queryDefs, { id: generateClientSideId(), targetTemplateId: null, rules: [] }]);
+  };
 
-    const addRule = (queryIndex: number) => {
-        const newRules = [...(queryDefs[queryIndex].rules || []), { id: generateClientSideId(), type: 'field', fieldId: '', operator: 'equals' as ConditionalRuleOperator, value: '' }];
-        handleQueryGroupChange(queryIndex, 'rules', newRules);
-    };
+  const removeQueryGroup = (queryIndex: number) => {
+    handleQueryChange(queryDefs.filter((_, index) => index !== queryIndex));
+  };
 
-    const removeRule = (queryIndex: number, ruleIndex: number) => {
-        const newRules = (queryDefs[queryIndex].rules || []).filter((_, index) => index !== ruleIndex);
-        handleQueryGroupChange(queryIndex, 'rules', newRules);
-    };
-    
-    const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relationRuleIndex: number, key: keyof SimpleQueryRule, value: any) => {
-      const newQueryDefs = [...queryDefs];
-      const newRules = [...newQueryDefs[queryIndex].rules];
-      const newRelationRules = [...(newRules[ruleIndex].relationRules || [])];
-      newRelationRules[relationRuleIndex] = { ...newRelationRules[relationRuleIndex], [key]: value };
-      newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
-      handleQueryGroupChange(queryIndex, 'rules', newRules);
-    };
+  const addRule = (queryIndex: number) => {
+    const newRules = [...(queryDefs[queryIndex].rules || []), { id: generateClientSideId(), type: 'field', fieldId: '', operator: 'equals' as ConditionalRuleOperator, value: '' }];
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
 
-    const addRelationRule = (queryIndex: number, ruleIndex: number) => {
-      const newQueryDefs = [...queryDefs];
-      const newRules = [...newQueryDefs[queryIndex].rules];
-      const newRelationRules = [...(newRules[ruleIndex].relationRules || []), { id: generateClientSideId(), fieldId: '', operator: 'equals' as ConditionalRuleOperator, value: '' }];
-      newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
-      handleQueryGroupChange(queryIndex, 'rules', newRules);
-    };
+  const removeRule = (queryIndex: number, ruleIndex: number) => {
+    const newRules = (queryDefs[queryIndex].rules || []).filter((_, index) => index !== ruleIndex);
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
 
-    const removeRelationRule = (queryIndex: number, ruleIndex: number, relationRuleIndex: number) => {
-        const newQueryDefs = [...queryDefs];
-        const newRules = [...newQueryDefs[queryIndex].rules];
-        const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relationRuleIndex);
-        newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
-        handleQueryGroupChange(queryIndex, 'rules', newRules);
-    };
+  const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relationRuleIndex: number, key: keyof SimpleQueryRule, value: any) => {
+    const newQueryDefs = [...queryDefs];
+    const newRules = [...newQueryDefs[queryIndex].rules];
+    const newRelationRules = [...(newRules[ruleIndex].relationRules || [])];
+    newRelationRules[relationRuleIndex] = { ...newRelationRules[relationRuleIndex], [key]: value };
+    newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
 
-    return (
-        <div key={field.id} className="space-y-2">
-          <Label className="text-sm font-medium">{field.name}</Label>
-          <div className="space-y-4">
-            {queryDefs.map((queryDef, queryIndex) => {
-              const targetTemplate = templates.find(t => t.id === queryDef.targetTemplateId);
-              return (
-                  <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
-                      <div className="flex justify-between items-center">
-                          <Label>Search for nodes with template:</Label>
-                          <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
-                              <Trash2 className="h-4 w-4"/>
-                          </Button>
-                      </div>
-                      <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
-                          <SelectTrigger><SelectValue placeholder="Select a template..."/></SelectTrigger>
-                          <SelectContent>
-                              {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                      
+  const addRelationRule = (queryIndex: number, ruleIndex: number) => {
+    const newQueryDefs = [...queryDefs];
+    const newRules = [...newQueryDefs[queryIndex].rules];
+    const newRelationRules = [...(newRules[ruleIndex].relationRules || []), { id: generateClientSideId(), fieldId: '', operator: 'equals' as ConditionalRuleOperator, value: '' }];
+    newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
+
+  const removeRelationRule = (queryIndex: number, ruleIndex: number, relationRuleIndex: number) => {
+    const newQueryDefs = [...queryDefs];
+    const newRules = [...newQueryDefs[queryIndex].rules];
+    const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relationRuleIndex);
+    newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
+  };
+
+  return (
+    <div key={field.id} className="space-y-2">
+      <Label className="text-sm font-medium">{field.name}</Label>
+      <div className="space-y-4">
+        {queryDefs.map((queryDef, queryIndex) => {
+          const targetTemplate = templates.find(t => t.id === queryDef.targetTemplateId);
+          return (
+            <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Search for nodes with template:</Label>
+                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
+                <SelectTrigger><SelectValue placeholder="Select a template..." /></SelectTrigger>
+                <SelectContent>
+                  {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <div className="space-y-2">
+                <Label>Where...</Label>
+                {(queryDef.rules || []).map((rule, ruleIndex) => {
+                  const ruleType = rule.type || 'field';
+                  const relationTemplate = rule.relationTemplateId ? getTemplateById(rule.relationTemplateId) : null;
+                  return (
+                    <Card key={rule.id || ruleIndex} className="p-2 bg-background space-y-2">
                       <div className="space-y-2">
-                           <Label>Where...</Label>
-                           {(queryDef.rules || []).map((rule, ruleIndex) => {
-                                const ruleType = rule.type || 'field';
-                                const relationTemplate = rule.relationTemplateId ? getTemplateById(rule.relationTemplateId) : null;
-                                return (
-                                    <Card key={rule.id || ruleIndex} className="p-2 bg-background space-y-2">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val)}>
-                                                    <SelectTrigger className="w-auto"><SelectValue/></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="field">Field</SelectItem>
-                                                        <SelectItem value="ancestor">Ancestor</SelectItem>
-                                                        <SelectItem value="descendant">Descendant</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
-                                                    <Trash2 className="h-4 w-4"/>
-                                                </Button>
-                                            </div>
-                                            {ruleType === 'field' ? (
-                                                <div className="space-y-2 pl-2">
-                                                    <Select value={rule.fieldId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
-                                                        <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
-                                                        <SelectContent>
-                                                            {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <Select value={rule.operator || 'equals'} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
-                                                        <SelectTrigger><SelectValue placeholder="Operator..."/></SelectTrigger>
-                                                        <SelectContent>
-                                                            {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <Input value={rule.value || ''} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-2 pl-2">
-                                                   <span className="text-sm p-2 block">has {ruleType} with template:</span>
-                                                    <Select value={rule.relationTemplateId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'relationTemplateId', val)}>
-                                                        <SelectTrigger><SelectValue placeholder="Template..."/></SelectTrigger>
-                                                        <SelectContent>
-                                                            {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            )}
-                                        </div>
-                                        { (ruleType === 'ancestor' || ruleType === 'descendant') && rule.relationTemplateId && (
-                                            <div className="pl-6 space-y-2">
-                                                <Label className="text-xs text-muted-foreground">Where...</Label>
-                                                {(rule.relationRules || []).map((relRule, relRuleIndex) => (
-                                                    <Card key={relRule.id} className="p-2 bg-muted/50">
-                                                        <div className="space-y-2">
-                                                            <Select value={relRule.fieldId} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'fieldId', val)}>
-                                                                <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
-                                                                <SelectContent>{relationTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
-                                                            </Select>
-                                                            <Select value={relRule.operator} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'operator', val)}>
-                                                                <SelectTrigger><SelectValue placeholder="Operator..."/></SelectTrigger>
-                                                                <SelectContent>
-                                                                    {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Input value={relRule.value} onChange={(e) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                                            <div className="flex justify-end">
-                                                                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRelationRule(queryIndex, ruleIndex, relRuleIndex)}>
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    </Card>
-                                                ))}
-                                                <Button type="button" variant="outline" size="sm" onClick={() => addRelationRule(queryIndex, ruleIndex)}>
-                                                    <PlusCircle className="mr-2 h-4 w-4" /> Add condition for {ruleType}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </Card>
-                                );
-                           })}
-                          <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
-                              <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition
+                        <div className="flex items-center justify-between">
+                          <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val)}>
+                            <SelectTrigger className="w-auto"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="field">Field</SelectItem>
+                              <SelectItem value="ancestor">Ancestor</SelectItem>
+                              <SelectItem value="descendant">Descendant</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
+                        </div>
+                        {ruleType === 'field' ? (
+                          <div className="space-y-2 pl-2">
+                            <Select value={rule.fieldId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
+                              <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
+                              <SelectContent>
+                                {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Select value={rule.operator || 'equals'} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val)}>
+                              <SelectTrigger><SelectValue placeholder="Operator..." /></SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Input value={rule.value || ''} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..." />
+                          </div>
+                        ) : (
+                          <div className="space-y-2 pl-2">
+                            <span className="text-sm p-2 block">has {ruleType} with template:</span>
+                            <Select value={rule.relationTemplateId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'relationTemplateId', val)}>
+                              <SelectTrigger><SelectValue placeholder="Template..." /></SelectTrigger>
+                              <SelectContent>
+                                {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
-                  </Card>
-              )
-            })}
-            <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
-              <PlusCircle className="mr-2 h-4 w-4"/> Add OR Condition
-            </Button>
-          </div>
-        </div>
-    );
+                      {(ruleType === 'ancestor' || ruleType === 'descendant') && rule.relationTemplateId && (
+                        <div className="pl-6 space-y-2">
+                          <Label className="text-xs text-muted-foreground">Where...</Label>
+                          {(rule.relationRules || []).map((relRule, relRuleIndex) => (
+                            <Card key={relRule.id} className="p-2 bg-muted/50">
+                              <div className="space-y-2">
+                                <Select value={relRule.fieldId} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'fieldId', val)}>
+                                  <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
+                                  <SelectContent>{relationTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Select value={relRule.operator} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'operator', val)}>
+                                  <SelectTrigger><SelectValue placeholder="Operator..." /></SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                                <Input value={relRule.value} onChange={(e) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'value', e.target.value)} placeholder="Value..." />
+                                <div className="flex justify-end">
+                                  <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRelationRule(queryIndex, ruleIndex, relRuleIndex)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => addRelationRule(queryIndex, ruleIndex)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add condition for {ruleType}
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+                <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add AND Condition
+                </Button>
+              </div>
+            </Card>
+          )
+        })}
+        <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add OR Condition
+        </Button>
+      </div>
+    </div>
+  );
 };

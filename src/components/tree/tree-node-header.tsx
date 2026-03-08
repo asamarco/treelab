@@ -130,6 +130,7 @@ export function TreeNodeHeader({
       template.fields.some(f => f.type === 'query') ||
       template.fields.some(f => f.type === 'checkbox') ||
       template.fields.some(f => f.type === 'checklist') ||
+      template.fields.some(f => f.type === 'spreadsheet') ||
       (template.bodyTemplate && template.bodyTemplate.trim() !== '')
     ));
 

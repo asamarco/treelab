@@ -9,7 +9,7 @@ import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "checklist" | "checkbox";
+export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "checklist" | "checkbox" | "spreadsheet";
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
@@ -21,6 +21,8 @@ export interface Field {
     height?: number; // for picture
     prefix?: string;
     postfix?: string;
+    spreadsheetRowCount?: number;
+    spreadsheetColumnCount?: number;
 }
 
 export interface AttachmentInfo {
