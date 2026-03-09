@@ -43,6 +43,7 @@ const DialogContent = React.forwardRef<
       onDoubleClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
+      onContextMenu={(e) => e.stopPropagation()}
       onInteractOutside={(e) => {
         const target = e.target as HTMLElement
         if (target.closest('[cmdk-root], [role="menu"]')) {
