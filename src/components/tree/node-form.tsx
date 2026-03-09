@@ -487,10 +487,10 @@ export const NodeForm = ({
     });
   };
 
-  const handleChartDataChange = (fieldId: string, index: number, key: 'x' | 'y' | 'xAxisLabel' | 'yAxisLabel', value: string) => {
+  const handleChartDataChange = (fieldId: string, index: number, key: 'x' | 'y' | 'xAxisLabel' | 'yAxisLabel' | 'showAverage' | 'showStdDev' | 'showRelativeError' | 'showLinearRegression', value: string | boolean) => {
     setFormData(prev => {
       const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-      if (key === 'xAxisLabel' || key === 'yAxisLabel') {
+      if (key === 'xAxisLabel' || key === 'yAxisLabel' || key === 'showAverage' || key === 'showStdDev' || key === 'showRelativeError' || key === 'showLinearRegression') {
         return {
           ...prev,
           [fieldId]: { ...currentChartData, [key]: value },
@@ -831,6 +831,41 @@ export const NodeForm = ({
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2"> <Label htmlFor={`${field.id}-x-label`} className="text-xs">X-Axis Label</Label> <Input id={`${field.id}-x-label`} placeholder="e.g., Time (s)" value={chartData.xAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'xAxisLabel', e.target.value)} /></div>
                       <div className="space-y-2"> <Label htmlFor={`${field.id}-y-label`} className="text-xs">Y-Axis Label</Label> <Input id={`${field.id}-y-label`} placeholder="e.g., Temperature (°C)" value={chartData.yAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'yAxisLabel', e.target.value)} /></div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 items-center p-2 border rounded-md bg-muted/30">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${field.id}-show-avg`}
+                          checked={!!chartData.showAverage}
+                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showAverage', !!checked)}
+                        />
+                        <Label htmlFor={`${field.id}-show-avg`} className="text-xs cursor-pointer">Show Average</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${field.id}-show-std`}
+                          checked={!!chartData.showStdDev}
+                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showStdDev', !!checked)}
+                        />
+                        <Label htmlFor={`${field.id}-show-std`} className="text-xs cursor-pointer">Show Std Dev</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${field.id}-show-rel`}
+                          checked={!!chartData.showRelativeError}
+                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showRelativeError', !!checked)}
+                        />
+                        <Label htmlFor={`${field.id}-show-rel`} className="text-xs cursor-pointer">Show Relative Error</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`${field.id}-show-reg`}
+                          checked={!!chartData.showLinearRegression}
+                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showLinearRegression', !!checked)}
+                        />
+                        <Label htmlFor={`${field.id}-show-reg`} className="text-xs cursor-pointer">Show Linear Regression</Label>
+                      </div>
                     </div>
 
                     <div className="space-y-2">

@@ -23,7 +23,7 @@ import { TreeNodeDropZone } from "./tree-node-dropzone";
 import { WritableDraft } from "immer";
 import { Button } from "../ui/button";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label as ChartLabel, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label as ChartLabel, Tooltip as ChartTooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
 import { getConditionalStyle } from "./tree-node-utils";
@@ -310,19 +310,108 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                             <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                                 <p className={cn("font-medium mb-2", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
                                                 <div style={{ width: '100%', height: isCompactView ? 180 : 300 }}>
-                                                    <ResponsiveContainer>
-                                                        <LineChart data={numericData} margin={{ top: 5, right: 30, left: 20, bottom: 20 }}>
-                                                            <CartesianGrid strokeDasharray="3 3" />
-                                                            <XAxis dataKey="x" type="number" domain={['dataMin', 'dataMax']}>
-                                                                <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
-                                                            </XAxis>
-                                                            <YAxis domain={['auto', 'auto']}>
-                                                                <ChartLabel value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
-                                                            </YAxis>
-                                                            <ChartTooltip />
-                                                            <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={false} />
-                                                        </LineChart>
-                                                    </ResponsiveContainer>
+                                                    {(() => {
+                                                        const yValues = numericData.map(p => p.y);
+                                                        const xValues = numericData.map(p => p.x);
+                                                        const n = yValues.length;
+                                                        const mean = n > 0 ? yValues.reduce((a, b) => a + b, 0) / n : 0;
+                                                        const variance = n > 0 ? yValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n : 0;
+                                                        const stdDev = Math.sqrt(variance);
+                                                        const relError = Math.abs(mean) > 0 ? (stdDev / Math.abs(mean)) * 100 : 0;
+
+                                                        // Linear Regression: y = mx + b
+                                                        let regressionSegment = null;
+                                                        let regressionStats = null;
+                                                        if (chartData.showLinearRegression && n > 1) {
+                                                            const sumX = xValues.reduce((a, b) => a + b, 0);
+                                                            const sumY = yValues.reduce((a, b) => a + b, 0);
+                                                            const sumXY = numericData.reduce((prev, curr) => prev + (curr.x * curr.y), 0);
+                                                            const sumX2 = xValues.reduce((prev, curr) => prev + (curr * curr), 0);
+                                                            const denominator = (n * sumX2 - sumX * sumX);
+                                                            if (denominator !== 0) {
+                                                                const m = (n * sumXY - sumX * sumY) / denominator;
+                                                                const b = (sumY - m * sumX) / n;
+                                                                const minX = Math.min(...xValues);
+                                                                const maxX = Math.max(...xValues);
+                                                                regressionSegment = [
+                                                                    { x: minX, y: m * minX + b },
+                                                                    { x: maxX, y: m * maxX + b }
+                                                                ];
+
+                                                                const ssRes = numericData.reduce((acc, curr) => acc + Math.pow(curr.y - (m * curr.x + b), 2), 0);
+                                                                const ssTot = yValues.reduce((acc, curr) => acc + Math.pow(curr - mean, 2), 0);
+                                                                const rSquared = ssTot !== 0 ? 1 - (ssRes / ssTot) : 1;
+                                                                regressionStats = {
+                                                                    equation: `y = ${m.toFixed(2)}x ${b >= 0 ? '+' : '-'} ${Math.abs(b).toFixed(2)}`,
+                                                                    rSquared: rSquared.toFixed(3)
+                                                                };
+                                                            }
+                                                        }
+
+                                                        return (
+                                                            <ResponsiveContainer>
+                                                                <LineChart data={numericData} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                                                                    <CartesianGrid strokeDasharray="3 3" />
+                                                                    <XAxis dataKey="x" type="number" domain={['auto', 'auto']}>
+                                                                        <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
+                                                                    </XAxis>
+                                                                    <YAxis domain={['auto', 'auto']}>
+                                                                        <ChartLabel value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+                                                                    </YAxis>
+                                                                    <ChartTooltip />
+                                                                    <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={{ r: 2 }} />
+
+                                                                    {chartData.showAverage && n > 0 && (
+                                                                        <ReferenceLine
+                                                                            y={mean}
+                                                                            stroke="hsl(var(--destructive))"
+                                                                            strokeDasharray="3 3"
+                                                                            label={{
+                                                                                value: `Avg: ${mean.toFixed(2)}`,
+                                                                                position: 'insideLeft',
+                                                                                fill: 'hsl(var(--destructive))',
+                                                                                fontSize: 10
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                    {chartData.showStdDev && n > 0 && (
+                                                                        <ReferenceArea
+                                                                            y1={mean - stdDev}
+                                                                            y2={mean + stdDev}
+                                                                            fill="hsl(var(--destructive))"
+                                                                            fillOpacity={0.1}
+                                                                        />
+                                                                    )}
+                                                                    {chartData.showRelativeError && n > 0 && (
+                                                                        <ReferenceLine
+                                                                            y={mean}
+                                                                            stroke="transparent"
+                                                                            label={{
+                                                                                value: `Rel. Error: ${relError.toFixed(1)}%`,
+                                                                                position: 'insideRight',
+                                                                                fill: 'hsl(var(--muted-foreground))',
+                                                                                fontSize: 10
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                    {regressionSegment && (
+                                                                        <ReferenceLine
+                                                                            segment={regressionSegment}
+                                                                            stroke="hsl(var(--primary))"
+                                                                            strokeWidth={2}
+                                                                            strokeDasharray="5 5"
+                                                                            label={regressionStats ? {
+                                                                                value: `${regressionStats.equation}, R² = ${regressionStats.rSquared}`,
+                                                                                position: 'top',
+                                                                                fill: 'hsl(var(--primary))',
+                                                                                fontSize: 10
+                                                                            } : undefined}
+                                                                        />
+                                                                    )}
+                                                                </LineChart>
+                                                            </ResponsiveContainer>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                         )

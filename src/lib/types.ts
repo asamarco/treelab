@@ -103,6 +103,10 @@ export interface XYChartData {
     points: { x: string; y: string }[];
     xAxisLabel?: string;
     yAxisLabel?: string;
+    showAverage?: boolean;
+    showStdDev?: boolean;
+    showRelativeError?: boolean;
+    showLinearRegression?: boolean;
 }
 
 export interface TreeNode {
