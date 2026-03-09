@@ -355,7 +355,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                                                     <XAxis dataKey="x" type="number" domain={['auto', 'auto']}>
                                                                         <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
                                                                     </XAxis>
-                                                                    <YAxis domain={['auto', 'auto']}>
+                                                                    <YAxis domain={['auto', 'auto']} interval={0}>
                                                                         <ChartLabel value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                                                                     </YAxis>
                                                                     <ChartTooltip />
