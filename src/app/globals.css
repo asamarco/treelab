@@ -238,6 +238,7 @@ body {
 .dsg-context-menu {
   z-index: 99999 !important;
   position: fixed !important;
+  pointer-events: auto !important;
 }
 
 .dark .ds-grid-container {

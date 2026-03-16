@@ -13,6 +13,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -76,7 +77,7 @@ import path from "path";
 import { Separator } from "../ui/separator";
 import { useUIContext } from "@/contexts/ui-context";
 import { DatePicker } from "../ui/date-picker";
-import { DataSheetGrid, textColumn, keyColumn } from 'react-datasheet-grid';
+import { DataSheetGrid, textColumn, keyColumn, createContextMenuComponent, ContextMenuComponentProps } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 
 
@@ -137,6 +138,25 @@ const operatorLabels: Record<ConditionalRuleOperator, string> = {
   is_empty: 'Is Empty',
   greater_than: 'Greater Than',
   less_than: 'Less Than',
+};
+
+const PortaledContextMenu = (props: ContextMenuComponentProps) => {
+  const ContextMenu = useMemo(() => createContextMenuComponent(), []);
+
+  // We need to render the portal after the initial mount to ensure document.body is available
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="ds-grid-container fixed inset-0 pointer-events-none z-[99999]">
+      <ContextMenu {...props} />
+    </div>,
+    document.body
+  );
 };
 
 const XYChartSpreadsheetEditor = ({
@@ -200,6 +220,7 @@ const XYChartSpreadsheetEditor = ({
           columns={columns}
           autoAddRow
           lockRows={false}
+          contextMenuComponent={PortaledContextMenu}
         />
       </div>
       <p className="text-[10px] text-muted-foreground italic">
