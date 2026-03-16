@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This file defines the `TreeView` component, which is the main container for
@@ -65,7 +66,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     clipboard,
     deleteNodes,
   } = useTreeContext();
-  const { dialogState, setDialogState, setIsTwoPanelMode, isTwoPanelMode } = useUIContext();
+  const { dialogState, setDialogState, setIsTwoPanelMode, isTwoPanelMode, isAnyModalOpen } = useUIContext();
 
   const isUsingLocalExpansion = !!overrideExpandedIds && !!onExpandedChange;
 
@@ -248,11 +249,22 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly || disableSelection) return;
     const activeElement = document.activeElement as HTMLElement;
-    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
+    if (activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      activeElement.isContentEditable ||
+      activeElement.closest('form') ||
+      activeElement.closest('[role="dialog"]') ||
+      activeElement.closest('.jexcel') ||
+      activeElement.closest('.jspreadsheet') ||
+      activeElement.closest('.ds-grid-container') ||
+      activeElement.closest('.dsg-container') ||
+      activeElement.classList.contains('jexcel_textarea')
+    )) {
       return;
     }
 
-    const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
     if (isAnyModalOpen) {
       return;
     }
@@ -457,7 +469,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
         element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
-  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, dialogState, currentUser, clipboard, pasteNodes, pasteNodesAsClones, setIsTwoPanelMode, readOnly, disableSelection]);
+  }, [selectedNodeIds, lastSelectedNodeId, flattenedInstances, setSelectedNodeIds, setLastSelectedNodeId, setExpandedNodeIds, expandAllFromNode, collapseAllFromNode, setDialogState, moveNodeOrder, findNodeAndParent, tree, undoLastAction, redoLastAction, isAnyModalOpen, currentUser, clipboard, pasteNodes, pasteNodesAsClones, setIsTwoPanelMode, readOnly, disableSelection]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);

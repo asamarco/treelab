@@ -277,7 +277,14 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
     <>
       {/* Add Child / Paste Template Dialog */}
       <Dialog open={openModal === 'addChild' || openModal === 'pasteTemplate'} onOpenChange={handleOpenChange}>
-        <DialogContent>
+        <DialogContent
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader><DialogTitle><CornerDownRight className="inline-block mr-2 h-5 w-5" />Add New Node to "{node.name}"</DialogTitle></DialogHeader>
           {renderAddDialogContent(handleSaveNewChild)}
         </DialogContent>
@@ -285,7 +292,14 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
       {/* Add Sibling Dialog */}
       <Dialog open={openModal === 'addSibling'} onOpenChange={handleOpenChange}>
-        <DialogContent>
+        <DialogContent
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader><DialogTitle><ListPlus className="inline-block mr-2 h-5 w-5" />Add Sibling After "{node.name}"</DialogTitle></DialogHeader>
           {renderAddDialogContent(handleSaveNewSibling)}
         </DialogContent>
@@ -293,7 +307,15 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
 
       {/* Edit Node Dialog */}
       <Dialog open={openModal === 'edit'} onOpenChange={handleOpenChange}>
-        <DialogContent className={cn("max-h-[90vh] flex flex-col transition-all duration-300", showChildPanel ? "max-w-5xl" : "max-w-2xl")}>
+        <DialogContent
+          className={cn("max-h-[90vh] flex flex-col transition-all duration-300", showChildPanel ? "max-w-5xl" : "max-w-2xl")}
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader className="flex flex-row items-center justify-between pr-6">
             <DialogTitle>Edit Node: {node.name}</DialogTitle>
             {node.children && node.children.length > 0 && (

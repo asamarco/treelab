@@ -55,17 +55,6 @@ body {
     --sidebar-accent-foreground: 158 58% 35%;
     --sidebar-border: 40 20% 88%;
     --sidebar-ring: 158 58% 45%;
-
-    /* react-spreadsheet theming */
-    --rs-cell-bg: hsl(var(--background));
-    --rs-cell-color: hsl(var(--foreground));
-    --rs-header-bg: hsl(var(--muted));
-    --rs-header-color: hsl(var(--muted-foreground));
-    --rs-selection-bg: hsla(var(--primary) / 0.1);
-    --rs-selection-border: hsl(var(--primary));
-    --rs-border-color: hsl(var(--border));
-    --rs-active-cell-bg: hsl(var(--background));
-    --rs-active-cell-color: hsl(var(--foreground));
   }
 
   .dark {
@@ -101,17 +90,6 @@ body {
     --sidebar-accent-foreground: 158 58% 65%;
     --sidebar-border: 195 25% 22%;
     --sidebar-ring: 158 58% 55%;
-
-    /* react-spreadsheet dark theming */
-    --rs-cell-bg: hsl(var(--background));
-    --rs-cell-color: hsl(var(--foreground));
-    --rs-header-bg: hsl(var(--muted));
-    --rs-header-color: hsl(var(--muted-foreground));
-    --rs-selection-bg: hsla(var(--primary) / 0.2);
-    --rs-selection-border: hsl(var(--primary));
-    --rs-border-color: hsl(var(--border) / 0.5);
-    --rs-active-cell-bg: hsl(var(--secondary));
-    --rs-active-cell-color: hsl(var(--foreground));
   }
 }
 
@@ -166,53 +144,161 @@ body {
   display: none !important;
 }
 
-/* Premium Spreadsheet Theming */
-.Spreadsheet {
+/* Jspreadsheet CE Theme Overrides */
+.jexcel {
+  border-color: hsl(var(--border)) !important;
   font-family: inherit !important;
-  font-size: 0.875rem !important;
-  /* text-sm */
-  box-shadow: none !important;
-  min-width: max-content !important;
 }
 
-.Spreadsheet__header {
+.jexcel>thead>tr>td {
+  background-color: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  border-color: hsl(var(--border)) !important;
   font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.025em !important;
   font-size: 0.75rem !important;
-  /* text-xs */
-  border-bottom: 2px solid hsl(var(--border)) !important;
+  text-transform: uppercase !important;
 }
 
-.Spreadsheet__cell {
-  border-right: 1px solid hsl(var(--border) / 0.5) !important;
-  border-bottom: 1px solid hsl(var(--border) / 0.5) !important;
-  padding: 0 8px !important;
-  transition: background-color 0.15s ease !important;
+.jexcel>tbody>tr>td {
+  border-color: hsl(var(--border)) !important;
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
 }
 
-.Spreadsheet__cell:hover {
-  background-color: hsla(var(--primary) / 0.02) !important;
+.jexcel>tbody>tr>td.highlight {
+  background-color: hsla(var(--primary) / 0.1) !important;
 }
 
-.Spreadsheet__cell--selected {
-  background-color: var(--rs-selection-bg) !important;
-  box-shadow: inset 0 0 0 1px var(--rs-selection-border) !important;
+.dark .jexcel>tbody>tr>td {
+  background-color: hsl(var(--card)) !important;
 }
 
-.Spreadsheet__cell input {
-  font-family: inherit !important;
-  font-size: inherit !important;
-  color: inherit !important;
-  background: transparent !important;
-  outline: none !important;
+.dark .jexcel>thead>tr>td {
+  background-color: hsl(var(--secondary)) !important;
 }
 
-.dark .Spreadsheet__header {
-  border-bottom-color: hsl(var(--primary) / 0.3) !important;
+/* Ensure jSuites context menus and dropdown results are usable when inside a Radix Dialog */
+.jcontextmenu,
+.jsuites-results {
+  pointer-events: auto !important;
+  z-index: 99999 !important;
 }
 
-.dark .Spreadsheet__cell {
-  border-right-color: hsl(var(--border) / 0.2) !important;
-  border-bottom-color: hsl(var(--border) / 0.2) !important;
+/* React DataSheet Grid Theme Overrides */
+:root {
+  --dsg-border-color: hsl(var(--border));
+  --dsg-cell-background-color: hsl(var(--background));
+  --dsg-cell-text-color: hsl(var(--foreground));
+  --dsg-header-background-color: hsl(var(--muted));
+  --dsg-header-text-color: hsl(var(--muted-foreground));
+  --dsg-selection-border-color: hsl(var(--primary));
+  --dsg-selection-background-color: hsla(var(--primary) / 0.1);
+}
+
+.dark .ds-grid-container {
+  --dsg-border-color: hsl(var(--border));
+  --dsg-cell-background-color: hsl(var(--card));
+  --dsg-cell-text-color: hsl(var(--foreground));
+  --dsg-header-background-color: hsl(var(--secondary));
+  --dsg-header-text-color: hsl(var(--foreground));
+  --dsg-selection-border-color: hsl(var(--primary));
+  --dsg-selection-background-color: hsla(var(--primary) / 0.2);
+}
+
+/* react-datasheet-grid dark mode and context menu fixes */
+.dsg-context-menu {
+  z-index: 99999 !important;
+}
+
+.dark .ds-grid-container {
+  --dsg-cell-text-color: hsl(var(--foreground)) !important;
+  --dsg-header-text-color: hsl(var(--foreground)) !important;
+}
+
+.dark .ds-grid-container input {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .dsg-context-menu {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+.dark .dsg-context-menu-item {
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+.dark .dsg-context-menu-item:hover {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* REFINED react-datasheet-grid dark mode and context menu fixes */
+.dsg-context-menu {
+  z-index: 99999 !important;
+  position: fixed !important;
+}
+
+.dark .ds-grid-container {
+  --dsg-cell-text-color: #ffffff !important;
+  --dsg-header-text-color: #ffffff !important;
+}
+
+.dark .ds-grid-container input,
+.dark .ds-grid-container .dsg-cell,
+.dark .ds-grid-container .dsg-input {
+  color: #ffffff !important;
+}
+
+.dark .dsg-context-menu {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border: 1px solid #333333 !important;
+}
+
+.dark .dsg-context-menu-item {
+  color: #ffffff !important;
+}
+
+.dark .dsg-context-menu-item:hover {
+  background-color: #333333 !important;
+}
+
+/* REFINED react-datasheet-grid dark mode and context menu fixes */
+.dark .ds-grid-container {
+  --dsg-cell-text-color: #ffffff !important;
+  --dsg-header-text-color: #ffffff !important;
+}
+
+.dark .ds-grid-container input,
+.dark .ds-grid-container .dsg-cell,
+.dark .ds-grid-container .dsg-input {
+  color: #ffffff !important;
+}
+
+.dark .dsg-add-row-button {
+  background-color: hsl(var(--secondary)) !important;
+  color: #ffffff !important;
+  border-color: hsl(var(--border)) !important;
+  opacity: 0.8;
+}
+
+.dark .dsg-add-row-button:hover {
+  background-color: hsl(var(--accent)) !important;
+  color: #ffffff !important;
+  opacity: 1;
+}
+
+.dark .dsg-cell,
+.dark .dsg-input,
+.dark .dsg-cell * {
+  color: #ffffff !important;
+}
+
+.dark .dsg-add-row-button {
+  background-color: #333 !important;
+  color: white !important;
+  border: 1px solid #444 !important;
+  opacity: 1 !important;
 }

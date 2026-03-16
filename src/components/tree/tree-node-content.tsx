@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -33,7 +34,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import Spreadsheet from "react-spreadsheet";
+import jspreadsheet from "jspreadsheet-ce";
+import "jspreadsheet-ce/dist/jspreadsheet.css";
+import "jsuites/dist/jsuites.css";
 
 
 interface TreeNodeContentProps {
@@ -61,71 +64,84 @@ interface TreeSpreadsheetFieldProps {
 }
 
 function TreeSpreadsheetField({ field, value, node, isCompactView, readOnly, updateNode }: TreeSpreadsheetFieldProps) {
-    const { theme } = useAuthContext();
-    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const spreadsheetRef = useRef<HTMLDivElement>(null);
+    const jRef = useRef<any>(null);
 
-    // Initial state setup with padding/truncation
+    // Initial state setup: Convert database format to Jspreadsheet flat array format
     const getInitialData = useCallback(() => {
         const data: { value: string }[][] = value || [[{ value: '' }]];
         const targetRows = field.spreadsheetRowCount || 5;
         const targetCols = field.spreadsheetColumnCount || 5;
 
-        return Array.from({ length: Math.max(data.length, targetRows) }, (_, rIndex) => {
-            return Array.from({ length: Math.max(data[0]?.length || 0, targetCols) }, (_, cIndex) => {
-                return { value: data?.[rIndex]?.[cIndex]?.value || '' };
+        const maxRows = Math.max(data.length, targetRows);
+        const maxCols = Math.max(data[0]?.length || 0, targetCols);
+
+        return Array.from({ length: maxRows }, (_, rIndex) => {
+            return Array.from({ length: maxCols }, (_, cIndex) => {
+                return data?.[rIndex]?.[cIndex]?.value || '';
             });
         });
     }, [value, field.spreadsheetRowCount, field.spreadsheetColumnCount]);
 
-    // Local state for immediate UI updates
-    const [localData, setLocalData] = useState(getInitialData);
+    // Persist changes back to the database
+    const persistData = useCallback((instance: any) => {
+        if (readOnly || !updateNode || !instance.jexcel) return;
 
-    // Sync local state when external value changes (e.g. from another client or if reset)
-    useEffect(() => {
-        setLocalData(getInitialData());
-    }, [getInitialData]);
-
-    // Debounced persistence logic
-    const persistData = useCallback((newData: { value: string }[][]) => {
-        if (readOnly || !updateNode) return;
+        const newDataRaw = instance.jexcel.getData();
+        const formattedData = newDataRaw.map((row: any[]) =>
+            row.map(cellValue => ({ value: String(cellValue ?? '') }))
+        );
 
         const newTotalData = {
             ...node.data,
-            [field.id]: newData,
+            [field.id]: formattedData,
         };
         updateNode(node.id, { data: newTotalData });
     }, [node.id, node.data, field.id, readOnly, updateNode]);
 
-    const debouncedPersist = useMemo(() => {
-        let timeoutId: NodeJS.Timeout;
-        return (newData: { value: string }[][]) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => persistData(newData), 1000);
+    useEffect(() => {
+        if (!spreadsheetRef.current || jRef.current) return;
+
+        const data = getInitialData();
+
+        jRef.current = jspreadsheet(spreadsheetRef.current, {
+            data: data,
+            minDimensions: [field.spreadsheetColumnCount || 5, field.spreadsheetRowCount || 5],
+            wordWrap: true,
+            onchange: (instance) => persistData(instance),
+            oninsertrow: (instance) => persistData(instance),
+            ondeleterow: (instance) => persistData(instance),
+            oninsertcolumn: (instance) => persistData(instance),
+            ondeletecolumn: (instance) => persistData(instance),
+            editable: !readOnly,
+            allowInsertColumn: !readOnly,
+            allowDeleteColumn: !readOnly,
+            allowInsertRow: !readOnly,
+            allowDeleteRow: !readOnly,
+            contextMenu: !readOnly ? undefined : () => [],
+            defaultColWidth: 125,
+        });
+
+        return () => {
+            if (jRef.current) {
+                jRef.current.destroy();
+                jRef.current = null;
+            }
         };
-    }, [persistData]);
+    }, [getInitialData, field.spreadsheetRowCount, field.spreadsheetColumnCount, readOnly, persistData]);
 
     return (
-        <div className="mt-2 text-sm min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <div
+            className="mt-2 text-sm min-w-0"
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+        >
             <p className={cn("font-medium mb-1", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-            <div className={cn("overflow-x-auto rounded-md border w-full bg-background", readOnly && "opacity-80 pointer-events-none")}>
-                <div className="min-w-full inline-block align-middle">
-                    <Spreadsheet
-                        darkMode={isDarkMode}
-                        data={localData}
-                        onChange={(newData) => {
-                            if (readOnly) return;
-                            const cleaned = newData.map(row =>
-                                row.map(cell => ({ value: cell?.value ?? '' }))
-                            );
-
-                            // Update local state immediately for responsiveness
-                            setLocalData(cleaned);
-
-                            // Debounce the persistence call
-                            debouncedPersist(cleaned);
-                        }}
-                    />
-                </div>
+            <div className={cn("rounded-md border w-full bg-background overflow-hidden", readOnly && "opacity-80 pointer-events-none")}>
+                <div ref={spreadsheetRef} />
             </div>
         </div>
     );
@@ -157,7 +173,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
         const currentRefs = containerRefs.current;
 
         for (const fieldId in currentRefs) {
-            const element = currentRefs[fieldId];
+            const element = containerRefs.current[fieldId];
             if (element) {
                 const observer = new ResizeObserver((entries) => {
                     for (const entry of entries) {

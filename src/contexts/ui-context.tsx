@@ -45,6 +45,7 @@ interface UIContextType {
   setDialogState: (newState: Partial<DialogState>) => void;
   ignoreClicksUntil: number;
   setIgnoreClicksUntil: (timestamp: number) => void;
+  isAnyModalOpen: boolean;
 }
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -88,6 +89,11 @@ export function UIProvider({
     });
   };
 
+  const isAnyModalOpen = Object.entries(dialogState).some(([key, value]) => {
+    if (Array.isArray(value)) return value.length > 0;
+    return value === true;
+  });
+
   const value: UIContextType = {
     isCompactView,
     setIsCompactView,
@@ -99,6 +105,7 @@ export function UIProvider({
     setDialogState,
     ignoreClicksUntil,
     setIgnoreClicksUntil,
+    isAnyModalOpen,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

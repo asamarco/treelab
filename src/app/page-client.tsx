@@ -95,60 +95,60 @@ function filterTree(
 
   const hasMatchingAncestor = (node: TreeNode, relationTemplateId: string, relationRules?: SimpleQueryRule[]): boolean => {
     let current = node;
-    while(true) {
-        const parentInfo = findNodeAndParent(current.id);
-        if (!parentInfo || !parentInfo.parent) {
-            return false; 
-        }
-        const parent = parentInfo.parent;
-        if (parent.templateId === relationTemplateId) {
-            if (!relationRules || relationRules.length === 0) return true; 
-            const matches = (relationRules || []).every(rule => {
-                const fieldValue = (parent.data || {})[rule.fieldId];
-                return evaluateCondition(rule.operator, fieldValue, rule.value);
-            });
-            if (matches) return true;
-        }
-        current = parent;
+    while (true) {
+      const parentInfo = findNodeAndParent(current.id);
+      if (!parentInfo || !parentInfo.parent) {
+        return false;
+      }
+      const parent = parentInfo.parent;
+      if (parent.templateId === relationTemplateId) {
+        if (!relationRules || relationRules.length === 0) return true;
+        const matches = (relationRules || []).every(rule => {
+          const fieldValue = (parent.data || {})[rule.fieldId];
+          return evaluateCondition(rule.operator, fieldValue, rule.value);
+        });
+        if (matches) return true;
+      }
+      current = parent;
     }
   };
-  
+
   const hasMatchingDescendant = (node: TreeNode, relationTemplateId: string, relationRules?: SimpleQueryRule[]): boolean => {
-      const queue: TreeNode[] = [...(node.children || [])];
-      while (queue.length > 0) {
-          const currentNode = queue.shift()!;
-          if (currentNode.templateId === relationTemplateId) {
-              if (!relationRules || relationRules.length === 0) return true;
-              const matches = (relationRules || []).every(rule => {
-                  const fieldValue = (currentNode.data || {})[rule.fieldId!];
-                  return evaluateCondition(rule.operator, fieldValue, rule.value!);
-              });
-              if (matches) return true;
-          }
-          if (currentNode.children) {
-              queue.push(...currentNode.children);
-          }
+    const queue: TreeNode[] = [...(node.children || [])];
+    while (queue.length > 0) {
+      const currentNode = queue.shift()!;
+      if (currentNode.templateId === relationTemplateId) {
+        if (!relationRules || relationRules.length === 0) return true;
+        const matches = (relationRules || []).every(rule => {
+          const fieldValue = (currentNode.data || {})[rule.fieldId!];
+          return evaluateCondition(rule.operator, fieldValue, rule.value!);
+        });
+        if (matches) return true;
       }
-      return false;
+      if (currentNode.children) {
+        queue.push(...currentNode.children);
+      }
+    }
+    return false;
   };
 
 
   const doesNodeMatch = (node: TreeNode, isAncestorStarred: boolean): boolean => {
-    
+
     const nameMatches = !!node.name && String(node.name).toLowerCase().includes(lowercasedTerm);
-    
+
     let dataMatches = false;
     if (node.data) {
-        dataMatches = Object.values(node.data).some(value =>
-            String(value).toLowerCase().includes(lowercasedTerm)
-        );
+      dataMatches = Object.values(node.data).some(value =>
+        String(value).toLowerCase().includes(lowercasedTerm)
+      );
     }
     const isSearchMatch = !searchTerm.trim() || nameMatches || dataMatches;
 
     const isTemplateMatch = !templateFilter || node.templateId === templateFilter;
-    
+
     const createdAt = node.createdAt ? new Date(node.createdAt) : null;
-    const isCreatedDateMatch = 
+    const isCreatedDateMatch =
       (!createdFrom || (createdAt && createdAt >= startOfDay(createdFrom))) &&
       (!createdTo || (createdAt && createdAt <= endOfDay(createdTo)));
 
@@ -164,38 +164,38 @@ function filterTree(
     const isStarredMatch = !showStarredOnly || isNodeEffectivelyStarred;
 
     const isQueryMatch = () => {
-        if (!queryFilter || queryFilter.length === 0) {
-            return true;
+      if (!queryFilter || queryFilter.length === 0) {
+        return true;
+      }
+
+      return queryFilter.some(queryGroup => {
+        if (node.templateId !== queryGroup.targetTemplateId) {
+          return false;
         }
 
-        return queryFilter.some(queryGroup => {
-            if (node.templateId !== queryGroup.targetTemplateId) {
-                return false;
-            }
-
-            return (queryGroup.rules || []).every(rule => {
-                const { type = 'field' } = rule;
-                if (type === 'field') {
-                    if (!rule.fieldId) return false;
-                    const fieldValue = (node.data || {})[rule.fieldId];
-                    return evaluateCondition(rule.operator as ConditionalRuleOperator, fieldValue, rule.value!);
-                }
-                if (type === 'ancestor') {
-                    if (!rule.relationTemplateId) return false;
-                    return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules!);
-                }
-                if (type === 'descendant') {
-                    if (!rule.relationTemplateId) return false;
-                    return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules!);
-                }
-                return false;
-            });
+        return (queryGroup.rules || []).every(rule => {
+          const { type = 'field' } = rule;
+          if (type === 'field') {
+            if (!rule.fieldId) return false;
+            const fieldValue = (node.data || {})[rule.fieldId];
+            return evaluateCondition(rule.operator as ConditionalRuleOperator, fieldValue, rule.value!);
+          }
+          if (type === 'ancestor') {
+            if (!rule.relationTemplateId) return false;
+            return hasMatchingAncestor(node, rule.relationTemplateId, rule.relationRules!);
+          }
+          if (type === 'descendant') {
+            if (!rule.relationTemplateId) return false;
+            return hasMatchingDescendant(node, rule.relationTemplateId, rule.relationRules!);
+          }
+          return false;
         });
+      });
     };
 
     return !!(isSearchMatch && isTemplateMatch && isCreatedDateMatch && isModifiedDateMatch && hasAttachmentsMatch && isStarredMatch && isQueryMatch());
   };
-  
+
   const search = (nodesToFilter: TreeNode[], isAncestorStarred: boolean, path: Set<string>): TreeNode[] => {
     const results: TreeNode[] = [];
 
@@ -220,7 +220,7 @@ function filterTree(
     }
     return results;
   };
-  
+
   return search(nodes, false, new Set());
 }
 
@@ -231,9 +231,9 @@ export function TreePage() {
   const { toast } = useToast();
 
   const { currentUser } = useAuthContext();
-  const { 
+  const {
     activeTree,
-    getTemplateById, 
+    getTemplateById,
     setTreeTitle,
     syncFromRepo,
     selectedNodeIds,
@@ -255,7 +255,7 @@ export function TreePage() {
     exportNodesAsHtml,
     exportNodesAsJson,
   } = useTreeContext();
-  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode } = useUIContext();
+  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isAnyModalOpen } = useUIContext();
   const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -295,13 +295,13 @@ export function TreePage() {
   }, []);
 
   const isLoading = isTreeDataLoading || !activeTree;
-  
+
   useEffect(() => {
     if (currentUser && isClient && !isLoading && !activeTree) {
-        router.replace('/roots');
+      router.replace('/roots');
     }
   }, [isClient, isLoading, activeTree, router, currentUser]);
-  
+
   useEffect(() => {
     const previewNodeId = searchParams.get('previewNode');
     if (previewNodeId) {
@@ -349,35 +349,42 @@ export function TreePage() {
       if (
         activeElement &&
         (activeElement.tagName === 'INPUT' ||
-         activeElement.tagName === 'TEXTAREA' ||
-         activeElement.isContentEditable)
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.tagName === 'SELECT' ||
+          activeElement.isContentEditable ||
+          activeElement.closest('form') ||
+          activeElement.closest('[role="dialog"]') ||
+          activeElement.closest('.jexcel') ||
+          activeElement.closest('.jspreadsheet') ||
+          activeElement.closest('.ds-grid-container') ||
+          activeElement.closest('.dsg-container') ||
+          activeElement.classList.contains('jexcel_textarea'))
       ) {
         return;
       }
-      
-      const isAnyModalOpen = Object.values(dialogState).some(state => state === true);
+
       if (isAnyModalOpen) {
         return;
       }
-      
+
       switch (event.key) {
         case ' ':
-          if(isMobile) return;
+          if (isMobile) return;
           event.preventDefault();
           setIsCompactView(prev => !prev);
           break;
         case 's':
-           if (event.ctrlKey || event.metaKey) return; 
-           event.preventDefault();
-           setShowStarred(prev => !prev);
-           break;
+          if (event.ctrlKey || event.metaKey) return;
+          event.preventDefault();
+          setShowStarred(prev => !prev);
+          break;
         case 'o':
-          if(isMobile) return;
+          if (isMobile) return;
           event.preventDefault();
           setShowNodeOrder(prev => !prev);
           break;
         case 'r':
-          if (!currentUser) return; 
+          if (!currentUser) return;
           event.preventDefault();
           reloadActiveTree();
           break;
@@ -393,21 +400,21 @@ export function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, dialogState, currentUser, isMobile, setIsTwoPanelMode]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode]);
 
   const filteredTree = useMemo(() => {
-      try {
-          if (!tree) return [];
-          return filterTree(tree, getTemplateById, findNodeAndParent, searchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter, queryFilter);
-      } catch (error) {
-          if (error instanceof RangeError && error.message.includes("Maximum call stack size exceeded")) {
-              console.warn("A cyclical reference was detected in the tree structure during filtering.");
-              return [];
-          }
-          throw error;
+    try {
+      if (!tree) return [];
+      return filterTree(tree, getTemplateById, findNodeAndParent, searchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter, queryFilter);
+    } catch (error) {
+      if (error instanceof RangeError && error.message.includes("Maximum call stack size exceeded")) {
+        console.warn("A cyclical reference was detected in the tree structure during filtering.");
+        return [];
       }
+      throw error;
+    }
   }, [tree, getTemplateById, findNodeAndParent, searchTerm, showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
-  
+
   const resetFilters = () => {
     setTemplateFilter(null);
     setCreatedFrom(undefined);
@@ -422,7 +429,7 @@ export function TreePage() {
     if (!activeTree) return;
     await addRootNode(newNode);
   };
-  
+
   const handleTitleSave = (newTitle: string) => {
     if (!activeTree) return;
     setTreeTitle(activeTree.id, newTitle);
@@ -432,27 +439,27 @@ export function TreePage() {
 
   const nodesForDetails = useMemo(() => {
     if (!isTwoPanelMode || selectedNodeIds.length === 0) return [];
-    
+
     const nodes = selectedNodeIds
-        .map(id => findNodeAndParent(id.split('_')[0])?.node)
-        .filter((n): n is TreeNode => !!n);
-    
+      .map(id => findNodeAndParent(id.split('_')[0])?.node)
+      .filter((n): n is TreeNode => !!n);
+
     return nodes;
   }, [isTwoPanelMode, selectedNodeIds, findNodeAndParent]);
 
   useEffect(() => {
     if (isTwoPanelMode && nodesForDetails.length > 0) {
-        const allIds = new Set<string>();
-        const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
-            for (const node of nodesToTraverse) {
-                allIds.add(`${node.id}_${parentId || 'root'}`);
-                if (node.children) {
-                    traverse(node.children, node.id);
-                }
-            }
-        };
-        traverse(nodesForDetails, null);
-        setDetailsExpandedNodeIds(Array.from(allIds));
+      const allIds = new Set<string>();
+      const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
+        for (const node of nodesToTraverse) {
+          allIds.add(`${node.id}_${parentId || 'root'}`);
+          if (node.children) {
+            traverse(node.children, node.id);
+          }
+        }
+      };
+      traverse(nodesForDetails, null);
+      setDetailsExpandedNodeIds(Array.from(allIds));
     }
   }, [isTwoPanelMode, nodesForDetails]);
 
@@ -466,7 +473,7 @@ export function TreePage() {
         </Card>
       );
     }
-    
+
     if (filteredTree.length === 0 && (!isLoading || isClient)) {
       return (
         <Card className="flex flex-col items-center justify-center h-64 border-dashed">
@@ -481,46 +488,46 @@ export function TreePage() {
         </Card>
       );
     }
-    
+
     if (isTwoPanelMode && !isMobile) {
-        return (
-            <div className="h-[calc(100vh-9rem)]">
-                <ResizablePanelGroup direction="horizontal" className="flex h-full">
-                    <ResizablePanel defaultSize={25} minSize={20}>
-                        <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
-                            <div className="p-2">
-                                <TreeView nodes={filteredTree} isCompactOverride={true} isExplorer={true} />
-                            </div>
-                        </ScrollArea>
-                    </ResizablePanel>
-                    
-                    <ResizableHandle withHandle />
-                    
-                    <ResizablePanel defaultSize={75} minSize={30}>
-                        <ScrollArea className="h-full rounded-lg border bg-card p-6 ml-2">
-                            {nodesForDetails.length > 0 ? (
-                                <TreeView 
-                                    nodes={nodesForDetails} 
-                                    overrideExpandedIds={detailsExpandedNodeIds}
-                                    onExpandedChange={(updater) => setDetailsExpandedNodeIds(updater as any)}
-                                    disableSelection={true}
-                                />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                                    <div className="rounded-full bg-muted p-4">
-                                        <LayoutPanelLeft className="h-8 w-8 text-muted-foreground" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-semibold">No node selected</h3>
-                                        <p className="text-muted-foreground">Select a node on the left to view its details here.</p>
-                                    </div>
-                                </div>
-                            )}
-                        </ScrollArea>
-                    </ResizablePanel>
-                </ResizablePanelGroup>
-            </div>
-        );
+      return (
+        <div className="h-[calc(100vh-9rem)]">
+          <ResizablePanelGroup direction="horizontal" className="flex h-full">
+            <ResizablePanel defaultSize={25} minSize={20}>
+              <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
+                <div className="p-2">
+                  <TreeView nodes={filteredTree} isCompactOverride={true} isExplorer={true} />
+                </div>
+              </ScrollArea>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            <ResizablePanel defaultSize={75} minSize={30}>
+              <ScrollArea className="h-full rounded-lg border bg-card p-6 ml-2">
+                {nodesForDetails.length > 0 ? (
+                  <TreeView
+                    nodes={nodesForDetails}
+                    overrideExpandedIds={detailsExpandedNodeIds}
+                    onExpandedChange={(updater) => setDetailsExpandedNodeIds(updater as any)}
+                    disableSelection={true}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+                    <div className="rounded-full bg-muted p-4">
+                      <LayoutPanelLeft className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">No node selected</h3>
+                      <p className="text-muted-foreground">Select a node on the left to view its details here.</p>
+                    </div>
+                  </div>
+                )}
+              </ScrollArea>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+      );
     }
 
     return <TreeView nodes={filteredTree} />;
@@ -528,21 +535,21 @@ export function TreePage() {
 
 
   if (isLoading && !isClient) {
-       return (
-        <div className="flex flex-col min-h-screen bg-background">
-            <AppHeader />
-            <main className="flex-1 flex items-center justify-center">
-                 <Card>
-                    <CardContent className="p-6 text-center">
-                        <h2 className="text-xl font-semibold mb-2">Loading...</h2>
-                        <p className="text-muted-foreground">Please wait while we load your data.</p>
-                    </CardContent>
-                </Card>
-            </main>
-        </div>
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <AppHeader />
+        <main className="flex-1 flex items-center justify-center">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <h2 className="text-xl font-semibold mb-2">Loading...</h2>
+              <p className="text-muted-foreground">Please wait while we load your data.</p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
     );
   }
-  
+
   const handleDateChange = (setter: React.Dispatch<React.SetStateAction<Date | undefined>>) => (dateString: string | undefined) => {
     if (dateString) {
       const d = parse(dateString, 'yyyy-MM-dd', new Date());
@@ -555,32 +562,32 @@ export function TreePage() {
   };
 
   const handleQueryGroupChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
-      const newQueryFilter = [...queryFilter];
-      newQueryFilter[queryIndex] = { ...newQueryFilter[queryIndex], [key]: value };
-      setQueryFilter(newQueryFilter);
+    const newQueryFilter = [...queryFilter];
+    newQueryFilter[queryIndex] = { ...newQueryFilter[queryIndex], [key]: value };
+    setQueryFilter(newQueryFilter);
   };
 
   const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, value: any) => {
-      const newQueryFilter = [...queryFilter];
-      const newRules = [...newQueryFilter[queryIndex].rules];
-      const newRule = { ...newRules[ruleIndex], [key]: value };
-      
-      if (key === 'type') {
-        if (value === 'field') {
-            delete newRule.fieldId;
-            delete newRule.operator;
-            delete newRule.value;
-            delete newRule.relationTemplateId;
-            delete newRule.relationRules;
-        } else {
-            delete newRule.fieldId;
-            delete newRule.operator;
-            delete newRule.value;
-        }
-      }
+    const newQueryFilter = [...queryFilter];
+    const newRules = [...newQueryFilter[queryIndex].rules];
+    const newRule = { ...newRules[ruleIndex], [key]: value };
 
-      newRules[ruleIndex] = newRule;
-      handleQueryGroupChange(queryIndex, 'rules', newRules);
+    if (key === 'type') {
+      if (value === 'field') {
+        delete newRule.fieldId;
+        delete newRule.operator;
+        delete newRule.value;
+        delete newRule.relationTemplateId;
+        delete newRule.relationRules;
+      } else {
+        delete newRule.fieldId;
+        delete newRule.operator;
+        delete newRule.value;
+      }
+    }
+
+    newRules[ruleIndex] = newRule;
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
   const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relRuleIndex: number, key: keyof SimpleQueryRule, value: any) => {
@@ -593,21 +600,21 @@ export function TreePage() {
   };
 
   const addQueryGroup = () => {
-      setQueryFilter([...queryFilter, { id: generateClientSideId(), targetTemplateId: null, rules: [] }]);
+    setQueryFilter([...queryFilter, { id: generateClientSideId(), targetTemplateId: null, rules: [] }]);
   };
-  
+
   const removeQueryGroup = (queryIndex: number) => {
-      setQueryFilter(queryFilter.filter((_, index) => index !== queryIndex));
+    setQueryFilter(queryFilter.filter((_, index) => index !== queryIndex));
   }
 
   const addRule = (queryIndex: number) => {
-      const newRules = [...(queryFilter[queryIndex].rules || []), { id: generateClientSideId(), type: 'field', fieldId: '', operator: 'equals' as ConditionalRuleOperator, value: '' }];
-      handleQueryGroupChange(queryIndex, 'rules', newRules);
+    const newRules = [...(queryFilter[queryIndex].rules || []), { id: generateClientSideId(), type: 'field', fieldId: '', operator: 'equals' as ConditionalRuleOperator, value: '' }];
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
   const removeRule = (queryIndex: number, ruleIndex: number) => {
-      const newRules = (queryFilter[queryIndex].rules || []).filter((_, index) => index !== ruleIndex);
-      handleQueryGroupChange(queryIndex, 'rules', newRules);
+    const newRules = (queryFilter[queryIndex].rules || []).filter((_, index) => index !== ruleIndex);
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
   const addRelationRule = (queryIndex: number, ruleIndex: number) => {
@@ -619,45 +626,45 @@ export function TreePage() {
   };
 
   const removeRelationRule = (queryIndex: number, ruleIndex: number, relRuleIndex: number) => {
-      const newQueryFilter = [...queryFilter];
-      const newRules = [...newQueryFilter[queryIndex].rules];
-      const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relRuleIndex);
-      newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
-      handleQueryGroupChange(queryIndex, 'rules', newRules);
+    const newQueryFilter = [...queryFilter];
+    const newRules = [...newQueryFilter[queryIndex].rules];
+    const newRelationRules = (newRules[ruleIndex].relationRules || []).filter((_, index) => index !== relRuleIndex);
+    newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
+    handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
-  
+
   const renderFilterContent = () => (
     <div className="grid gap-4">
       <div className="space-y-2">
-          <h4 className="font-medium leading-none">Advanced Filters</h4>
+        <h4 className="font-medium leading-none">Advanced Filters</h4>
       </div>
       <div className="grid gap-2">
-          <Label>Template</Label>
-           <Select value={templateFilter || 'all'} onValueChange={(value) => setTemplateFilter(value === 'all' ? null : value)}>
-              <SelectTrigger>
-                  <SelectValue placeholder="Filter by template..." />
-              </SelectTrigger>
-              <SelectContent>
-                  <SelectItem value="all">All Templates</SelectItem>
-                  {activeTree?.templates.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-              </SelectContent>
-          </Select>
+        <Label>Template</Label>
+        <Select value={templateFilter || 'all'} onValueChange={(value) => setTemplateFilter(value === 'all' ? null : value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Filter by template..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Templates</SelectItem>
+            {activeTree?.templates.map(t => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-       <div className="grid gap-2">
-          <Label>Date Created</Label>
-          <div className="flex gap-2">
-              <DatePicker date={createdFrom} setDate={handleDateChange(setCreatedFrom)} placeholder="From" />
-              <DatePicker date={createdTo} setDate={handleDateChange(setCreatedTo)} placeholder="To" />
-          </div>
+      <div className="grid gap-2">
+        <Label>Date Created</Label>
+        <div className="flex gap-2">
+          <DatePicker date={createdFrom} setDate={handleDateChange(setCreatedFrom)} placeholder="From" />
+          <DatePicker date={createdTo} setDate={handleDateChange(setCreatedTo)} placeholder="To" />
+        </div>
       </div>
-       <div className="grid gap-2">
-          <Label>Date Modified</Label>
-          <div className="flex gap-2">
-              <DatePicker date={modifiedFrom} setDate={handleDateChange(setModifiedFrom)} placeholder="From" />
-              <DatePicker date={modifiedTo} setDate={handleDateChange(setModifiedTo)} placeholder="To" />
-          </div>
+      <div className="grid gap-2">
+        <Label>Date Modified</Label>
+        <div className="flex gap-2">
+          <DatePicker date={modifiedFrom} setDate={handleDateChange(setModifiedFrom)} placeholder="From" />
+          <DatePicker date={modifiedTo} setDate={handleDateChange(setModifiedTo)} placeholder="To" />
+        </div>
       </div>
       <div className="flex items-center space-x-2">
         <Switch
@@ -676,137 +683,137 @@ export function TreePage() {
       <div className="space-y-2">
         <h4 className="font-medium leading-none">Query Builder</h4>
         <p className="text-sm text-muted-foreground">
-            Find nodes matching specific criteria.
+          Find nodes matching specific criteria.
         </p>
       </div>
       <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
-          {queryFilter.map((queryDef, queryIndex) => {
-            const targetTemplate = queryDef.targetTemplateId ? getTemplateById(queryDef.targetTemplateId) : null;
-            const templates = activeTree?.templates || [];
-            return (
-                <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
-                    <div className="flex justify-between items-center">
-                        <Label>Search nodes with template:</Label>
-                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
-                            <Trash2 className="h-4 w-4"/>
-                        </Button>
-                    </div>
-                    <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
-                        <SelectTrigger><SelectValue placeholder="Select template..."/></SelectTrigger>
-                        <SelectContent>
-                            {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    
-                    <div className="space-y-2">
-                         <Label>Where...</Label>
-                         {(queryDef.rules || []).map((rule, ruleIndex) => {
-                           const ruleType = rule.type || 'field';
-                           const relationTemplate = rule.relationTemplateId ? getTemplateById(rule.relationTemplateId) : null;
-                           return (
-                             <Card key={rule.id || ruleIndex} className="p-2 bg-background space-y-2">
-                                <div className="space-y-4">
-                                     <div className="flex items-center justify-between">
-                                        <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val as any)}>
-                                            <SelectTrigger className="w-auto"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="field">Field</SelectItem>
-                                                <SelectItem value="ancestor">Ancestor</SelectItem>
-                                                <SelectItem value="descendant">Descendant</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
-                                            <Trash2 className="h-4 w-4"/>
-                                        </Button>
-                                     </div>
-                                     {ruleType === 'field' ? (
-                                        <div className="space-y-2">
-                                            <Select value={rule.fieldId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
-                                                <SelectTrigger><SelectValue placeholder="Field..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                            <Select value={rule.operator || 'equals'} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val as any)}>
-                                                <SelectTrigger><SelectValue placeholder="Operator..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                            <Input value={rule.value || ''} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                        </div>
-                                     ) : (
-                                        <div className="space-y-2">
-                                           <span className="text-sm p-2 block">has {String(ruleType)} with template:</span>
-                                            <Select value={rule.relationTemplateId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'relationTemplateId', val)}>
-                                                <SelectTrigger><SelectValue placeholder="Template..."/></SelectTrigger>
-                                                <SelectContent>
-                                                    {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                     )}
-                                 </div>
-                                 { (ruleType === 'ancestor' || ruleType === 'descendant') && rule.relationTemplateId && (
-                                     <div className="pl-6 space-y-2">
-                                        <Label className="text-xs text-muted-foreground">Where...</Label>
-                                         {(rule.relationRules || []).map((relRule, relRuleIndex) => (
-                                             <Card key={relRule.id} className="p-2 bg-muted/50">
-                                                 <div className="space-y-2">
-                                                     <Select value={relRule.fieldId} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'fieldId', val)}>
-                                                         <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
-                                                         <SelectContent>{relationTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
-                                                     </Select>
-                                                     <Select value={relRule.operator} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'operator', val as any)}>
-                                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                                        <SelectContent>
-                                                            {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
-                                                        </SelectContent>
-                                                     </Select>
-                                                     <Input value={relRule.value} onChange={(e) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'value', e.target.value)} placeholder="Value..."/>
-                                                     <div className="flex justify-end">
-                                                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRelationRule(queryIndex, ruleIndex, relRuleIndex)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                     </div>
-                                                 </div>
-                                             </Card>
-                                         ))}
-                                         <Button type="button" variant="outline" size="sm" onClick={() => addRelationRule(queryIndex, ruleIndex)}>
-                                             <PlusCircle className="mr-2 h-4 w-4" /> Add condition
-                                         </Button>
-                                     </div>
-                                 )}
-                             </Card>
-                           )
-                         })}
-                        <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
-                            <PlusCircle className="mr-2 h-4 w-4"/> Add AND Condition
-                        </Button>
-                    </div>
-                </Card>
-            )
-          })}
-          <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
-            <PlusCircle className="mr-2 h-4 w-4"/> Add OR Group
-          </Button>
-        </div>
+        {queryFilter.map((queryDef, queryIndex) => {
+          const targetTemplate = queryDef.targetTemplateId ? getTemplateById(queryDef.targetTemplateId) : null;
+          const templates = activeTree?.templates || [];
+          return (
+            <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Search nodes with template:</Label>
+                <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeQueryGroup(queryIndex)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <Select value={queryDef.targetTemplateId || ''} onValueChange={(val) => handleQueryGroupChange(queryIndex, 'targetTemplateId', val)}>
+                <SelectTrigger><SelectValue placeholder="Select template..." /></SelectTrigger>
+                <SelectContent>
+                  {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+
+              <div className="space-y-2">
+                <Label>Where...</Label>
+                {(queryDef.rules || []).map((rule, ruleIndex) => {
+                  const ruleType = rule.type || 'field';
+                  const relationTemplate = rule.relationTemplateId ? getTemplateById(rule.relationTemplateId) : null;
+                  return (
+                    <Card key={rule.id || ruleIndex} className="p-2 bg-background space-y-2">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Select value={ruleType} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'type', val as any)}>
+                            <SelectTrigger className="w-auto"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="field">Field</SelectItem>
+                              <SelectItem value="ancestor">Ancestor</SelectItem>
+                              <SelectItem value="descendant">Descendant</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRule(queryIndex, ruleIndex)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {ruleType === 'field' ? (
+                          <div className="space-y-2">
+                            <Select value={rule.fieldId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'fieldId', val)} disabled={!targetTemplate}>
+                              <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
+                              <SelectContent>
+                                {targetTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Select value={rule.operator || 'equals'} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'operator', val as any)}>
+                              <SelectTrigger><SelectValue placeholder="Operator..." /></SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                            <Input value={rule.value || ''} onChange={(e) => handleRuleChange(queryIndex, ruleIndex, 'value', e.target.value)} placeholder="Value..." />
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <span className="text-sm p-2 block">has {String(ruleType)} with template:</span>
+                            <Select value={rule.relationTemplateId || ''} onValueChange={(val) => handleRuleChange(queryIndex, ruleIndex, 'relationTemplateId', val)}>
+                              <SelectTrigger><SelectValue placeholder="Template..." /></SelectTrigger>
+                              <SelectContent>
+                                {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                      {(ruleType === 'ancestor' || ruleType === 'descendant') && rule.relationTemplateId && (
+                        <div className="pl-6 space-y-2">
+                          <Label className="text-xs text-muted-foreground">Where...</Label>
+                          {(rule.relationRules || []).map((relRule, relRuleIndex) => (
+                            <Card key={relRule.id} className="p-2 bg-muted/50">
+                              <div className="space-y-2">
+                                <Select value={relRule.fieldId} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'fieldId', val)}>
+                                  <SelectTrigger><SelectValue placeholder="Field..." /></SelectTrigger>
+                                  <SelectContent>{relationTemplate?.fields.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <Select value={relRule.operator} onValueChange={(val) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'operator', val as any)}>
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(operatorLabels).map(([op, label]) => <SelectItem key={op} value={op}>{label}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                                <Input value={relRule.value} onChange={(e) => handleRelationRuleChange(queryIndex, ruleIndex, relRuleIndex, 'value', e.target.value)} placeholder="Value..." />
+                                <div className="flex justify-end">
+                                  <Button type="button" variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => removeRelationRule(queryIndex, ruleIndex, relRuleIndex)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => addRelationRule(queryIndex, ruleIndex)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add condition
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
+                  )
+                })}
+                <Button type="button" variant="outline" size="sm" onClick={() => addRule(queryIndex)} disabled={!targetTemplate}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add AND Condition
+                </Button>
+              </div>
+            </Card>
+          )
+        })}
+        <Button type="button" variant="outline" className="w-full" onClick={addQueryGroup}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add OR Group
+        </Button>
+      </div>
 
       <Separator />
 
       <Button variant="outline" onClick={resetFilters}>
-          <X className="mr-2 h-4 w-4" /> Reset All Filters
+        <X className="mr-2 h-4 w-4" /> Reset All Filters
       </Button>
     </div>
   );
-  
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className={cn("flex-1 px-4 sm:px-6 lg:px-8 pb-4 md:pb-8 flex flex-col", isTwoPanelMode && !isMobile && "pb-0 md:pb-0")}>
         <div className={cn("sticky z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-[10px] border-b", currentUser ? "top-16" : "top-0")}>
           {activeTree && (
-            <TreePageHeader 
+            <TreePageHeader
               tree={activeTree}
               isCheckingSync={isCheckingSync}
               remoteSha={remoteSha}
@@ -824,10 +831,10 @@ export function TreePage() {
             />
           )}
         </div>
-        
+
         <div className={cn("flex-1 min-h-0", isTwoPanelMode && !isMobile ? "mt-2" : "mt-6")}>
           {activeTree && (
-            <TreePageModals 
+            <TreePageModals
               activeTree={activeTree}
               templates={activeTree.templates}
               getTemplateById={getTemplateById}

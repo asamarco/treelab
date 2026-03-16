@@ -43,7 +43,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, Loader2, ImagePlus, X, Paperclip, File as FileIcon, Link, GripVertical } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, Loader2, ImagePlus, X, Paperclip, File as FileIcon, Link, GripVertical, Plus } from "lucide-react";
 import { format, parse, isValid, parseISO } from "date-fns";
 import { cn, generateClientSideId } from "@/lib/utils";
 import {
@@ -76,7 +76,8 @@ import path from "path";
 import { Separator } from "../ui/separator";
 import { useUIContext } from "@/contexts/ui-context";
 import { DatePicker } from "../ui/date-picker";
-import Spreadsheet from "react-spreadsheet";
+import { DataSheetGrid, textColumn, keyColumn } from 'react-datasheet-grid';
+import 'react-datasheet-grid/dist/style.css';
 
 
 const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: string; onRemove: () => void; onClick: () => void; }) => {
@@ -141,49 +142,69 @@ const operatorLabels: Record<ConditionalRuleOperator, string> = {
 const XYChartSpreadsheetEditor = ({
   points,
   onChange,
-  isDarkMode
 }: {
   points: { x: string; y: string }[];
   onChange: (newPoints: { x: string; y: string }[]) => void;
-  isDarkMode: boolean;
 }) => {
-  // We use stable references for the spreadsheet data to avoid infinite loops
-  const spreadsheetData = useMemo(() => {
-    const minRows = Math.max(points.length + 5, 5);
-    return Array.from({ length: minRows }, (_, i) => {
-      const point = points[i];
-      return [
-        { value: point?.x !== undefined ? String(point.x) : '' },
-        { value: point?.y !== undefined ? String(point.y) : '' }
-      ];
-    });
+  const columns = useMemo(() => [
+    {
+      ...keyColumn('x', textColumn),
+      title: 'X',
+    },
+    {
+      ...keyColumn('y', textColumn),
+      title: 'Y',
+    },
+  ], []);
+
+  // Ensure we always have some data to show
+  const gridData = useMemo(() => {
+    return points.length > 0 ? points : [{ x: '', y: '' }];
   }, [points]);
 
-  const handleChange = useCallback((newData: any[][]) => {
-    const newPoints = newData
-      .filter(row => row[0]?.value || row[1]?.value)
-      .map(row => ({
-        x: String(row[0]?.value || ''),
-        y: String(row[1]?.value || '')
-      }));
-
-    // Only trigger parent update if something actually changed
-    // This is CRITICAL to prevent infinite loops if Spreadsheet fires on mount
-    if (JSON.stringify(newPoints) !== JSON.stringify(points)) {
-      onChange(newPoints);
-    }
-  }, [points, onChange]);
-
   return (
-    <div className="overflow-x-auto rounded-md border w-full bg-background max-h-[400px]">
-      <div className="min-w-full inline-block align-middle">
-        <Spreadsheet
-          darkMode={isDarkMode}
-          data={spreadsheetData}
-          columnLabels={['X', 'Y']}
-          onChange={handleChange}
+    <div className="space-y-2" onKeyDown={(e) => {
+      // Broad safety net: stop anything from the form bubbling to the tree
+      // This is especially for navigation keys and node shortcuts
+      const isNavigationKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'p', 's', 'o'].includes(e.key);
+      if (isNavigationKey) {
+        e.stopPropagation();
+      }
+    }}>
+      <div
+        className="rounded-md border w-full bg-background overflow-hidden ds-grid-container"
+        onContextMenuCapture={(e) => {
+          // Suppress browser context menu to let the library menu show
+          e.preventDefault();
+        }}
+        onKeyDown={(e) => {
+          // Intercept and stop propagation of keys that might trigger global node actions
+          // 'Delete' is critical to prevent node deletion
+          // Ctrl+C/X/V are important to prevent global clipboard actions
+          // Backspace is also common for clearing cells
+          const isCtrl = e.ctrlKey || e.metaKey;
+          if (
+            e.key === 'Delete' ||
+            e.key === 'Backspace' ||
+            (isCtrl && (e.key === 'c' || e.key === 'x' || e.key === 'v' || e.key === 'a' || e.key === 'z' || e.key === 'y'))
+          ) {
+            e.stopPropagation();
+          }
+        }}
+      >
+        <DataSheetGrid
+          value={gridData}
+          onChange={(newValue) => {
+            onChange(newValue as { x: string; y: string }[]);
+          }}
+          columns={columns}
+          autoAddRow
+          lockRows={false}
         />
       </div>
+      <p className="text-[10px] text-muted-foreground italic">
+        Tip: You can copy and paste data directly from Excel or other spreadsheets.
+      </p>
     </div>
   );
 };
@@ -232,8 +253,7 @@ export const NodeForm = ({
   });
 
   const { toast } = useToast();
-  const { currentUser, theme } = useAuthContext();
-  const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { currentUser } = useAuthContext();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const [dragOverStates, setDragOverStates] = useState<Record<string, boolean>>({});
@@ -507,29 +527,6 @@ export const NodeForm = ({
     });
   };
 
-  const handleAddChartRow = (fieldId: string) => {
-    setFormData(prev => {
-      const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-      const points = currentChartData.points || [];
-      return {
-        ...prev,
-        [fieldId]: { ...currentChartData, points: [...points, { x: '', y: '' }] },
-      };
-    });
-  };
-
-  const handleRemoveChartRow = (fieldId: string, index: number) => {
-    setFormData(prev => {
-      const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-      const newPoints = [...(currentChartData.points || [])];
-      newPoints.splice(index, 1);
-      return {
-        ...prev,
-        [fieldId]: { ...currentChartData, points: newPoints },
-      };
-    });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -548,6 +545,17 @@ export const NodeForm = ({
               toast({ variant: 'destructive', title: 'Invalid Date', description: `Date for "${field.name}" is invalid.` });
               isFormValid = false;
               break;
+            }
+          } else if (field.type === 'xy-chart' && value) {
+            const chartData = value as XYChartData;
+            if (Array.isArray(chartData.points)) {
+              dirtyData[field.id] = {
+                ...chartData,
+                points: chartData.points.filter(row =>
+                  (row.x?.toString().trim() ?? '') !== '' ||
+                  (row.y?.toString().trim() ?? '') !== ''
+                )
+              };
             }
           } else {
             dirtyData[field.id] = value;
@@ -595,6 +603,20 @@ export const NodeForm = ({
           finalFormData[field.id] = isoValues;
         }
       }
+
+      // Prune empty rows for xy-chart fields before saving
+      if (field.type === 'xy-chart' && finalFormData[field.id]) {
+        const chartData = finalFormData[field.id] as XYChartData;
+        if (Array.isArray(chartData.points)) {
+          finalFormData[field.id] = {
+            ...chartData,
+            points: chartData.points.filter(row =>
+              (row.x?.toString().trim() ?? '') !== '' ||
+              (row.y?.toString().trim() ?? '') !== ''
+            )
+          };
+        }
+      }
     }
 
     if (!isFormValid) {
@@ -626,6 +648,20 @@ export const NodeForm = ({
       order: newOrderArray,
     };
     onSave(newNode);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent "Enter" from submitting the form if focus is inside Jspreadsheet
+    if (e.key === 'Enter') {
+      const activeElement = document.activeElement as HTMLElement;
+      if (
+        activeElement &&
+        (activeElement.closest('.dsg-container') ||
+          activeElement.closest('.ds-grid-container'))
+      ) {
+        e.preventDefault();
+      }
+    }
   };
 
   const formatBytesUtility = (bytes: number, decimals = 2) => {
@@ -680,7 +716,12 @@ export const NodeForm = ({
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} onKeyDown={(e) => {
+        // Prevent all keyboard events from bubbling up to the window
+        // where global tree shortcuts are listening
+        e.stopPropagation();
+        handleKeyDown(e);
+      }}>
         <div className="space-y-4 p-1 max-h-[60vh] overflow-y-auto">
           {!isMultiEdit && node?.id && (node.createdAt || node.updatedAt) && (
             <div className="text-xs text-muted-foreground space-y-1">
@@ -870,10 +911,9 @@ export const NodeForm = ({
 
                     <div className="space-y-2">
                       <Label className="text-xs">Data Points (X, Y)</Label>
-                      <p className="text-xs text-muted-foreground mb-2">You can copy and paste 2 columns of numerical data directly here.</p>
+                      <p className="text-xs text-muted-foreground mb-2">Manage your data in the grid below.</p>
                       <XYChartSpreadsheetEditor
                         points={chartData.points}
-                        isDarkMode={isDarkMode}
                         onChange={(newPoints) => {
                           handleDataChange(field.id, {
                             ...chartData,

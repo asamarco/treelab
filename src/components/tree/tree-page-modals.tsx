@@ -342,7 +342,14 @@ export function TreePageModals({
                     if (!open) setSelectedTemplateForNewNode(null);
                 }}
             >
-                <DialogContent>
+                <DialogContent
+                    onInteractOutside={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
                     <DialogHeader><DialogTitle>Add New Root Node</DialogTitle></DialogHeader>
                     <div className="space-y-2 pt-4">
                         <Label>Template</Label>
@@ -639,7 +646,15 @@ export function TreePageModals({
 
             {/* Multi Node Edit Dialog */}
             <Dialog open={dialogState.isMultiNodeEditOpen || false} onOpenChange={(open) => setDialogState({ isMultiNodeEditOpen: open })}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent
+                    className="max-w-2xl"
+                    onInteractOutside={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
+                            e.preventDefault();
+                        }
+                    }}
+                >
                     <DialogHeader><DialogTitle>Editing {selectedNodeIds.length} nodes</DialogTitle></DialogHeader>
                     {commonTemplateForMultiEdit && (
                         <NodeForm

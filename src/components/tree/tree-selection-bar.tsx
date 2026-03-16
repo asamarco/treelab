@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview
  * Renders a floating action bar at the bottom of the screen when multiple
@@ -68,7 +69,7 @@ export function TreeSelectionBar() {
         batchUpdateNodeData,
         linkTreeToRepo,
     } = useTreeContext();
-    const { setDialogState } = useUIContext();
+    const { setDialogState, isAnyModalOpen } = useUIContext();
     const { currentUser } = useAuthContext();
     const { toast } = useToast();
 
@@ -193,7 +194,23 @@ export function TreeSelectionBar() {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             const activeElement = document.activeElement as HTMLElement;
-            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable)) {
+            if (activeElement && (
+                activeElement.tagName === 'INPUT' ||
+                activeElement.tagName === 'TEXTAREA' ||
+                activeElement.tagName === 'SELECT' ||
+                activeElement.isContentEditable ||
+                activeElement.closest('form') ||
+                activeElement.closest('[role="dialog"]') ||
+                activeElement.closest('.jexcel') ||
+                activeElement.closest('.jspreadsheet') ||
+                activeElement.closest('.ds-grid-container') ||
+                activeElement.closest('.dsg-container') ||
+                activeElement.classList.contains('jexcel_textarea')
+            )) {
+                return;
+            }
+
+            if (isAnyModalOpen) {
                 return;
             }
 
@@ -265,7 +282,7 @@ export function TreeSelectionBar() {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [selectedNodeIds, clipboard, handleCopySelection, handleCutSelection, pasteNodes, moveNodes, pasteNodesAsClones, setClipboard, setSelectedNodeIds, toast, handlePreviewSelection, setDialogState, handleExpandAllSelection, handleCollapseAllSelection, toggleStarredForSelectedNodes]);
+    }, [selectedNodeIds, clipboard, handleCopySelection, handleCutSelection, pasteNodes, moveNodes, pasteNodesAsClones, setClipboard, setSelectedNodeIds, toast, handlePreviewSelection, setDialogState, handleExpandAllSelection, handleCollapseAllSelection, toggleStarredForSelectedNodes, isAnyModalOpen]);
 
     if (selectedNodeIds.length === 0) {
         return null;
