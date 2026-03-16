@@ -317,65 +317,108 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                     }
                                     case 'xy-chart': {
                                         const chartData: XYChartData = value;
-                                        if (!chartData || !Array.isArray(chartData.points) || chartData.points.length === 0) return null;
-                                        const numericData = chartData.points.map(d => ({ ...d, x: Number(d.x), y: Number(d.y) })).filter(d => !isNaN(d.x) && !isNaN(d.y));
+                                        const rawPoints = chartData.points || [];
+                                        const originalNumericData = rawPoints.map((d: any) => ({ ...d, x: Number(d.x), y: Number(d.y) })).filter((d: any) => !isNaN(d.x) && !isNaN(d.y));
 
-                                        if (numericData.length === 0) return null;
+                                        if (chartData.showLinearRegression && rawPoints.length > 0 && originalNumericData.length < rawPoints.length) {
+                                            console.warn(`[XY-Chart] Field "${field.name}" (node "${node.name}"): ${rawPoints.length - originalNumericData.length} point(s) filtered out because they were non-numeric.`);
+                                        }
+
+                                        if (originalNumericData.length === 0) return null;
 
                                         return (
                                             <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                                 <p className={cn("font-medium mb-2", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
                                                 <div style={{ width: '100%', height: isCompactView ? 180 : 300 }}>
                                                     {(() => {
-                                                        const yValues = numericData.map(p => p.y);
-                                                        const xValues = numericData.map(p => p.x);
+                                                        const yValues = originalNumericData.map((p: any) => p.y);
+                                                        const xValues = originalNumericData.map((p: any) => p.x);
                                                         const n = yValues.length;
-                                                        const mean = n > 0 ? yValues.reduce((a, b) => a + b, 0) / n : 0;
-                                                        const variance = n > 0 ? yValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n : 0;
+                                                        const mean = n > 0 ? yValues.reduce((a: number, b: number) => a + b, 0) / n : 0;
+                                                        const variance = n > 0 ? yValues.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / n : 0;
                                                         const stdDev = Math.sqrt(variance);
                                                         const relError = Math.abs(mean) > 0 ? (stdDev / Math.abs(mean)) * 100 : 0;
 
                                                         // Linear Regression: y = mx + b
-                                                        let regressionSegment = null;
                                                         let regressionStats = null;
-                                                        if (chartData.showLinearRegression && n > 1) {
-                                                            const sumX = xValues.reduce((a, b) => a + b, 0);
-                                                            const sumY = yValues.reduce((a, b) => a + b, 0);
-                                                            const sumXY = numericData.reduce((prev, curr) => prev + (curr.x * curr.y), 0);
-                                                            const sumX2 = xValues.reduce((prev, curr) => prev + (curr * curr), 0);
-                                                            const denominator = (n * sumX2 - sumX * sumX);
-                                                            if (denominator !== 0) {
-                                                                const m = (n * sumXY - sumX * sumY) / denominator;
-                                                                const b = (sumY - m * sumX) / n;
-                                                                const minX = Math.min(...xValues);
-                                                                const maxX = Math.max(...xValues);
-                                                                regressionSegment = [
-                                                                    { x: minX, y: m * minX + b },
-                                                                    { x: maxX, y: m * maxX + b }
-                                                                ];
+                                                        let m: number | null = null;
+                                                        let b: number | null = null;
 
-                                                                const ssRes = numericData.reduce((acc, curr) => acc + Math.pow(curr.y - (m * curr.x + b), 2), 0);
-                                                                const ssTot = yValues.reduce((acc, curr) => acc + Math.pow(curr - mean, 2), 0);
-                                                                const rSquared = ssTot !== 0 ? 1 - (ssRes / ssTot) : 1;
-                                                                regressionStats = {
-                                                                    equation: `y = ${m.toFixed(2)}x ${b >= 0 ? '+' : '-'} ${Math.abs(b).toFixed(2)}`,
-                                                                    rSquared: rSquared.toFixed(3)
-                                                                };
+                                                        if (chartData.showLinearRegression) {
+                                                            if (n > 1) {
+                                                                const sumX = xValues.reduce((a: number, b: number) => a + b, 0);
+                                                                const sumY = yValues.reduce((a: number, b: number) => a + b, 0);
+                                                                const sumXY = originalNumericData.reduce((prev: number, curr: any) => prev + (curr.x * curr.y), 0);
+                                                                const sumX2 = xValues.reduce((prev: number, curr: number) => prev + (curr * curr), 0);
+                                                                const denominator = (n * sumX2 - sumX * sumX);
+
+                                                                if (denominator !== 0) {
+                                                                    m = (n * sumXY - sumX * sumY) / denominator;
+                                                                    b = (sumY - m * sumX) / n;
+
+                                                                    const ssRes = originalNumericData.reduce((acc: number, curr: any) => acc + Math.pow(curr.y - (m! * curr.x + b!), 2), 0);
+                                                                    const ssTot = yValues.reduce((acc: number, curr: number) => acc + Math.pow(curr - mean, 2), 0);
+                                                                    const rSquared = ssTot !== 0 ? 1 - (ssRes / ssTot) : 1;
+
+                                                                    regressionStats = {
+                                                                        equation: `y = ${m.toFixed(2)}x ${b >= 0 ? '+' : '-'} ${Math.abs(b).toFixed(2)}`,
+                                                                        rSquared: rSquared.toFixed(3)
+                                                                    };
+                                                                } else {
+                                                                    console.warn(`[XY-Chart] Field "${field.name}" (node "${node.name}"): Cannot calculate linear regression because all X values are identical (denominator is zero).`);
+                                                                }
+                                                            } else {
+                                                                console.warn(`[XY-Chart] Field "${field.name}" (node "${node.name}"): Cannot calculate linear regression with fewer than 2 numeric points (found ${n} points).`);
                                                             }
                                                         }
 
+                                                        // Augment data with regression values for auto-scaling
+                                                        const chartDataWithRegression = originalNumericData.map((p: any) => ({
+                                                            ...p,
+                                                            regression: (m !== null && b !== null) ? (m * p.x + b) : undefined
+                                                        }));
+
+                                                        const formatTick = (value: any) => {
+                                                            if (typeof value !== 'number') return value;
+                                                            return parseFloat(value.toFixed(2)).toString();
+                                                        };
+
                                                         return (
                                                             <ResponsiveContainer>
-                                                                <LineChart data={numericData} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                                                                <LineChart data={chartDataWithRegression} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
                                                                     <CartesianGrid strokeDasharray="3 3" />
-                                                                    <XAxis dataKey="x" type="number" domain={['auto', 'auto']}>
+                                                                    <XAxis dataKey="x" type="number" domain={['auto', 'auto']} tickFormatter={formatTick}>
                                                                         <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
                                                                     </XAxis>
-                                                                    <YAxis domain={['auto', 'auto']} interval={0}>
+                                                                    <YAxis domain={['auto', 'auto']} interval={0} tickFormatter={formatTick}>
                                                                         <ChartLabel value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
                                                                     </YAxis>
-                                                                    <ChartTooltip />
-                                                                    <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={{ r: 2 }} />
+                                                                    <ChartTooltip formatter={(value: any) => formatTick(value)} />
+                                                                    <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={{ r: 2 }} isAnimationActive={false} />
+
+                                                                    {chartData.showLinearRegression && m !== null && (
+                                                                        <Line
+                                                                            type="monotone"
+                                                                            dataKey="regression"
+                                                                            stroke="hsl(var(--primary))"
+                                                                            strokeWidth={2}
+                                                                            strokeDasharray="5 5"
+                                                                            dot={false}
+                                                                            activeDot={false}
+                                                                            isAnimationActive={false}
+                                                                            label={((props: any) => {
+                                                                                const { x, y, index } = props;
+                                                                                if (index === chartDataWithRegression.length - 1 && regressionStats) {
+                                                                                    return (
+                                                                                        <text x={x} y={y} dy={-10} fill="hsl(var(--primary))" fontSize={10} textAnchor="end">
+                                                                                            {`${regressionStats.equation}, R² = ${regressionStats.rSquared}`}
+                                                                                        </text>
+                                                                                    );
+                                                                                }
+                                                                                return null;
+                                                                            }) as any}
+                                                                        />
+                                                                    )}
 
                                                                     {chartData.showAverage && n > 0 && (
                                                                         <ReferenceLine
@@ -408,20 +451,6 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                                                                 fill: 'hsl(var(--muted-foreground))',
                                                                                 fontSize: 10
                                                                             }}
-                                                                        />
-                                                                    )}
-                                                                    {regressionSegment && (
-                                                                        <ReferenceLine
-                                                                            segment={regressionSegment}
-                                                                            stroke="hsl(var(--primary))"
-                                                                            strokeWidth={2}
-                                                                            strokeDasharray="5 5"
-                                                                            label={regressionStats ? {
-                                                                                value: `${regressionStats.equation}, R² = ${regressionStats.rSquared}`,
-                                                                                position: 'top',
-                                                                                fill: 'hsl(var(--primary))',
-                                                                                fontSize: 10
-                                                                            } : undefined}
                                                                         />
                                                                     )}
                                                                 </LineChart>
