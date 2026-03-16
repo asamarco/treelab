@@ -317,6 +317,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                     }
                                     case 'xy-chart': {
                                         const chartData: XYChartData = value;
+                                        if (!chartData) return null;
                                         const rawPoints = chartData.points || [];
                                         const originalNumericData = rawPoints.map((d: any) => ({ ...d, x: Number(d.x), y: Number(d.y) })).filter((d: any) => !isNaN(d.x) && !isNaN(d.y));
 
