@@ -34,9 +34,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import jspreadsheet from "jspreadsheet-ce";
-import "jspreadsheet-ce/dist/jspreadsheet.css";
-import "jsuites/dist/jsuites.css";
+import { TreeSpreadsheetField } from "./tree-spreadsheet-field";
 
 
 interface TreeNodeContentProps {
@@ -54,98 +52,6 @@ interface TreeNodeContentProps {
     disableSelection?: boolean;
 }
 
-interface TreeSpreadsheetFieldProps {
-    field: any;
-    value: any;
-    node: TreeNode;
-    isCompactView: boolean;
-    readOnly: boolean;
-    updateNode?: (nodeId: string, updates: Partial<TreeNode>) => Promise<void>;
-}
-
-function TreeSpreadsheetField({ field, value, node, isCompactView, readOnly, updateNode }: TreeSpreadsheetFieldProps) {
-    const spreadsheetRef = useRef<HTMLDivElement>(null);
-    const jRef = useRef<any>(null);
-
-    // Initial state setup: Convert database format to Jspreadsheet flat array format
-    const getInitialData = useCallback(() => {
-        const data: { value: string }[][] = value || [[{ value: '' }]];
-        const targetRows = field.spreadsheetRowCount || 5;
-        const targetCols = field.spreadsheetColumnCount || 5;
-
-        const maxRows = Math.max(data.length, targetRows);
-        const maxCols = Math.max(data[0]?.length || 0, targetCols);
-
-        return Array.from({ length: maxRows }, (_, rIndex) => {
-            return Array.from({ length: maxCols }, (_, cIndex) => {
-                return data?.[rIndex]?.[cIndex]?.value || '';
-            });
-        });
-    }, [value, field.spreadsheetRowCount, field.spreadsheetColumnCount]);
-
-    // Persist changes back to the database
-    const persistData = useCallback((instance: any) => {
-        if (readOnly || !updateNode || !instance.jexcel) return;
-
-        const newDataRaw = instance.jexcel.getData();
-        const formattedData = newDataRaw.map((row: any[]) =>
-            row.map(cellValue => ({ value: String(cellValue ?? '') }))
-        );
-
-        const newTotalData = {
-            ...node.data,
-            [field.id]: formattedData,
-        };
-        updateNode(node.id, { data: newTotalData });
-    }, [node.id, node.data, field.id, readOnly, updateNode]);
-
-    useEffect(() => {
-        if (!spreadsheetRef.current || jRef.current) return;
-
-        const data = getInitialData();
-
-        jRef.current = jspreadsheet(spreadsheetRef.current, {
-            data: data,
-            minDimensions: [field.spreadsheetColumnCount || 5, field.spreadsheetRowCount || 5],
-            wordWrap: true,
-            onchange: (instance) => persistData(instance),
-            oninsertrow: (instance) => persistData(instance),
-            ondeleterow: (instance) => persistData(instance),
-            oninsertcolumn: (instance) => persistData(instance),
-            ondeletecolumn: (instance) => persistData(instance),
-            editable: !readOnly,
-            allowInsertColumn: !readOnly,
-            allowDeleteColumn: !readOnly,
-            allowInsertRow: !readOnly,
-            allowDeleteRow: !readOnly,
-            contextMenu: !readOnly ? undefined : () => [],
-            defaultColWidth: 125,
-        });
-
-        return () => {
-            if (jRef.current) {
-                jRef.current.destroy();
-                jRef.current = null;
-            }
-        };
-    }, [getInitialData, field.spreadsheetRowCount, field.spreadsheetColumnCount, readOnly, persistData]);
-
-    return (
-        <div
-            className="mt-2 text-sm min-w-0"
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={(e) => e.stopPropagation()}
-            onContextMenu={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-        >
-            <p className={cn("font-medium mb-1", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-            <div className={cn("rounded-md border w-full bg-background overflow-hidden", readOnly && "opacity-80 pointer-events-none")}>
-                <div ref={spreadsheetRef} />
-            </div>
-        </div>
-    );
-}
 
 export function TreeNodeContent({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeNodeContentProps) {
     const { currentUser } = useAuthContext();

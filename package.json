@@ -44,6 +44,7 @@
     "embla-carousel-react": "^8.6.0",
     "file-saver": "^2.0.5",
     "html-react-parser": "^5.1.12",
+    "hyperformula": "^3.2.0",
     "immer": "^10.1.1",
     "jose": "^5.6.3",
     "jspreadsheet-ce": "^4.15.0",
