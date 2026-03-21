@@ -9,12 +9,13 @@
  * in the `AppProvider` to make the global state available to all components.
  * The `Toaster` component for notifications is also included here.
  */
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { TreeProvider } from "@/contexts/tree-roots";
 import { UIProvider } from "@/contexts/ui-context";
 import { Toaster } from "@/components/ui/toaster";
+import PWARegistry from "@/components/pwa-registry";
 import { unstable_noStore as noStore } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
@@ -24,7 +25,21 @@ export const metadata: Metadata = {
   description: "Create and manage data trees with custom templates.",
   icons: {
     icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Treelab",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1a282b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 interface AppConfig {
@@ -75,6 +90,7 @@ export default function RootLayout({
         >
           <UIProvider>
             <TreeProvider>
+              <PWARegistry />
               {children}
               <Toaster />
             </TreeProvider>
