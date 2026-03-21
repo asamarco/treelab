@@ -152,6 +152,36 @@ export function Spreadsheet({
 
             obj.setData(data);
             jRef.current = el;
+
+            // --- Clipboard Logic: Always copy calculated values ---
+            const handleCopy = (e: ClipboardEvent) => {
+                const activeEl = document.activeElement;
+                if (!activeEl || !activeEl.classList.contains('jexcel_textarea')) return;
+                
+                const selectedRange = obj.selectedCell;
+                if (!selectedRange || !e.clipboardData) return;
+
+                const [x1, y1, x2, y2] = selectedRange;
+                const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
+                const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
+
+                const rows = [];
+                for (let y = minY; y <= maxY; y++) {
+                    const row = [];
+                    for (let x = minX; x <= maxX; x++) {
+                        const val = hfRef.current ? hfRef.current.getCellValue({ sheet: sheetIdRef.current, col: x, row: y }) : obj.getValueFromCoords(x, y);
+                        row.push(val === null || val === undefined ? '' : (typeof val === 'object' && val.error ? (val.message || '#ERROR!') : String(val)));
+                    }
+                    rows.push(row.join('\t'));
+                }
+
+                e.clipboardData.setData('text/plain', rows.join('\n'));
+                e.preventDefault(); 
+            };
+
+            document.addEventListener('copy', handleCopy);
+            (el as any)._handleGlobalCopy = handleCopy;
+
         } catch (error) {
             console.error('[Spreadsheet] Initialization error:', error);
         }
@@ -159,14 +189,17 @@ export function Spreadsheet({
         return () => {
             if (jRef.current) {
                 try {
+                    const elDom = spreadsheetRef.current;
+                    if (elDom && (elDom as any)._handleGlobalCopy) {
+                        document.removeEventListener('copy', (elDom as any)._handleGlobalCopy);
+                    }
                     jRef.current.destroy();
                 } catch (e) {
                     // Ignore destruction errors
                 }
                 jRef.current = null;
             }
-        };
-    }, [data, columns, minDimensions, readOnly, handleSync, onRowChange, onColChange, onChange]);
+        };    }, [data, columns, minDimensions, readOnly, handleSync, onRowChange, onColChange, onChange]);
 
     return (
         <div className={className}>
