@@ -177,6 +177,41 @@ body {
   background-color: hsl(var(--secondary)) !important;
 }
 
+/* Enhanced selection contrast in dark mode */
+.dark .jexcel>tbody>tr>td.highlight {
+  background-color: hsla(var(--primary)) !important;
+}
+
+.dark .jexcel>tbody>tr>td.selection {
+  background-color: hsla(var(--primary)) !important;
+}
+
+/* Selection Borders and Corner */
+.dark .jexcel .highlight-top,
+.dark .jexcel .selection-top {
+  border-top: 1px solid hsl(var(--primary)) !important;
+}
+
+.dark .jexcel .highlight-left,
+.dark .jexcel .selection-left {
+  border-left: 1px solid hsl(var(--primary)) !important;
+}
+
+.dark .jexcel .highlight-right,
+.dark .jexcel .selection-right {
+  border-right: 1px solid hsl(var(--primary)) !important;
+}
+
+.dark .jexcel .highlight-bottom,
+.dark .jexcel .selection-bottom {
+  border-bottom: 1px solid hsl(var(--primary)) !important;
+}
+
+.dark .jexcel_corner {
+  background-color: hsl(var(--primary)) !important;
+  border-color: hsl(var(--background)) !important;
+}
+
 /* Ensure jSuites context menus and dropdown results are usable when inside a Radix Dialog */
 .jcontextmenu,
 .jsuites-results {
