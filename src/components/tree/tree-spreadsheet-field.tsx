@@ -66,7 +66,7 @@ export function TreeSpreadsheetField({
                 {field.name}
             </p>
             <div className={cn(
-                "rounded-md border w-full bg-background overflow-hidden", 
+                "rounded-md border w-full bg-background overflow-x-auto", 
                 readOnly && "opacity-80 pointer-events-none"
             )}>
                 <Spreadsheet 

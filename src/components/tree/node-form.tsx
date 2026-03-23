@@ -192,7 +192,7 @@ const XYChartSpreadsheetEditor = ({
       }
     }}>
       <div
-        className="rounded-md border w-full bg-background overflow-hidden ds-grid-container"
+        className="rounded-md border w-full bg-background overflow-x-auto ds-grid-container"
         onContextMenuCapture={(e) => {
           // Suppress browser context menu to let the library menu show
           e.preventDefault();
