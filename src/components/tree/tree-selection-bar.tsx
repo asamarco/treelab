@@ -41,7 +41,7 @@ import { useUIContext } from "@/contexts/ui-context";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useEffect, useCallback, useRef, useMemo } from "react";
 import { HtmlExportView } from "./html-export-view";
-
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function TreeSelectionBar() {
     const {
@@ -72,6 +72,7 @@ export function TreeSelectionBar() {
     const { setDialogState, isAnyModalOpen } = useUIContext();
     const { currentUser } = useAuthContext();
     const { toast } = useToast();
+    const isMobile = useIsMobile();
 
     const areAllSameTemplate = useMemo(() => {
         if (selectedNodeIds.length === 0) return false;
@@ -292,7 +293,7 @@ export function TreeSelectionBar() {
 
     // Hide UI for single node selection, but keep component mounted for shortcuts
     // Show only if selection mode was explicitly triggered (e.g. via long-press)
-    if (selectedNodeIds.length === 1 && !isSelectionModeActive) {
+    if (selectedNodeIds.length === 1 && !isSelectionModeActive && !isMobile) {
         return <></>;
     }
 

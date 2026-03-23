@@ -144,6 +144,12 @@ export function TreeNodeComponent({
       return;
     }
 
+    if (isMobile) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     e.preventDefault();
     e.stopPropagation();
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
