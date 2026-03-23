@@ -8,11 +8,11 @@
 
 import { User } from './types';
 
-export const login = async (identifier: string, password: string): Promise<User | null> => {
+export const login = async (identifier: string, password: string, rememberMe: boolean = false): Promise<User | null> => {
     const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ identifier, password, rememberMe }),
     });
 
     if (response.ok) {

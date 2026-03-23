@@ -20,7 +20,7 @@ interface AuthContextType {
   isAuthLoading: boolean;
   isAuthRequired: boolean;
   users: User[];
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   register: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   addUserByAdmin: (username: string, password: string, isAdmin: boolean) => Promise<boolean>;

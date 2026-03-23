@@ -57,7 +57,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   }, [currentUser, toast]);
 
   const inactivityTimeoutMinutes = currentUser?.inactivityTimeoutMinutes;
-  const idleTime = typeof inactivityTimeoutMinutes === 'number' && inactivityTimeoutMinutes > 0
+  const idleTime = typeof inactivityTimeoutMinutes === 'number' && inactivityTimeoutMinutes > 0 && !currentUser?.rememberMe
     ? inactivityTimeoutMinutes * 60 * 1000
     : 0;
 
@@ -146,8 +146,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   }, [isAuthRequired, currentUser]);
 
 
-  const handleLogin = async (identifier: string, password: string): Promise<boolean> => {
-    const user = await loginOnClient(identifier, password);
+  const handleLogin = async (identifier: string, password: string, rememberMe: boolean = false): Promise<boolean> => {
+    const user = await loginOnClient(identifier, password, rememberMe);
     if (user) {
       setCurrentUser(user);
       const allUsers = await fetchUsers(); // Fetch all users on login

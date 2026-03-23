@@ -19,11 +19,11 @@ const key = new TextEncoder().encode(secretKey);
 
 const SESSION_COOKIE_NAME = 'session';
 
-export async function encrypt(payload: { userId: string, expires: Date }) {
+export async function encrypt(payload: { userId: string, expires: Date, rememberMe?: boolean }) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('12h') // Session expires in 12 hours
+    .setExpirationTime(payload.rememberMe ? '30d' : '12h')
     .sign(key);
 }
 
@@ -43,9 +43,10 @@ export async function decrypt(input: string): Promise<any> {
  * Creates a session cookie within an API Route context.
  * It modifies the cookies on the NextResponse object.
  */
-export async function createSessionInApiRoute(response: NextResponse, userId: string) {
-  const expires = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
-  const session = await encrypt({ userId, expires });
+export async function createSessionInApiRoute(response: NextResponse, userId: string, rememberMe: boolean = false) {
+  const expiresInMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000;
+  const expires = new Date(Date.now() + expiresInMs);
+  const session = await encrypt({ userId, expires, rememberMe });
   
   response.cookies.set(SESSION_COOKIE_NAME, session, {
     httpOnly: true,
@@ -60,9 +61,10 @@ export async function createSessionInApiRoute(response: NextResponse, userId: st
  * Creates a session cookie within a Server Action context.
  * It directly calls the cookies() function to set the cookie.
  */
-export async function createSessionInServerAction(userId: string) {
-  const expires = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
-  const session = await encrypt({ userId, expires });
+export async function createSessionInServerAction(userId: string, rememberMe: boolean = false) {
+  const expiresInMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000;
+  const expires = new Date(Date.now() + expiresInMs);
+  const session = await encrypt({ userId, expires, rememberMe });
   
   (await cookies()).set(SESSION_COOKIE_NAME, session, {
     httpOnly: true,
@@ -81,7 +83,7 @@ export function clearSession(response: NextResponse) {
   response.cookies.set(SESSION_COOKIE_NAME, '', { httpOnly: true, expires: new Date(0) });
 }
 
-export async function getSession(): Promise<{ userId: string } | null> {
+export async function getSession(): Promise<{ userId: string, rememberMe?: boolean } | null> {
   // Prevent caching of the session
   noStore();
   
@@ -92,5 +94,5 @@ export async function getSession(): Promise<{ userId: string } | null> {
   if (!decryptedPayload?.userId) {
     return null;
   }
-  return { userId: decryptedPayload.userId };
+  return { userId: decryptedPayload.userId, rememberMe: decryptedPayload.rememberMe };
 }

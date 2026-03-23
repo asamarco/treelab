@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      userToReturn.rememberMe = session.rememberMe;
+
       return NextResponse.json(userToReturn);
     }
   }

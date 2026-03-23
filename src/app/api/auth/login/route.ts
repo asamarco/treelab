@@ -10,7 +10,7 @@ import { createSessionInApiRoute } from '@/lib/session';
 
 export async function POST(request: NextRequest) {
     try {
-        const { identifier, password } = await request.json();
+        const { identifier, password, rememberMe } = await request.json();
 
         if (!identifier || !password) {
             return NextResponse.json({ message: 'Username and password are required' }, { status: 400 });
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         const response = NextResponse.json(user);
 
         // Create session and set cookie
-        await createSessionInApiRoute(response, user.id);
+        await createSessionInApiRoute(response, user.id, rememberMe);
 
         return response;
 
