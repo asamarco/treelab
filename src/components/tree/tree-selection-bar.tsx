@@ -69,7 +69,7 @@ export function TreeSelectionBar() {
         batchUpdateNodeData,
         linkTreeToRepo,
     } = useTreeContext();
-    const { setDialogState, isAnyModalOpen } = useUIContext();
+    const { dialogState, setDialogState, isAnyModalOpen } = useUIContext();
     const { currentUser } = useAuthContext();
     const { toast } = useToast();
     const isMobile = useIsMobile();
@@ -171,6 +171,22 @@ export function TreeSelectionBar() {
             toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not find any top-level nodes in your selection to preview.' });
         }
     }, [getSelectedTopLevelNodes, setDialogState, toast]);
+
+    const handleEditSelection = useCallback(() => {
+        if (selectedNodeIds.length === 1) {
+            const instanceId = selectedNodeIds[0];
+            const currentIds = dialogState.openNodeEditInstanceIds || [];
+            if (!currentIds.includes(instanceId)) {
+                setDialogState({
+                    openNodeEditInstanceIds: [...currentIds, instanceId],
+                    isMultiNodeEditOpen: false
+                });
+            }
+            setSelectedNodeIds([]);
+        } else if (selectedNodeIds.length > 1) {
+            setDialogState({ isMultiNodeEditOpen: true });
+        }
+    }, [selectedNodeIds, dialogState.openNodeEditInstanceIds, setDialogState, setSelectedNodeIds]);
 
     const handleExpandAllSelection = useCallback(() => {
         const nodesToExpand = selectedNodeIds.map(instanceId => {
@@ -364,7 +380,7 @@ export function TreeSelectionBar() {
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDialogState({ isMultiNodeEditOpen: true })} disabled={!areAllSameTemplate}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEditSelection} disabled={!areAllSameTemplate}>
                                         <Pencil className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
