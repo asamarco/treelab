@@ -40,11 +40,12 @@ export function TreeSpreadsheetField({
     }, [value, field.spreadsheetRowCount, field.spreadsheetColumnCount]);
 
     const handleChange = useCallback((newDataRaw: any[][]) => {
-        if (readOnly || !updateNode) return;
+        if (readOnly || !updateNode || !Array.isArray(newDataRaw)) return;
 
-        const formattedData = newDataRaw.map((row: any[]) =>
-            row.map(cellValue => ({ value: String(cellValue ?? '') }))
-        );
+        const formattedData = newDataRaw.map((row: any[]) => {
+            if (!Array.isArray(row)) return [];
+            return row.map(cellValue => ({ value: String(cellValue ?? '') }));
+        });
 
         const newTotalData = {
             ...node.data,
@@ -53,6 +54,11 @@ export function TreeSpreadsheetField({
         updateNode(node.id, { data: newTotalData });
     }, [node.id, node.data, field.id, readOnly, updateNode]);
 
+    const minDimensions = useMemo<[number, number]>(() => [
+        field.spreadsheetColumnCount || 5,
+        field.spreadsheetRowCount || 5
+    ], [field.spreadsheetColumnCount, field.spreadsheetRowCount]);
+
     return (
         <div
             className="mt-2 text-sm min-w-0"
@@ -60,7 +66,6 @@ export function TreeSpreadsheetField({
             onDoubleClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
         >
             <p className={cn("font-medium mb-1", isCompactView ? "text-xs" : "text-sm")}>
                 {field.name}
@@ -71,7 +76,7 @@ export function TreeSpreadsheetField({
             )}>
                 <Spreadsheet 
                     data={initialData}
-                    minDimensions={[field.spreadsheetColumnCount || 5, field.spreadsheetRowCount || 5]}
+                    minDimensions={minDimensions}
                     readOnly={readOnly}
                     onChange={handleChange}
                 />

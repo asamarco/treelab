@@ -5,6 +5,7 @@ import jspreadsheet from 'jspreadsheet-ce';
 import { HyperFormula } from 'hyperformula';
 import 'jspreadsheet-ce/dist/jspreadsheet.css';
 import 'jsuites/dist/jsuites.css';
+import { notifySpreadsheetFocusIn, notifySpreadsheetFocusOut } from '@/lib/spreadsheet-focus-state';
 
 interface SpreadsheetProps {
     data: any[][];
@@ -33,6 +34,20 @@ export function Spreadsheet({
     const jRef = useRef<any>(null);
     const hfRef = useRef<any>(null);
     const sheetIdRef = useRef<number>(0);
+    const lastDataRef = useRef<any[][] | null>(null);
+    // Tracks whether the user has interacted with this spreadsheet (focus is inside)
+    const isActiveRef = useRef<boolean>(false);
+
+    // Store callbacks in refs to avoid re-mounting the spreadsheet when they change
+    const onChangeRef = useRef(onChange);
+    const onRowChangeRef = useRef(onRowChange);
+    const onColChangeRef = useRef(onColChange);
+
+    useEffect(() => {
+        onChangeRef.current = onChange;
+        onRowChangeRef.current = onRowChange;
+        onColChangeRef.current = onColChange;
+    }, [onChange, onRowChange, onColChange]);
 
     // Initialize HyperFormula once
     if (!hfRef.current) {
@@ -44,7 +59,8 @@ export function Spreadsheet({
     }
 
     const handleSync = useCallback((instance: any, x: number, y: number, value: any) => {
-        if (instance.jspreadsheet.ignoreEvents) return;
+        const obj = instance.jspreadsheet || instance;
+        if (obj.ignoreEvents) return;
         if (!hfRef.current) return;
 
         const changes = hfRef.current.setCellContents(
@@ -53,25 +69,27 @@ export function Spreadsheet({
         );
 
         if (changes.length > 0) {
-            instance.jspreadsheet.ignoreEvents = true;
+            obj.ignoreEvents = true;
             changes.forEach((change: any) => {
                 const col = change.address.col;
                 const row = change.address.row;
-                const currentRawValue = instance.jspreadsheet.getValueFromCoords(col, row);
+                const currentRawValue = obj.getValueFromCoords(col, row);
 
                 if (typeof currentRawValue === 'string' && currentRawValue.startsWith('=')) {
-                    instance.jspreadsheet.setValueFromCoords(col, row, currentRawValue, true);
+                    obj.setValueFromCoords(col, row, currentRawValue, true);
                 } else if (col !== x || row !== y) {
-                    instance.jspreadsheet.setValueFromCoords(col, row, change.newValue, true);
+                    obj.setValueFromCoords(col, row, change.newValue, true);
                 }
             });
-            instance.jspreadsheet.ignoreEvents = false;
+            obj.ignoreEvents = false;
         }
 
-        if (onChange) {
-            onChange(instance.jspreadsheet.getData());
+        if (onChangeRef.current) {
+            const currentData = obj.getData();
+            lastDataRef.current = currentData;
+            onChangeRef.current(currentData);
         }
-    }, [onChange]);
+    }, []); // Stable handleSync
 
     useEffect(() => {
         if (!spreadsheetRef.current || jRef.current) return;
@@ -99,29 +117,75 @@ export function Spreadsheet({
                     handleSync(instance, Number(x), Number(y), value);
                 },
                 oninsertrow: (instance: any, rowIndex: number | string, numOfRows: number | string) => {
-                    hfRef.current?.addRows(sheetIdRef.current, [Number(rowIndex), Number(numOfRows)]);
-                    if (onRowChange) onRowChange('insert', Number(rowIndex), Number(numOfRows));
-                    if (onChange) onChange(instance.jspreadsheet.getData());
+                    const obj = instance.jspreadsheet || instance;
+                    const idx = parseInt(String(rowIndex), 10);
+                    const count = parseInt(String(numOfRows), 10);
+                    if (!isNaN(idx) && !isNaN(count)) {
+                        hfRef.current?.batch(() => {
+                            hfRef.current?.addRows(sheetIdRef.current, [idx, count]);
+                        });
+                    }
+                    if (onRowChangeRef.current) onRowChangeRef.current('insert', idx, count);
+                    if (onChangeRef.current) {
+                        const currentData = obj.getData();
+                        lastDataRef.current = currentData;
+                        onChangeRef.current(currentData);
+                    }
                 },
                 ondeleterow: (instance: any, rowIndex: number | string, numOfRows: number | string) => {
-                    hfRef.current?.removeRows(sheetIdRef.current, [Number(rowIndex), Number(numOfRows)]);
-                    if (onRowChange) onRowChange('delete', Number(rowIndex), Number(numOfRows));
-                    if (onChange) onChange(instance.jspreadsheet.getData());
+                    const obj = instance.jspreadsheet || instance;
+                    const idx = parseInt(String(rowIndex), 10);
+                    const count = parseInt(String(numOfRows), 10);
+                    if (!isNaN(idx) && !isNaN(count)) {
+                        hfRef.current?.batch(() => {
+                            hfRef.current?.removeRows(sheetIdRef.current, [idx, count]);
+                        });
+                    }
+                    if (onRowChangeRef.current) onRowChangeRef.current('delete', idx, count);
+                    if (onChangeRef.current) {
+                        const currentData = obj.getData();
+                        lastDataRef.current = currentData;
+                        onChangeRef.current(currentData);
+                    }
                 },
                 oninsertcolumn: (instance: any, colIndex: number | string, numOfColumns: number | string) => {
-                    hfRef.current?.addColumns(sheetIdRef.current, [Number(colIndex), Number(numOfColumns)]);
-                    if (onColChange) onColChange('insert', Number(colIndex), Number(numOfColumns));
-                    if (onChange) onChange(instance.jspreadsheet.getData());
+                    const obj = instance.jspreadsheet || instance;
+                    const idx = parseInt(String(colIndex), 10);
+                    const count = parseInt(String(numOfColumns), 10);
+                    if (!isNaN(idx) && !isNaN(count)) {
+                        hfRef.current?.batch(() => {
+                            hfRef.current?.addColumns(sheetIdRef.current, [idx, count]);
+                        });
+                    }
+                    if (onColChangeRef.current) onColChangeRef.current('insert', idx, count);
+                    if (onChangeRef.current) {
+                        const currentData = obj.getData();
+                        lastDataRef.current = currentData;
+                        onChangeRef.current(currentData);
+                    }
                 },
                 ondeletecolumn: (instance: any, colIndex: number | string, numOfColumns: number | string) => {
-                    hfRef.current?.removeColumns(sheetIdRef.current, [Number(colIndex), Number(numOfColumns)]);
-                    if (onColChange) onColChange('delete', Number(colIndex), Number(numOfColumns));
-                    if (onChange) onChange(instance.jspreadsheet.getData());
+                    const obj = instance.jspreadsheet || instance;
+                    const idx = parseInt(String(colIndex), 10);
+                    const count = parseInt(String(numOfColumns), 10);
+                    if (!isNaN(idx) && !isNaN(count)) {
+                        hfRef.current?.batch(() => {
+                            hfRef.current?.removeColumns(sheetIdRef.current, [idx, count]);
+                        });
+                    }
+                    if (onColChangeRef.current) onColChangeRef.current('delete', idx, count);
+                    if (onChangeRef.current) {
+                        const currentData = obj.getData();
+                        lastDataRef.current = currentData;
+                        onChangeRef.current(currentData);
+                    }
                 },
             };
 
-            if (Array.isArray(columns) && columns.length > 0) {
-                options.columns = columns;
+            options.columns = Array.isArray(columns) && columns.length > 0 ? columns : [];
+            if (options.columns.length === 0 && data[0]?.length > 0) {
+              // Ensure we have at least one column definition to avoid null issues in JSS internal code
+              options.columns = Array.from({ length: data[0].length }, () => ({}));
             }
 
             const el = jss(spreadsheetRef.current, options);
@@ -131,8 +195,15 @@ export function Spreadsheet({
             }
 
             // Sync HF
-            if (hfRef.current) {
-                hfRef.current.setCellContents({ sheet: sheetIdRef.current, row: 0, col: 0 }, data);
+            if (hfRef.current && Array.isArray(data)) {
+                // HyperFormula setCellContents for multiple cells usually requires setSheetContent or similar
+                // but since we are just initializing, we can set the whole content if we loop
+                // or if we use setSheetContent.
+                try {
+                    hfRef.current.setSheetContent(sheetIdRef.current, data);
+                } catch (e) {
+                    console.error('[Spreadsheet] HF sync error:', e);
+                }
             }
 
             // Override engine
@@ -141,8 +212,10 @@ export function Spreadsheet({
                 if (expression && expression[0] === '=' && hfRef.current) {
                     try {
                         const result = hfRef.current.calculateFormula(expression, sheetIdRef.current);
-                        if (Array.isArray(result)) return result[0][0];
-                        return result;
+                        if (Array.isArray(result) && result.length > 0 && Array.isArray(result[0])) return result[0][0];
+                        if (result === null || result === undefined) return '';
+                        if (typeof result === 'object' && result.error) return result.message || '#ERROR!';
+                        return String(result);
                     } catch (e) {
                         return '#ERROR!';
                     }
@@ -182,6 +255,36 @@ export function Spreadsheet({
             document.addEventListener('copy', handleCopy);
             (el as any)._handleGlobalCopy = handleCopy;
 
+            // Track whether the user is actively interacting with this spreadsheet.
+            // We use capture-phase listeners on the container so we know when focus
+            // enters or leaves, even when jspreadsheet manages focus internally.
+            const containerEl = spreadsheetRef.current;
+            const handleFocusIn = () => { 
+                isActiveRef.current = true; 
+                notifySpreadsheetFocusIn();
+            };
+            const handleFocusOut = (e: FocusEvent) => {
+                // Only deactivate if focus moves outside the container entirely
+                if (containerEl && !containerEl.contains(e.relatedTarget as Node | null)) {
+                    isActiveRef.current = false;
+                    notifySpreadsheetFocusOut();
+                }
+            };
+            const handleMouseDown = () => { 
+                if (!isActiveRef.current) {
+                    isActiveRef.current = true;
+                    notifySpreadsheetFocusIn();
+                }
+            };
+            if (containerEl) {
+                containerEl.addEventListener('focusin', handleFocusIn, true);
+                containerEl.addEventListener('focusout', handleFocusOut, true);
+                containerEl.addEventListener('mousedown', handleMouseDown, true);
+                (containerEl as any)._handleFocusIn = handleFocusIn;
+                (containerEl as any)._handleFocusOut = handleFocusOut;
+                (containerEl as any)._handleMouseDown = handleMouseDown;
+            }
+
         } catch (error) {
             console.error('[Spreadsheet] Initialization error:', error);
         }
@@ -193,16 +296,87 @@ export function Spreadsheet({
                     if (elDom && (elDom as any)._handleGlobalCopy) {
                         document.removeEventListener('copy', (elDom as any)._handleGlobalCopy);
                     }
+                    if (elDom && (elDom as any)._handleFocusIn) {
+                        elDom.removeEventListener('focusin', (elDom as any)._handleFocusIn, true);
+                        elDom.removeEventListener('focusout', (elDom as any)._handleFocusOut, true);
+                        elDom.removeEventListener('mousedown', (elDom as any)._handleMouseDown, true);
+                    }
+                    if (isActiveRef.current) {
+                        notifySpreadsheetFocusOut();
+                    }
                     jRef.current.destroy();
                 } catch (e) {
                     // Ignore destruction errors
                 }
                 jRef.current = null;
             }
-        };    }, [data, columns, minDimensions, readOnly, handleSync, onRowChange, onColChange, onChange]);
+        };
+    }, [columns, minDimensions, readOnly, handleSync]);
+
+    // Custom data comparison to avoid unnecessary updates (treats null as empty string)
+    const isDataEqual = useCallback((a: any[][] | null, b: any[][] | null) => {
+        if (!a || !b) return a === b;
+        if (a.length !== b.length) return false;
+        for (let r = 0; r < a.length; r++) {
+            if (a[r].length !== b[r].length) return false;
+            for (let c = 0; c < a[r].length; c++) {
+                const valA = String(a[r][c] ?? '');
+                const valB = String(b[r][c] ?? '');
+                if (valA !== valB) return false;
+            }
+        }
+        return true;
+    }, []);
+
+    // Update data without re-mounting
+    useEffect(() => {
+        if (!jRef.current) return;
+        const obj = jRef.current.jspreadsheet || jRef.current;
+        
+        // Skip update if data matches last data received from or sent to Jspreadsheet
+        if (isDataEqual(lastDataRef.current, data)) {
+            return;
+        }
+
+        obj.ignoreEvents = true;
+
+        // Capture current selection to restore it after data update
+        const selected = obj.selectedCell;
+        // Use isActiveRef: true if the user has interacted with this spreadsheet.
+        // This is more reliable than checking document.activeElement because setData
+        // may tear down/rebuild DOM elements, momentarily moving focus to <body>.
+        const wasActive = isActiveRef.current;
+
+        obj.setData(data);
+        if (hfRef.current) {
+            try {
+                hfRef.current.setSheetContent(sheetIdRef.current, data);
+            } catch (e) {
+                console.error('[Spreadsheet] HF update error:', e);
+            }
+        }
+
+        // Restore selection if it existed
+        if (selected) {
+            try {
+                obj.updateSelectionFromCoords(selected[0], selected[1], selected[2], selected[3]);
+                // Refocus the hidden textarea so keyboard events stay within jspreadsheet
+                // and are not picked up by the tree's global keydown handler.
+                if (wasActive) {
+                    const textarea = obj.el?.querySelector('textarea');
+                    if (textarea) textarea.focus();
+                }
+            } catch (e) {
+                // Ignore if selection restoration fails
+            }
+        }
+
+        obj.ignoreEvents = false;
+        lastDataRef.current = data;
+    }, [data, isDataEqual]);
 
     return (
-        <div className={className}>
+        <div className={className} data-jspreadsheet-container="true">
             <div ref={spreadsheetRef} />
         </div>
     );

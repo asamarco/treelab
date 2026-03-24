@@ -31,6 +31,7 @@ import { WritableDraft } from "immer";
 import { useUIContext } from "@/contexts/ui-context";
 import { getContextualOrder } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
+import { isAnySpreadsheetFocused } from "@/lib/spreadsheet-focus-state";
 
 interface TreeViewProps {
   nodes: TreeNode[];
@@ -249,19 +250,32 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly || disableSelection) return;
     const activeElement = document.activeElement as HTMLElement;
-    if (activeElement && (
-      activeElement.tagName === 'INPUT' ||
-      activeElement.tagName === 'TEXTAREA' ||
-      activeElement.tagName === 'SELECT' ||
-      activeElement.isContentEditable ||
-      activeElement.closest('form') ||
-      activeElement.closest('[role="dialog"]') ||
-      activeElement.closest('.jexcel') ||
-      activeElement.closest('.jspreadsheet') ||
-      activeElement.closest('.ds-grid-container') ||
-      activeElement.closest('.dsg-container') ||
-      activeElement.classList.contains('jexcel_textarea')
-    )) {
+    const targetElement = event.target as HTMLElement;
+
+    // Check an element against all the "don't handle tree shortcuts" conditions.
+    // We test BOTH activeElement and event.target because after a jspreadsheet cell
+    // edit triggers a React re-render (via updateNode), document.activeElement can
+    // momentarily shift to <body> — but event.target always points to the element
+    // that actually generated the keydown (jspreadsheet's hidden textarea).
+    const isInInputContext = (el: HTMLElement | null): boolean => {
+      if (!el) return false;
+      return (
+        el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT' ||
+        el.isContentEditable ||
+        !!el.closest('form') ||
+        !!el.closest('[role="dialog"]') ||
+        !!el.closest('.jexcel') ||
+        !!el.closest('.jspreadsheet') ||
+        !!el.closest('[data-jspreadsheet-container]') ||
+        !!el.closest('.ds-grid-container') ||
+        !!el.closest('.dsg-container') ||
+        el.classList.contains('jexcel_textarea')
+      );
+    };
+
+    if (isInInputContext(activeElement) || isInInputContext(targetElement) || isAnySpreadsheetFocused()) {
       return;
     }
 
