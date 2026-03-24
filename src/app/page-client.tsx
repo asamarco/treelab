@@ -310,11 +310,27 @@ export function TreePage() {
     }
   }, [searchParams, setDialogState, router, pathname]);
 
+  const lastSelectedNodeIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (selectedNodeIds.length > 0) {
+      lastSelectedNodeIdRef.current = selectedNodeIds[0];
+    }
+  }, [selectedNodeIds]);
+
   useEffect(() => {
     if (isTwoPanelMode && selectedNodeIds.length === 0 && tree && tree.length > 0) {
+      if (lastSelectedNodeIdRef.current) {
+        const idToCheck = lastSelectedNodeIdRef.current.split('_')[0];
+        const nodeExists = findNodeAndParent(idToCheck) !== null;
+        if (nodeExists) {
+          setSelectedNodeIds([lastSelectedNodeIdRef.current]);
+          return;
+        }
+      }
       setSelectedNodeIds([`${tree[0].id}_root`]);
     }
-  }, [isTwoPanelMode, selectedNodeIds.length, tree, setSelectedNodeIds]);
+  }, [isTwoPanelMode, selectedNodeIds.length, tree, setSelectedNodeIds, findNodeAndParent]);
 
   const checkSyncStatus = useCallback(async () => {
     if (!currentUser || !activeTree?.gitSync || !currentUser?.gitSettings?.githubPat || isTokenInvalid) {
