@@ -1,3 +1,17 @@
+v0.6.0
+
+Feature: Progressive Web App (PWA) for desktop and mobile
+Feature: "Remember me on this device" option at login
+Feature: New 'Spreadsheet' field type using Jspreadshhet
+Feature: Statistical and linear regression analysis in XY-charts
+Improvement: Two column datagrid in XY-chart editor interoperable with external spreadsheets
+Improvement: Make field prefix/postfix collapsible in template editor
+Bugfix: long press on mobile now allows multiple selection without triggering the context menu.
+Bugfix: on mobile, the selection menu bar appears also for a single selected node as 
+Bugfix: disable left-click in node edit dialog
+Bugfix: fix missing tick in chart y-axis in compact view
+Bugfix: fix selection loss in two-panel view
+
 v0.5.2
 Feature: Node form extension (optional) to make quick edits to immediate children.
 Improvement: On mobile, multiple selection and node actions are handled by the long press gesture
