@@ -1,8 +1,8 @@
 {
-  "title": "Sample database",
+  "title": "🔬Sample database",
   "nodes": [
     {
-      "id": "ml6zpdpf-n2rxy35dm",
+      "id": "mn5yb466-d6ut5wjtr",
       "name": "Rationale",
       "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
       "data": {
@@ -10,56 +10,94 @@
         "2025-08-18T14:27:09.205Zvjv2ggy": "The sample database is structured as a tree to allow complete flexibility in the types of process flows that can be logged.\nEvery entry is a <i>Node</i> its content is defined by a <i>Template</i>. Nodes can be freely moved up and down or across the tree hierarchy to represent correctly the flow of operations.\nEach template contains specific fields which may be the parameters of a process, images or files, text, tables, graphs...\n\nThe example groups samples by location but they can be organized however it seems convenient, templates can be added and improved for specific use cases."
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-pq9w8saqr",
+      "id": "mn5yb466-oihf2b0cf",
       "name": "Usage of clones",
       "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
       "data": {
-        "2025-08-18T14:27:09.205Zvjv2ggy": "<i>Clone nodes</i> are used in the example with two purposes:\n\n1. A single process acting on multiple samples: node://ml6zpdpf-fz7nhoi71\n2. A dice, being at the same time a descendant of a sample and a sample per se: node://ml6zpdpg-anv9fh6dm\n\nUsage of clones in this way is strongly encouraged.",
+        "2025-08-18T14:27:09.205Zvjv2ggy": "<i>Clone nodes</i> are used in the example with two purposes:\n\n1. A single process acting on multiple samples: node://mn5yb466-ai0x2tkmj\n2. A dice, being at the same time a descendant of a sample and a sample per se: node://mn5yb467-t7n3alev4\n\nUsage of clones in this way is strongly encouraged.",
         "2025-08-18T14:27:09.205Zk07y9yo": "Usage of clones",
         "2025-08-18T14:27:09.205Z0qxilez": "Info"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-n2rxy35dm"
+        "mn5yb466-d6ut5wjtr"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-9bsjh0g3z",
+      "id": "mn5yb466-q5a6l7rfe",
+      "name": "Generic notes",
+      "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
+      "data": {
+        "2025-08-18T14:27:09.205Z0qxilez": "Success",
+        "2025-08-18T14:27:09.205Zk07y9yo": "Generic notes",
+        "2026-02-03T19:29:10.689Z0.5972357575257925": [
+          {
+            "id": "ml9z3qdv-il7mo5oum",
+            "text": "Edit a note text",
+            "checked": false
+          },
+          {
+            "id": "ml9z3yfp-wzhc1lorr",
+            "text": "Change its type",
+            "checked": false
+          },
+          {
+            "id": "ml9z43h8-vt7y7or2e",
+            "text": "Add an attachment",
+            "checked": false
+          }
+        ],
+        "2025-08-18T14:27:09.205Zvjv2ggy": "Note like this one can be used for comments, warnings, adding pictures or files, make checklists..."
+      },
+      "isStarred": false,
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
+      "parentIds": [
+        "mn5yb466-d6ut5wjtr"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
+    },
+    {
+      "id": "mn5yb466-ibdgbuzos",
       "name": "Wafer Box",
       "templateId": "2025-08-18T14:27:09.205Z2uet3xb",
       "data": {
         "2025-08-18T14:27:09.205Zcbx5ubp": "Wafer Box"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [],
       "order": [
         1,
         -1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-4l5guctsp",
+      "id": "mn5yb466-dypsay92f",
       "name": "Sample1",
       "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
       "data": {
@@ -69,19 +107,19 @@
         "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-9bsjh0g3z"
+        "mn5yb466-ibdgbuzos"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-fz7nhoi71",
+      "id": "mn5yb466-ai0x2tkmj",
       "name": "SiO2/NiFe Deposition",
       "templateId": "2026-01-09T14:22:29.950Z",
       "data": {
@@ -89,21 +127,21 @@
         "2026-01-10T09:17:05.423Z0.36338770983813173": "2026-01-08T23:00:00.000Z"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp",
-        "ml6zpdpg-959qacb2u"
+        "mn5yb467-3p6nx5ej5",
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         0,
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-4yfusu573",
+      "id": "mn5yb466-wndwp2b62",
       "name": "E-beam Evaporation",
       "templateId": "2025-08-18T14:27:09.205Zt08pzxx",
       "data": {
@@ -122,19 +160,19 @@
         ]
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-fz7nhoi71"
+        "mn5yb466-ai0x2tkmj"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-dez0mgbea",
+      "id": "mn5yb466-ntlbj65f6",
       "name": "Profilometry",
       "templateId": "2025-08-18T14:27:09.205Zql33x9g",
       "data": {
@@ -142,19 +180,19 @@
         "2025-08-18T14:27:09.205Zp9brlh4": "Profilometry"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-w0yivsp1v",
+      "id": "mn5yb466-ahnmztji0",
       "name": "Av. Thickness 90 nm",
       "templateId": "2025-08-18T14:27:09.205Zspy61an",
       "data": {
@@ -163,19 +201,19 @@
         "2025-08-18T14:27:09.205Zqiblx0r": "nm"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-dez0mgbea"
+        "mn5yb466-ntlbj65f6"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-r0u5puvbb",
+      "id": "mn5yb466-0mfoklraf",
       "name": "Uniformity 0.5 %",
       "templateId": "2025-08-18T14:27:09.205Zspy61an",
       "data": {
@@ -184,19 +222,19 @@
         "2025-08-18T14:27:09.205Zqiblx0r": "%"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-dez0mgbea"
+        "mn5yb466-ntlbj65f6"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-09si5iwqm",
+      "id": "mn5yb466-w0vocscth",
       "name": "Thickness",
       "templateId": "mk81yf86-6m9saygqd",
       "data": {
@@ -237,38 +275,39 @@
         }
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-dez0mgbea"
+        "mn5yb466-ntlbj65f6"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-q35ujqmnf",
+      "id": "mn5yb466-awzbqudlp",
       "name": "Optical Lithography",
       "templateId": "2026-01-09T12:05:51.359Z",
       "data": {
-        "2026-01-09T14:40:21.052Z0.30118703822926485": "Optical"
+        "2026-01-09T14:40:21.052Z0.30118703822926485": "Optical",
+        "2026-01-10T09:17:50.895Z0.6273317140214377": "2026-01-10T23:00:00.000Z"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-z2x892hy6",
+      "id": "mn5yb466-34l3pgvxd",
       "name": "HMDS priming",
       "templateId": "2025-08-18T14:27:09.205Z2nqu2su",
       "data": {
@@ -276,19 +315,19 @@
         "2025-08-18T14:27:09.205Zk07y9yo": "HMDS priming"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-q35ujqmnf"
+        "mn5yb466-awzbqudlp"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-h3oyeo0ij",
+      "id": "mn5yb466-4qum3ua0j",
       "name": "Spin coating AZ15nXT 4000 rpm",
       "templateId": "2025-08-18T14:27:09.205Zavevifg",
       "data": {
@@ -298,19 +337,19 @@
         "2025-08-18T14:27:09.205Ztc4fy8d": "60"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-q35ujqmnf"
+        "mn5yb466-awzbqudlp"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-i11ogb3y8",
+      "id": "mn5yb467-i77h87i1f",
       "name": "Bake 120 °C 120 s",
       "templateId": "2025-08-18T14:27:09.205Z7selmn3",
       "data": {
@@ -319,19 +358,19 @@
         "2025-08-18T14:27:09.205Zmuuetk6": "120"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-q35ujqmnf"
+        "mn5yb466-awzbqudlp"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-v67of4xts",
+      "id": "mn5yb467-htv4t0y99",
       "name": "Exposure 120mW 50%",
       "templateId": "mk8ueoq8-i362m1e4d",
       "data": {
@@ -340,19 +379,19 @@
         "2026-01-10T21:54:49.016Z0.12472844103155944": "50%"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-q35ujqmnf"
+        "mn5yb466-awzbqudlp"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-z90wbrgbw",
+      "id": "mn5yb467-z2td39hbe",
       "name": "Bake 120 °C 120 s",
       "templateId": "2025-08-18T14:27:09.205Z7selmn3",
       "data": {
@@ -361,59 +400,60 @@
         "2025-08-18T14:27:09.205Zmuuetk6": "120"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-q35ujqmnf"
+        "mn5yb466-awzbqudlp"
       ],
       "order": [
         4
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-verxhrnp8",
+      "id": "mn5yb467-sanz61y43",
       "name": "Development AZ726 60 s",
       "templateId": "2025-08-18T14:27:09.205Z8emtt96",
       "data": {
         "2025-08-18T14:27:09.205Z19elh19": "Development",
         "2025-08-18T14:27:09.205Zioyu81t": "AZ726",
-        "2025-08-18T14:27:09.205Zy44o4qe": "60"
+        "2025-08-18T14:27:09.205Zy44o4qe": "60",
+        "2026-02-28T08:13:31.721Z0.4679334447442006": "s"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-q35ujqmnf"
+        "mn5yb466-awzbqudlp"
       ],
       "order": [
         5
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-3u2j3ultr",
+      "id": "mn5yb467-3ld8k3avu",
       "name": "Microscopy",
       "templateId": "2025-08-18T14:27:09.205Zql33x9g",
       "data": {
         "2025-08-18T14:27:09.205Zp9brlh4": "Microscopy"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-6uu5ayfzh",
+      "id": "mn5yb467-r46qep2dj",
       "name": "CD",
       "templateId": "2026-01-09T15:08:30.384Z",
       "data": {
@@ -435,19 +475,19 @@
         "2026-01-09T15:06:59.229Z0.6918932477200717": "CD"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-3u2j3ultr"
+        "mn5yb467-3ld8k3avu"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-a27nrhvod",
+      "id": "mn5yb467-73bzpvuhi",
       "name": "NiFe Etch",
       "templateId": "mk83hdgv-arjcokuu2",
       "data": {
@@ -455,19 +495,19 @@
         "2025-08-18T14:27:09.205Zwj4znau": "NiFe"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         4
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-5kw3jn6r0",
+      "id": "mn5yb467-ln86hjvja",
       "name": "IBE (200V, 100mA, 30°) 10min",
       "templateId": "2026-01-09T15:57:17.841Z",
       "data": {
@@ -477,60 +517,61 @@
         "2026-01-09T15:56:06.999Z0.6126820687427298": "10"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-a27nrhvod"
+        "mn5yb467-73bzpvuhi"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-ejl4qf8x8",
-      "name": "Resist removal AZ Kwik Strip 7200 s 70 °C",
+      "id": "mn5yb467-gx7o47unh",
+      "name": "Resist removal AZ Kwik Strip 2 h 70 °C",
       "templateId": "2025-08-18T14:27:09.205Z8emtt96",
       "data": {
         "2025-08-18T14:27:09.205Z19elh19": "Resist removal",
         "2025-08-18T14:27:09.205Zioyu81t": "AZ Kwik Strip",
-        "2025-08-18T14:27:09.205Zy44o4qe": "7200",
-        "2025-08-18T14:27:09.205Zs41rq2c": "70"
+        "2025-08-18T14:27:09.205Zy44o4qe": "2",
+        "2025-08-18T14:27:09.205Zs41rq2c": "70",
+        "2026-02-28T08:13:31.721Z0.4679334447442006": "h"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         5
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-uj1es1oij",
+      "id": "mn5yb467-y0cif9cac",
       "name": "Optical Lithography",
       "templateId": "2026-01-09T12:05:51.359Z",
       "data": {
         "2026-01-09T14:40:21.052Z0.30118703822926485": "Optical"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         6
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-cq6phoq6i",
+      "id": "mn5yb467-d7d2o99bk",
       "name": "Spin coating AZ5214E 4000 rpm",
       "templateId": "2025-08-18T14:27:09.205Zavevifg",
       "data": {
@@ -540,19 +581,19 @@
         "2025-08-18T14:27:09.205Ztc4fy8d": "60"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-uj1es1oij"
+        "mn5yb467-y0cif9cac"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-3s4d69ehp",
+      "id": "mn5yb467-7cfbrwe9k",
       "name": "Bake 90 °C 110 s",
       "templateId": "2025-08-18T14:27:09.205Z7selmn3",
       "data": {
@@ -561,19 +602,19 @@
         "2025-08-18T14:27:09.205Zmuuetk6": "110"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-uj1es1oij"
+        "mn5yb467-y0cif9cac"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-zj4zv2zri",
+      "id": "mn5yb467-v53kk8bf5",
       "name": "Exposure 260mJ/cm^2",
       "templateId": "2026-01-09T15:45:54.280Z",
       "data": {
@@ -581,40 +622,41 @@
         "2026-01-09T15:44:48.327Z0.7312514064177615": "-2"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-uj1es1oij"
+        "mn5yb467-y0cif9cac"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpf-tqk0um8t2",
+      "id": "mn5yb467-iglr1xceh",
       "name": "Development AZ726 60 s",
       "templateId": "2025-08-18T14:27:09.205Z8emtt96",
       "data": {
         "2025-08-18T14:27:09.205Z19elh19": "Development",
         "2025-08-18T14:27:09.205Zioyu81t": "AZ726",
-        "2025-08-18T14:27:09.205Zy44o4qe": "60"
+        "2025-08-18T14:27:09.205Zy44o4qe": "60",
+        "2026-02-28T08:13:31.721Z0.4679334447442006": "s"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-uj1es1oij"
+        "mn5yb467-y0cif9cac"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-icjrwzlq2",
+      "id": "mn5yb467-0aj52e81t",
       "name": "Cr/Au Deposition",
       "templateId": "2026-01-09T14:22:29.950Z",
       "data": {
@@ -622,19 +664,19 @@
         "2025-08-18T14:27:09.205Zwj4znau": "Cr/Au"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         7
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-mc105mx9q",
+      "id": "mn5yb467-7s03xvq73",
       "name": "Thermal Evaporation",
       "templateId": "2025-08-18T14:27:09.205Zt08pzxx",
       "data": {
@@ -653,41 +695,42 @@
         ]
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-icjrwzlq2"
+        "mn5yb467-0aj52e81t"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-zhy592exc",
-      "name": "Resist removal AZ Kwik Strip 7200 s 70 °C",
+      "id": "mn5yb467-7g43pjodf",
+      "name": "Resist removal AZ Kwik Strip 2 h 70 °C",
       "templateId": "2025-08-18T14:27:09.205Z8emtt96",
       "data": {
         "2025-08-18T14:27:09.205Z19elh19": "Resist removal",
         "2025-08-18T14:27:09.205Zioyu81t": "AZ Kwik Strip",
-        "2025-08-18T14:27:09.205Zy44o4qe": "7200",
-        "2025-08-18T14:27:09.205Zs41rq2c": "70"
+        "2025-08-18T14:27:09.205Zy44o4qe": "2",
+        "2025-08-18T14:27:09.205Zs41rq2c": "70",
+        "2026-02-28T08:13:31.721Z0.4679334447442006": "h"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         8
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-1n1b79mug",
+      "id": "mn5yb467-d90b8ceup",
       "name": "Sonication 75 % 20 min 20 °C",
       "templateId": "2025-08-18T14:27:09.205Z0h39mc8",
       "data": {
@@ -696,38 +739,38 @@
         "2025-08-18T14:27:09.205Zk247b04": "20"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-zhy592exc"
+        "mn5yb467-7g43pjodf"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-vkjedql0s",
+      "id": "mn5yb467-s186507we",
       "name": "Automatic Dicing",
       "templateId": "mk840ej4-0jxd5oo1z",
       "data": {
         "2026-01-10T09:34:01.489Z0.9020625561347209": "Automatic"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-4l5guctsp"
+        "mn5yb466-dypsay92f"
       ],
       "order": [
         9
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-anv9fh6dm",
+      "id": "mn5yb467-t7n3alev4",
       "name": "S1",
       "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
       "data": {
@@ -737,21 +780,21 @@
         "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
       },
       "isStarred": true,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-vkjedql0s",
-        "ml6zpdpg-d62oo1wir"
+        "mn5yb467-s186507we",
+        "mn5yb467-396d6jc5l"
       ],
       "order": [
         0,
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-u1fljc490",
+      "id": "mn5yb467-ysrpeamdt",
       "name": "Electrical characterization",
       "templateId": "2025-08-18T14:27:09.205Zql33x9g",
       "data": {
@@ -759,19 +802,19 @@
         "2025-08-18T14:27:09.205Zp9brlh4": "Electrical characterization"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-anv9fh6dm"
+        "mn5yb467-t7n3alev4"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-4u489530b",
+      "id": "mn5yb467-1pdn53pmj",
       "name": "AMR 4.5 %",
       "templateId": "2025-08-18T14:27:09.205Zspy61an",
       "data": {
@@ -780,19 +823,19 @@
         "2025-08-18T14:27:09.205Zqiblx0r": "%"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-u1fljc490"
+        "mn5yb467-ysrpeamdt"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-o89i6i5vh",
+      "id": "mn5yb467-unu7kc4ss",
       "name": "S2",
       "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
       "data": {
@@ -802,19 +845,19 @@
         "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-vkjedql0s"
+        "mn5yb467-s186507we"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-qc0q43wcb",
+      "id": "mn5yb467-pyxtuqn2o",
       "name": "S3",
       "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
       "data": {
@@ -824,19 +867,19 @@
         "2025-08-18T14:27:09.205Zdf8re2o": "Silicon 100"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-vkjedql0s"
+        "mn5yb467-s186507we"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-959qacb2u",
+      "id": "mn5yb467-3p6nx5ej5",
       "name": "Sample2",
       "templateId": "2025-08-18T14:27:09.205Zbm4wrn4",
       "data": {
@@ -846,19 +889,19 @@
         "2025-08-18T14:27:09.205Zulhvcmq": "Sample2"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpf-9bsjh0g3z"
+        "mn5yb466-ibdgbuzos"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-qf1mvuyvx",
+      "id": "mn5yb467-x1u4bqyxj",
       "name": "Resistivity",
       "templateId": "2025-08-18T14:27:09.205Zql33x9g",
       "data": {
@@ -866,19 +909,180 @@
         "2025-08-18T14:27:09.205Zp9brlh4": "Resistivity"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-959qacb2u"
+        "mn5yb467-3p6nx5ej5"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-eao7j5r70",
+      "id": "mn5yb467-vvwi44afc",
+      "name": "Resistivity",
+      "templateId": "mmj9gtjf-p7h1miho9",
+      "data": {
+        "2026-01-09T15:06:59.229Z0.6918932477200717": "Resistivity",
+        "2026-03-09T14:13:28.778Z0.0721128825181212": [
+          [
+            {
+              "value": "Point"
+            },
+            {
+              "value": "Rs (Ohm/sq)"
+            },
+            {
+              "value": "Thickness (nm)"
+            },
+            {
+              "value": "Resistivity (1e-6 Ohm*m)"
+            }
+          ],
+          [
+            {
+              "value": "0"
+            },
+            {
+              "value": "12.81"
+            },
+            {
+              "value": "89.8"
+            },
+            {
+              "value": "=B2*C2/1000"
+            }
+          ],
+          [
+            {
+              "value": "1"
+            },
+            {
+              "value": "12.45"
+            },
+            {
+              "value": "88.6"
+            },
+            {
+              "value": "=B3*C3/1000"
+            }
+          ],
+          [
+            {
+              "value": "2"
+            },
+            {
+              "value": "12.17"
+            },
+            {
+              "value": "89.3"
+            },
+            {
+              "value": "=B4*C4/1000"
+            }
+          ],
+          [
+            {
+              "value": "3"
+            },
+            {
+              "value": "11.52"
+            },
+            {
+              "value": "90.2"
+            },
+            {
+              "value": "=B5*C5/1000"
+            }
+          ],
+          [
+            {
+              "value": "4"
+            },
+            {
+              "value": "11.89"
+            },
+            {
+              "value": "91"
+            },
+            {
+              "value": "=B6*C6/1000"
+            }
+          ],
+          [
+            {
+              "value": ""
+            },
+            {
+              "value": ""
+            },
+            {
+              "value": ""
+            },
+            {
+              "value": ""
+            }
+          ],
+          [
+            {
+              "value": "Average"
+            },
+            {
+              "value": "=AVERAGE(B2:B6)"
+            },
+            {
+              "value": "=AVERAGE(C2:C6)"
+            },
+            {
+              "value": "=AVERAGE(D2:D6)"
+            }
+          ],
+          [
+            {
+              "value": "SD"
+            },
+            {
+              "value": "=STDEV(B1:B6)"
+            },
+            {
+              "value": "=STDEV(C1:C6)"
+            },
+            {
+              "value": "=STDEV(D1:D6)"
+            }
+          ],
+          [
+            {
+              "value": "relative error (%)"
+            },
+            {
+              "value": "=ROUND(B9/B8*100,2)"
+            },
+            {
+              "value": "=ROUND(C9/C8*100,2)"
+            },
+            {
+              "value": "=ROUND(D9/D8*100,2)"
+            }
+          ]
+        ]
+      },
+      "isStarred": false,
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
+      "parentIds": [
+        "mn5yb467-x1u4bqyxj"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
+    },
+    {
+      "id": "mn5yb467-h0n2m9web",
       "name": "Sheet resistance",
       "templateId": "mk81yf86-6m9saygqd",
       "data": {
@@ -890,8 +1094,16 @@
               "y": "12.81"
             },
             {
+              "x": "1",
+              "y": "12.45"
+            },
+            {
               "x": "2",
               "y": "12.17"
+            },
+            {
+              "x": "3",
+              "y": "11.52"
             },
             {
               "x": "4",
@@ -899,39 +1111,44 @@
             }
           ],
           "xAxisLabel": "Distance from center (cm)",
-          "yAxisLabel": "Rs (Ohm/sq)"
+          "yAxisLabel": "Rs (Ohm/sq)",
+          "showAverage": true,
+          "showStdDev": true,
+          "showRelativeError": true,
+          "showLinearRegression": false
         }
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [
-        "ml6zpdpg-qf1mvuyvx"
+        "mn5yb467-vvwi44afc"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
-      "id": "ml6zpdpg-d62oo1wir",
+      "id": "mn5yb467-396d6jc5l",
       "name": "Sample tray",
       "templateId": "2025-08-18T14:27:09.205Z2uet3xb",
       "data": {
         "2025-08-18T14:27:09.205Zcbx5ubp": "Sample tray"
       },
       "isStarred": false,
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
       "parentIds": [],
       "order": [
         2
       ],
-      "createdAt": "2026-02-03T19:26:45.473Z",
-      "updatedAt": "2026-02-03T19:26:45.473Z"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     },
     {
+      "id": "mn5yb467-ngoivfp3l",
       "name": "Available diced samples",
       "templateId": "ml6zto5a-jnnowv02j",
       "data": {
@@ -957,15 +1174,15 @@
           }
         ]
       },
-      "userId": "68c030420282933a22bb31ff",
-      "treeId": "69824bf583b39e209b17230f",
-      "parentIds": [
-        "root"
-      ],
+      "isStarred": false,
+      "userId": "68a9fb395a866b17c663d971",
+      "treeId": "69c3c4b8b55406a8e4c60a1e",
+      "parentIds": [],
       "order": [
         3
       ],
-      "id": "ml6zx4ca-71evdzd9l"
+      "createdAt": "2026-03-25T11:19:20.458Z",
+      "updatedAt": "2026-03-25T11:19:20.458Z"
     }
   ],
   "templates": [
@@ -994,8 +1211,6 @@
       "name": "Note",
       "icon": "NotebookPen",
       "color": "#2FBF9A",
-      "nameTemplate": "{Note}",
-      "bodyTemplate": "{Long text}",
       "fields": [
         {
           "id": "2025-08-18T14:27:09.205Zk07y9yo",
@@ -1024,7 +1239,8 @@
         {
           "id": "2026-02-03T19:29:10.689Z0.5972357575257925",
           "name": "Tasks",
-          "type": "checklist"
+          "type": "checklist",
+          "options": []
         },
         {
           "id": "2025-08-18T14:27:09.205Zfhhl510",
@@ -1039,6 +1255,8 @@
           "options": []
         }
       ],
+      "nameTemplate": "{Note}",
+      "bodyTemplate": "{Long text}",
       "conditionalRules": [
         {
           "id": "2025-08-18T14:27:09.205Zxr25bub",
@@ -1267,7 +1485,8 @@
       "preferredChildTemplates": [
         "2025-08-18T14:27:09.205Zspy61an",
         "mk81yf86-6m9saygqd",
-        "2026-01-09T15:08:30.384Z"
+        "2026-01-09T15:08:30.384Z",
+        "mmj9gtjf-p7h1miho9"
       ]
     },
     {
@@ -1557,9 +1776,19 @@
         {
           "id": "2025-08-18T14:27:09.205Zy44o4qe",
           "name": "Time",
-          "type": "text",
+          "type": "number",
           "options": [],
-          "postfix": " s"
+          "postfix": ""
+        },
+        {
+          "id": "2026-02-28T08:13:31.721Z0.4679334447442006",
+          "name": "Time unit",
+          "type": "dropdown",
+          "options": [
+            "s",
+            "m",
+            "h"
+          ]
         },
         {
           "id": "2025-08-18T14:27:09.205Zs41rq2c",
@@ -1569,7 +1798,7 @@
           "postfix": " °C"
         }
       ],
-      "nameTemplate": "{Type} {Chemical} {Time} {Temperature}",
+      "nameTemplate": "{Type} {Chemical} {Time} {Time unit} {Temperature}",
       "bodyTemplate": "",
       "conditionalRules": [
         {
@@ -1680,6 +1909,30 @@
           "type": "table-header",
           "options": [],
           "columnType": "text"
+        }
+      ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "mmj9gtjf-p7h1miho9",
+      "name": "Spreadsheet",
+      "icon": "FileSpreadsheet",
+      "color": "#1496C9",
+      "fields": [
+        {
+          "id": "2026-01-09T15:06:59.229Z0.6918932477200717",
+          "name": "Name",
+          "type": "text",
+          "options": []
+        },
+        {
+          "id": "2026-03-09T14:13:28.778Z0.0721128825181212",
+          "name": " ",
+          "type": "spreadsheet",
+          "options": []
         }
       ],
       "nameTemplate": "{Name}",
@@ -2063,27 +2316,30 @@
       "name": "Query",
       "icon": "SearchCode",
       "color": "#2b956a",
-      "nameTemplate": "{Name}",
-      "bodyTemplate": "",
       "fields": [
         {
           "id": "2026-02-03T19:29:44.601Z0.8059504708435051",
           "name": "Name",
-          "type": "text"
+          "type": "text",
+          "options": []
         },
         {
           "id": "2026-02-03T19:29:55.409Z0.29815905701436307",
           "name": "Matching nodes:",
-          "type": "query"
+          "type": "query",
+          "options": []
         }
       ],
-      "conditionalRules": []
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
     }
   ],
   "rootNodeIds": [
-    "ml6zpdpf-n2rxy35dm",
-    "ml6zpdpf-9bsjh0g3z",
-    "ml6zpdpg-d62oo1wir",
-    "ml6zx4ca-71evdzd9l"
+    "mn5yb466-d6ut5wjtr",
+    "mn5yb466-ibdgbuzos",
+    "mn5yb467-396d6jc5l",
+    "mn5yb467-ngoivfp3l"
   ]
 }
