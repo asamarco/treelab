@@ -6,8 +6,8 @@
  * These models are used by the data-service to interact with the MongoDB database,
  * providing a structured way to create, read, update, and delete data.
  */
-import mongoose, { Schema, Document, models, model } from 'mongoose';
-import { TreeFile, User, GlobalSettings, TreeNode, Template } from './types';
+import mongoose, { Schema, model, models, Model } from 'mongoose';
+import { TreeFile, User, GlobalSettings, TreeNode } from './types';
 import crypto from 'crypto';
 
 // --- Field and Template Schemas (embedded in TreeFile) ---
@@ -20,6 +20,8 @@ const FieldSchema = new Schema({
   height: Number,
   prefix: String,
   postfix: String,
+  spreadsheetRowCount: Number,
+  spreadsheetColumnCount: Number,
 }, { _id: false });
 
 const ConditionalRuleSchema = new Schema({
@@ -78,8 +80,8 @@ TreeFileSchema.pre('save', function (next) {
   next();
 });
 
-export const TreeModel = models.TreeFile || model<Omit<TreeFile, 'tree'>>('TreeFile', TreeFileSchema);
-
+export const TreeModel = (models.TreeFile as Model<Omit<TreeFile, 'tree'>>) ||
+  model<Omit<TreeFile, 'tree'>>('TreeFile', TreeFileSchema);
 
 // --- TreeNode Schema and Model (Parent-Reference structure) ---
 const TreeNodeSchema = new Schema<Omit<TreeNode, 'children'>>({
@@ -106,8 +108,8 @@ TreeNodeSchema.virtual('id').get(function () {
   return this._id;
 });
 
-export const TreeNodeModel = models.TreeNode || model<Omit<TreeNode, 'children'>>('TreeNode', TreeNodeSchema);
-
+export const TreeNodeModel = (models.TreeNode as Model<Omit<TreeNode, 'children'>>) ||
+  model<Omit<TreeNode, 'children'>>('TreeNode', TreeNodeSchema);
 
 // --- User Schema and Model ---
 const GitSettingsSchema = new Schema({
@@ -133,7 +135,8 @@ UserSchema.pre('save', function (next) {
   next();
 });
 
-export const UserModel = models.User || model<User>('User', UserSchema);
+export const UserModel = (models.User as Model<User>) ||
+  model<User>('User', UserSchema);
 
 // --- GlobalSettings Schema and Model ---
 const GlobalSettingsSchema = new Schema<GlobalSettings>({
@@ -142,4 +145,5 @@ const GlobalSettingsSchema = new Schema<GlobalSettings>({
   updatedAt: { type: String, default: () => new Date().toISOString() },
 });
 
-export const GlobalSettingsModel = models.GlobalSettings || model<GlobalSettings>('GlobalSettings', GlobalSettingsSchema);
+export const GlobalSettingsModel = (models.GlobalSettings as Model<GlobalSettings>) ||
+  model<GlobalSettings>('GlobalSettings', GlobalSettingsSchema);
