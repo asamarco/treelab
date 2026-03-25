@@ -727,7 +727,7 @@ export function TemplateDesigner({
                                       <FormControl>
                                         <Input
                                           type="number"
-                                          placeholder="Default: 5"
+                                          placeholder="Default: 3"
                                           {...field}
                                           value={field.value || ""}
                                           onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
@@ -746,7 +746,7 @@ export function TemplateDesigner({
                                       <FormControl>
                                         <Input
                                           type="number"
-                                          placeholder="Default: 5"
+                                          placeholder="Default: 3"
                                           {...field}
                                           value={field.value || ""}
                                           onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}

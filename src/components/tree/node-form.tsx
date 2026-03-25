@@ -948,8 +948,8 @@ export const NodeForm = ({
                 break;
               }
               case 'spreadsheet': {
-                const targetRows = field.spreadsheetRowCount || 5;
-                const targetCols = field.spreadsheetColumnCount || 5;
+                const targetRows = field.spreadsheetRowCount || 3;
+                const targetCols = field.spreadsheetColumnCount || 3;
                 const existingData: { value: string }[][] = formData[field.id] || [];
 
                 // Pad or truncate to the exact dimensions specified by the template initially

@@ -26,8 +26,8 @@ export function TreeSpreadsheetField({
     // Convert database format [{ value: string }][] to flat array string[][]
     const initialData = useMemo(() => {
         const data: { value: string }[][] = value || [[{ value: '' }]];
-        const targetRows = field.spreadsheetRowCount || 5;
-        const targetCols = field.spreadsheetColumnCount || 5;
+        const targetRows = field.spreadsheetRowCount || 3;
+        const targetCols = field.spreadsheetColumnCount || 3;
 
         const maxRows = Math.max(data.length, targetRows);
         const maxCols = Math.max(data[0]?.length || 0, targetCols);
@@ -55,8 +55,8 @@ export function TreeSpreadsheetField({
     }, [node.id, node.data, field.id, readOnly, updateNode]);
 
     const minDimensions = useMemo<[number, number]>(() => [
-        field.spreadsheetColumnCount || 5,
-        field.spreadsheetRowCount || 5
+        field.spreadsheetColumnCount || 3,
+        field.spreadsheetRowCount || 3
     ], [field.spreadsheetColumnCount, field.spreadsheetRowCount]);
 
     return (
