@@ -1068,104 +1068,120 @@ export async function commitTreeFileToRepo(
     const octokit = new Octokit({ auth: token });
     const { repoOwner, repoName, branch } = treeFile.gitSync;
 
-    const { data: branchData } = await octokit.rest.repos.getBranch({
-        owner: repoOwner,
-        repo: repoName,
-        branch,
-    });
-    const latestCommitSha = branchData.commit.sha;
+    try {
+        const { data: branchData } = await octokit.rest.repos.getBranch({
+            owner: repoOwner,
+            repo: repoName,
+            branch,
+        });
+        const latestCommitSha = branchData.commit.sha;
 
-    const allNodesMap = new Map<string, TreeNode>();
-    const buildNodeMap = (nodes: TreeNode[]) => {
-        for (const node of nodes) {
-            allNodesMap.set(node.id, node);
-            if (node.children) buildNodeMap(node.children);
-        }
-    };
-    buildNodeMap(treeFile.tree);
-
-    const treePayload: { path: string; mode: '100644'; type: 'blob'; content: string }[] = [];
-
-    const treeJsonData = generateJsonForExport(treeFile.title, treeFile.tree, treeFile.templates);
-
-    treePayload.push({
-        path: 'tree.json',
-        mode: '100644',
-        type: 'blob',
-        content: JSON.stringify(treeJsonData, null, 2),
-    });
-
-    const traverseAndCreateTree = (nodes: TreeNode[], currentPath: string) => {
-        for (const node of nodes) {
-            const template = treeFile.templates.find((t) => t.id === node.templateId);
-            if (!template) continue;
-
-            const nodePath = path.join(currentPath, sanitizeName(node.name)).replace(/\\/g, '/');
-            const bodyContent = generateNodeName(template, node.data, template.bodyTemplate);
-
-            treePayload.push({
-                path: `${nodePath}.md`,
-                mode: '100644',
-                type: 'blob',
-                content: bodyContent,
-            });
-
-            if (node.children && node.children.length > 0) {
-                traverseAndCreateTree(node.children, nodePath);
+        const allNodesMap = new Map<string, TreeNode>();
+        const buildNodeMap = (nodes: TreeNode[]) => {
+            for (const node of nodes) {
+                allNodesMap.set(node.id, node);
+                if (node.children) buildNodeMap(node.children);
             }
-        }
-    };
-    traverseAndCreateTree(treeFile.tree, "");
+        };
+        buildNodeMap(treeFile.tree);
 
-    const { data: newTree } = await octokit.rest.git.createTree({
-        owner: repoOwner,
-        repo: repoName,
-        tree: treePayload,
-        base_tree: branchData.commit.commit.tree.sha,
-    });
+        const treePayload: { path: string; mode: '100644'; type: 'blob'; content: string }[] = [];
 
-    const { data: newCommit } = await octokit.rest.git.createCommit({
-        owner: repoOwner,
-        repo: repoName,
-        message,
-        tree: newTree.sha,
-        parents: [latestCommitSha],
-    });
+        const treeJsonData = generateJsonForExport(treeFile.title, treeFile.tree, treeFile.templates);
 
-    await octokit.rest.git.updateRef({
-        owner: repoOwner,
-        repo: repoName,
-        ref: `heads/${branch}`,
-        sha: newCommit.sha,
-    });
+        treePayload.push({
+            path: 'tree.json',
+            mode: '100644',
+            type: 'blob',
+            content: JSON.stringify(treeJsonData, null, 2),
+        });
 
-    return { success: true, commitSha: newCommit.sha };
+        const traverseAndCreateTree = (nodes: TreeNode[], currentPath: string) => {
+            for (const node of nodes) {
+                const template = treeFile.templates.find((t) => t.id === node.templateId);
+                if (!template) continue;
+
+                const nodePath = path.join(currentPath, sanitizeName(node.name)).replace(/\\/g, '/');
+                const bodyContent = generateNodeName(template, node.data, template.bodyTemplate);
+
+                treePayload.push({
+                    path: `${nodePath}.md`,
+                    mode: '100644',
+                    type: 'blob',
+                    content: bodyContent,
+                });
+
+                if (node.children && node.children.length > 0) {
+                    traverseAndCreateTree(node.children, nodePath);
+                }
+            }
+        };
+        traverseAndCreateTree(treeFile.tree, "");
+
+        const { data: newTree } = await octokit.rest.git.createTree({
+            owner: repoOwner,
+            repo: repoName,
+            tree: treePayload,
+            base_tree: branchData.commit.commit.tree.sha,
+        });
+
+        const { data: newCommit } = await octokit.rest.git.createCommit({
+            owner: repoOwner,
+            repo: repoName,
+            message,
+            tree: newTree.sha,
+            parents: [latestCommitSha],
+        });
+
+        await octokit.rest.git.updateRef({
+            owner: repoOwner,
+            repo: repoName,
+            ref: `heads/${branch}`,
+            sha: newCommit.sha,
+        });
+
+        return { success: true, commitSha: newCommit.sha };
+    } catch (error: any) {
+        console.error("Failed to commit to GitHub:", error);
+        return { success: false, error: error.message || "An unknown error occurred while committing to GitHub." };
+    }
 }
 
 
-export async function getRepoCommits(token: string, owner: string, repo: string, branch: string): Promise<GitCommit[]> {
+export async function getRepoCommits(token: string, owner: string, repo: string, branch: string): Promise<{ success: true; commits: GitCommit[] } | { success: false; error: string }> {
     const octokit = new Octokit({ auth: token });
-    const { data: commits } = await octokit.rest.repos.listCommits({
-        owner,
-        repo,
-        sha: branch,
-        per_page: 30,
-    });
-    return commits.map(c => ({
-        sha: c.sha,
-        message: c.commit.message,
-        author: c.commit.author?.name || 'Unknown',
-        date: c.commit.author?.date || new Date().toISOString(),
-    }));
+    try {
+        const { data: commits } = await octokit.rest.repos.listCommits({
+            owner,
+            repo,
+            sha: branch,
+            per_page: 30,
+        });
+        const mappedCommits = commits.map(c => ({
+            sha: c.sha,
+            message: c.commit.message,
+            author: c.commit.author?.name || 'Unknown',
+            date: c.commit.author?.date || new Date().toISOString(),
+        }));
+        return { success: true, commits: mappedCommits };
+    } catch (error: any) {
+        console.error("Failed to fetch repository commits:", error);
+        return { success: false, error: error.message || "Failed to fetch repository commits." };
+    }
 }
 
-export async function getLatestCommitSha(token: string, owner: string, repo: string, branch: string): Promise<string> {
+export async function getLatestCommitSha(token: string, owner: string, repo: string, branch: string): Promise<{ success: true; sha: string } | { success: false; error: string }> {
     const octokit = new Octokit({ auth: token });
-    const { data: branchData } = await octokit.rest.repos.getBranch({ owner, repo, branch });
-    return branchData.commit.sha;
+    try {
+        const { data: branchData } = await octokit.rest.repos.getBranch({ owner, repo, branch });
+        return { success: true, sha: branchData.commit.sha };
+    } catch (error: any) {
+        console.error("Failed to fetch latest commit SHA:", error);
+        return { success: false, error: error.message || "Failed to fetch latest commit SHA." };
+    }
 }
 
-export async function getTreeFromGit(token: string, owner: string, repo: string, sha: string): Promise<Partial<TreeFile>> {
+export async function getTreeFromGit(token: string, owner: string, repo: string, sha: string): Promise<{ success: true; treeData: Partial<TreeFile> } | { success: false; error: string }> {
     const octokit = new Octokit({ auth: token });
 
     try {
@@ -1178,21 +1194,25 @@ export async function getTreeFromGit(token: string, owner: string, repo: string,
 
         if ('content' in content && typeof content.content === 'string') {
             const fileContent = Buffer.from(content.content, 'base64').toString('utf-8');
-            return JSON.parse(fileContent);
+            return { success: true, treeData: JSON.parse(fileContent) };
         } else {
-            throw new Error("'tree.json' is not a file in the repository.");
+            return { success: false, error: "'tree.json' is not a file in the repository." };
         }
-    } catch (error) {
-        if ((error as any).status === 404) {
+    } catch (error: any) {
+        if (error.status === 404) {
             console.warn(`WARN: 'tree.json' not found in commit ${sha}. Returning empty tree.`);
             return {
-                title: "Synced Tree",
-                tree: [],
-                templates: [],
-                expandedNodeIds: [],
+                success: true,
+                treeData: {
+                    title: "Synced Tree",
+                    tree: [],
+                    templates: [],
+                    expandedNodeIds: [],
+                }
             };
         }
-        throw error;
+        console.error("Failed to get tree from git:", error);
+        return { success: false, error: error.message || "Failed to get tree from repository." };
     }
 }
 

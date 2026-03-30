@@ -340,8 +340,11 @@ export function TreePage() {
     setIsCheckingSync(true);
     try {
       const { repoOwner, repoName, branch } = activeTree.gitSync;
-      const latestSha = await getLatestCommitSha(currentUser.gitSettings.githubPat, repoOwner, repoName, branch);
-      setRemoteSha(latestSha);
+      const latestShaResult = await getLatestCommitSha(currentUser.gitSettings.githubPat, repoOwner, repoName, branch);
+      if (!latestShaResult.success) {
+          throw new Error(latestShaResult.error);
+      }
+      setRemoteSha(latestShaResult.sha);
       setIsTokenInvalid(false);
     } catch (error) {
       console.error("Failed to check sync status:", error);

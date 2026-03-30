@@ -90,8 +90,11 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
         }
 
         if (!force) {
-            const latestSha = await getLatestCommitSha(token, treeFile.gitSync.repoOwner, treeFile.gitSync.repoName, treeFile.gitSync.branch);
-            if (latestSha !== treeFile.gitSync.lastSyncSha) {
+            const latestShaResult = await getLatestCommitSha(token, treeFile.gitSync.repoOwner, treeFile.gitSync.repoName, treeFile.gitSync.branch);
+            if (!latestShaResult.success) {
+                return { success: false, error: latestShaResult.error };
+            }
+            if (latestShaResult.sha !== treeFile.gitSync.lastSyncSha) {
                 return { success: false, error: 'out-of-sync' };
             }
         }
@@ -125,7 +128,11 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
         }
         const { repoOwner, repoName, branch } = treeFile.gitSync;
         console.log(`INFO: Fetching commit history for ${repoOwner}/${repoName}.`);
-        return getRepoCommits(token, repoOwner, repoName, branch);
+        const result = await getRepoCommits(token, repoOwner, repoName, branch);
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+        return result.commits;
     };
 
     const syncFromRepo = useCallback(async (treeFile: TreeFile, token: string): Promise<{ success: boolean; message: string; }> => {
@@ -135,14 +142,22 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
         const { repoOwner, repoName, branch, lastSyncSha } = treeFile.gitSync;
         console.log(`INFO: Syncing tree '${treeFile.title}' from remote.`);
         try {
-            const latestSha = await getLatestCommitSha(token, repoOwner, repoName, branch);
+            const latestShaResult = await getLatestCommitSha(token, repoOwner, repoName, branch);
+            if (!latestShaResult.success) {
+                throw new Error(latestShaResult.error);
+            }
+            const latestSha = latestShaResult.sha;
 
             if (latestSha === lastSyncSha) {
                 console.log(`INFO: Tree is already up-to-date with remote.`);
                 return { success: true, message: "Already up-to-date." };
             }
 
-            const remoteTreeData = await getTreeFromGit(token, repoOwner, repoName, latestSha);
+            const remoteTreeDataResult = await getTreeFromGit(token, repoOwner, repoName, latestSha);
+            if (!remoteTreeDataResult.success) {
+                throw new Error(remoteTreeDataResult.error);
+            }
+            const remoteTreeData = remoteTreeDataResult.treeData;
             
             const newTreeId = await importTreeFromJson(remoteTreeData);
             if (!newTreeId) {
@@ -180,14 +195,22 @@ export function useGitSync({ currentUser, allTrees, performAction, importTreeFro
 
         console.log(`INFO: Restoring tree '${treeFile.title}' to commit ${commitSha}`);
         
-        const remoteTreeData = await getTreeFromGit(token, repoOwner, repoName, commitSha);
+        const remoteTreeDataResult = await getTreeFromGit(token, repoOwner, repoName, commitSha);
+        if (!remoteTreeDataResult.success) {
+            throw new Error(remoteTreeDataResult.error);
+        }
+        const remoteTreeData = remoteTreeDataResult.treeData;
         
         const newTreeId = await importTreeFromJson(remoteTreeData);
         if (!newTreeId) {
             throw new Error("Failed to import restored data as a new tree.");
         }
         
-        const commitDetails = (await getRepoCommits(token, repoOwner, repoName, treeFile.gitSync.branch)).find(c => c.sha === commitSha);
+        const commitsResult = await getRepoCommits(token, repoOwner, repoName, treeFile.gitSync.branch);
+        if (!commitsResult.success) {
+            throw new Error(commitsResult.error);
+        }
+        const commitDetails = commitsResult.commits.find(c => c.sha === commitSha);
         const metaToKeep = {
             title: treeFile.title,
             sharedWith: treeFile.sharedWith,
