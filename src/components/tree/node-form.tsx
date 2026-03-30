@@ -959,7 +959,9 @@ export const NodeForm = ({
 
                 renderedContent = (
                   <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">Spreadsheet data can be edited interactively directly from the tree view. Here you can adjust its dimensions.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Spreadsheet data can be edited directly from the tree view. Here you can adjust its dimensions. Formula reference can be found <a href="https://jspreadsheet.com/docs/formulas/functions" target="_blank" rel="noopener noreferrer" className="underline">here</a>.
+                    </p>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Number of Rows</Label>
