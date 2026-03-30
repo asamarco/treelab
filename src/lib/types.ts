@@ -198,6 +198,7 @@ export interface User {
     inactivityTimeoutMinutes?: number;
     gitSettings?: GitSettings;
     showChildrenInEditForm?: boolean;
+    twoPanelExpansionDepth?: number;
     rememberMe?: boolean;
 }
 

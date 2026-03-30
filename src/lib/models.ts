@@ -126,6 +126,7 @@ const UserSchema = new Schema<User>({
   theme: String,
   dateFormat: String,
   inactivityTimeoutMinutes: { type: Number, default: 15 },
+  twoPanelExpansionDepth: { type: Number, default: 1 },
   gitSettings: GitSettingsSchema,
 });
 UserSchema.pre('save', function (next) {

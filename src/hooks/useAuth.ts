@@ -141,6 +141,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
         dateFormat: currentUser.dateFormat,
         inactivityTimeoutMinutes: currentUser.inactivityTimeoutMinutes,
         showChildrenInEditForm: currentUser.showChildrenInEditForm,
+        twoPanelExpansionDepth: currentUser.twoPanelExpansionDepth,
       });
     }
   }, [isAuthRequired, currentUser]);
@@ -232,6 +233,11 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     if (!isAuthRequired || !currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, showChildrenInEditForm: show } : null);
   };
+  
+  const setTwoPanelExpansionDepth = (depth: number) => {
+    if (!isAuthRequired || !currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, twoPanelExpansionDepth: depth } : null);
+  };
 
   const setGlobalSettingsState = async (settings: GlobalSettings) => {
     await saveGlobalSettings(settings);
@@ -269,5 +275,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setGitSettings,
     setLastActiveTreeId,
     setShowChildrenInEditForm,
+    setTwoPanelExpansionDepth,
   };
 }

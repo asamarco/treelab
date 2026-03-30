@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Shield, ShieldOff, UserRoundPlus, KeyRound, DatabaseZap, Github, Upload, Image } from "lucide-react";
 import { User, StorageInfo } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -86,6 +87,7 @@ function SettingsPage() {
     setGitSettings,
     setDateFormat,
     setInactivityTimeout,
+    setTwoPanelExpansionDepth,
   } = useAuthContext();
   
   const { analyzeStorage, purgeStorage } = useTreeContext();
@@ -397,6 +399,38 @@ function SettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base">Two-Panel Auto-Expansion Depth</Label>
+                    <span className="text-sm font-medium bg-secondary px-2.5 py-0.5 rounded-full">
+                      {currentUser?.twoPanelExpansionDepth ?? 1}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Determines how many levels of descendants are automatically expanded when selecting a node in two-panel view.
+                  </p>
+                  <div className="pt-2 pb-6 px-1">
+                    <Slider
+                      value={[currentUser?.twoPanelExpansionDepth ?? 1]}
+                      min={0}
+                      max={5}
+                      step={1}
+                      onValueChange={(value) => setTwoPanelExpansionDepth(value[0])}
+                    />
+                    <div className="flex justify-between text-[10px] uppercase tracking-wider font-semibold text-muted-foreground mt-3">
+                      <span>Max Performance (0)</span>
+                      <span>Higher Depth (5)</span>
+                    </div>
+                  </div>
+                  <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 p-3 border border-amber-200 dark:border-amber-900/50">
+                    <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                      <strong>Note:</strong> Higher depths significantly increase the number of nodes rendered at once, which can reduce responsiveness on large subtrees or limited hardware.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

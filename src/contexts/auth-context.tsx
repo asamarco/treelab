@@ -40,6 +40,7 @@ interface AuthContextType {
   setGitSettings: (gitSettings: GitSettings) => Promise<void>;
   setLastActiveTreeId: (treeId: string | null) => void;
   setShowChildrenInEditForm: (show: boolean) => void;
+  setTwoPanelExpansionDepth: (depth: number) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,6 +72,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setDateFormat: setAuthDateFormat,
     setInactivityTimeout: setAuthInactivityTimeout,
     setShowChildrenInEditForm,
+    setTwoPanelExpansionDepth,
   } = useAuthHook({ isAuthRequired, defaultUserId });
 
   const [theme, setThemeState] = useState<Theme>("system");
@@ -123,6 +125,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setGitSettings,
     setLastActiveTreeId,
     setShowChildrenInEditForm,
+    setTwoPanelExpansionDepth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

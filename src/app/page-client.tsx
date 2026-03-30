@@ -466,18 +466,20 @@ export function TreePage() {
   useEffect(() => {
     if (isTwoPanelMode && nodesForDetails.length > 0) {
       const allIds = new Set<string>();
-      const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
+      const expansionDepth = currentUser?.twoPanelExpansionDepth ?? 1;
+      const traverse = (nodesToTraverse: TreeNode[], parentId: string | null, depth: number) => {
         for (const node of nodesToTraverse) {
           allIds.add(`${node.id}_${parentId || 'root'}`);
-          if (node.children) {
-            traverse(node.children, node.id);
+          // Limit auto-expansion depth based on user settings to balance performance
+          if (node.children && depth < expansionDepth) {
+            traverse(node.children, node.id, depth + 1);
           }
         }
       };
-      traverse(nodesForDetails, null);
+      traverse(nodesForDetails, null, 0);
       setDetailsExpandedNodeIds(Array.from(allIds));
     }
-  }, [isTwoPanelMode, nodesForDetails]);
+  }, [isTwoPanelMode, nodesForDetails, currentUser?.twoPanelExpansionDepth]);
 
   const renderMainContent = () => {
     if (isLoading) {
