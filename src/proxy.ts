@@ -38,6 +38,7 @@ export function proxy(request: NextRequest) {
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
+    `frame-src *`,
     `connect-src 'self' *.cloudworkstations.dev api.github.com`,
   ].join('; ');
 

@@ -947,6 +947,52 @@ export const NodeForm = ({
                 );
                 break;
               }
+              case 'embed': {
+                const handleEmbedChange = (value: string) => {
+                  let finalUrl = value.trim();
+
+                  // Extract URL from iframe snippet if detected
+                  if (finalUrl.toLowerCase().startsWith('<iframe') && finalUrl.includes('src=')) {
+                    const srcMatch = finalUrl.match(/src=["']([^"']+)["']/i);
+                    if (srcMatch && srcMatch[1]) {
+                      finalUrl = srcMatch[1];
+                    }
+                  }
+
+                  // Auto-convert standard YouTube links to embed links to prevent 'X-Frame-Options' blocking
+                  if (finalUrl.includes('youtube.com/watch?v=')) {
+                    try {
+                      const urlObj = new URL(finalUrl);
+                      const videoId = urlObj.searchParams.get('v');
+                      if (videoId) {
+                        finalUrl = `https://www.youtube.com/embed/${videoId}`;
+                      }
+                    } catch (e) {
+                      // fallback if URL parsing fails
+                    }
+                  } else if (finalUrl.includes('youtu.be/')) {
+                    const videoId = finalUrl.split('youtu.be/')[1]?.split('?')[0];
+                    if (videoId) {
+                      finalUrl = `https://www.youtube.com/embed/${videoId}`;
+                    }
+                  }
+                  handleDataChange(field.id, finalUrl);
+                };
+
+                renderedContent = (
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Paste iframe/embed URL (e.g., https://docs.google.com/.../pubhtml?widget=true)" 
+                      value={formData[field.id] || ""} 
+                      onChange={(e) => handleEmbedChange(e.target.value)} 
+                    />
+                    <p className="text-[10px] text-muted-foreground italic mt-1">
+                      Note: Many sites block standard URLs from being embedded. Please ensure you use the site's specifically provided "Embed" or "Publish to Web" URL. Standard YouTube links will be auto-converted.
+                    </p>
+                  </div>
+                );
+                break;
+              }
               case 'spreadsheet': {
                 const targetRows = field.spreadsheetRowCount || 3;
                 const targetCols = field.spreadsheetColumnCount || 3;

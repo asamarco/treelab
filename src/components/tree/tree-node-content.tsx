@@ -16,7 +16,7 @@ import { CardContent } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { RenderWithLinks } from "./render-with-links";
 import { Icon } from "../icon";
-import { Download, Grid, Rows, Crosshair, X } from "lucide-react";
+import { Download, Grid, Rows, Crosshair, X, Maximize2 } from "lucide-react";
 import { TreeNodeComponent } from "./tree-node";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -68,6 +68,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
     const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number, height: number }>>({});
     const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+    const [fullScreenEmbedUrl, setFullScreenEmbedUrl] = useState<string | null>(null);
 
     let tableRendered = false;
 
@@ -630,6 +631,43 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                                             </div>
                                         );
                                     }
+                                    case 'embed': {
+                                        const url = value;
+                                        if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
+                                        const height = field.height ? Number(field.height) : (isCompactView ? 200 : 400);
+                                        return (
+                                            <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <p className={cn("font-medium", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="h-6 w-6 rounded-full" 
+                                                                    onClick={() => setFullScreenEmbedUrl(url)}
+                                                                >
+                                                                    <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent><p>Full screen view</p></TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
+                                                </div>
+                                                <div className="w-full rounded-md border bg-background overflow-hidden relative">
+                                                    <iframe 
+                                                        src={url} 
+                                                        title={field.name}
+                                                        className="w-full border-0 block" 
+                                                        style={{ height: `${height}px` }}
+                                                        allowFullScreen
+                                                        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    }
                                     case 'spreadsheet': {
                                         return (
                                             <TreeSpreadsheetField
@@ -697,6 +735,34 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
                             />
                         )}
                     </div>
+                </DialogContent>
+            </Dialog>
+            
+            {/* Embed Lightbox */}
+            <Dialog open={!!fullScreenEmbedUrl} onOpenChange={(open) => !open && setFullScreenEmbedUrl(null)}>
+                <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden border-none bg-background shadow-2xl">
+                    <DialogHeader className="sr-only">
+                        <DialogTitle>Full Screen Embed</DialogTitle>
+                    </DialogHeader>
+                    <div className="absolute top-2 right-2 z-[60]">
+                        <Button 
+                            variant="secondary" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full shadow-lg bg-background/80 hover:bg-background transition-colors" 
+                            onClick={() => setFullScreenEmbedUrl(null)}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    {fullScreenEmbedUrl && (
+                        <iframe 
+                            src={fullScreenEmbedUrl} 
+                            title="Full Screen View"
+                            className="w-full h-full border-0" 
+                            allowFullScreen
+                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
         </CollapsibleContent>

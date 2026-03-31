@@ -95,7 +95,7 @@ import { MultiSelect } from "../ui/multi-select";
 const fieldSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "Field name is required"),
-  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet"]),
+  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet", "embed"]),
   options: z.array(z.string()).optional(),
   columnType: z.enum(["text", "number", "date"]).optional(),
   height: z.number().optional(),
@@ -636,6 +636,7 @@ export function TemplateDesigner({
                                         <SelectItem value="table-header">Table Header</SelectItem>
                                         <SelectItem value="xy-chart">XY Chart</SelectItem>
                                         <SelectItem value="spreadsheet">Spreadsheet</SelectItem>
+                                        <SelectItem value="embed">Embed (Iframe)</SelectItem>
                                         <SelectItem value="dropdown">
                                           Dropdown
                                         </SelectItem>
@@ -693,14 +694,14 @@ export function TemplateDesigner({
                                 />
                               </div>
                             )}
-                            {form.watch(`fields.${index}.type`) === 'picture' && (
+                            {(form.watch(`fields.${index}.type`) === 'picture' || form.watch(`fields.${index}.type`) === 'embed') && (
                               <div className="mt-4">
                                 <FormField
                                   control={form.control}
                                   name={`fields.${index}.height`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Image Height (px)</FormLabel>
+                                      <FormLabel>{form.watch(`fields.${index}.type`) === 'embed' ? 'Iframe Height (px)' : 'Image Height (px)'}</FormLabel>
                                       <FormControl>
                                         <Input
                                           type="number"
