@@ -271,11 +271,36 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     [activeTree]
   );
 
-  const findNodeAndParent = useCallback((nodeId: string, nodes?: TreeNode[]): { node: TreeNode; parent: TreeNode | null } | null => {
-    const searchNodes = nodes || activeTree?.tree;
-    if (!searchNodes) return null;
+  // O(1) lookup map: nodeId -> { node, parent }
+  // Built once per tree change, eliminates recursive O(N) searches.
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, { node: TreeNode; parent: TreeNode | null }>();
+    if (!activeTree?.tree) return map;
 
-    for (const node of searchNodes) {
+    const buildMap = (nodes: TreeNode[], parent: TreeNode | null) => {
+      for (const node of nodes) {
+        // Only store the first occurrence (closest to root) to match
+        // the original recursive search behavior.
+        if (!map.has(node.id)) {
+          map.set(node.id, { node, parent });
+        }
+        if (node.children) {
+          buildMap(node.children, node);
+        }
+      }
+    };
+    buildMap(activeTree.tree, null);
+    return map;
+  }, [activeTree?.tree]);
+
+  const findNodeAndParent = useCallback((nodeId: string, nodes?: TreeNode[]): { node: TreeNode; parent: TreeNode | null } | null => {
+    // Fast path: O(1) lookup when searching the default tree
+    if (!nodes) {
+      return nodeMap.get(nodeId) ?? null;
+    }
+
+    // Fallback: recursive search for custom subtree overrides
+    for (const node of nodes) {
       if (node.id === nodeId) {
         return { node, parent: null };
       }
@@ -287,7 +312,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       }
     }
     return null;
-  }, [activeTree?.tree]);
+  }, [nodeMap]);
 
   const findNodesByQuery = useCallback((query: QueryDefinition): TreeNode[] => {
     if (!activeTree || !query || !query.targetTemplateId) return [];
@@ -298,7 +323,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     const hasMatchingAncestor = (node: TreeNode, relationTemplateId: string, relationRules: SimpleQueryRule[]): boolean => {
       let current = node;
       while (true) {
-        const parentInfo = findNodeAndParent(current.id, activeTree.tree);
+        // Uses O(1) nodeMap lookup (no nodes argument)
+        const parentInfo = findNodeAndParent(current.id);
         if (!parentInfo || !parentInfo.parent) {
           return false; // Reached root
         }
@@ -333,19 +359,9 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     };
 
     const results: TreeNode[] = [];
-    const allNodes: TreeNode[] = [];
 
-    const flatten = (nodes: TreeNode[]) => {
-      for (const node of nodes) {
-        allNodes.push(node);
-        if (node.children) {
-          flatten(node.children);
-        }
-      }
-    };
-    flatten(activeTree.tree);
-
-    for (const node of allNodes) {
+    // Iterate directly over the pre-built nodeMap instead of flattening the tree
+    for (const [, { node }] of nodeMap) {
       if (node.templateId === query.targetTemplateId) {
         const matches = (query.rules || []).every(rule => {
           const { type = 'field' } = rule;
@@ -371,7 +387,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       }
     }
     return results;
-  }, [activeTree, getTemplateById, findNodeAndParent]);
+  }, [activeTree, getTemplateById, findNodeAndParent, nodeMap]);
 
   const reloadAllTrees = useCallback(async () => {
     if (!currentUser) return;

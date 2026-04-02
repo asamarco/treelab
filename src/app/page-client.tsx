@@ -259,6 +259,13 @@ export function TreePage() {
   const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search to avoid blocking the main thread on large trees
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   const [showStarred, setShowStarred] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [remoteSha, setRemoteSha] = useState<string | null>(null);
@@ -424,7 +431,7 @@ export function TreePage() {
   const filteredTree = useMemo(() => {
     try {
       if (!tree) return [];
-      return filterTree(tree, getTemplateById, findNodeAndParent, searchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter, queryFilter);
+      return filterTree(tree, getTemplateById, findNodeAndParent, debouncedSearchTerm, showStarred, templateFilter, createdFrom ?? null, createdTo ?? null, modifiedFrom ?? null, modifiedTo ?? null, hasAttachmentsFilter, queryFilter);
     } catch (error) {
       if (error instanceof RangeError && error.message.includes("Maximum call stack size exceeded")) {
         console.warn("A cyclical reference was detected in the tree structure during filtering.");
@@ -432,7 +439,7 @@ export function TreePage() {
       }
       throw error;
     }
-  }, [tree, getTemplateById, findNodeAndParent, searchTerm, showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
+  }, [tree, getTemplateById, findNodeAndParent, debouncedSearchTerm, showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
 
   const resetFilters = () => {
     setTemplateFilter(null);

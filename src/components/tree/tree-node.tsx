@@ -10,7 +10,7 @@
  */
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { TreeNode } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
@@ -54,7 +54,7 @@ interface TreeNodeProps {
   disableSelection?: boolean;
 }
 
-export function TreeNodeComponent({
+function TreeNodeComponentInner({
   node,
   level,
   siblings,
@@ -367,3 +367,24 @@ export function TreeNodeComponent({
     </div>
   );
 }
+
+// React.memo with custom comparator to prevent cascading re-renders.
+// Only re-renders if the node reference, expansion/selection state, or
+// structural props actually change.
+export const TreeNodeComponent = React.memo(TreeNodeComponentInner, (prevProps, nextProps) => {
+  // Reference equality on the node object — this changes when the node
+  // is updated via immer, so it correctly tracks data mutations.
+  if (prevProps.node !== nextProps.node) return false;
+  if (prevProps.level !== nextProps.level) return false;
+  if (prevProps.contextualParentId !== nextProps.contextualParentId) return false;
+  if (prevProps.isCompactOverride !== nextProps.isCompactOverride) return false;
+  if (prevProps.isExplorer !== nextProps.isExplorer) return false;
+  if (prevProps.readOnly !== nextProps.readOnly) return false;
+  if (prevProps.disableSelection !== nextProps.disableSelection) return false;
+  if (prevProps.siblings !== nextProps.siblings) return false;
+  if (prevProps.overrideExpandedIds !== nextProps.overrideExpandedIds) return false;
+  // onSelect and onExpandedChange are callbacks — compare by reference
+  if (prevProps.onSelect !== nextProps.onSelect) return false;
+  if (prevProps.onExpandedChange !== nextProps.onExpandedChange) return false;
+  return true;
+});

@@ -8,7 +8,7 @@
  */
 "use client";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -53,7 +53,7 @@ interface TreeNodeContentProps {
 }
 
 
-export function TreeNodeContent({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeNodeContentProps) {
+function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeNodeContentProps) {
     const { currentUser } = useAuthContext();
     const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode, updateNode } = useTreeContext();
     const { setDialogState, isCompactView: globalIsCompactView } = useUIContext();
@@ -768,3 +768,7 @@ export function TreeNodeContent({ node, template, isExpanded, level, onSelect, c
         </CollapsibleContent>
     );
 }
+
+// Memoize to prevent re-rendering this heavy component (charts, images,
+// tables, children) when only sibling nodes or unrelated state changes.
+export const TreeNodeContent = React.memo(TreeNodeContentInner);

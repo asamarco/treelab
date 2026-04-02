@@ -301,28 +301,40 @@ export const NodeForm = ({
 
   const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
 
-  const getDynamicOptions = useMemo(() => {
-    return (fieldId: string, templateId: string): { value: string, label: string }[] => {
-      const values = new Set<string>();
-
-      const traverse = (nodes: TreeNode[]) => {
-        nodes.forEach(n => {
-          if (n.templateId === templateId) {
-            const value = (n.data || {})[fieldId];
+  // Pre-compute all dynamic dropdown values in a single tree walk.
+  // Cache keyed by "templateId::fieldId" -> Set<string>, so individual
+  // getDynamicOptions calls are O(1) lookups instead of O(N) traversals.
+  const dynamicOptionsCache = useMemo(() => {
+    const cache = new Map<string, Set<string>>();
+    const traverse = (nodes: TreeNode[]) => {
+      for (const n of nodes) {
+        if (n.data) {
+          for (const [fieldId, value] of Object.entries(n.data)) {
             if (typeof value === 'string' && value) {
-              values.add(value);
+              const key = `${n.templateId}::${fieldId}`;
+              let set = cache.get(key);
+              if (!set) {
+                set = new Set<string>();
+                cache.set(key, set);
+              }
+              set.add(value);
             }
           }
-          if (n.children) {
-            traverse(n.children);
-          }
-        });
-      };
+        }
+        if (n.children) traverse(n.children);
+      }
+    };
+    traverse(tree);
+    return cache;
+  }, [tree]);
 
-      traverse(tree);
+  const getDynamicOptions = useMemo(() => {
+    return (fieldId: string, templateId: string): { value: string, label: string }[] => {
+      const values = dynamicOptionsCache.get(`${templateId}::${fieldId}`);
+      if (!values) return [];
       return Array.from(values).map(v => ({ value: v, label: v }));
     };
-  }, [tree]);
+  }, [dynamicOptionsCache]);
 
   const handleFileUpload = async (file: File, field: Field) => {
     if (!activeTree || !currentUser) return;
