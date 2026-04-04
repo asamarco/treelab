@@ -159,7 +159,7 @@ const PortaledContextMenu = (props: ContextMenuComponentProps) => {
   );
 };
 
-const XYChartSpreadsheetEditor = ({
+const XYChartSpreadsheetEditor = React.memo(({
   points,
   onChange,
 }: {
@@ -228,8 +228,8 @@ const XYChartSpreadsheetEditor = ({
       </p>
     </div>
   );
-};
-
+});
+XYChartSpreadsheetEditor.displayName = "XYChartSpreadsheetEditor";
 
 export const NodeForm = ({
   node,
@@ -735,9 +735,9 @@ export const NodeForm = ({
     return <Input type="url" placeholder="https://example.com" value={value} onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })} />;
   };
 
-  const handleDataChange = (fieldId: string, value: any) => {
+  const handleDataChange = useCallback((fieldId: string, value: any) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
-  }
+  }, []);
 
   const { setIgnoreClicksUntil } = useUIContext();
 
@@ -1006,58 +1006,7 @@ export const NodeForm = ({
                 break;
               }
               case 'spreadsheet': {
-                const targetRows = field.spreadsheetRowCount || 3;
-                const targetCols = field.spreadsheetColumnCount || 3;
-                const existingData: { value: string }[][] = formData[field.id] || [];
-
-                // Pad or truncate to the exact dimensions specified by the template initially
-                // Then use the current array size if it has been resized
-                const currentRows = existingData.length > 0 ? existingData.length : targetRows;
-                const currentCols = existingData.length > 0 && existingData[0] ? existingData[0].length : targetCols;
-
-                renderedContent = (
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Spreadsheet data can be edited directly from the tree view. Here you can adjust its dimensions. Formula reference can be found <a href="https://jspreadsheet.com/docs/formulas/functions" target="_blank" rel="noopener noreferrer" className="underline">here</a>.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Number of Rows</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={currentRows}
-                          onChange={(e) => {
-                            const newRows = parseInt(e.target.value, 10) || 1;
-                            const newData = Array.from({ length: newRows }, (_, r) => {
-                              return Array.from({ length: currentCols }, (_, c) => {
-                                return { value: existingData?.[r]?.[c]?.value || '' };
-                              });
-                            });
-                            handleDataChange(field.id, newData);
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Number of Columns</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={currentCols}
-                          onChange={(e) => {
-                            const newCols = parseInt(e.target.value, 10) || 1;
-                            const newData = Array.from({ length: currentRows }, (_, r) => {
-                              return Array.from({ length: newCols }, (_, c) => {
-                                return { value: existingData?.[r]?.[c]?.value || '' };
-                              });
-                            });
-                            handleDataChange(field.id, newData);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
+                renderedContent = <SpreadsheetEditorField field={field} value={formData[field.id]} onChange={(v) => handleDataChange(field.id, v)} />;
                 break;
               }
             }
@@ -1074,44 +1023,7 @@ export const NodeForm = ({
             }
             if (field.type === 'checklist') {
               const items: ChecklistItem[] = formData[field.id] || [];
-              return (
-                <div key={field.id} className="space-y-2">
-                  <Label className="text-sm font-medium">{field.name}</Label>
-                  <div className="space-y-2">
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
-                      const { active, over } = event;
-                      if (over && active.id !== over.id) {
-                        const oldIndex = items.findIndex(item => item.id === active.id);
-                        const newIndex = items.findIndex(item => item.id === over.id);
-                        if (oldIndex !== -1 && newIndex !== -1) {
-                          handleDataChange(field.id, arrayMove(items, oldIndex, newIndex));
-                        }
-                      }
-                    }}>
-                      <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                        {items.map((item, index) => (
-                          <DraggableCheckboxItem key={item.id} id={item.id}>
-                            <div className="flex items-center gap-2 w-full">
-                              <Checkbox checked={item.checked} onCheckedChange={(checked) => {
-                                const newItems = [...items]; newItems[index] = { ...item, checked: !!checked }; handleDataChange(field.id, newItems);
-                              }} />
-                              <Input value={item.text} onChange={(e) => {
-                                const newItems = [...items]; newItems[index] = { ...item, text: e.target.value }; handleDataChange(field.id, newItems);
-                              }} className="h-8" />
-                              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDataChange(field.id, items.filter((_, i) => i !== index))}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </DraggableCheckboxItem>
-                        ))}
-                      </SortableContext>
-                    </DndContext>
-                    <Button type="button" variant="outline" size="sm" onClick={() => handleDataChange(field.id, [...items, { id: generateClientSideId(), text: '', checked: false }])} className="mt-2">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Add Item
-                    </Button>
-                  </div>
-                </div>
-              );
+              return <ChecklistEditorField key={field.id} field={field} items={items} onChange={(v) => handleDataChange(field.id, v)} />;
             }
             if (field.type === 'query') {
               const handleQueryChange = (value: any) => handleDataChange(field.id, value);
@@ -1202,7 +1114,7 @@ export const NodeForm = ({
 };
 
 
-const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
+const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
   const { getTemplateById, templates } = useTreeContext();
   const queryDefs: QueryDefinition[] = Array.isArray(value) ? value : [];
 
@@ -1392,4 +1304,102 @@ const QueryBuilder = ({ field, value, onChange }: { field: Field, value: any, on
       </div>
     </div>
   );
-};
+});
+QueryBuilder.displayName = "QueryBuilder";
+
+const SpreadsheetEditorField = React.memo(({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
+  const targetRows = field.spreadsheetRowCount || 3;
+  const targetCols = field.spreadsheetColumnCount || 3;
+  const existingData: { value: string }[][] = value || [];
+
+  const currentRows = existingData.length > 0 ? existingData.length : targetRows;
+  const currentCols = existingData.length > 0 && existingData[0] ? existingData[0].length : targetCols;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Spreadsheet data can be edited directly from the tree view. Here you can adjust its dimensions. Formula reference can be found <a href="https://jspreadsheet.com/docs/formulas/functions" target="_blank" rel="noopener noreferrer" className="underline">here</a>.
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Number of Rows</Label>
+          <Input
+            type="number"
+            min={1}
+            value={currentRows}
+            onChange={(e) => {
+              const newRows = parseInt(e.target.value, 10) || 1;
+              const newData = Array.from({ length: newRows }, (_, r) => {
+                return Array.from({ length: currentCols }, (_, c) => {
+                  return { value: existingData?.[r]?.[c]?.value || '' };
+                });
+              });
+              onChange(newData);
+            }}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Number of Columns</Label>
+          <Input
+            type="number"
+            min={1}
+            value={currentCols}
+            onChange={(e) => {
+              const newCols = parseInt(e.target.value, 10) || 1;
+              const newData = Array.from({ length: currentRows }, (_, r) => {
+                return Array.from({ length: newCols }, (_, c) => {
+                  return { value: existingData?.[r]?.[c]?.value || '' };
+                });
+              });
+              onChange(newData);
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+});
+SpreadsheetEditorField.displayName = "SpreadsheetEditorField";
+
+const ChecklistEditorField = React.memo(({ field, items, onChange }: { field: Field, items: ChecklistItem[], onChange: (value: any) => void }) => {
+  const sensors = useSensors(useSensor(PointerSensor));
+  return (
+    <div key={field.id} className="space-y-2">
+      <Label className="text-sm font-medium">{field.name}</Label>
+      <div className="space-y-2">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
+          const { active, over } = event;
+          if (over && active.id !== over.id) {
+            const oldIndex = items.findIndex(item => item.id === active.id);
+            const newIndex = items.findIndex(item => item.id === over.id);
+            if (oldIndex !== -1 && newIndex !== -1) {
+              onChange(arrayMove(items, oldIndex, newIndex));
+            }
+          }
+        }}>
+          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
+            {items.map((item, index) => (
+              <DraggableCheckboxItem key={item.id} id={item.id}>
+                <div className="flex items-center gap-2 w-full">
+                  <Checkbox checked={item.checked} onCheckedChange={(checked) => {
+                    const newItems = [...items]; newItems[index] = { ...item, checked: !!checked }; onChange(newItems);
+                  }} />
+                  <Input value={item.text} onChange={(e) => {
+                    const newItems = [...items]; newItems[index] = { ...item, text: e.target.value }; onChange(newItems);
+                  }} className="h-8" />
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onChange(items.filter((_, i) => i !== index))}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </DraggableCheckboxItem>
+            ))}
+          </SortableContext>
+        </DndContext>
+        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...items, { id: generateClientSideId(), text: '', checked: false }])} className="mt-2">
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Item
+        </Button>
+      </div>
+    </div>
+  );
+});
+ChecklistEditorField.displayName = "ChecklistEditorField";
