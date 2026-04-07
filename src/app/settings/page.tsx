@@ -88,6 +88,7 @@ function SettingsPage() {
     setDateFormat,
     setInactivityTimeout,
     setTwoPanelExpansionDepth,
+    revokeAllSessions,
   } = useAuthContext();
   
   const { analyzeStorage, purgeStorage } = useTreeContext();
@@ -111,6 +112,19 @@ function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(globalSettings?.customLogoPath || null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [inactivityTimeout, setInactivityTimeoutState] = useState(currentUser?.inactivityTimeoutMinutes ?? 15);
+  const [isRevokingSessions, setIsRevokingSessions] = useState(false);
+
+  const handleRevokeSessions = async () => {
+    setIsRevokingSessions(true);
+    try {
+      await revokeAllSessions();
+      toast({ title: "Sessions Revoked", description: "You have been signed out of all other devices." });
+    } catch (e) {
+      toast({ variant: "destructive", title: "Action Failed", description: "Could not revoke sessions." });
+    } finally {
+      setIsRevokingSessions(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -534,6 +548,37 @@ function SettingsPage() {
                         <Button onClick={handleInactivityTimeoutSave}>
                           Save Timeout
                         </Button>
+                    </div>
+                </div>
+                 <Separator />
+                 <div className="space-y-4">
+                    <Label>Active Sessions</Label>
+                    <p className="text-sm text-muted-foreground">
+                        Sign out of all other devices except this one.
+                    </p>
+                    <div className="p-2 -ml-2 rounded-md">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" disabled={isRevokingSessions}>
+                                    {isRevokingSessions ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+                                    Sign Out of All Other Devices
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This will immediately invalidate all active sessions for your account on other devices. You will need to log in again on those devices.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleRevokeSessions} className="bg-destructive hover:bg-destructive/90">
+                                        Sign Out Everywhere
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </div>
               </CardContent>

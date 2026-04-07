@@ -200,6 +200,7 @@ export interface User {
     showChildrenInEditForm?: boolean;
     twoPanelExpansionDepth?: number;
     rememberMe?: boolean;
+    sessionVersion?: number;
 }
 
 export interface GlobalSettings {

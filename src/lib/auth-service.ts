@@ -197,6 +197,17 @@ export async function changeUserPassword(currentPassword: string, newPassword: s
     return true;
 }
 
+export async function revokeAllSessions(): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+    await UserModel.findByIdAndUpdate(session.userId, { $inc: { sessionVersion: 1 } }).exec();
+    
+    // Re-create session for the current device so it doesn't log out
+    await createSessionInServerAction(session.userId, session.rememberMe);
+}
+
 export async function resetUserPasswordByAdmin(userId: string, newPassword: string): Promise<void> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");

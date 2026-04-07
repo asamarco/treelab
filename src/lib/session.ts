@@ -10,6 +10,8 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { User } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
+import { connectToDatabase } from './mongodb';
+import { UserModel } from './models';
 
 const secretKey = process.env.JWT_SECRET_KEY;
 if (!secretKey) {
@@ -19,7 +21,7 @@ const key = new TextEncoder().encode(secretKey);
 
 const SESSION_COOKIE_NAME = 'session';
 
-export async function encrypt(payload: { userId: string, expires: Date, rememberMe?: boolean }) {
+export async function encrypt(payload: { userId: string, expires: Date, rememberMe?: boolean, sessionVersion?: number }) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -46,7 +48,12 @@ export async function decrypt(input: string): Promise<any> {
 export async function createSessionInApiRoute(response: NextResponse, userId: string, rememberMe: boolean = false) {
   const expiresInMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000;
   const expires = new Date(Date.now() + expiresInMs);
-  const session = await encrypt({ userId, expires, rememberMe });
+  
+  await connectToDatabase();
+  const user = await UserModel.findById(userId).select('sessionVersion').lean().exec();
+  const sessionVersion = user?.sessionVersion || 0;
+
+  const session = await encrypt({ userId, expires, rememberMe, sessionVersion });
   
   response.cookies.set(SESSION_COOKIE_NAME, session, {
     httpOnly: true,
@@ -64,7 +71,12 @@ export async function createSessionInApiRoute(response: NextResponse, userId: st
 export async function createSessionInServerAction(userId: string, rememberMe: boolean = false) {
   const expiresInMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000;
   const expires = new Date(Date.now() + expiresInMs);
-  const session = await encrypt({ userId, expires, rememberMe });
+  
+  await connectToDatabase();
+  const user = await UserModel.findById(userId).select('sessionVersion').lean().exec();
+  const sessionVersion = user?.sessionVersion || 0;
+
+  const session = await encrypt({ userId, expires, rememberMe, sessionVersion });
   
   (await cookies()).set(SESSION_COOKIE_NAME, session, {
     httpOnly: true,
@@ -94,5 +106,16 @@ export async function getSession(): Promise<{ userId: string, rememberMe?: boole
   if (!decryptedPayload?.userId) {
     return null;
   }
+  
+  await connectToDatabase();
+  const user = await UserModel.findById(decryptedPayload.userId).select('sessionVersion').lean().exec();
+  
+  const payloadVersion = decryptedPayload.sessionVersion || 0;
+  const userVersion = user?.sessionVersion || 0;
+  
+  if (payloadVersion !== userVersion) {
+    return null;
+  }
+
   return { userId: decryptedPayload.userId, rememberMe: decryptedPayload.rememberMe };
 }

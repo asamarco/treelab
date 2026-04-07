@@ -128,6 +128,7 @@ const UserSchema = new Schema<User>({
   inactivityTimeoutMinutes: { type: Number, default: 15 },
   twoPanelExpansionDepth: { type: Number, default: 1 },
   gitSettings: GitSettingsSchema,
+  sessionVersion: { type: Number, default: 0 },
 });
 UserSchema.pre('save', function (next) {
   if (this.isNew) {

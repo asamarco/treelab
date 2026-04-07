@@ -9,6 +9,7 @@ import {
   resetUserPasswordByAdmin as resetPasswordByAdminOnServer,
   saveGlobalSettings,
   updateUserSettings,
+  revokeAllSessions as revokeAllSessionsOnServer,
 } from '@/lib/auth-service';
 import {
   login as loginOnClient,
@@ -255,6 +256,11 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setCurrentUser(prev => prev ? { ...prev, lastActiveTreeId: treeId } : null);
   };
 
+  const revokeAllSessions = async (): Promise<void> => {
+    if (!currentUser) return;
+    await revokeAllSessionsOnServer();
+  };
+
   return {
     currentUser,
     isAuthLoading,
@@ -276,5 +282,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setLastActiveTreeId,
     setShowChildrenInEditForm,
     setTwoPanelExpansionDepth,
+    revokeAllSessions,
   };
 }
