@@ -471,7 +471,19 @@ function SettingsPage() {
                     <Input id="logo-upload" type="file" accept="image/svg+xml" ref={logoInputRef} onChange={handleLogoFileChange} />
                   </div>
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                    {globalSettings?.customLogoPath && (
+                        <Button 
+                            variant="outline" 
+                            onClick={async () => {
+                                await setGlobalSettings({ ...globalSettings, customLogoPath: "" });
+                                toast({ title: "Logo Reset", description: "The custom logo has been removed." });
+                            }}
+                            type="button"
+                        >
+                            Reset to Default
+                        </Button>
+                    )}
                     <Button onClick={handleLogoUpload} disabled={isUploadingLogo}>
                         {isUploadingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4"/>}
                         Upload Logo
