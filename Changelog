@@ -1,3 +1,13 @@
+v0.6.2
+
+Feature: session revocation from user settings
+Improvement: performance optimization for large trees
+Improvement: prevent mouse wheel to change values in 'Number' type input fields
+Bugfix: Added a button to remove custom logo and return to default (admin settings)
+Bugfix: Fixed warning tooltip in 'Number' type input field complaining of non-integer values
+Bugfix: Prevent two-panel selection behavior to apply in mobile view in any case
+
+
 v0.6.1
 
 Feature: New 'Embed' field type
