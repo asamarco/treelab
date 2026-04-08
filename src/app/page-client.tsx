@@ -326,7 +326,7 @@ export function TreePage() {
   }, [selectedNodeIds]);
 
   useEffect(() => {
-    if (isTwoPanelMode && selectedNodeIds.length === 0 && tree && tree.length > 0) {
+    if (isTwoPanelMode && !isMobile && selectedNodeIds.length === 0 && tree && tree.length > 0) {
       if (lastSelectedNodeIdRef.current) {
         const idToCheck = lastSelectedNodeIdRef.current.split('_')[0];
         const nodeExists = findNodeAndParent(idToCheck) !== null;
@@ -337,7 +337,7 @@ export function TreePage() {
       }
       setSelectedNodeIds([`${tree[0].id}_root`]);
     }
-  }, [isTwoPanelMode, selectedNodeIds.length, tree, setSelectedNodeIds, findNodeAndParent]);
+  }, [isTwoPanelMode, isMobile, selectedNodeIds.length, tree, setSelectedNodeIds, findNodeAndParent]);
 
   const checkSyncStatus = useCallback(async () => {
     if (!currentUser || !activeTree?.gitSync || !currentUser?.gitSettings?.githubPat || isTokenInvalid) {
