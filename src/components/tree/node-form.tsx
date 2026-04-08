@@ -781,7 +781,7 @@ export const NodeForm = ({
                 renderedContent = <Textarea value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
                 break;
               case 'number':
-                renderedContent = <Input type="number" value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
+                renderedContent = <Input type="number" step="any" onWheel={(e) => e.currentTarget.blur()} value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
                 break;
               case 'date': {
                 const dateString = formData[field.id];
@@ -1052,7 +1052,7 @@ export const NodeForm = ({
                               <div key={`${f.id}-${rowIndex}`} className="space-y-2"><Label className="text-sm font-medium">{f.name}</Label>
                                 <div className="flex items-center gap-1">
                                   {f.prefix && <span className="text-muted-foreground text-sm">{f.prefix}</span>}
-                                  {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow" />)}
+                                  {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} step={f.columnType === 'number' ? "any" : undefined} onWheel={f.columnType === 'number' ? (e) => e.currentTarget.blur() : undefined} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow" />)}
                                   {f.postfix && <span className="text-muted-foreground text-sm">{f.postfix}</span>}
                                 </div>
                               </div>
