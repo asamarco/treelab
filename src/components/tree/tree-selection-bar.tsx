@@ -126,9 +126,11 @@ export function TreeSelectionBar() {
 
         const topLevelInstanceIds = new Set(orderedSelectedInstanceIds);
         for (const instanceId of orderedSelectedInstanceIds) {
-            const nodeInfo = findNodeAndParent(instanceId.split('_')[0]);
-            if (nodeInfo?.parent) {
-                const parentIsSelected = selectedNodeIds.some(id => id.startsWith(`${nodeInfo.parent?.id}_`));
+            // Use the contextual parent from the instanceId itself, not
+            // findNodeAndParent (which may return a different parent for clones).
+            const contextualParentId = instanceId.split('_').slice(1).join('_');
+            if (contextualParentId && contextualParentId !== 'root') {
+                const parentIsSelected = selectedNodeIds.some(id => id.startsWith(`${contextualParentId}_`));
                 if (parentIsSelected) {
                     topLevelInstanceIds.delete(instanceId);
                 }
@@ -140,10 +142,11 @@ export function TreeSelectionBar() {
             .filter((n): n is TreeNode => !!n);
 
         if (fullNodesToCopy.length > 0) {
+            const uniqueNodeCount = new Set(fullNodesToCopy.map(n => n.id)).size;
             setClipboard({ nodes: fullNodesToCopy, operation: 'copy' });
             toast({
                 title: 'Copied',
-                description: `${fullNodesToCopy.length} node(s) and their children copied to clipboard.`
+                description: `${uniqueNodeCount} node(s) and their children copied to clipboard.`
             });
         }
     }, [selectedNodeIds, tree, findNodeAndParent, setClipboard, toast]);
