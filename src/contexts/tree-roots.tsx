@@ -95,6 +95,7 @@ import {
   batchUpdateNodesDataAction,
 } from '@/lib/node-actions';
 import ReactDOMServer from "react-dom/server";
+import { useUIContext } from "./ui-context";
 import { TreeContext } from './tree-context';
 
 
@@ -588,22 +589,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
   }, [allTrees, currentUser, importTreeFromJson, toast]);
 
-  const getNodeInstancePaths = useCallback(
-    (nodeId: string): string[] => {
-      if (!activeTree) return [];
-      const paths: string[] = [];
-      const findPaths = (nodes: TreeNode[], currentPath: string[]) => {
-        for (const node of nodes) {
-          const newPath = [...currentPath, node.name];
-          if (node.id === nodeId) paths.push(newPath.join(" > "));
-          if (node.children) findPaths(node.children, newPath);
-        }
-      };
-      findPaths(activeTree.tree, []);
-      return paths;
-    },
-    [activeTree]
-  );
 
   const {
     conflictState,
@@ -1381,6 +1366,113 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     });
   };
 
+  const { setDialogState } = useUIContext();
+
+  const selectAndCenterNode = useCallback((params: { nodeId?: string, instanceId?: string, ancestorInstanceIds?: string[] }) => {
+    const { nodeId, instanceId: providedInstanceId, ancestorInstanceIds: providedAncestors } = params;
+
+    let targetInstanceId = providedInstanceId;
+    let ancestorsToExpand = providedAncestors || [];
+
+    if (!targetInstanceId && nodeId) {
+      const nodeInfo = findNodeAndParent(nodeId);
+      if (nodeInfo) {
+        const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
+        targetInstanceId = `${nodeInfo.node.id}_${primaryParentId}`;
+
+        // If no ancestors provided, we calculate them using the primary path logic from expandToNode
+        if (ancestorsToExpand.length === 0) {
+          let currentId: string | null = nodeId;
+          while (currentId) {
+            const currentInfo = findNodeAndParent(currentId, activeTree?.tree);
+            if (!currentInfo) break;
+            const parent = currentInfo.parent;
+            if (parent) {
+              const grandParentInfo = findNodeAndParent(parent.id, activeTree?.tree);
+              const grandParentId = grandParentInfo?.parent?.id || 'root';
+              ancestorsToExpand.unshift(`${parent.id}_${grandParentId}`);
+              currentId = parent.id;
+            } else {
+              currentId = null;
+            }
+          }
+        }
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Node not found',
+          description: 'The target node could not be found in the current tree view.'
+        });
+        return;
+      }
+    }
+
+    if (!targetInstanceId) return;
+
+    // 1. Expand
+    if (ancestorsToExpand.length > 0) {
+      setExpandedNodeIds((currentIds: WritableDraft<string[]>) => {
+        const idSet = new Set(currentIds);
+        ancestorsToExpand.forEach(id => idSet.add(id));
+        return Array.from(idSet);
+      }, false);
+    }
+
+    // 2. Select
+    setSelectedNodeIds([targetInstanceId]);
+    setLastSelectedNodeId(targetInstanceId);
+
+    // 3. Clear UI obstructions
+    setDialogState({
+      isNodePreviewOpen: false,
+      openNodeEditInstanceIds: [],
+      isAddChildOpen: false,
+      isAddSiblingOpen: false,
+      isAddNodeOpen: false,
+      isCommitOpen: false,
+      isHistoryOpen: false,
+    });
+
+    // 4. Scroll
+    requestAnimationFrame(() => {
+      const element = document.getElementById(`node-card-${targetInstanceId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        setTimeout(() => {
+          document.getElementById(`node-card-${targetInstanceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    });
+  }, [activeTree, findNodeAndParent, setExpandedNodeIds, setSelectedNodeIds, setLastSelectedNodeId, setDialogState, toast]);
+
+  const getNodeInstancePaths = useCallback(
+    (nodeId: string) => {
+      if (!activeTree) return [];
+      const results: { name: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[][] = [];
+
+      const findPaths = (nodes: TreeNode[], currentPath: { name: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[], parentId: string | null) => {
+        for (const node of nodes) {
+          const instanceId = `${node.id}_${parentId || 'root'}`;
+          const ancestors = currentPath.map(p => p.instanceId);
+          const segment = { name: node.name, id: node.id, instanceId, ancestorInstanceIds: ancestors };
+          const newPath = [...currentPath, segment];
+
+          if (node.id === nodeId) {
+            results.push(newPath);
+          }
+          if (node.children) {
+            findPaths(node.children, newPath, node.id);
+          }
+        }
+      };
+
+      findPaths(activeTree.tree, [], null);
+      return results;
+    },
+    [activeTree]
+  );
+
   return {
     allTrees: visibleTrees,
     setAllTrees,
@@ -1476,7 +1568,6 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     getSiblingOrderRange,
     findNodeAndParent,
     findNodeAndContextualParent,
-    getNodeInstancePaths,
     uploadAttachment: (relativePath: string, dataUri: string, fileName: string) => {
       if (!currentUser) throw new Error("User not authenticated for upload");
       return uploadAttachmentToServer(currentUser.id, relativePath, dataUri, fileName);
@@ -1502,6 +1593,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     unlinkTreeFromRepo,
     createAndLinkTreeToRepo,
     updateActiveTree,
+    selectAndCenterNode,
+    getNodeInstancePaths,
     // Properties that were missing from TreeContextType
     templates: activeTree?.templates ?? [],
     tree: activeTree?.tree ?? [],

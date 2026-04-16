@@ -45,50 +45,7 @@ export function RenderWithLinks({ node, template, text }: RenderWithLinksProps) 
   const handleJumpToNode = (e: React.MouseEvent, nodeId: string) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (!treeContext || !uiContext) return;
-
-    const { findNodeAndParent, expandToNode, setSelectedNodeIds } = treeContext;
-    const { setDialogState } = uiContext;
-
-    const nodeInfo = findNodeAndParent(nodeId);
-    if (nodeInfo) {
-      expandToNode(nodeId);
-
-      const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
-      const instanceId = `${nodeInfo.node.id}_${primaryParentId}`;
-      setSelectedNodeIds([instanceId]);
-
-      // Close any open dialogs that might be obscuring the view
-      setDialogState({
-        isNodePreviewOpen: false,
-        openNodeEditInstanceIds: [],
-        isAddChildOpen: false,
-        isAddSiblingOpen: false,
-        isAddNodeOpen: false,
-        isCommitOpen: false,
-        isHistoryOpen: false,
-      });
-
-      // Allow the UI to update before scrolling
-      requestAnimationFrame(() => {
-        const element = document.getElementById(`node-card-${instanceId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          // Fallback if the element isn't found immediately
-          setTimeout(() => {
-            document.getElementById(`node-card-${instanceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 100);
-        }
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Node not found',
-        description: 'The target node could not be found in the current tree view.'
-      });
-    }
+    treeContext?.selectAndCenterNode({ nodeId });
   };
 
   const nodeData = node.data || {};

@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TreeNode, Template } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
@@ -96,7 +96,7 @@ export function TreeNodeHeader({
   const {
     clipboard, setClipboard, findNodeAndParent, setExpandedNodeIds, expandAllFromNode,
     collapseAllFromNode, updateNode, deleteNode, moveNodeOrder, moveNodes,
-    pasteNodes, getNodeInstancePaths,
+    pasteNodes, getNodeInstancePaths, selectAndCenterNode,
     exportNodesAsArchive, exportNodesAsHtml, exportNodesAsJson, getTemplateById,
     getSiblingOrderRange,
     selectedNodeIds,
@@ -387,7 +387,30 @@ export function TreeNodeHeader({
                     <TooltipContent>
                       <p className="font-bold">This node is a clone. It also exists at:</p>
                       <ul className="list-disc pl-4 mt-1 space-y-1">
-                        {clonePaths.map((path, index) => <li key={index}>{path}</li>)}
+                        {clonePaths.map((path, pathIndex) => (
+                          <li key={pathIndex}>
+                            <div className="flex flex-wrap items-center gap-1">
+                              {path.map((segment, segIndex) => (
+                                <React.Fragment key={segIndex}>
+                                  <button
+                                    className="text-primary hover:underline font-medium text-xs text-left"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      selectAndCenterNode({ 
+                                        instanceId: segment.instanceId, 
+                                        ancestorInstanceIds: segment.ancestorInstanceIds 
+                                      });
+                                    }}
+                                  >
+                                    {segment.name}
+                                  </button>
+                                  {segIndex < path.length - 1 && <span className="text-muted-foreground text-[10px]">&gt;</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </li>
+                        ))}
                       </ul>
                     </TooltipContent>
                   </Tooltip>

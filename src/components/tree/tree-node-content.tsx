@@ -55,7 +55,7 @@ interface TreeNodeContentProps {
 
 function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeNodeContentProps) {
     const { currentUser } = useAuthContext();
-    const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode, updateNode } = useTreeContext();
+    const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode, updateNode, selectAndCenterNode } = useTreeContext();
     const { setDialogState, isCompactView: globalIsCompactView } = useUIContext();
     const isMobile = useIsMobile();
     const { toast } = useToast();
@@ -585,32 +585,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                                                     className="h-6 w-6 shrink-0 opacity-0 group-hover/queryresult:opacity-100"
                                                                                     onClick={(e) => {
                                                                                         e.stopPropagation();
-                                                                                        const nodeInfo = findNodeAndParent(resultNode.id);
-                                                                                        if (nodeInfo) {
-                                                                                            expandToNode(resultNode.id);
-
-                                                                                            const primaryParentId = nodeInfo.node.parentIds[0] || 'root';
-                                                                                            const instanceId = `${resultNode.id}_${primaryParentId}`;
-                                                                                            setSelectedNodeIds([instanceId]);
-
-                                                                                            setDialogState({
-                                                                                                isNodePreviewOpen: false,
-                                                                                                openNodeEditInstanceIds: [],
-                                                                                                isAddChildOpen: false,
-                                                                                                isAddSiblingOpen: false,
-                                                                                            });
-
-                                                                                            requestAnimationFrame(() => {
-                                                                                                const element = document.getElementById(`node-card-${instanceId}`);
-                                                                                                element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                                                            });
-                                                                                        } else {
-                                                                                            toast({
-                                                                                                variant: 'destructive',
-                                                                                                title: 'Node not found',
-                                                                                                description: 'The target node could not be found in the current tree view.'
-                                                                                            });
-                                                                                        }
+                                                                                        selectAndCenterNode({ nodeId: resultNode.id });
                                                                                     }}
                                                                                 >
                                                                                     <Crosshair className="h-4 w-4" />
