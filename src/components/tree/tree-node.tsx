@@ -218,10 +218,11 @@ function TreeNodeComponentInner({
                     variant="destructive"
                     size="sm"
                     onClick={() => {
-                      if (!selectedNodeIds.includes(instanceId)) {
-                        setSelectedNodeIds([instanceId]);
+                      if (selectedNodeIds.includes(instanceId)) {
+                        setDialogState({ isDeleteNodesConfirmOpen: true });
+                      } else {
+                        setDialogState({ isDeleteNodesConfirmOpen: true, nodeInstanceIdForAction: instanceId });
                       }
-                      setDialogState({ isDeleteNodesConfirmOpen: true });
                     }}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />

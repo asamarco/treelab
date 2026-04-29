@@ -671,25 +671,28 @@ export function TreePageModals({
             {/* Delete Nodes Confirmation Dialog */}
             <AlertDialog
                 open={dialogState.isDeleteNodesConfirmOpen || false}
-                onOpenChange={(open) => setDialogState({ isDeleteNodesConfirmOpen: open })}
+                onOpenChange={(open) => setDialogState({ isDeleteNodesConfirmOpen: open, ...(!open ? { nodeInstanceIdForAction: undefined } : {}) })}
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will delete {selectedNodeIds.length} selected {selectedNodeIds.length === 1 ? 'node' : 'nodes'} and all their children.
+                            This will delete {dialogState.nodeInstanceIdForAction ? 1 : selectedNodeIds.length} selected {dialogState.nodeInstanceIdForAction ? 'node' : (selectedNodeIds.length === 1 ? 'node' : 'nodes')} and all their children.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => setDialogState({ isDeleteNodesConfirmOpen: false, nodeInstanceIdForAction: undefined })}>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={() => {
-                                deleteNodes(selectedNodeIds);
-                                setSelectedNodeIds([]);
-                                setDialogState({ isDeleteNodesConfirmOpen: false });
+                                const idsToDelete = dialogState.nodeInstanceIdForAction ? [dialogState.nodeInstanceIdForAction] : selectedNodeIds;
+                                deleteNodes(idsToDelete);
+                                if (!dialogState.nodeInstanceIdForAction) {
+                                    setSelectedNodeIds([]);
+                                }
+                                setDialogState({ isDeleteNodesConfirmOpen: false, nodeInstanceIdForAction: undefined });
                                 toast({
                                     title: 'Deleted',
-                                    description: `${selectedNodeIds.length} node ${selectedNodeIds.length === 1 ? 'instance' : 'instances'} deleted.`
+                                    description: `${idsToDelete.length} node ${idsToDelete.length === 1 ? 'instance' : 'instances'} deleted.`
                                 });
                             }}
                             className="bg-destructive hover:bg-destructive/90"

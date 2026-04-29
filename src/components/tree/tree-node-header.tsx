@@ -303,10 +303,11 @@ export function TreeNodeHeader({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={() => {
-                if (!selectedNodeIds.includes(instanceId)) {
-                  setSelectedNodeIds([instanceId]);
+                if (selectedNodeIds.includes(instanceId)) {
+                  setDialogState({ isDeleteNodesConfirmOpen: true });
+                } else {
+                  setDialogState({ isDeleteNodesConfirmOpen: true, nodeInstanceIdForAction: instanceId });
                 }
-                setDialogState({ isDeleteNodesConfirmOpen: true });
               }}
               className="text-destructive focus:text-destructive focus:bg-destructive/10"
             >
