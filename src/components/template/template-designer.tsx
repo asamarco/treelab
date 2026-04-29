@@ -51,6 +51,22 @@ import {
   Download,
   GripVertical,
   Settings2,
+  Type,
+  Hash,
+  Calendar,
+  List,
+  AlignLeft,
+  Link2,
+  Image,
+  Table,
+  Database,
+  Paperclip,
+  LineChart,
+  Search,
+  ListChecks,
+  CheckSquare,
+  Grid3X3,
+  Code2,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -619,29 +635,101 @@ export function TemplateDesigner({
                                         </SelectTrigger>
                                       </FormControl>
                                       <SelectContent>
-                                        <SelectItem value="text">Text</SelectItem>
+                                        <SelectItem value="text">
+                                          <div className="flex items-center gap-2">
+                                            <Type className="h-4 w-4 text-muted-foreground" />
+                                            <span>Text</span>
+                                          </div>
+                                        </SelectItem>
                                         <SelectItem value="textarea">
-                                          Text Area
+                                          <div className="flex items-center gap-2">
+                                            <AlignLeft className="h-4 w-4 text-muted-foreground" />
+                                            <span>Text Area</span>
+                                          </div>
                                         </SelectItem>
                                         <SelectItem value="number">
-                                          Number
+                                          <div className="flex items-center gap-2">
+                                            <Hash className="h-4 w-4 text-muted-foreground" />
+                                            <span>Number</span>
+                                          </div>
                                         </SelectItem>
-                                        <SelectItem value="date">Date</SelectItem>
-                                        <SelectItem value="link">Link</SelectItem>
-                                        <SelectItem value="query">Query</SelectItem>
-                                        <SelectItem value="picture">Picture</SelectItem>
-                                        <SelectItem value="attachment">Attachment</SelectItem>
-                                        <SelectItem value="checkbox">Checkbox</SelectItem>
-                                        <SelectItem value="checklist">Checklist</SelectItem>
-                                        <SelectItem value="table-header">Table Header</SelectItem>
-                                        <SelectItem value="xy-chart">XY Chart</SelectItem>
-                                        <SelectItem value="spreadsheet">Spreadsheet</SelectItem>
-                                        <SelectItem value="embed">Embed (Iframe)</SelectItem>
+                                        <SelectItem value="date">
+                                          <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            <span>Date</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="link">
+                                          <div className="flex items-center gap-2">
+                                            <Link2 className="h-4 w-4 text-muted-foreground" />
+                                            <span>Link</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="query">
+                                          <div className="flex items-center gap-2">
+                                            <Search className="h-4 w-4 text-muted-foreground" />
+                                            <span>Query</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="picture">
+                                          <div className="flex items-center gap-2">
+                                            <Image className="h-4 w-4 text-muted-foreground" />
+                                            <span>Picture</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="attachment">
+                                          <div className="flex items-center gap-2">
+                                            <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                            <span>Attachment</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="checkbox">
+                                          <div className="flex items-center gap-2">
+                                            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                                            <span>Checkbox</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="checklist">
+                                          <div className="flex items-center gap-2">
+                                            <ListChecks className="h-4 w-4 text-muted-foreground" />
+                                            <span>Checklist</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="table-header">
+                                          <div className="flex items-center gap-2">
+                                            <Table className="h-4 w-4 text-muted-foreground" />
+                                            <span>Table Header</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="xy-chart">
+                                          <div className="flex items-center gap-2">
+                                            <LineChart className="h-4 w-4 text-muted-foreground" />
+                                            <span>XY Chart</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="spreadsheet">
+                                          <div className="flex items-center gap-2">
+                                            <Grid3X3 className="h-4 w-4 text-muted-foreground" />
+                                            <span>Spreadsheet</span>
+                                          </div>
+                                        </SelectItem>
+                                        <SelectItem value="embed">
+                                          <div className="flex items-center gap-2">
+                                            <Code2 className="h-4 w-4 text-muted-foreground" />
+                                            <span>Embed (Iframe)</span>
+                                          </div>
+                                        </SelectItem>
                                         <SelectItem value="dropdown">
-                                          Dropdown
+                                          <div className="flex items-center gap-2">
+                                            <List className="h-4 w-4 text-muted-foreground" />
+                                            <span>Dropdown</span>
+                                          </div>
                                         </SelectItem>
                                         <SelectItem value="dynamic-dropdown">
-                                          Dynamic Dropdown
+                                          <div className="flex items-center gap-2">
+                                            <Database className="h-4 w-4 text-muted-foreground" />
+                                            <span>Dynamic Dropdown</span>
+                                          </div>
                                         </SelectItem>
                                       </SelectContent>
                                     </Select>
@@ -993,7 +1081,7 @@ export function TemplateDesigner({
                   operator: 'equals',
                   value: '',
                   icon: 'FileText',
-                  color: '#64748b'
+                  color: '#4acf9e'
                 })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Rule
                 </Button>
