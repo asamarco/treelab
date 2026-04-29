@@ -134,6 +134,17 @@ export interface GitSync {
     lastSyncSha?: string;
 }
 
+export interface TreePermissions {
+    editNodes: boolean;
+    editTemplates: boolean;
+    admin: boolean;
+}
+
+export interface TreeShare {
+    userId: string;
+    permissions: TreePermissions;
+}
+
 export interface TreeFile {
     id: string;
     _id?: any; // Mongoose internal
@@ -147,6 +158,7 @@ export interface TreeFile {
     expandedNodeIds: string[];
     gitSync?: GitSync;
     sharedWith?: string[];
+    shares?: TreeShare[];
     publicId?: string;
     createdAt: string;
     updatedAt: string;
@@ -359,7 +371,7 @@ export interface UseTreeRootsResult {
     deleteTree: (id: string) => Promise<void>;
     duplicateTree: (treeId: string) => Promise<void>;
     updateTreeOrder: (updates: { id: string; order: number; }[]) => Promise<void>;
-    shareTree: (treeId: string, userId: string) => Promise<void>;
+    shareTree: (treeId: string, userId: string, permissions?: Partial<TreePermissions>) => Promise<void>;
     revokeShare: (treeId: string, userId: string) => Promise<void>;
     setTreePublicStatus: (treeId: string, isPublic: boolean) => Promise<string | undefined>;
     listExamples: () => Promise<ExampleInfo[]>;

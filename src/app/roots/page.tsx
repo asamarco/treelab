@@ -57,10 +57,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe, CopyPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ExampleInfo, TreeFile, User } from "@/lib/types";
+import { ExampleInfo, TreeFile, TreePermissions, TreeShare, User } from "@/lib/types";
 import { Octokit } from "octokit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -156,10 +157,32 @@ function ManageRootsPage() {
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
   const [orderedTrees, setOrderedTrees] = useState(allTrees);
   const [selectedViewMode, setSelectedViewMode] = useState<string>("standard");
+  const [sharePermissions, setSharePermissions] = useState<TreePermissions>({
+    editNodes: false,
+    editTemplates: false,
+    admin: false,
+  });
+  const [editingShareUserId, setEditingShareUserId] = useState<string | null>(null);
+  const [editingSharePermissions, setEditingSharePermissions] = useState<TreePermissions>({
+    editNodes: false,
+    editTemplates: false,
+    admin: false,
+  });
 
   useEffect(() => {
     setOrderedTrees(allTrees);
   }, [allTrees]);
+
+  useEffect(() => {
+    if (selectedTreeToShare) {
+      const updatedTree = allTrees.find(t => t.id === selectedTreeToShare.id);
+      if (updatedTree && JSON.stringify(updatedTree.shares) !== JSON.stringify(selectedTreeToShare.shares)) {
+        setSelectedTreeToShare(updatedTree);
+      } else if (updatedTree && JSON.stringify(updatedTree.sharedWith) !== JSON.stringify(selectedTreeToShare.sharedWith)) {
+        setSelectedTreeToShare(updatedTree);
+      }
+    }
+  }, [allTrees, selectedTreeToShare]);
 
 
   const filteredTrees = useMemo(() => {
@@ -351,10 +374,16 @@ function ManageRootsPage() {
 
   const handleShare = async () => {
     if (selectedTreeToShare && selectedUserToShare) {
-      await shareTree(selectedTreeToShare.id, selectedUserToShare);
-      setIsShareDialogOpen(false);
-      setSelectedTreeToShare(null);
+      await shareTree(selectedTreeToShare.id, selectedUserToShare, sharePermissions);
       setSelectedUserToShare("");
+      setSharePermissions({ editNodes: false, editTemplates: false, admin: false });
+    }
+  };
+
+  const saveEditingShare = async () => {
+    if (selectedTreeToShare && editingShareUserId) {
+      await shareTree(selectedTreeToShare.id, editingShareUserId, editingSharePermissions);
+      setEditingShareUserId(null);
     }
   };
 
@@ -437,6 +466,9 @@ function ManageRootsPage() {
             {filteredTrees.map((tree: TreeFile) => {
               const owner = users.find(u => u.id === tree.userId);
               const isOwner = currentUser?.id === tree.userId;
+              const isAdmin = tree.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin) ?? false;
+              const canManageTree = isOwner || isAdmin;
+              const hasWritePerms = isOwner || isAdmin || (tree.shares?.some(s => s.userId === currentUser?.id && (s.permissions.editNodes || s.permissions.editTemplates)) ?? false);
 
               const sharedWithUsers = (tree.sharedWith || [])
                 .map(id => users.find(u => u.id === id))
@@ -454,15 +486,17 @@ function ManageRootsPage() {
                           <FileText className="h-5 w-5 text-primary" /> {tree.title}
                         </div>
                         <div className="flex">
-                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTreeToRename(tree);
-                              setRenamedTitle(tree.title);
-                              setIsRenameDialogOpen(true);
-                            }}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          {canManageTree && (
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-7 w-7"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTreeToRename(tree);
+                                setRenamedTitle(tree.title);
+                                setIsRenameDialogOpen(true);
+                              }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" disabled={!isOwner && allTrees.length <= 1}>
@@ -507,27 +541,50 @@ function ManageRootsPage() {
                             <Github className="h-4 w-4 shrink-0" />
                             <span className="truncate">{tree.gitSync.repoOwner}/{tree.gitSync.repoName}</span>
                           </div>
-                          {isOwner && (
+                          {hasWritePerms && (
                             <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => handleUnlink(tree.id)}>
                               <X className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
                       )}
-                      {isOwner && sharedWithUsers.length > 0 && (
+                      {isOwner && ((tree.sharedWith && tree.sharedWith.length > 0) || (tree.shares && tree.shares.length > 0)) && (
                         <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 space-y-1">
                           <div className="flex items-center gap-2 font-medium">
                             <Users className="h-4 w-4 shrink-0" />
                             <span>Shared with:</span>
                           </div>
-                          {sharedWithUsers.map(user => (
-                            <div key={user.id} className="flex items-center justify-between pl-2">
-                              <span>- {user.username}</span>
-                              <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShare(tree.id, user.id)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
+                          {/* Legacy sharedWith users (read-only) */}
+                          {(tree.sharedWith || []).map(uid => {
+                            const user = users.find(u => u.id === uid);
+                            return user ? (
+                              <div key={uid} className="flex items-center justify-between pl-2">
+                                <span>- {user.username} <span className="text-muted-foreground/60">(read-only)</span></span>
+                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShare(tree.id, uid)}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : null;
+                          })}
+                          {/* New shares with permissions */}
+                          {(tree.shares || []).map(share => {
+                            const user = users.find(u => u.id === share.userId);
+                            const permLabels = [];
+                            if (share.permissions.admin) permLabels.push('admin');
+                            else {
+                              if (share.permissions.editNodes) permLabels.push('nodes');
+                              if (share.permissions.editTemplates) permLabels.push('templates');
+                            }
+                            const label = permLabels.length > 0 ? permLabels.join(', ') : 'read-only';
+                            return user ? (
+                              <div key={share.userId} className="flex items-center justify-between pl-2">
+                                <span>- {user.username} <span className="text-muted-foreground/60">({label})</span></span>
+                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShare(tree.id, share.userId)}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : null;
+                          })}
                         </div>
                       )}
                     </CardContent>
@@ -540,17 +597,15 @@ function ManageRootsPage() {
                       </Button>
                       <div className="flex gap-1">
                         <TooltipProvider>
-                          {isOwner && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" onClick={() => duplicateTree(tree.id)}>
-                                  <CopyPlus className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Duplicate Tree</p></TooltipContent>
-                            </Tooltip>
-                          )}
-                          {isOwner && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" onClick={() => duplicateTree(tree.id)}>
+                                <CopyPlus className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Duplicate Tree</p></TooltipContent>
+                          </Tooltip>
+                          {canManageTree && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="outline" size="icon" onClick={() => { setSelectedTreeToShare(tree); setIsShareDialogOpen(true); }}>
@@ -560,7 +615,7 @@ function ManageRootsPage() {
                               <TooltipContent><p>Share Tree</p></TooltipContent>
                             </Tooltip>
                           )}
-                          {!tree.gitSync && isOwner && (
+                          {!tree.gitSync && hasWritePerms && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant="outline" size="icon" onClick={() => { setSelectedTreeForLink(tree.id); setIsLinkRepoOpen(true); }} disabled={!currentUser?.gitSettings?.githubPat}>
@@ -791,6 +846,7 @@ function ManageRootsPage() {
             if (!open) {
               setSelectedTreeToShare(null);
               setSelectedViewMode("standard");
+              setEditingShareUserId(null);
             }
             setIsShareDialogOpen(open);
           }}>
@@ -801,36 +857,158 @@ function ManageRootsPage() {
               <div className="py-4 space-y-6">
                 <div className="space-y-4">
                   <h4 className="font-medium">Private Sharing</h4>
-                  <p className="text-sm text-muted-foreground">Grant edit access to specific users.</p>
+                  <p className="text-sm text-muted-foreground">Grant access to specific users. Choose permissions below.</p>
                   <div className="flex gap-2">
                     <Select onValueChange={setSelectedUserToShare} value={selectedUserToShare}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a user..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {users.filter(u => u.id !== currentUser?.id && !(selectedTreeToShare?.sharedWith || []).includes(u.id)).map(user => (
+                        {users.filter(u => {
+                          if (u.id === currentUser?.id) return false;
+                          if ((selectedTreeToShare?.sharedWith || []).includes(u.id)) return false;
+                          if ((selectedTreeToShare?.shares || []).some(s => s.userId === u.id)) return false;
+                          return true;
+                        }).map(user => (
                           <SelectItem key={user.id} value={user.id}>{user.username}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <Button onClick={handleShare} disabled={!selectedUserToShare}>Add User</Button>
                   </div>
-                  {(selectedTreeToShare?.sharedWith?.length || 0) > 0 && (
-                    <div className="space-y-2 pt-2">
-                      <Label>Current Collaborators</Label>
-                      {(selectedTreeToShare?.sharedWith || []).map(userId => {
-                        const user = users.find(u => u.id === userId);
-                        return user ? (
-                          <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
-                            <span>{user.username}</span>
-                            <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : null;
-                      })}
+                  {selectedUserToShare && (
+                    <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+                      <Label className="text-xs font-medium text-muted-foreground">Permissions for new user</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="perm-edit-nodes"
+                          checked={sharePermissions.editNodes || sharePermissions.admin}
+                          disabled={sharePermissions.admin}
+                          onCheckedChange={(checked) => setSharePermissions(p => ({ ...p, editNodes: !!checked }))}
+                        />
+                        <Label htmlFor="perm-edit-nodes" className="text-sm font-normal">Edit Nodes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="perm-edit-templates"
+                          checked={sharePermissions.editTemplates || sharePermissions.admin}
+                          disabled={sharePermissions.admin}
+                          onCheckedChange={(checked) => setSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
+                        />
+                        <Label htmlFor="perm-edit-templates" className="text-sm font-normal">Edit Templates</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="perm-admin"
+                          checked={sharePermissions.admin}
+                          onCheckedChange={(checked) => setSharePermissions(p => ({
+                            ...p,
+                            admin: !!checked,
+                            editNodes: !!checked ? true : p.editNodes,
+                            editTemplates: !!checked ? true : p.editTemplates,
+                          }))}
+                        />
+                        <Label htmlFor="perm-admin" className="text-sm font-normal">Admin <span className="text-xs text-muted-foreground">(full access + sharing)</span></Label>
+                      </div>
+                      <p className="text-xs text-muted-foreground">If no permissions are selected, the user gets read-only access.</p>
                     </div>
                   )}
+                  {(() => {
+                    // Combine legacy sharedWith + new shares into a single list
+                    const legacyUsers = (selectedTreeToShare?.sharedWith || []).map(uid => ({
+                      userId: uid,
+                      permissions: { editNodes: false, editTemplates: false, admin: false } as TreePermissions,
+                      isLegacy: true,
+                    }));
+                    const shareUsers = (selectedTreeToShare?.shares || []).map(s => ({
+                      userId: s.userId,
+                      permissions: s.permissions,
+                      isLegacy: false,
+                    }));
+                    const allCollaborators = [...legacyUsers, ...shareUsers];
+                    if (allCollaborators.length === 0) return null;
+                    return (
+                      <div className="space-y-2 pt-2">
+                        <Label>Current Collaborators</Label>
+                        {allCollaborators.map(({ userId, permissions, isLegacy }) => {
+                          const user = users.find(u => u.id === userId);
+                          if (!user) return null;
+                          const permLabels = [];
+                          if (permissions.admin) permLabels.push('Admin');
+                          else {
+                            if (permissions.editNodes) permLabels.push('Edit Nodes');
+                            if (permissions.editTemplates) permLabels.push('Edit Templates');
+                          }
+                          const label = permLabels.length > 0 ? permLabels.join(', ') : 'Read-Only';
+                          
+                          if (editingShareUserId === userId) {
+                            return (
+                              <div key={userId} className="space-y-3 p-3 border rounded-md bg-muted/30 w-full mt-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-sm">{user.username} - Edit Permissions</span>
+                                  <div className="flex gap-2">
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingShareUserId(null)}>Cancel</Button>
+                                      <Button size="sm" onClick={saveEditingShare}>Save</Button>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`edit-perm-edit-nodes-${userId}`}
+                                    checked={editingSharePermissions.editNodes || editingSharePermissions.admin}
+                                    disabled={editingSharePermissions.admin}
+                                    onCheckedChange={(checked) => setEditingSharePermissions(p => ({ ...p, editNodes: !!checked }))}
+                                  />
+                                  <Label htmlFor={`edit-perm-edit-nodes-${userId}`} className="text-sm font-normal">Edit Nodes</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`edit-perm-edit-templates-${userId}`}
+                                    checked={editingSharePermissions.editTemplates || editingSharePermissions.admin}
+                                    disabled={editingSharePermissions.admin}
+                                    onCheckedChange={(checked) => setEditingSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
+                                  />
+                                  <Label htmlFor={`edit-perm-edit-templates-${userId}`} className="text-sm font-normal">Edit Templates</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`edit-perm-admin-${userId}`}
+                                    checked={editingSharePermissions.admin}
+                                    onCheckedChange={(checked) => setEditingSharePermissions(p => ({
+                                      ...p,
+                                      admin: !!checked,
+                                      editNodes: !!checked ? true : p.editNodes,
+                                      editTemplates: !!checked ? true : p.editTemplates,
+                                    }))}
+                                  />
+                                  <Label htmlFor={`edit-perm-admin-${userId}`} className="text-sm font-normal">Admin</Label>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                              <div>
+                                <span className="font-medium">{user.username}</span>
+                                <span className="text-xs text-muted-foreground ml-2">({label})</span>
+                              </div>
+                              <div className="flex items-center">
+                                <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground shrink-0 mr-1" onClick={() => {
+                                  setEditingShareUserId(userId);
+                                  setEditingSharePermissions({ ...permissions });
+                                }}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-4 pt-4 border-t">
                   <h4 className="font-medium">Public Sharing</h4>

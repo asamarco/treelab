@@ -38,6 +38,7 @@ import {
   QueryDefinition,
   ConditionalRuleOperator,
   SimpleQueryRule,
+  TreePermissions,
 } from '@/lib/types';
 import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition, extractOriginalName } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
@@ -259,7 +260,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     if (!currentUser) return allTrees; // For demo mode
     return allTrees.filter(tree =>
       tree.userId === currentUser.id ||
-      (tree.sharedWith && tree.sharedWith.includes(currentUser.id))
+      (tree.sharedWith && tree.sharedWith.includes(currentUser.id)) ||
+      (tree.shares && tree.shares.some(s => s.userId === currentUser.id))
     );
   }, [allTrees, currentUser, initialTree]);
 
@@ -1485,15 +1487,36 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     deleteTree,
     duplicateTree,
     updateTreeOrder,
-    shareTree: async (treeId: string, userId: string) => {
+    shareTree: async (treeId: string, userId: string, permissions?: Partial<TreePermissions>) => {
       if (!currentUser) return;
-      performAction((draft) => { const tree = draft.find(t => t.id === treeId); if (tree) { if (!tree.sharedWith) tree.sharedWith = []; tree.sharedWith.push(userId); } });
-      await shareTreeWithUser(treeId, userId);
+      const resolvedPermissions = {
+        editNodes: permissions?.editNodes ?? false,
+        editTemplates: permissions?.editTemplates ?? false,
+        admin: permissions?.admin ?? false,
+      };
+      performAction((draft) => {
+        const tree = draft.find(t => t.id === treeId);
+        if (tree) {
+          // Remove from legacy sharedWith
+          if (tree.sharedWith) tree.sharedWith = tree.sharedWith.filter(id => id !== userId);
+          // Update shares array
+          if (!tree.shares) tree.shares = [];
+          tree.shares = tree.shares.filter(s => s.userId !== userId);
+          tree.shares.push({ userId, permissions: resolvedPermissions });
+        }
+      });
+      await shareTreeWithUser(treeId, userId, permissions);
       toast({ title: "Tree Shared", description: "Access has been granted." });
     },
     revokeShare: async (treeId: string, userId: string) => {
       if (!currentUser) return;
-      performAction(draft => { const tree = draft.find(t => t.id === treeId); if (tree && tree.sharedWith) { tree.sharedWith = tree.sharedWith.filter(id => id !== userId); } });
+      performAction(draft => {
+        const tree = draft.find(t => t.id === treeId);
+        if (tree) {
+          if (tree.sharedWith) tree.sharedWith = tree.sharedWith.filter(id => id !== userId);
+          if (tree.shares) tree.shares = tree.shares.filter(s => s.userId !== userId);
+        }
+      });
       await revokeShareFromUser(treeId, userId);
       toast({ title: "Access Revoked", description: "User access has been removed." });
     },

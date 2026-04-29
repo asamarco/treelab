@@ -55,11 +55,25 @@ const GitSyncSchema = new Schema({
 }, { _id: false });
 
 
+// --- TreeShare Schema (embedded in TreeFile) ---
+const TreePermissionsSchema = new Schema({
+  editNodes: { type: Boolean, default: false },
+  editTemplates: { type: Boolean, default: false },
+  admin: { type: Boolean, default: false },
+}, { _id: false });
+
+const TreeShareSchema = new Schema({
+  userId: { type: String, required: true },
+  permissions: { type: TreePermissionsSchema, default: () => ({}) },
+}, { _id: false });
+
+
 // --- TreeFile Schema and Model (stores metadata, templates) ---
 const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
   _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
   userId: { type: String, required: true, index: true },
   sharedWith: { type: [String], default: [], index: true },
+  shares: { type: [TreeShareSchema], default: [] },
   isPublic: { type: Boolean, default: false, index: true },
   publicId: { type: String, unique: true, sparse: true, index: true, default: () => crypto.randomUUID() },
   title: { type: String, required: true },

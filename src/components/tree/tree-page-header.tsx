@@ -90,6 +90,9 @@ export function TreePageHeader({
 
     const isOutOfSync = remoteSha && tree.gitSync?.lastSyncSha !== remoteSha;
     const isOwner = tree.userId === currentUser?.id;
+    const isAdmin = tree.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin) ?? false;
+    const canEditTitle = isOwner || isAdmin;
+    const hasWritePerms = isOwner || isAdmin || (tree.shares?.some(s => s.userId === currentUser?.id && (s.permissions.editNodes || s.permissions.editTemplates)) ?? false);
     
     const handleSync = async () => {
         if (!tree || !currentUser?.gitSettings?.githubPat) return;
@@ -129,7 +132,7 @@ export function TreePageHeader({
                                 {tree.isPublic && (
                                     <Globe className="h-4 w-4 text-muted-foreground" />
                                 )}
-                                {tree.sharedWith && tree.sharedWith.length > 0 && (
+                                {((tree.sharedWith && tree.sharedWith.length > 0) || (tree.shares && tree.shares.length > 0)) && (
                                     <Users className="h-4 w-4 text-muted-foreground" />
                                 )}
                             </div>
@@ -146,7 +149,7 @@ export function TreePageHeader({
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                {isOwner && (
+                {canEditTitle && (
                     <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity read-only-hidden shrink-0" onClick={() => setDialogState({ isRenameTreeOpen: true, initialTreeTitle: tree.title })}>
                         <Edit className="h-4 w-4" />
                     </Button>
@@ -268,7 +271,7 @@ export function TreePageHeader({
                             </DropdownMenuPortal>
                         </DropdownMenuSub>
                         
-                        {tree.gitSync && (
+                        {tree.gitSync && hasWritePerms && (
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>
                                     <Github className="mr-2 h-4 w-4" />
@@ -360,7 +363,7 @@ export function TreePageHeader({
                                 <DropdownMenuItem onSelect={() => currentUser ? exportNodesAsHtml('tree-view-container', allNodes, tree.title) : handlePublicExportClick()} disabled={!currentUser}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        {tree.gitSync && (
+                        {tree.gitSync && hasWritePerms && (
                             <DropdownMenu>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
