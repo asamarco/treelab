@@ -77,6 +77,14 @@ import path from "path";
 import { Separator } from "../ui/separator";
 import { useUIContext } from "@/contexts/ui-context";
 import { DatePicker } from "../ui/date-picker";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 import { DataSheetGrid, textColumn, keyColumn, createContextMenuComponent, ContextMenuComponentProps } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 
@@ -1036,31 +1044,41 @@ export const NodeForm = ({
               return (
                 <div key="table-block" className="space-y-2">
                   <Label className="text-sm font-medium">Table Data</Label>
-                  <div className="space-y-4">
-                    {Array.from({ length: tableRowCount }).map((_, rowIndex) => (
-                      <Card key={rowIndex} className="bg-muted/50">
-                        <CardContent className="p-4 space-y-4">
-                          <div className="flex justify-between items-center"><p className="font-semibold">Row {rowIndex + 1}</p>
-                            <AlertDialog><AlertDialogTrigger asChild>
-                              <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
-                            </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-                          </div>
-                          {tableHeaderFields.map(f => {
-                            const dateString = formData[f.id]?.[rowIndex]; let dateValue: Date | undefined;
-                            if (dateString && typeof dateString === 'string') { const parsed = parse(dateString, 'yyyy-MM-dd', new Date()); if (isValid(parsed)) dateValue = parsed; }
-                            return (
-                              <div key={`${f.id}-${rowIndex}`} className="space-y-2"><Label className="text-sm font-medium">{f.name}</Label>
-                                <div className="flex items-center gap-1">
-                                  {f.prefix && <span className="text-muted-foreground text-sm">{f.prefix}</span>}
-                                  {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} step={f.columnType === 'number' ? "any" : undefined} onWheel={f.columnType === 'number' ? (e) => e.currentTarget.blur() : undefined} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow" />)}
-                                  {f.postfix && <span className="text-muted-foreground text-sm">{f.postfix}</span>}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {tableHeaderFields.map(f => (
+                            <TableHead key={f.id} className="min-w-[150px]">{f.name}</TableHead>
+                          ))}
+                          <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Array.from({ length: tableRowCount }).map((_, rowIndex) => (
+                          <TableRow key={rowIndex}>
+                            {tableHeaderFields.map(f => {
+                              const dateString = formData[f.id]?.[rowIndex]; let dateValue: Date | undefined;
+                              if (dateString && typeof dateString === 'string') { const parsed = parse(dateString, 'yyyy-MM-dd', new Date()); if (isValid(parsed)) dateValue = parsed; }
+                              return (
+                                <TableCell key={`${f.id}-${rowIndex}`} className="p-2">
+                                  <div className="flex items-center gap-1">
+                                    {f.prefix && <span className="text-muted-foreground text-sm">{f.prefix}</span>}
+                                    {f.columnType === 'date' ? (<DatePicker date={dateValue} setDate={(d) => handleTableChange(rowIndex, f.id, d)} placeholder="Select a date" />) : (<Input type={f.columnType || 'text'} step={f.columnType === 'number' ? "any" : undefined} onWheel={f.columnType === 'number' ? (e) => e.currentTarget.blur() : undefined} value={formData[f.id]?.[rowIndex] || ''} onChange={e => handleTableChange(rowIndex, f.id, e.target.value)} className="h-8 flex-grow min-w-[100px]" />)}
+                                    {f.postfix && <span className="text-muted-foreground text-sm">{f.postfix}</span>}
+                                  </div>
+                                </TableCell>
+                              )
+                            })}
+                            <TableCell className="p-2">
+                              <AlertDialog><AlertDialogTrigger asChild>
+                                <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
+                              </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                   <Button type="button" variant="outline" size="sm" onClick={handleAddRow} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Row</Button>
                 </div>
