@@ -1000,7 +1000,7 @@ export async function copyNodesAction(
   // The `isDirectTopLevel` flag distinguishes direct iteration of `nodesToProcess`
   // from recursive child processing. Without this, a clone that is both selected
   // AND a descendant of another selected node would incorrectly be placed at root.
-  const processHierarchy = (nodesToClone: TreeNode[], isDirectTopLevel: boolean) => {
+  const processHierarchy = (nodesToClone: TreeNode[], isDirectTopLevel: boolean, currentMappedParentId: string | null = null) => {
     nodesToClone.forEach((node, index) => {
       const alreadyMapped = idMap.has(node.id);
       const isTopLevel = isDirectTopLevel && nodesToProcess.some(n => n.id === node.id);
@@ -1026,26 +1026,20 @@ export async function copyNodesAction(
       }
 
       const newId = idMap.get(node.id)!;
+      const expectedParentId = isTopLevel ? newParentIdForTopNodes : currentMappedParentId;
 
       if (!alreadyMapped) {
         // First encounter: create the new flat node entry
-        const finalParentIds = isTopLevel
-          ? [newParentIdForTopNodes]
-          : node.parentIds.map(pid => idMap.get(pid)!).filter(Boolean);
+        const finalParentIds = expectedParentId ? [expectedParentId] : [];
 
         const { children, _id, id, ...rest } = node;
 
-        const newOrderArray = [...node.order];
-        const parentContextForOrder = isTopLevel ? newParentIdForTopNodes : (allNewNodesFlat.find(n => n.id === finalParentIds[0])?.parentIds?.[0] || 'root');
-
-        const parentIndexForOrder = finalParentIds.indexOf(parentContextForOrder);
-
-        if (isTopLevel) {
-          if (parentIndexForOrder !== -1) {
-            newOrderArray[parentIndexForOrder] = newOrderForTopNodes + index;
-          } else {
-            newOrderArray.push(newOrderForTopNodes + index);
-          }
+        const originalParentId = node.parentIds.find(pid => idMap.get(pid) === expectedParentId) || node.parentIds[0];
+        const originalParentIndex = node.parentIds.indexOf(originalParentId);
+        
+        let orderToUse = isTopLevel ? (newOrderForTopNodes + index) : 0;
+        if (!isTopLevel && originalParentIndex !== -1) {
+            orderToUse = node.order[originalParentIndex] ?? 0;
         }
 
         allNewNodesFlat.push({
@@ -1053,24 +1047,22 @@ export async function copyNodesAction(
           id: newId,
           _id: newId,
           parentIds: finalParentIds,
-          order: newOrderArray,
+          order: [orderToUse],
           children: []
         });
       } else {
         // Subsequent encounter of a descendant clone: update existing node's
         // parentIds/order to include this additional parent context.
         const existingNewNode = allNewNodesFlat.find((n: any) => n.id === newId);
-        if (existingNewNode) {
-          const newParentId = node.parentIds.map(pid => idMap.get(pid)!).filter(Boolean)[0];
-
-          if (newParentId && !existingNewNode.parentIds.includes(newParentId)) {
-            const originalParentId = node.parentIds.find(pid => idMap.get(pid) === newParentId);
+        if (existingNewNode && expectedParentId) {
+          if (!existingNewNode.parentIds.includes(expectedParentId)) {
+            const originalParentId = node.parentIds.find(pid => idMap.get(pid) === expectedParentId);
             const originalParentIndex = originalParentId
               ? node.parentIds.indexOf(originalParentId)
               : -1;
             const orderForContext = originalParentIndex !== -1 ? node.order[originalParentIndex] : 0;
 
-            existingNewNode.parentIds.push(newParentId);
+            existingNewNode.parentIds.push(expectedParentId);
             existingNewNode.order.push(orderForContext);
           }
         }
@@ -1079,12 +1071,12 @@ export async function copyNodesAction(
       // Always recurse into children — duplicate encounters of the same
       // descendant will be caught by the alreadyMapped check above.
       if (node.children && node.children.length > 0) {
-        processHierarchy(node.children, false);
+        processHierarchy(node.children, false, newId);
       }
     });
   };
 
-  processHierarchy(nodesToProcess, true);
+  processHierarchy(nodesToProcess, true, newParentIdForTopNodes);
 
   // DEBUG: log the flat list to diagnose top-level clone issues
   //console.log('[copyNodesAction] allNewNodesFlat:', JSON.stringify(allNewNodesFlat.map(n => ({
