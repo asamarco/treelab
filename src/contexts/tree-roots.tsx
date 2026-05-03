@@ -1063,11 +1063,11 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       }
     };
 
-    for (const { nodeId } of nodesToExpand) {
+    for (const { nodeId, parentId } of nodesToExpand) {
       const result = findNodeAndParent(nodeId, activeTree.tree);
       if (!result) continue;
       const { node } = result;
-      traverse([node], nodeId);
+      traverse([node], parentId);
     }
 
     if (allIdsToAdd.size > 0) {

@@ -135,6 +135,53 @@ export function TreeNodeHeader({
       (template.bodyTemplate && template.bodyTemplate.trim() !== '')
     ));
 
+  const handleExpandAll = (e?: Event) => {
+    if (e) e.stopPropagation();
+    const allIdsToAdd = new Set<string>();
+    const traverse = (nodes: TreeNode[], parentId: string | null) => {
+      for (const currNode of nodes) {
+        allIdsToAdd.add(`${currNode.id}_${parentId || "root"}`);
+        (currNode.parentIds || []).forEach(pId => {
+          if (pId !== (parentId || 'root')) {
+            allIdsToAdd.add(`${currNode.id}_${pId}`);
+          }
+        });
+        if (currNode.children) {
+          traverse(currNode.children, currNode.id);
+        }
+      }
+    };
+    traverse([node], contextualParentId);
+    onExpandedChange((currentIds: any) => {
+      const idSet = new Set((currentIds || []) as string[]);
+      allIdsToAdd.forEach(id => idSet.add(id));
+      return Array.from(idSet);
+    }, true);
+  };
+
+  const handleCollapseAll = (e?: Event) => {
+    if (e) e.stopPropagation();
+    const allIdsToRemove = new Set<string>();
+    const traverse = (nodes: TreeNode[], parentId: string | null) => {
+      for (const currNode of nodes) {
+        allIdsToRemove.add(`${currNode.id}_${parentId || "root"}`);
+        (currNode.parentIds || []).forEach(pId => {
+          if (pId !== (parentId || 'root')) {
+            allIdsToRemove.add(`${currNode.id}_${pId}`);
+          }
+        });
+        if (currNode.children) {
+          traverse(currNode.children, currNode.id);
+        }
+      }
+    };
+    traverse([node], contextualParentId);
+    onExpandedChange((currentIds: any) => {
+      const ids = currentIds || [];
+      return ids.filter((id: string) => !allIdsToRemove.has(id));
+    }, true);
+  };
+
   const handleCopy = () => {
     const fullNode = findNodeAndParent(node.id)?.node;
     if (!fullNode) {
@@ -442,7 +489,7 @@ export function TreeNodeHeader({
                         <Plus className="mr-2 h-4 w-4" /> Add Sibling
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onSelect={() => { if (isExpanded) collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); else expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); }} disabled={!node.children || node.children.length === 0}>
+                      <DropdownMenuItem onSelect={(e) => { if (isExpanded) handleCollapseAll(e); else handleExpandAll(e); }} disabled={!node.children || node.children.length === 0}>
                         <ChevronsUpDown className="mr-2 h-4 w-4" /> {isExpanded ? 'Collapse All' : 'Expand All'}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => moveNodeOrder(node.id, 'up', contextualParentId)} disabled={contextualOrder === minOrder}>
@@ -471,7 +518,7 @@ export function TreeNodeHeader({
                     </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { collapseAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } else { expandAllFromNode([{ nodeId: node.id, parentId: contextualParentId }]); } }} disabled={!node.children || node.children.length === 0}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { handleCollapseAll(); } else { handleExpandAll(); } }} disabled={!node.children || node.children.length === 0}>
                         <ChevronsUpDown className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>
