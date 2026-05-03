@@ -6,7 +6,7 @@
  */
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue } from "react";
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { TreeView } from "@/components/tree/tree-view";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -463,15 +463,17 @@ export function TreePage() {
 
   const [detailsExpandedNodeIds, setDetailsExpandedNodeIds] = useState<string[]>([]);
 
-  const nodesForDetails = useMemo(() => {
-    if (!isTwoPanelMode || selectedNodeIds.length === 0) return [];
+  const deferredSelectedNodeIds = useDeferredValue(selectedNodeIds);
 
-    const nodes = selectedNodeIds
+  const nodesForDetails = useMemo(() => {
+    if (!isTwoPanelMode || deferredSelectedNodeIds.length === 0) return [];
+
+    const nodes = deferredSelectedNodeIds
       .map(id => findNodeAndParent(id.split('_')[0])?.node)
       .filter((n): n is TreeNode => !!n);
 
     return nodes;
-  }, [isTwoPanelMode, selectedNodeIds, findNodeAndParent]);
+  }, [isTwoPanelMode, deferredSelectedNodeIds, findNodeAndParent]);
 
   useEffect(() => {
     if (isTwoPanelMode && nodesForDetails.length > 0) {
