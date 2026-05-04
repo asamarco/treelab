@@ -53,7 +53,8 @@ export const getSessionUser = async (): Promise<User | null> => {
 
 // Functions that still call server actions directly (admin actions, etc.)
 export { 
-    fetchUsers, 
+    fetchAllUsers, 
+    searchUsers, 
     addUser as addUserByAdmin,
     updateUserAdminStatus,
     deleteUser,

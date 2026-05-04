@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { User, GlobalSettings, GitSettings } from "@/lib/types";
 import {
-  fetchUsers,
+  fetchAllUsers,
   addUser as addUserOnServer,
   updateUserAdminStatus as updateUserAdminStatusOnServer,
   deleteUser as deleteUserOnClient,
@@ -97,9 +97,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       setCurrentUser(userFromSession);
 
       if (userFromSession) {
-        const allUsers = await fetchUsers(); // Only fetch all users if logged in
-        setUsers(allUsers);
-        console.log(`INFO: Restored user '${userFromSession.username}' and fetched all users.`);
+        console.log(`INFO: Restored user '${userFromSession.username}'.`);
       }
 
     } catch (error) {
@@ -152,8 +150,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     const user = await loginOnClient(identifier, password, rememberMe);
     if (user) {
       setCurrentUser(user);
-      const allUsers = await fetchUsers(); // Fetch all users on login
-      setUsers(allUsers);
       return true;
     }
     return false;
@@ -163,8 +159,6 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     const newUser = await registerOnClient(username, password);
     if (newUser) {
       setCurrentUser(newUser);
-      const allUsers = await fetchUsers(); // Fetch all users on register
-      setUsers(allUsers);
       console.log(`INFO: User '${username}' registered and logged in.`);
       window.location.href = '/';
       return true;
@@ -261,6 +255,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     await revokeAllSessionsOnServer();
   };
 
+  const fetchAllUsersAction = useCallback(async () => {
+    if (!currentUser?.isAdmin) return;
+    const allUsers = await fetchAllUsers();
+    setUsers(allUsers);
+  }, [currentUser?.isAdmin]);
+
   return {
     currentUser,
     isAuthLoading,
@@ -275,6 +275,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     deleteUser,
     changePassword,
     resetPasswordByAdmin,
+    fetchAllUsers: fetchAllUsersAction,
     setTheme,
     setDateFormat,
     setInactivityTimeout,

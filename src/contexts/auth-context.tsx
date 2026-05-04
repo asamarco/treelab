@@ -28,6 +28,7 @@ interface AuthContextType {
   deleteUser: (userId: string) => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   resetPasswordByAdmin: (userId: string, newPassword: string) => Promise<void>;
+  fetchAllUsers: () => Promise<void>;
 
   // User & Global Settings
   theme: Theme;
@@ -67,6 +68,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     deleteUser,
     changePassword,
     resetPasswordByAdmin,
+    fetchAllUsers,
     setTheme: setAuthTheme,
     setGitSettings,
     setLastActiveTreeId,
@@ -117,6 +119,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     deleteUser,
     changePassword,
     resetPasswordByAdmin,
+    fetchAllUsers,
     theme,
     setTheme: handleSetTheme,
     dateFormat,

@@ -9,11 +9,11 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { TreeFile, User, ExampleInfo, GlobalSettings, AttachmentInfo, TreeNode, StorageInfo, PurgeResult, GitProvider, GitBlob, GitCommit, Template, TreePermissions, TreeShare } from './types';
+import { TreeFile, User, ExampleInfo, GlobalSettings, AttachmentInfo, TreeNode, StorageInfo, PurgeResult, GitProvider, GitBlob, GitCommit, Template, TreePermissions, TreeShare, Team, TeamShare } from './types';
 import { lookup } from 'mime-types';
 import { Octokit } from 'octokit';
 import { connectToDatabase } from './mongodb';
-import { UserModel, TreeModel, TreeNodeModel } from './models';
+import { UserModel, TreeModel, TreeNodeModel, TeamModel } from './models';
 import { encrypt, decrypt } from './encryption';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
@@ -35,30 +35,67 @@ export async function hashPassword(password: string): Promise<string> {
 // Computes the effective permissions for a user on a tree.
 // Legacy sharedWith users get read-only access. New shares entries carry granular permissions.
 // The owner always gets full permissions.
-function getTreePermissions(tree: Pick<TreeFile, 'userId' | 'sharedWith' | 'shares'>, userId: string): TreePermissions & { isOwner: boolean; hasAccess: boolean } {
+// Computes the effective permissions for a user on a tree.
+// Legacy sharedWith users get read-only access. New shares entries carry granular permissions.
+// The owner always gets full permissions.
+async function getTreePermissions(tree: Pick<TreeFile, 'userId' | 'sharedWith' | 'shares' | 'teamShares'>, userId: string): Promise<TreePermissions & { isOwner: boolean; hasAccess: boolean }> {
     const isOwner = tree.userId.toString() === userId;
     if (isOwner) {
         return { isOwner: true, hasAccess: true, editNodes: true, editTemplates: true, admin: true };
     }
 
-    // Check the new shares array first
-    const share = (tree.shares || []).find(s => s.userId === userId);
-    if (share) {
-        return {
-            isOwner: false,
-            hasAccess: true,
-            editNodes: share.permissions.editNodes || share.permissions.admin,
-            editTemplates: share.permissions.editTemplates || share.permissions.admin,
-            admin: share.permissions.admin,
-        };
-    }
+    // Initialize with more restrictive permissions
+    let editNodes = false;
+    let editTemplates = false;
+    let admin = false;
+    let hasAccess = false;
 
-    // Fallback: legacy sharedWith array => read-only
+    // 1. Check legacy sharedWith array => read-only
     if ((tree.sharedWith || []).includes(userId)) {
-        return { isOwner: false, hasAccess: true, editNodes: false, editTemplates: false, admin: false };
+        hasAccess = true;
     }
 
-    return { isOwner: false, hasAccess: false, editNodes: false, editTemplates: false, admin: false };
+    // 2. Check the new shares array (individual permissions)
+    const individualShare = (tree.shares || []).find(s => s.userId === userId);
+    if (individualShare) {
+        hasAccess = true;
+        editNodes = editNodes || individualShare.permissions.editNodes || individualShare.permissions.admin;
+        editTemplates = editTemplates || individualShare.permissions.editTemplates || individualShare.permissions.admin;
+        admin = admin || individualShare.permissions.admin;
+    }
+
+    // 3. Check team shares
+    const teamShares = tree.teamShares || [];
+    if (teamShares.length > 0) {
+        await connectToDatabase();
+        // Find teams where user is a member or leader
+        const userTeams = await TeamModel.find({
+            $or: [
+                { memberIds: userId },
+                { leaderIds: userId }
+            ]
+        }).select('_id').lean().exec();
+        
+        const userTeamIds = userTeams.map(t => t._id.toString());
+        
+        const relevantTeamShares = teamShares.filter(ts => userTeamIds.includes(ts.teamId));
+        if (relevantTeamShares.length > 0) {
+            hasAccess = true;
+            for (const ts of relevantTeamShares) {
+                editNodes = editNodes || ts.permissions.editNodes || ts.permissions.admin;
+                editTemplates = editTemplates || ts.permissions.editTemplates || ts.permissions.admin;
+                admin = admin || ts.permissions.admin;
+            }
+        }
+    }
+
+    return {
+        isOwner: false,
+        hasAccess,
+        editNodes,
+        editTemplates,
+        admin,
+    };
 }
 
 export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
@@ -72,7 +109,7 @@ export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
     if (node.userId.toString() !== session.userId) {
         const tree = await TreeModel.findById(node.treeId).lean<TreeFile>();
         if (!tree) throw new Error("Authorization denied.");
-        const perms = getTreePermissions(tree, session.userId);
+        const perms = await getTreePermissions(tree, session.userId);
         if (!tree.isPublic && !perms.hasAccess) {
             throw new Error("Authorization denied.");
         }
@@ -144,7 +181,7 @@ export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & {
 
     const existingTree = await TreeModel.findById(treeFile.id).lean<Omit<TreeFile, 'tree'>>();
     if (!existingTree) throw new Error("Tree not found.");
-    const savePerms = getTreePermissions(existingTree, session.userId);
+    const savePerms = await getTreePermissions(existingTree, session.userId);
     if (!savePerms.isOwner) {
         const updateKeys = Object.keys(treeFile).filter(k => k !== 'id');
         const isTemplateUpdate = updateKeys.includes('templates');
@@ -240,7 +277,7 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
     const treeFileDoc = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>().exec();
     if (!treeFileDoc) return null;
 
-    const loadPerms = getTreePermissions(treeFileDoc, session.userId);
+    const loadPerms = await getTreePermissions(treeFileDoc, session.userId);
     if (!loadPerms.hasAccess) {
         throw new Error("Authorization denied.");
     }
@@ -268,6 +305,7 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
         expandedNodeIds: treeFileDoc.expandedNodeIds,
         gitSync: treeFileDoc.gitSync,
         publicId: treeFileDoc.publicId,
+        teamShares: treeFileDoc.teamShares,
         order: treeFileDoc.order,
         createdAt: treeFileDoc.createdAt,
         updatedAt: treeFileDoc.updatedAt,
@@ -334,13 +372,26 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
     if (!session?.userId) return [];
 
     await connectToDatabase();
-    const treeFileDocs = await TreeModel.find({
+
+    // Find teams the user belongs to
+    const userTeams = await TeamModel.find({
+        $or: [
+            { memberIds: session.userId },
+            { leaderIds: session.userId }
+        ]
+    }).select('_id').lean().exec();
+    const userTeamIds = userTeams.map(t => t._id.toString());
+
+    const query = {
         $or: [
             { userId: session.userId },
             { sharedWith: { $in: [session.userId] } },
-            { 'shares.userId': session.userId }
+            { 'shares.userId': session.userId },
+            { 'teamShares.teamId': { $in: userTeamIds } }
         ]
-    }).lean<Omit<TreeFile, 'tree' & { _id: any }>[]>().exec();
+    };
+
+    const treeFileDocs = await TreeModel.find(query).lean<Omit<TreeFile, 'tree'>[]>().exec();
 
     const treeIds = treeFileDocs.map((t: any) => t._id.toString());
     // Fetch all nodes for the user in one go
@@ -385,6 +436,7 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
                 preferredChildTemplates: t.preferredChildTemplates || [],
             })),
             expandedNodeIds: doc.expandedNodeIds,
+            teamShares: doc.teamShares,
             gitSync: doc.gitSync,
             publicId: doc.publicId,
             order: doc.order,
@@ -510,7 +562,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
         if (!session?.userId) {
             return [];
         }
-        const nodePerms = getTreePermissions(treeFileDoc, session.userId);
+        const nodePerms = await getTreePermissions(treeFileDoc, session.userId);
 
         if (!nodePerms.hasAccess) {
             throw new Error("Authorization denied: You do not have permission to view these nodes.");
@@ -570,7 +622,7 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
 
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const updatePerms = getTreePermissions(tree, session.userId);
+    const updatePerms = await getTreePermissions(tree, session.userId);
     if (!updatePerms.editNodes) {
         throw new Error("Authorization denied: You do not have permission to edit nodes.");
     }
@@ -640,7 +692,7 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
 
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const deletePerms = getTreePermissions(tree, session.userId);
+    const deletePerms = await getTreePermissions(tree, session.userId);
     if (!deletePerms.editNodes) {
         throw new Error("Authorization denied: You do not have permission to edit nodes.");
     }
@@ -821,7 +873,7 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
     // Authorization check
     const tree = await TreeModel.findById(firstTreeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const batchUpdatePerms = getTreePermissions(tree, session.userId);
+    const batchUpdatePerms = await getTreePermissions(tree, session.userId);
     if (!batchUpdatePerms.editNodes) {
         throw new Error("Authorization denied: You do not have permission to edit nodes.");
     }
@@ -863,7 +915,7 @@ export async function addParentToNode(nodeId: string, newParentId: string | null
 
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const clonePerms = getTreePermissions(tree, session.userId);
+    const clonePerms = await getTreePermissions(tree, session.userId);
     if (!clonePerms.editNodes) {
         throw new Error("Authorization denied: You do not have permission to edit nodes.");
     }
@@ -901,7 +953,7 @@ export async function removeParentFromNode(nodeId: string, parentIdToRemove: str
 
     const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const unlinkPerms = getTreePermissions(tree, session.userId);
+    const unlinkPerms = await getTreePermissions(tree, session.userId);
     if (!unlinkPerms.editNodes) {
         throw new Error("Authorization denied: You do not have permission to edit nodes.");
     }
@@ -1286,7 +1338,7 @@ export async function shareTreeWithUser(treeId: string, userId: string, permissi
 
     const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const sharePerms = getTreePermissions(tree, session.userId);
+    const sharePerms = await getTreePermissions(tree, session.userId);
     if (!sharePerms.isOwner && !sharePerms.admin) throw new Error("Authorization denied: Only the owner or an admin can share a tree.");
 
     const resolvedPermissions: TreePermissions = {
@@ -1315,7 +1367,7 @@ export async function revokeShareFromUser(treeId: string, userId: string): Promi
 
     const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const revokePerms = getTreePermissions(tree, session.userId);
+    const revokePerms = await getTreePermissions(tree, session.userId);
     if (!revokePerms.isOwner && !revokePerms.admin) throw new Error("Authorization denied: Only the owner or an admin can revoke shares.");
 
     // Remove from both legacy sharedWith and new shares
@@ -1332,7 +1384,7 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
 
     const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
     if (!tree) throw new Error("Tree not found.");
-    const publicPerms = getTreePermissions(tree, session.userId);
+    const publicPerms = await getTreePermissions(tree, session.userId);
     if (!publicPerms.isOwner && !publicPerms.admin) throw new Error("Authorization denied: Only the owner or an admin can change public status.");
 
     // Generate a publicId if the tree doesn't have one yet (Mongoose defaults don't run on findByIdAndUpdate)
@@ -1346,4 +1398,143 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
     const updated = await TreeModel.findByIdAndUpdate(treeId, updatePayload, { new: true }).lean<Omit<TreeFile, 'tree'>>();
     console.log(`DEBUG: [setTreePublicStatus] Result publicId: ${updated?.publicId}`);
     return updated?.publicId;
+}
+
+// --- Team Management Functions ---
+
+export async function createTeam(name: string, leaderIds: string[]): Promise<Team> {
+    const session = await getSession();
+    const user = await UserModel.findById(session?.userId).lean<User>();
+    if (!user?.isAdmin) throw new Error("Authorization denied: Only admins can create teams.");
+
+    await connectToDatabase();
+    const newTeam = new TeamModel({
+        name,
+        leaderIds,
+        memberIds: leaderIds, // Leaders are implicitly members
+        createdBy: session!.userId,
+    });
+    await newTeam.save();
+    return JSON.parse(JSON.stringify(newTeam.toObject()));
+}
+
+export async function loadUserTeams(): Promise<Team[]> {
+    const session = await getSession();
+    if (!session?.userId) return [];
+
+    await connectToDatabase();
+    const user = await UserModel.findById(session.userId).lean<User>();
+    
+    let query = {};
+    if (!user?.isAdmin) {
+        query = {
+            $or: [
+                { memberIds: session.userId },
+                { leaderIds: session.userId }
+            ]
+        };
+    }
+
+    const teams = await TeamModel.find(query).lean<Team[]>().exec();
+    return teams.map((t: any) => ({ ...t, id: t._id.toString() }));
+}
+
+export async function updateTeamMembers(teamId: string, memberIds: string[]): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+    const team = await TeamModel.findById(teamId).lean<Team>();
+    if (!team) throw new Error("Team not found.");
+
+    const user = await UserModel.findById(session.userId).lean<User>();
+    const isLeader = team.leaderIds.includes(session.userId);
+    if (!user?.isAdmin && !isLeader) throw new Error("Authorization denied: Only admins or team leaders can manage members.");
+
+    await TeamModel.findByIdAndUpdate(teamId, { memberIds: Array.from(new Set([...memberIds, ...team.leaderIds])) }).exec();
+}
+
+export async function assignTeamLeaders(teamId: string, leaderIds: string[]): Promise<void> {
+    const session = await getSession();
+    const user = await UserModel.findById(session?.userId).lean<User>();
+    if (!user?.isAdmin) throw new Error("Authorization denied: Only admins can assign team leaders.");
+
+    await connectToDatabase();
+    // Leaders are also members
+    await TeamModel.findByIdAndUpdate(teamId, { 
+        leaderIds,
+        $addToSet: { memberIds: { $each: leaderIds } }
+    }).exec();
+}
+
+export async function deleteTeam(teamId: string): Promise<void> {
+    const session = await getSession();
+    const user = await UserModel.findById(session?.userId).lean<User>();
+    if (!user?.isAdmin) throw new Error("Authorization denied: Only admins can delete teams.");
+
+    await connectToDatabase();
+    await TeamModel.findByIdAndDelete(teamId).exec();
+    // Also cleanup teamShares in trees
+    await TreeModel.updateMany({}, { $pull: { teamShares: { teamId } } }).exec();
+}
+
+export async function renameTeam(teamId: string, newName: string): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+    const team = await TeamModel.findById(teamId);
+    if (!team) throw new Error("Team not found.");
+
+    const user = await UserModel.findById(session.userId).lean<User>();
+    const isLeader = team.leaderIds.includes(session.userId);
+    if (!user?.isAdmin && !isLeader) {
+        throw new Error("Authorization denied: Only admins or team leaders can rename the team.");
+    }
+
+    team.name = newName;
+    await team.save();
+}
+
+export async function shareTreeWithTeam(treeId: string, teamId: string, permissions?: Partial<TreePermissions>): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+    const sharePerms = await getTreePermissions(tree, session.userId);
+    if (!sharePerms.isOwner && !sharePerms.admin) throw new Error("Authorization denied.");
+
+    // Check if the user belongs to the team they are sharing with
+    const team = await TeamModel.findById(teamId).lean<Team>();
+    if (!team) throw new Error("Team not found.");
+    const isMember = team.memberIds.includes(session.userId) || team.leaderIds.includes(session.userId);
+    if (!isMember && !sharePerms.isOwner) throw new Error("Authorization denied: You can only share trees with teams you belong to.");
+
+    const resolvedPermissions: TreePermissions = {
+        editNodes: permissions?.editNodes ?? false,
+        editTemplates: permissions?.editTemplates ?? false,
+        admin: permissions?.admin ?? false,
+    };
+
+    await TreeModel.findByIdAndUpdate(treeId, { $pull: { teamShares: { teamId } } }).exec();
+    await TreeModel.findByIdAndUpdate(treeId, {
+        $addToSet: { teamShares: { teamId, permissions: resolvedPermissions } }
+    }).exec();
+}
+
+export async function revokeShareFromTeam(treeId: string, teamId: string): Promise<void> {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+    const revokePerms = await getTreePermissions(tree, session.userId);
+    if (!revokePerms.isOwner && !revokePerms.admin) throw new Error("Authorization denied.");
+
+    await TreeModel.findByIdAndUpdate(treeId, {
+        $pull: { teamShares: { teamId } }
+    }).exec();
 }

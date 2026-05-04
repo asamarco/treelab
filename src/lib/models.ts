@@ -7,7 +7,7 @@
  * providing a structured way to create, read, update, and delete data.
  */
 import mongoose, { Schema, model, models, Model } from 'mongoose';
-import { TreeFile, User, GlobalSettings, TreeNode } from './types';
+import { TreeFile, User, GlobalSettings, TreeNode, Team } from './types';
 import crypto from 'crypto';
 
 // --- Field and Template Schemas (embedded in TreeFile) ---
@@ -67,6 +67,11 @@ const TreeShareSchema = new Schema({
   permissions: { type: TreePermissionsSchema, default: () => ({}) },
 }, { _id: false });
 
+const TeamShareSchema = new Schema({
+  teamId: { type: String, required: true },
+  permissions: { type: TreePermissionsSchema, default: () => ({}) },
+}, { _id: false });
+
 
 // --- TreeFile Schema and Model (stores metadata, templates) ---
 const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
@@ -74,6 +79,7 @@ const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
   userId: { type: String, required: true, index: true },
   sharedWith: { type: [String], default: [], index: true },
   shares: { type: [TreeShareSchema], default: [] },
+  teamShares: { type: [TeamShareSchema], default: [] },
   isPublic: { type: Boolean, default: false, index: true },
   publicId: { type: String, unique: true, sparse: true, index: true, default: () => crypto.randomUUID() },
   title: { type: String, required: true },
@@ -153,6 +159,27 @@ UserSchema.pre('save', function (next) {
 
 export const UserModel = (models.User as Model<User>) ||
   model<User>('User', UserSchema);
+
+// --- Team Schema and Model ---
+const TeamSchema = new Schema<Team>({
+  _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
+  name: { type: String, required: true },
+  leaderIds: { type: [String], default: [], index: true },
+  memberIds: { type: [String], default: [], index: true },
+  createdBy: { type: String, required: true },
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  updatedAt: { type: String, default: () => new Date().toISOString() },
+});
+TeamSchema.pre('save', function (next) {
+  if (this.isNew) {
+    this._id = this.id;
+  }
+  this.updatedAt = new Date().toISOString();
+  next();
+});
+
+export const TeamModel = (models.Team as Model<Team>) ||
+  model<Team>('Team', TeamSchema);
 
 // --- GlobalSettings Schema and Model ---
 const GlobalSettingsSchema = new Schema<GlobalSettings>({

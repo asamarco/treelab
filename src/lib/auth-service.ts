@@ -40,7 +40,7 @@ const toPlainObject = (doc: any): any => {
 
 // --- User Functions ---
 
-export async function fetchUsers(): Promise<User[]> {
+export async function fetchAllUsers(): Promise<User[]> {
     // This is critical to prevent Next.js from caching the user list across different user sessions.
     noStore();
     const session = await getSession();
@@ -61,6 +61,30 @@ export async function fetchUsers(): Promise<User[]> {
         })
     );
     return decryptedUsers;
+}
+
+export async function searchUsers(query: string): Promise<Pick<User, 'id' | 'username'>[]> {
+    noStore();
+    const session = await getSession();
+    if (!session?.userId) {
+        throw new Error("Authentication required to search users.");
+    }
+
+    if (!query || query.length < 2) return [];
+
+    await connectToDatabase();
+    const users = await UserModel.find({ 
+        username: { $regex: query, $options: 'i' } 
+    })
+    .limit(10)
+    .select('username _id')
+    .lean()
+    .exec();
+
+    return users.map((u: any) => ({
+        id: u._id.toString(),
+        username: u.username
+    }));
 }
 
 

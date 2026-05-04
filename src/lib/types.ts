@@ -145,6 +145,22 @@ export interface TreeShare {
     permissions: TreePermissions;
 }
 
+export interface TeamShare {
+    teamId: string;
+    permissions: TreePermissions;
+}
+
+export interface Team {
+    id: string;
+    _id?: any;
+    name: string;
+    leaderIds: string[];
+    memberIds: string[];
+    createdBy: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface TreeFile {
     id: string;
     _id?: any; // Mongoose internal
@@ -159,6 +175,7 @@ export interface TreeFile {
     gitSync?: GitSync;
     sharedWith?: string[];
     shares?: TreeShare[];
+    teamShares?: TeamShare[];
     publicId?: string;
     createdAt: string;
     updatedAt: string;
@@ -443,6 +460,16 @@ export interface UseTreeRootsResult {
     exportNodesAsJson: (nodesToExport: TreeNode[], baseName: string) => void;
     exportNodesAsArchive: (nodes: TreeNode[], baseName: string) => Promise<void>;
     exportNodesAsHtml: (elementId: string, nodes: TreeNode[], title: string) => void;
+    // Team methods
+    userTeams: Team[];
+    loadTeams: () => Promise<void>;
+    createTeam: (name: string, leaderIds: string[]) => Promise<void>;
+    updateTeamMembers: (teamId: string, memberIds: string[]) => Promise<void>;
+    assignTeamLeaders: (teamId: string, leaderIds: string[]) => Promise<void>;
+    deleteTeam: (teamId: string) => Promise<void>;
+    renameTeam: (teamId: string, newName: string) => Promise<void>;
+    shareTreeWithTeam: (treeId: string, teamId: string, permissions: Partial<TreePermissions>) => Promise<void>;
+    revokeShareFromTeam: (treeId: string, teamId: string) => Promise<void>;
 }
 
 export type TreeContextType = UseTreeRootsResult;

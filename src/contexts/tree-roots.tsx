@@ -39,6 +39,7 @@ import {
   ConditionalRuleOperator,
   SimpleQueryRule,
   TreePermissions,
+  Team,
 } from '@/lib/types';
 import { generateJsonForExport, getContextualOrder, generateClientSideId, evaluateCondition, extractOriginalName } from '@/lib/utils';
 import { createNodesArchive } from "@/lib/archive";
@@ -69,6 +70,14 @@ import {
   removeParentFromNode,
   batchUpdateNodes,
   findNodeById,
+  createTeam as createTeamInDb,
+  loadUserTeams as loadUserTeamsFromDb,
+  updateTeamMembers as updateTeamMembersInDb,
+  assignTeamLeaders as assignTeamLeadersInDb,
+  deleteTeam as deleteTeamFromDb,
+  renameTeam as renameTeamInDb,
+  shareTreeWithTeam as shareTreeWithTeamInDb,
+  revokeShareFromTeam as revokeShareFromTeamInDb,
 } from '@/lib/data-service';
 import { getStorageInfo, purgeUnusedFiles } from '@/lib/storage-service';
 import { readArchive } from "@/lib/archive";
@@ -140,6 +149,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser } = useAuthContext();
   const [isDataLoaded, setIsDataLoaded] = useState(!!initialTree);
   const [isTreeDataLoading, setIsTreeDataLoading] = useState(!initialTree);
+  const [isTeamsLoading, setIsTeamsLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const [allTrees, setAllTrees] = useImmer<TreeFile[]>(initialTree ? [JSON.parse(JSON.stringify(initialTree))] : []);
@@ -155,6 +165,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [lastSelectedNodeId, setLastSelectedNodeId] = useState<string | null>(null);
   const [isSelectionModeActive, setIsSelectionModeActive] = useState(false);
+  const [userTeams, setUserTeams] = useState<Team[]>([]);
 
   const { toast } = useToast();
 
@@ -258,12 +269,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       return [initialTree];
     }
     if (!currentUser) return allTrees; // For demo mode
+
     return allTrees.filter(tree =>
       tree.userId === currentUser.id ||
       (tree.sharedWith && tree.sharedWith.includes(currentUser.id)) ||
-      (tree.shares && tree.shares.some(s => s.userId === currentUser.id))
+      (tree.shares && tree.shares.some(s => s.userId === currentUser.id)) ||
+      (tree.teamShares && tree.teamShares.some(ts => userTeams.some(t => t.id === ts.teamId)))
     );
-  }, [allTrees, currentUser, initialTree]);
+  }, [allTrees, currentUser, initialTree, userTeams]);
 
   const activeTree = allTrees.find((t) => t.id === activeTreeId);
 
@@ -800,6 +813,117 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     },
     [commitToRepoViaSync, setCommandHistory, setHistoryIndex, currentUser, toast]
   );
+
+  /* ------------------------------- Teams ---------------------------------- */
+
+  const loadTeams = useCallback(async () => {
+    if (!currentUser) return;
+    setIsTeamsLoading(true);
+    try {
+      const teams = await loadUserTeamsFromDb();
+      setUserTeams(teams);
+    } catch (error) {
+      console.error("Failed to load teams:", error);
+    } finally {
+      setIsTeamsLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser && isDataLoaded) {
+      loadTeams();
+    }
+  }, [currentUser, isDataLoaded, loadTeams]);
+
+  const createTeam = useCallback(async (name: string, leaderIds: string[]) => {
+    try {
+      await createTeamInDb(name, leaderIds);
+      await loadTeams();
+      toast({ title: "Team Created", description: `Team "${name}" has been created.` });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [loadTeams, toast]);
+
+  const updateTeamMembers = useCallback(async (teamId: string, memberIds: string[]) => {
+    try {
+      await updateTeamMembersInDb(teamId, memberIds);
+      await loadTeams();
+      toast({ title: "Members Updated", description: "Team members have been updated." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [loadTeams, toast]);
+
+  const assignTeamLeaders = useCallback(async (teamId: string, leaderIds: string[]) => {
+    try {
+      await assignTeamLeadersInDb(teamId, leaderIds);
+      await loadTeams();
+      toast({ title: "Leaders Assigned", description: "Team leaders have been updated." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [loadTeams, toast]);
+
+  const deleteTeam = useCallback(async (teamId: string) => {
+    try {
+      await deleteTeamFromDb(teamId);
+      await loadTeams();
+      toast({ title: "Team Deleted", description: "The team has been deleted." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [loadTeams, toast]);
+
+  const shareTreeWithTeam = useCallback(async (treeId: string, teamId: string, permissions: Partial<TreePermissions>) => {
+    try {
+      await shareTreeWithTeamInDb(treeId, teamId, permissions);
+      await reloadAllTrees();
+      toast({ title: "Shared with Team", description: "The tree is now shared with the team." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [reloadAllTrees, toast]);
+
+  const revokeShareFromTeam = useCallback(async (treeId: string, teamId: string) => {
+    try {
+      await revokeShareFromTeamInDb(treeId, teamId);
+      await reloadAllTrees();
+      toast({ title: "Share Revoked", description: "Team access has been revoked." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [reloadAllTrees, toast]);
+
+  const shareTree = useCallback(async (treeId: string, userId: string, permissions?: Partial<TreePermissions>) => {
+    try {
+      await shareTreeWithUser(treeId, userId, permissions);
+      await reloadAllTrees();
+      toast({ title: "Shared with User", description: "Access granted successfully." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [reloadAllTrees, toast]);
+
+  const revokeShare = useCallback(async (treeId: string, userId: string) => {
+    try {
+      await revokeShareFromUser(treeId, userId);
+      await reloadAllTrees();
+      toast({ title: "Share Revoked", description: "User access has been revoked." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [reloadAllTrees, toast]);
+
+  const renameTeam = useCallback(async (teamId: string, newName: string) => {
+    try {
+      await renameTeamInDb(teamId, newName);
+      await loadTeams();
+      toast({ title: "Team Renamed", description: `Team is now known as "${newName}".` });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message });
+    }
+  }, [loadTeams, toast]);
 
   const debouncedSave = useDebouncedCallback((treeToSave: TreeFile) => {
     if (!currentUser || isSaving) return; // CRITICAL: Only save if logged in
@@ -1487,39 +1611,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     deleteTree,
     duplicateTree,
     updateTreeOrder,
-    shareTree: async (treeId: string, userId: string, permissions?: Partial<TreePermissions>) => {
-      if (!currentUser) return;
-      const resolvedPermissions = {
-        editNodes: permissions?.editNodes ?? false,
-        editTemplates: permissions?.editTemplates ?? false,
-        admin: permissions?.admin ?? false,
-      };
-      performAction((draft) => {
-        const tree = draft.find(t => t.id === treeId);
-        if (tree) {
-          // Remove from legacy sharedWith
-          if (tree.sharedWith) tree.sharedWith = tree.sharedWith.filter(id => id !== userId);
-          // Update shares array
-          if (!tree.shares) tree.shares = [];
-          tree.shares = tree.shares.filter(s => s.userId !== userId);
-          tree.shares.push({ userId, permissions: resolvedPermissions });
-        }
-      });
-      await shareTreeWithUser(treeId, userId, permissions);
-      toast({ title: "Tree Shared", description: "Access has been granted." });
-    },
-    revokeShare: async (treeId: string, userId: string) => {
-      if (!currentUser) return;
-      performAction(draft => {
-        const tree = draft.find(t => t.id === treeId);
-        if (tree) {
-          if (tree.sharedWith) tree.sharedWith = tree.sharedWith.filter(id => id !== userId);
-          if (tree.shares) tree.shares = tree.shares.filter(s => s.userId !== userId);
-        }
-      });
-      await revokeShareFromUser(treeId, userId);
-      toast({ title: "Access Revoked", description: "User access has been removed." });
-    },
+    shareTree,
+    revokeShare,
     setTreePublicStatus: async (treeId: string, isPublic: boolean) => {
       if (!currentUser) return undefined;
       const publicId = await setTreePublicStatusInDb(treeId, isPublic);
@@ -1627,6 +1720,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     exportNodesAsJson,
     exportNodesAsArchive,
     exportNodesAsHtml,
+    // Team methods
+    userTeams,
+    loadTeams,
+    createTeam,
+    updateTeamMembers,
+    assignTeamLeaders,
+    deleteTeam,
+    renameTeam,
+    shareTreeWithTeam,
+    revokeShareFromTeam,
   };
 }
 

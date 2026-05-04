@@ -84,6 +84,7 @@ function SettingsPage() {
     deleteUser,
     changePassword,
     resetPasswordByAdmin,
+    fetchAllUsers,
     setGitSettings,
     setDateFormat,
     setInactivityTimeout,
@@ -207,6 +208,12 @@ function SettingsPage() {
       setInactivityTimeoutState(currentUser.inactivityTimeoutMinutes);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser?.isAdmin) {
+      fetchAllUsers();
+    }
+  }, [currentUser?.isAdmin, fetchAllUsers]);
 
 
   const handleCreateUser = async (e: React.FormEvent) => {

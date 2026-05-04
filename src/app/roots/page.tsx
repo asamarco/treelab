@@ -55,9 +55,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe, CopyPlus } from "lucide-react";
+import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe, CopyPlus, ShieldCheck, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ExampleInfo, TreeFile, TreePermissions, TreeShare, User } from "@/lib/types";
+import { searchUsers } from "@/lib/auth-client";
 import { Octokit } from "octokit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -130,6 +131,9 @@ function ManageRootsPage() {
     setTreeTitle,
     updateTreeOrder,
     duplicateTree,
+    userTeams,
+    shareTreeWithTeam,
+    revokeShareFromTeam,
   } = useTreeContext();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -168,6 +172,15 @@ function ManageRootsPage() {
     editTemplates: false,
     admin: false,
   });
+  const [selectedTeamToShare, setSelectedTeamToShare] = useState("");
+  const [teamSharePermissions, setTeamSharePermissions] = useState<TreePermissions>({
+    editNodes: false,
+    editTemplates: false,
+    admin: false,
+  });
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userSearchResults, setUserSearchResults] = useState<{ id: string, username: string }[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
 
   useEffect(() => {
     setOrderedTrees(allTrees);
@@ -176,13 +189,43 @@ function ManageRootsPage() {
   useEffect(() => {
     if (selectedTreeToShare) {
       const updatedTree = allTrees.find(t => t.id === selectedTreeToShare.id);
-      if (updatedTree && JSON.stringify(updatedTree.shares) !== JSON.stringify(selectedTreeToShare.shares)) {
-        setSelectedTreeToShare(updatedTree);
-      } else if (updatedTree && JSON.stringify(updatedTree.sharedWith) !== JSON.stringify(selectedTreeToShare.sharedWith)) {
+      if (updatedTree && (
+        JSON.stringify(updatedTree.shares) !== JSON.stringify(selectedTreeToShare.shares) ||
+        JSON.stringify(updatedTree.sharedWith) !== JSON.stringify(selectedTreeToShare.sharedWith) ||
+        JSON.stringify(updatedTree.teamShares) !== JSON.stringify(selectedTreeToShare.teamShares)
+      )) {
         setSelectedTreeToShare(updatedTree);
       }
     }
   }, [allTrees, selectedTreeToShare]);
+
+  useEffect(() => {
+    const search = async () => {
+      if (userSearchQuery.length < 2) {
+        setUserSearchResults([]);
+        return;
+      }
+      setIsSearchingUsers(true);
+      try {
+        const results = await searchUsers(userSearchQuery);
+        // Filter out already shared users and current user
+        const filtered = results.filter(u => {
+          if (u.id === currentUser?.id) return false;
+          if ((selectedTreeToShare?.sharedWith || []).includes(u.id)) return false;
+          if ((selectedTreeToShare?.shares || []).some(s => s.userId === u.id)) return false;
+          return true;
+        });
+        setUserSearchResults(filtered);
+      } catch (err) {
+        console.error("User search failed", err);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    };
+
+    const timer = setTimeout(search, 300);
+    return () => clearTimeout(timer);
+  }, [userSearchQuery, currentUser?.id, selectedTreeToShare]);
 
 
   const filteredTrees = useMemo(() => {
@@ -376,6 +419,7 @@ function ManageRootsPage() {
     if (selectedTreeToShare && selectedUserToShare) {
       await shareTree(selectedTreeToShare.id, selectedUserToShare, sharePermissions);
       setSelectedUserToShare("");
+      setUserSearchQuery("");
       setSharePermissions({ editNodes: false, editTemplates: false, admin: false });
     }
   };
@@ -389,6 +433,17 @@ function ManageRootsPage() {
 
   const revokeShareAndClose = async (treeId: string, userId: string) => {
     await revokeShare(treeId, userId);
+  };
+
+  const handleShareTeam = async () => {
+    if (!selectedTreeToShare || !selectedTeamToShare) return;
+    await shareTreeWithTeam(selectedTreeToShare.id, selectedTeamToShare, teamSharePermissions);
+    setSelectedTeamToShare("");
+    setTeamSharePermissions({ editNodes: false, editTemplates: false, admin: false });
+  };
+
+  const revokeShareFromTeamAndClose = async (treeId: string, teamId: string) => {
+    await revokeShareFromTeam(treeId, teamId);
   };
 
   const handlePublicToggle = async (treeId: string, isPublic: boolean) => {
@@ -584,6 +639,35 @@ function ManageRootsPage() {
                                 </Button>
                               </div>
                             ) : null;
+                          })}
+                        </div>
+                      )}
+
+                      {(tree.teamShares && tree.teamShares.length > 0) && (
+                        <div className="text-xs text-muted-foreground p-2 rounded-md bg-muted/50 space-y-1">
+                          <div className="flex items-center gap-2 font-medium">
+                            <ShieldCheck className="h-4 w-4 shrink-0" />
+                            <span>Shared with Teams:</span>
+                          </div>
+                          {tree.teamShares.map(ts => {
+                            const team = userTeams.find(t => t.id === ts.teamId);
+                            const permLabels = [];
+                            if (ts.permissions.admin) permLabels.push('admin');
+                            else {
+                              if (ts.permissions.editNodes) permLabels.push('nodes');
+                              if (ts.permissions.editTemplates) permLabels.push('templates');
+                            }
+                            const label = permLabels.length > 0 ? permLabels.join(', ') : 'read-only';
+                            return (
+                              <div key={ts.teamId} className="flex items-center justify-between pl-2">
+                                <span>- {team?.name || 'Unknown Team'} <span className="text-muted-foreground/60">({label})</span></span>
+                                {isOwner && (
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareFromTeam(tree.id, ts.teamId)}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            );
                           })}
                         </div>
                       )}
@@ -854,175 +938,304 @@ function ManageRootsPage() {
               <DialogHeader>
                 <DialogTitle>Share "{selectedTreeToShare?.title}"</DialogTitle>
               </DialogHeader>
-              <div className="py-4 space-y-6">
-                <div className="space-y-4">
-                  <h4 className="font-medium">Private Sharing</h4>
-                  <p className="text-sm text-muted-foreground">Grant access to specific users. Choose permissions below.</p>
-                  <div className="flex gap-2">
-                    <Select onValueChange={setSelectedUserToShare} value={selectedUserToShare}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a user..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.filter(u => {
-                          if (u.id === currentUser?.id) return false;
-                          if ((selectedTreeToShare?.sharedWith || []).includes(u.id)) return false;
-                          if ((selectedTreeToShare?.shares || []).some(s => s.userId === u.id)) return false;
-                          return true;
-                        }).map(user => (
-                          <SelectItem key={user.id} value={user.id}>{user.username}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={handleShare} disabled={!selectedUserToShare}>Add User</Button>
-                  </div>
-                  {selectedUserToShare && (
-                    <div className="space-y-3 p-3 border rounded-md bg-muted/30">
-                      <Label className="text-xs font-medium text-muted-foreground">Permissions for new user</Label>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="perm-edit-nodes"
-                          checked={sharePermissions.editNodes || sharePermissions.admin}
-                          disabled={sharePermissions.admin}
-                          onCheckedChange={(checked) => setSharePermissions(p => ({ ...p, editNodes: !!checked }))}
+              <Tabs defaultValue="people" className="py-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="people">People</TabsTrigger>
+                  <TabsTrigger value="teams">Teams</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="people" className="space-y-6 mt-4">
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Grant access to specific users.</p>
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search colleagues to share with..."
+                          className="pl-10"
+                          value={userSearchQuery}
+                          onChange={(e) => setUserSearchQuery(e.target.value)}
                         />
-                        <Label htmlFor="perm-edit-nodes" className="text-sm font-normal">Edit Nodes</Label>
+                        {isSearchingUsers && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="perm-edit-templates"
-                          checked={sharePermissions.editTemplates || sharePermissions.admin}
-                          disabled={sharePermissions.admin}
-                          onCheckedChange={(checked) => setSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
-                        />
-                        <Label htmlFor="perm-edit-templates" className="text-sm font-normal">Edit Templates</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="perm-admin"
-                          checked={sharePermissions.admin}
-                          onCheckedChange={(checked) => setSharePermissions(p => ({
-                            ...p,
-                            admin: !!checked,
-                            editNodes: !!checked ? true : p.editNodes,
-                            editTemplates: !!checked ? true : p.editTemplates,
-                          }))}
-                        />
-                        <Label htmlFor="perm-admin" className="text-sm font-normal">Admin <span className="text-xs text-muted-foreground">(full access + sharing)</span></Label>
-                      </div>
-                      <p className="text-xs text-muted-foreground">If no permissions are selected, the user gets read-only access.</p>
+                      
+                      {userSearchResults.length > 0 && (
+                        <div className="border rounded-md shadow-sm bg-popover max-h-48 overflow-y-auto">
+                          {userSearchResults.map(user => (
+                            <button
+                              key={user.id}
+                              className={cn(
+                                "w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors flex items-center justify-between",
+                                selectedUserToShare === user.id ? "bg-accent" : ""
+                              )}
+                              onClick={() => {
+                                setSelectedUserToShare(user.id);
+                                setUserSearchQuery(user.username);
+                                setUserSearchResults([]);
+                              }}
+                            >
+                              <span>{user.username}</span>
+                              {selectedUserToShare === user.id && <Check className="h-4 w-4 text-primary" />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {userSearchQuery.length >= 2 && !isSearchingUsers && userSearchResults.length === 0 && selectedUserToShare === "" && (
+                        <div className="p-4 text-center text-sm text-muted-foreground border border-dashed rounded-md">
+                          No users found matching "{userSearchQuery}"
+                        </div>
+                      )}
+
+                      <Button 
+                        className="w-full mt-2" 
+                        onClick={handleShare} 
+                        disabled={!selectedUserToShare}
+                      >
+                        Share Access
+                      </Button>
                     </div>
-                  )}
-                  {(() => {
-                    // Combine legacy sharedWith + new shares into a single list
-                    const legacyUsers = (selectedTreeToShare?.sharedWith || []).map(uid => ({
-                      userId: uid,
-                      permissions: { editNodes: false, editTemplates: false, admin: false } as TreePermissions,
-                      isLegacy: true,
-                    }));
-                    const shareUsers = (selectedTreeToShare?.shares || []).map(s => ({
-                      userId: s.userId,
-                      permissions: s.permissions,
-                      isLegacy: false,
-                    }));
-                    const allCollaborators = [...legacyUsers, ...shareUsers];
-                    if (allCollaborators.length === 0) return null;
-                    return (
-                      <div className="space-y-2 pt-2">
-                        <Label>Current Collaborators</Label>
-                        {allCollaborators.map(({ userId, permissions, isLegacy }) => {
-                          const user = users.find(u => u.id === userId);
-                          if (!user) return null;
-                          const permLabels = [];
-                          if (permissions.admin) permLabels.push('Admin');
-                          else {
-                            if (permissions.editNodes) permLabels.push('Edit Nodes');
-                            if (permissions.editTemplates) permLabels.push('Edit Templates');
-                          }
-                          const label = permLabels.length > 0 ? permLabels.join(', ') : 'Read-Only';
-                          
-                          if (editingShareUserId === userId) {
-                            return (
-                              <div key={userId} className="space-y-3 p-3 border rounded-md bg-muted/30 w-full mt-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium text-sm">{user.username} - Edit Permissions</span>
-                                  <div className="flex gap-2">
-                                      <Button variant="ghost" size="sm" onClick={() => setEditingShareUserId(null)}>Cancel</Button>
-                                      <Button size="sm" onClick={saveEditingShare}>Save</Button>
+                    {selectedUserToShare && (
+                      <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+                        <Label className="text-xs font-medium text-muted-foreground">Permissions for new user</Label>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="perm-edit-nodes"
+                            checked={sharePermissions.editNodes || sharePermissions.admin}
+                            disabled={sharePermissions.admin}
+                            onCheckedChange={(checked) => setSharePermissions(p => ({ ...p, editNodes: !!checked }))}
+                          />
+                          <Label htmlFor="perm-edit-nodes" className="text-sm font-normal">Edit Nodes</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="perm-edit-templates"
+                            checked={sharePermissions.editTemplates || sharePermissions.admin}
+                            disabled={sharePermissions.admin}
+                            onCheckedChange={(checked) => setSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
+                          />
+                          <Label htmlFor="perm-edit-templates" className="text-sm font-normal">Edit Templates</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="perm-admin"
+                            checked={sharePermissions.admin}
+                            onCheckedChange={(checked) => setSharePermissions(p => ({
+                              ...p,
+                              admin: !!checked,
+                              editNodes: !!checked ? true : p.editNodes,
+                              editTemplates: !!checked ? true : p.editTemplates,
+                            }))}
+                          />
+                          <Label htmlFor="perm-admin" className="text-sm font-normal">Admin <span className="text-xs text-muted-foreground">(full access + sharing)</span></Label>
+                        </div>
+                      </div>
+                    )}
+                    {(() => {
+                      const legacyUsers = (selectedTreeToShare?.sharedWith || []).map(uid => ({
+                        userId: uid,
+                        permissions: { editNodes: false, editTemplates: false, admin: false } as TreePermissions,
+                        isLegacy: true,
+                      }));
+                      const shareUsers = (selectedTreeToShare?.shares || []).map(s => ({
+                        userId: s.userId,
+                        permissions: s.permissions,
+                        isLegacy: false,
+                      }));
+                      const allCollaborators = [...legacyUsers, ...shareUsers];
+                      if (allCollaborators.length === 0) return null;
+                      return (
+                        <div className="space-y-2 pt-2">
+                          <Label>Current Collaborators</Label>
+                          {allCollaborators.map(({ userId, permissions, isLegacy }) => {
+                            const user = users.find(u => u.id === userId);
+                            if (!user) return null;
+                            const permLabels = [];
+                            if (permissions.admin) permLabels.push('Admin');
+                            else {
+                              if (permissions.editNodes) permLabels.push('Edit Nodes');
+                              if (permissions.editTemplates) permLabels.push('Edit Templates');
+                            }
+                            const label = permLabels.length > 0 ? permLabels.join(', ') : 'Read-Only';
+                            
+                            if (editingShareUserId === userId) {
+                              return (
+                                <div key={userId} className="space-y-3 p-3 border rounded-md bg-muted/30 w-full mt-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium text-sm">{user.username} - Edit Permissions</span>
+                                    <div className="flex gap-2">
+                                        <Button variant="ghost" size="sm" onClick={() => setEditingShareUserId(null)}>Cancel</Button>
+                                        <Button size="sm" onClick={saveEditingShare}>Save</Button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`edit-perm-edit-nodes-${userId}`}
+                                      checked={editingSharePermissions.editNodes || editingSharePermissions.admin}
+                                      disabled={editingSharePermissions.admin}
+                                      onCheckedChange={(checked) => setEditingSharePermissions(p => ({ ...p, editNodes: !!checked }))}
+                                    />
+                                    <Label htmlFor={`edit-perm-edit-nodes-${userId}`} className="text-sm font-normal">Edit Nodes</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`edit-perm-edit-templates-${userId}`}
+                                      checked={editingSharePermissions.editTemplates || editingSharePermissions.admin}
+                                      disabled={editingSharePermissions.admin}
+                                      onCheckedChange={(checked) => setEditingSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
+                                    />
+                                    <Label htmlFor={`edit-perm-edit-templates-${userId}`} className="text-sm font-normal">Edit Templates</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`edit-perm-admin-${userId}`}
+                                      checked={editingSharePermissions.admin}
+                                      onCheckedChange={(checked) => setEditingSharePermissions(p => ({
+                                        ...p,
+                                        admin: !!checked,
+                                        editNodes: !!checked ? true : p.editNodes,
+                                        editTemplates: !!checked ? true : p.editTemplates,
+                                      }))}
+                                    />
+                                    <Label htmlFor={`edit-perm-admin-${userId}`} className="text-sm font-normal">Admin</Label>
                                   </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`edit-perm-edit-nodes-${userId}`}
-                                    checked={editingSharePermissions.editNodes || editingSharePermissions.admin}
-                                    disabled={editingSharePermissions.admin}
-                                    onCheckedChange={(checked) => setEditingSharePermissions(p => ({ ...p, editNodes: !!checked }))}
-                                  />
-                                  <Label htmlFor={`edit-perm-edit-nodes-${userId}`} className="text-sm font-normal">Edit Nodes</Label>
+                              );
+                            }
+
+                            return (
+                              <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                                <div>
+                                  <span className="font-medium">{user.username}</span>
+                                  <span className="text-xs text-muted-foreground ml-2">({label})</span>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`edit-perm-edit-templates-${userId}`}
-                                    checked={editingSharePermissions.editTemplates || editingSharePermissions.admin}
-                                    disabled={editingSharePermissions.admin}
-                                    onCheckedChange={(checked) => setEditingSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
-                                  />
-                                  <Label htmlFor={`edit-perm-edit-templates-${userId}`} className="text-sm font-normal">Edit Templates</Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`edit-perm-admin-${userId}`}
-                                    checked={editingSharePermissions.admin}
-                                    onCheckedChange={(checked) => setEditingSharePermissions(p => ({
-                                      ...p,
-                                      admin: !!checked,
-                                      editNodes: !!checked ? true : p.editNodes,
-                                      editTemplates: !!checked ? true : p.editTemplates,
-                                    }))}
-                                  />
-                                  <Label htmlFor={`edit-perm-admin-${userId}`} className="text-sm font-normal">Admin</Label>
+                                <div className="flex items-center">
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground shrink-0 mr-1" onClick={() => {
+                                    setEditingShareUserId(userId);
+                                    setEditingSharePermissions({ ...permissions });
+                                  }}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
+                                    <X className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </div>
                             );
-                          }
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </TabsContent>
 
-                          return (
-                            <div key={userId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
-                              <div>
-                                <span className="font-medium">{user.username}</span>
-                                <span className="text-xs text-muted-foreground ml-2">({label})</span>
-                              </div>
-                              <div className="flex items-center">
-                                <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground shrink-0 mr-1" onClick={() => {
-                                  setEditingShareUserId(userId);
-                                  setEditingSharePermissions({ ...permissions });
-                                }}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareAndClose(selectedTreeToShare!.id, userId)}>
+                <TabsContent value="teams" className="space-y-6 mt-4">
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">Share this tree with teams you belong to.</p>
+                    <div className="flex gap-2">
+                      <Select onValueChange={setSelectedTeamToShare} value={selectedTeamToShare}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a team..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {userTeams.filter(t => 
+                            !(selectedTreeToShare?.teamShares || []).some(ts => ts.teamId === t.id)
+                          ).map(team => (
+                            <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleShareTeam} disabled={!selectedTeamToShare}>Add Team</Button>
+                    </div>
+                    {selectedTeamToShare && (
+                      <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+                        <Label className="text-xs font-medium text-muted-foreground">Permissions for team</Label>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="team-perm-edit-nodes"
+                            checked={teamSharePermissions.editNodes || teamSharePermissions.admin}
+                            disabled={teamSharePermissions.admin}
+                            onCheckedChange={(checked) => setTeamSharePermissions(p => ({ ...p, editNodes: !!checked }))}
+                          />
+                          <Label htmlFor="team-perm-edit-nodes" className="text-sm font-normal">Edit Nodes</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="team-perm-edit-templates"
+                            checked={teamSharePermissions.editTemplates || teamSharePermissions.admin}
+                            disabled={teamSharePermissions.admin}
+                            onCheckedChange={(checked) => setTeamSharePermissions(p => ({ ...p, editTemplates: !!checked }))}
+                          />
+                          <Label htmlFor="team-perm-edit-templates" className="text-sm font-normal">Edit Templates</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="team-perm-admin"
+                            checked={teamSharePermissions.admin}
+                            onCheckedChange={(checked) => setTeamSharePermissions(p => ({
+                              ...p,
+                              admin: !!checked,
+                              editNodes: !!checked ? true : p.editNodes,
+                              editTemplates: !!checked ? true : p.editTemplates,
+                            }))}
+                          />
+                          <Label htmlFor="team-perm-admin" className="text-sm font-normal">Admin</Label>
+                        </div>
+                      </div>
+                    )}
+                    {(() => {
+                      const teamShares = selectedTreeToShare?.teamShares || [];
+                      if (teamShares.length === 0) return null;
+                      return (
+                        <div className="space-y-2 pt-2">
+                          <Label>Team Access</Label>
+                          {teamShares.map(({ teamId, permissions }) => {
+                            const team = userTeams.find(t => t.id === teamId);
+                            if (!team) return null;
+                            const permLabels = [];
+                            if (permissions.admin) permLabels.push('Admin');
+                            else {
+                              if (permissions.editNodes) permLabels.push('Edit Nodes');
+                              if (permissions.editTemplates) permLabels.push('Edit Templates');
+                            }
+                            const label = permLabels.length > 0 ? permLabels.join(', ') : 'Read-Only';
+                            
+                            return (
+                              <div key={teamId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                                <div>
+                                  <span className="font-medium">{team.name}</span>
+                                  <span className="text-xs text-muted-foreground ml-2">({label})</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive shrink-0" onClick={() => revokeShareFromTeamAndClose(selectedTreeToShare!.id, teamId)}>
                                   <X className="h-4 w-4" />
                                 </Button>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-                <div className="space-y-4 pt-4 border-t">
-                  <h4 className="font-medium">Public Sharing</h4>
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="public-switch">Make Public</Label>
-                      <p className="text-xs text-muted-foreground">Anyone with the link can view this tree.</p>
-                    </div>
-                    <Switch
-                      id="public-switch"
-                      checked={selectedTreeToShare?.isPublic || false}
-                      onCheckedChange={(checked) => handlePublicToggle(selectedTreeToShare!.id, checked)}
-                    />
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-medium">Public Sharing</h4>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="public-switch">Make Public</Label>
+                    <p className="text-xs text-muted-foreground">Anyone with the link can view this tree.</p>
+                  </div>
+                  <Switch
+                    id="public-switch"
+                    checked={selectedTreeToShare?.isPublic || false}
+                    onCheckedChange={(checked) => handlePublicToggle(selectedTreeToShare!.id, checked)}
+                  />
+                </div>
                   {selectedTreeToShare?.isPublic && (
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -1047,7 +1260,6 @@ function ManageRootsPage() {
                     </div>
                   )}
                 </div>
-              </div>
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Done</Button></DialogClose>
               </DialogFooter>

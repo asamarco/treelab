@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import { getSession } from '@/lib/session';
-import { fetchUsers } from '@/lib/auth-service';
+import { fetchAllUsers } from '@/lib/auth-service';
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         }
         
         // Further check if the user is an admin
-        const allUsers = await fetchUsers();
+        const allUsers = await fetchAllUsers();
         const user = allUsers.find(u => u.id === session.userId);
         if (!user || !user.isAdmin) {
             return NextResponse.json({ message: 'Forbidden: Admin access required' }, { status: 403 });

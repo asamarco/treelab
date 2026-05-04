@@ -10,7 +10,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Settings, Library, Sun, Moon } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Library, Sun, Moon, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
 import { Button } from "./ui/button";
@@ -25,11 +25,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useTreeContext } from "@/contexts/tree-context";
 
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, logout, isAuthRequired, theme, setTheme } = useAuthContext();
+  const { userTeams } = useTreeContext();
   const { toast } = useToast();
 
   const navItems = [
@@ -37,6 +39,8 @@ export function AppHeader() {
     { href: "/templates", label: "Templates" },
     { href: "/roots", label: "Roots" },
   ];
+
+  const canSeeTeams = currentUser?.isAdmin || (userTeams && userTeams.length > 0);
 
   if (!currentUser) {
     return null; // Don't render header on auth pages
@@ -137,6 +141,14 @@ export function AppHeader() {
                         <span>Settings</span>
                     </Link>
                 </DropdownMenuItem>
+                {canSeeTeams && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/teams">
+                      <Users className="mr-2 h-4 w-4" />
+                      <span>Teams</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 {isAuthRequired && (
                   <>
                     <DropdownMenuSeparator />
