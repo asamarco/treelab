@@ -435,8 +435,8 @@ export interface UseTreeRootsResult {
     syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
     restoreToCommit: (currentTreeId: string, commitSha: string, token: string) => Promise<void>;
     resolveConflict: (resolution: "local" | "server") => Promise<void>;
-    analyzeStorage: (treeId?: string | undefined) => Promise<StorageInfo>;
-    purgeStorage: (treeId?: string | undefined) => Promise<PurgeResult | null>;
+    analyzeStorage: (treeId?: string, isGlobal?: boolean) => Promise<StorageInfo>;
+    purgeStorage: (treeId?: string, isGlobal?: boolean) => Promise<PurgeResult | null>;
     toggleStarredForSelectedNodes: () => Promise<void>;
     batchUpdateNodeData: (instanceIds: string[], data: Record<string, any>) => Promise<void>;
     clipboard: ClipboardState;

@@ -8,48 +8,77 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { connectToDatabase } from './mongodb';
-import { TreeModel, TreeNodeModel } from './models';
+import { TreeModel, TreeNodeModel, TeamModel, GlobalSettingsModel } from './models';
 import { decrypt } from './encryption';
-import { TreeFile, TreeNode, Template, AttachmentInfo, StorageInfo, PurgeResult } from './types';
+import { TreeFile, TreeNode, Template, AttachmentInfo, StorageInfo, PurgeResult, Team, GlobalSettings } from './types';
 import { getSession } from './session';
+import { fetchAllUsers } from './auth-service';
 
 
-async function getAllReferencedFileNames(userId: string, treeId?: string): Promise<Set<string>> {
+async function getAllReferencedFileNames(userId?: string, treeId?: string): Promise<Set<string>> {
     await connectToDatabase();
     const referencedFiles = new Set<string>();
 
-    const treeFilesToScan = treeId 
-        ? [await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>().exec()]
-        : await TreeModel.find({ userId: userId }).lean<Omit<TreeFile, 'tree'>>().exec();
+    const globalSettings = await GlobalSettingsModel.findOne().lean<GlobalSettings>().exec();
+    if (globalSettings?.customLogoPath) {
+        referencedFiles.add(path.basename(globalSettings.customLogoPath));
+    }
+
+    let query: any = {};
+    if (treeId) {
+        query = { _id: treeId };
+    } else if (userId) {
+        const userTeams = await TeamModel.find({ memberIds: userId }).lean<Team[]>().exec();
+        const teamIds = userTeams.map(t => t._id ? t._id.toString() : (t as any).id);
+        query = { 
+            $or: [
+                { userId: userId }, 
+                { sharedWith: userId }, 
+                { 'shares.userId': userId },
+                { 'teamShares.teamId': { $in: teamIds } }
+            ] 
+        };
+    }
+
+    const treeFilesToScan = await TreeModel.find(query).lean<Omit<TreeFile, 'tree'>>().exec();
     
     for (const treeFile of Array.isArray(treeFilesToScan) ? treeFilesToScan : [treeFilesToScan]) {
         if (!treeFile) continue;
         
         const nodes = await TreeNodeModel.find({ treeId: treeFile._id.toString() }).lean<TreeNode[]>().exec();
         
-        if (Array.isArray(treeFile.templates)) {
             for (const node of nodes) {
                 const template = treeFile.templates.find((t: Template) => t.id === node.templateId);
                 if (template) {
-                    const nodeData = await decrypt(node.data);
-                    for (const field of template.fields) {
-                        const value = (nodeData || {})[field.id];
-                        if (!value) continue;
+                    try {
+                        const nodeData = await decrypt(node.data);
+                        if (!nodeData) continue;
+                        
+                        for (const field of template.fields) {
+                            const value = nodeData[field.id];
+                            if (!value) continue;
 
-                        if (field.type === 'picture') {
-                            const pictures = Array.isArray(value) ? value : [value];
-                            pictures.forEach(p => {
-                                if (typeof p === 'string') referencedFiles.add(path.basename(p));
-                            });
-                        } else if (field.type === 'attachment') {
-                            (value as AttachmentInfo[]).forEach(a => {
-                                if (typeof a.path === 'string') referencedFiles.add(path.basename(a.path));
-                            });
+                            if (field.type === 'picture') {
+                                const pictures = Array.isArray(value) ? value : [value];
+                                pictures.forEach(p => {
+                                    if (typeof p === 'string') referencedFiles.add(path.basename(p));
+                                });
+                            } else if (field.type === 'attachment') {
+                                const attachments = Array.isArray(value) ? value : [value];
+                                attachments.forEach(a => {
+                                    if (a && typeof a === 'object' && 'path' in a) {
+                                        referencedFiles.add(path.basename(a.path));
+                                    } else if (typeof a === 'string') {
+                                        referencedFiles.add(path.basename(a));
+                                    }
+                                });
+                            }
                         }
+                    } catch (decryptError) {
+                        console.error(`ERROR: Failed to decrypt data for node ${node._id || (node as any).id}:`, decryptError);
                     }
                 }
             }
-        }
     }
     return referencedFiles;
 }
@@ -74,9 +103,14 @@ async function listFilesWithSizes(dir: string): Promise<{ name: string, size: nu
     }
 }
 
-export async function getStorageInfo(treeId?: string): Promise<StorageInfo> {
+export async function getStorageInfo(treeId?: string, isGlobal: boolean = false): Promise<StorageInfo> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
+    
+    // Check if user is admin if global is requested
+    const allUsers = await fetchAllUsers();
+    const currentUser = allUsers.find(u => u.id === session.userId);
+    const isAdmin = currentUser?.isAdmin || false;
     const userId = session.userId;
 
     const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
@@ -88,14 +122,24 @@ export async function getStorageInfo(treeId?: string): Promise<StorageInfo> {
         purgeableCount: 0,
     };
     
-    const attachmentsDir = path.join(USERS_DIR, userId, 'attachments');
-    await fs.mkdir(attachmentsDir, { recursive: true });
+    let allAttachments: { name: string, size: number, path: string }[] = [];
+    if (isGlobal && isAdmin) {
+        const userDirs = await fs.readdir(USERS_DIR);
+        for (const uId of userDirs) {
+            const userAttachmentsDir = path.join(USERS_DIR, uId, 'attachments');
+            const files = await listFilesWithSizes(userAttachmentsDir);
+            allAttachments = [...allAttachments, ...files];
+        }
+    } else {
+        const attachmentsDir = path.join(USERS_DIR, userId, 'attachments');
+        await fs.mkdir(attachmentsDir, { recursive: true });
+        allAttachments = await listFilesWithSizes(attachmentsDir);
+    }
 
-
-    const [allAttachments, referencedFileNames] = await Promise.all([
-        listFilesWithSizes(attachmentsDir),
-        getAllReferencedFileNames(userId, treeId)
-    ]);
+    const referencedFileNames = await getAllReferencedFileNames(
+        isGlobal && isAdmin ? undefined : userId, 
+        treeId
+    );
 
     const allUserFiles = [...allAttachments];
     if (allUserFiles.length === 0) {
@@ -147,22 +191,35 @@ export async function getStorageInfo(treeId?: string): Promise<StorageInfo> {
     }
 }
 
-export async function purgeUnusedFiles(treeId?: string): Promise<PurgeResult> {
+export async function purgeUnusedFiles(treeId?: string, isGlobal: boolean = false): Promise<PurgeResult> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
+    
+    const allUsers = await fetchAllUsers();
+    const currentUser = allUsers.find(u => u.id === session.userId);
+    const isAdmin = currentUser?.isAdmin || false;
     const userId = session.userId;
 
     const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
     const USERS_DIR = path.join(DATA_DIR, 'users');
-    const attachmentsDir = path.join(USERS_DIR, userId, 'attachments');
-    await fs.mkdir(attachmentsDir, { recursive: true });
     
-    const [allAttachments, referencedFileNames] = await Promise.all([
-        listFilesWithSizes(attachmentsDir),
-        getAllReferencedFileNames(userId)
-    ]);
+    let allFiles: { name: string, size: number, path: string }[] = [];
+    if (isGlobal && isAdmin) {
+        const userDirs = await fs.readdir(USERS_DIR);
+        for (const uId of userDirs) {
+            const userAttachmentsDir = path.join(USERS_DIR, uId, 'attachments');
+            const files = await listFilesWithSizes(userAttachmentsDir);
+            allFiles = [...allFiles, ...files];
+        }
+    } else {
+        const attachmentsDir = path.join(USERS_DIR, userId, 'attachments');
+        await fs.mkdir(attachmentsDir, { recursive: true });
+        allFiles = await listFilesWithSizes(attachmentsDir);
+    }
 
-    const allFiles = [...allAttachments];
+    const referencedFileNames = await getAllReferencedFileNames(
+        isGlobal && isAdmin ? undefined : userId
+    );
     let purgedSize = 0;
     let purgedCount = 0;
     const purgePromises: Promise<void>[] = [];

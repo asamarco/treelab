@@ -10,7 +10,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, User as UserIcon, Settings, Library, Sun, Moon, Users } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Library, Sun, Moon, Users, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
 import { Button } from "./ui/button";
@@ -146,6 +146,14 @@ export function AppHeader() {
                     <Link href="/teams">
                       <Users className="mr-2 h-4 w-4" />
                       <span>Teams</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {currentUser.isAdmin && (
+                   <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      <span>Admin Settings</span>
                     </Link>
                   </DropdownMenuItem>
                 )}
