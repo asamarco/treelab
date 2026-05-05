@@ -136,6 +136,20 @@ const toPlainObject = (doc: any): any => {
     return plain;
 };
 
+// Internal helper for hydrating user profiles
+async function fetchUserProfilesInternal(userIds: string[]): Promise<Record<string, { id: string, username: string }>> {
+    if (!userIds || userIds.length === 0) return {};
+    await connectToDatabase();
+    const uniqueIds = Array.from(new Set(userIds.filter(id => !!id)));
+    const users = await UserModel.find({ _id: { $in: uniqueIds } }).select('username _id').lean().exec();
+    const profiles: Record<string, { id: string, username: string }> = {};
+    users.forEach((u: any) => {
+        const id = u._id.toString();
+        profiles[id] = { id, username: u.username };
+    });
+    return profiles;
+}
+
 // --- TreeFile Functions (MongoDB) ---
 
 export async function createTreeFile(treeFile: Omit<TreeFile, 'tree' | 'id'>, initialNodes: Omit<TreeNode, 'id' | 'children' | '_id'>[]): Promise<TreeFile> {
@@ -165,7 +179,10 @@ export async function createTreeFile(treeFile: Omit<TreeFile, 'tree' | 'id'>, in
         const treeNodes = await loadTreeNodes(savedTreeFile.id);
 
         const plainTreeFile = toPlainObject(savedTreeFile);
-        return { ...plainTreeFile, tree: treeNodes };
+        const profiles = await fetchUserProfilesInternal([plainTreeFile.userId]);
+        const owner = profiles[plainTreeFile.userId];
+
+        return { ...plainTreeFile, owner, tree: treeNodes };
 
     } catch (error) {
         console.error("Error creating tree file:", error);
@@ -291,11 +308,19 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
         treeFileDoc.publicId = publicId;
     }
 
+    // Hydrate owner and collaborators
+    const userIdsToFetch = [treeFileDoc.userId, ...(treeFileDoc.shares || []).map(s => s.userId), ...(treeFileDoc.sharedWith || [])];
+    const userProfiles = await fetchUserProfilesInternal(userIdsToFetch);
+
     const plainDoc: TreeFile = {
         id: treeFileDoc._id.toString(),
         userId: treeFileDoc.userId,
+        owner: userProfiles[treeFileDoc.userId],
         sharedWith: treeFileDoc.sharedWith,
-        shares: treeFileDoc.shares,
+        shares: (treeFileDoc.shares || []).map(s => ({
+            ...s,
+            user: userProfiles[s.userId]
+        })),
         isPublic: treeFileDoc.isPublic,
         title: treeFileDoc.title,
         templates: treeFileDoc.templates.map((t: any) => ({
@@ -411,6 +436,15 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
         nodesByTreeId.get(treeId)!.push(node);
     }
 
+    // Hydrate everything in one go for efficiency
+    const allUserIds = new Set<string>();
+    treeFileDocs.forEach((doc: any) => {
+        allUserIds.add(doc.userId);
+        (doc.shares || []).forEach((s: any) => allUserIds.add(s.userId));
+        (doc.sharedWith || []).forEach((id: string) => allUserIds.add(id));
+    });
+    const userProfiles = await fetchUserProfilesInternal(Array.from(allUserIds));
+
     const fullTreeFiles = await Promise.all(treeFileDocs.map(async (doc: any) => {
         const treeId = doc._id.toString();
         const nodesForTree = nodesByTreeId.get(treeId) || [];
@@ -427,8 +461,12 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
         const plainDoc: TreeFile = {
             id: treeId,
             userId: doc.userId,
+            owner: userProfiles[doc.userId],
             sharedWith: doc.sharedWith,
-            shares: doc.shares,
+            shares: (doc.shares || []).map((s: any) => ({
+                ...s,
+                user: userProfiles[s.userId]
+            })),
             isPublic: doc.isPublic,
             title: doc.title,
             templates: doc.templates.map((t: any) => ({

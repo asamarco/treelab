@@ -140,9 +140,15 @@ export interface TreePermissions {
     admin: boolean;
 }
 
+export interface UserProfile {
+    id: string;
+    username: string;
+}
+
 export interface TreeShare {
     userId: string;
     permissions: TreePermissions;
+    user?: UserProfile;
 }
 
 export interface TeamShare {
@@ -165,6 +171,7 @@ export interface TreeFile {
     id: string;
     _id?: any; // Mongoose internal
     userId: string;
+    owner?: UserProfile;
     title: string;
     order: number;
     isPublic?: boolean;

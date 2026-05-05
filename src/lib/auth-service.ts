@@ -50,17 +50,24 @@ export async function fetchAllUsers(): Promise<User[]> {
     }
 
     await connectToDatabase();
+
+    // Check if the requester is an admin
+    const currentUser = await UserModel.findById(session.userId).select('isAdmin').lean().exec();
+    const isAdmin = currentUser?.isAdmin || false;
+
+    if (!isAdmin) {
+        // For non-admins, return only safe, public-facing fields.
+        const users = await UserModel.find().select('username _id isAdmin').lean().exec();
+        return users.map((u: any) => ({
+            id: u._id.toString(),
+            username: u.username,
+            isAdmin: !!u.isAdmin
+        } as User));
+    }
+
+    // For admins, return most fields but EXCLUDE sensitive info like passwordHash/salt.
     const users = await UserModel.find().select('-passwordHash -salt').lean<User[]>().exec();
-    const decryptedUsers = await Promise.all(
-        users.map(async (u: any) => {
-            const plainUser = toPlainObject(u);
-            if (plainUser.gitSettings?.githubPat) {
-                plainUser.gitSettings.githubPat = await decrypt(plainUser.gitSettings.githubPat);
-            }
-            return plainUser;
-        })
-    );
-    return decryptedUsers;
+    return users.map((u: any) => toPlainObject(u));
 }
 
 export async function searchUsers(query: string): Promise<Pick<User, 'id' | 'username'>[]> {
@@ -73,13 +80,13 @@ export async function searchUsers(query: string): Promise<Pick<User, 'id' | 'use
     if (!query || query.length < 2) return [];
 
     await connectToDatabase();
-    const users = await UserModel.find({ 
-        username: { $regex: query, $options: 'i' } 
+    const users = await UserModel.find({
+        username: { $regex: query, $options: 'i' }
     })
-    .limit(10)
-    .select('username _id')
-    .lean()
-    .exec();
+        .limit(10)
+        .select('username _id')
+        .lean()
+        .exec();
 
     return users.map((u: any) => ({
         id: u._id.toString(),
@@ -227,7 +234,7 @@ export async function revokeAllSessions(): Promise<void> {
 
     await connectToDatabase();
     await UserModel.findByIdAndUpdate(session.userId, { $inc: { sessionVersion: 1 } }).exec();
-    
+
     // Re-create session for the current device so it doesn't log out
     await createSessionInServerAction(session.userId, session.rememberMe);
 }

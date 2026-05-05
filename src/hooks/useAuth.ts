@@ -256,10 +256,14 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   };
 
   const fetchAllUsersAction = useCallback(async () => {
-    if (!currentUser?.isAdmin) return;
-    const allUsers = await fetchAllUsers();
-    setUsers(allUsers);
-  }, [currentUser?.isAdmin]);
+    if (!currentUser) return;
+    try {
+      const allUsers = await fetchAllUsers();
+      setUsers(allUsers);
+    } catch (err) {
+      console.error("Failed to fetch all users", err);
+    }
+  }, [currentUser]);
 
   return {
     currentUser,

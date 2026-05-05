@@ -519,7 +519,7 @@ function ManageRootsPage() {
         <SortableContext items={filteredTrees.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredTrees.map((tree: TreeFile) => {
-              const owner = users.find(u => u.id === tree.userId);
+              const owner = tree.owner || users.find(u => u.id === tree.userId);
               const isOwner = currentUser?.id === tree.userId;
               const isAdmin = tree.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin) ?? false;
               const canManageTree = isOwner || isAdmin;
@@ -623,7 +623,7 @@ function ManageRootsPage() {
                           })}
                           {/* New shares with permissions */}
                           {(tree.shares || []).map(share => {
-                            const user = users.find(u => u.id === share.userId);
+                            const user = share.user || users.find(u => u.id === share.userId);
                             const permLabels = [];
                             if (share.permissions.admin) permLabels.push('admin');
                             else {
