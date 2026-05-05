@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, useId } from "react";
 import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/header";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -136,6 +136,7 @@ function ManageRootsPage() {
     revokeShareFromTeam,
   } = useTreeContext();
   const { toast } = useToast();
+  const dndContextId = useId();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTreeTitle, setNewTreeTitle] = useState("");
   const [isLoadingExamples, setIsLoadingExamples] = useState(false);
@@ -515,7 +516,7 @@ function ManageRootsPage() {
     }
 
     return (
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext id={dndContextId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={filteredTrees.map(t => t.id)} strategy={verticalListSortingStrategy}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredTrees.map((tree: TreeFile) => {

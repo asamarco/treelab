@@ -13,7 +13,7 @@
  */
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Template, TreeNode, Field } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
@@ -159,6 +159,7 @@ function TemplatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const dndContextId = useId();
   const [isImportTreeOpen, setIsImportTreeOpen] = useState(false);
   const [importFromTreeId, setImportFromTreeId] = useState<string | null>(null);
   const [selectedTemplatesToImport, setSelectedTemplatesToImport] = useState<string[]>([]);
@@ -493,6 +494,7 @@ function TemplatesPage() {
                   </CardContent>
                 </Card>
                 <DndContext
+                  id={dndContextId}
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}

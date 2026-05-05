@@ -12,7 +12,7 @@
  */
 "use client";
 
-import { useMemo, useState, useEffect, SetStateAction, useCallback } from "react";
+import { useMemo, useState, useEffect, SetStateAction, useCallback, useId } from "react";
 import { TreeNode } from "@/lib/types";
 import { TreeNodeComponent } from "./tree-node";
 import { useTreeContext } from "@/contexts/tree-context";
@@ -44,6 +44,7 @@ interface TreeViewProps {
 }
 
 export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeViewProps) {
+  const dndContextId = useId();
   const { currentUser } = useAuthContext();
   const {
     tree,
@@ -495,6 +496,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
 
   return (
     <DndContext
+      id={dndContextId}
       sensors={sensors}
       onDragEnd={handleDragEnd}
       collisionDetection={closestCenter}

@@ -71,7 +71,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useId } from "react";
 import { IconPicker } from "../icon-picker";
 import {
   DndContext,
@@ -257,6 +257,7 @@ export function TemplateDesigner({
 }: TemplateDesignerProps) {
   const { toast } = useToast();
   const { updateNodeNamesForTemplate } = useTreeContext();
+  const dndContextId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [templateForNodeUpdate, setTemplateForNodeUpdate] = useState<Template | null>(null);
   const [expandedExtraFields, setExpandedExtraFields] = useState<Record<string, boolean>>({});
@@ -590,6 +591,7 @@ export function TemplateDesigner({
               <div>
                 <h3 className="text-lg font-medium mb-4">Fields</h3>
                 <DndContext
+                  id={`${dndContextId}-fields`}
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleFieldDragEnd}
@@ -968,6 +970,7 @@ export function TemplateDesigner({
               <div>
                 <h3 className="text-lg font-medium mb-4">Conditional Formatting</h3>
                 <DndContext
+                  id={`${dndContextId}-rules`}
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleRuleDragEnd}

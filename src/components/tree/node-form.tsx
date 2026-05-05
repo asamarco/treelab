@@ -12,7 +12,7 @@
  */
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
 import { Button } from "../ui/button";
@@ -256,6 +256,8 @@ export const NodeForm = ({
 }) => {
   const { tree, activeTree, findNodeAndParent, templates, updateNode } = useTreeContext();
   const { setDialogState } = useUIContext();
+
+  const dndContextId = useId();
 
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     if (isMultiEdit) return {};
@@ -828,7 +830,7 @@ export const NodeForm = ({
                 const currentImages = formData[field.id] ? (Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]]) : [];
                 renderedContent = (
                   <div>
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleImageDragEnd(e, field.id)}>
+                    <DndContext id={`${dndContextId}-images`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleImageDragEnd(e, field.id)}>
                       <SortableContext items={currentImages} strategy={rectSortingStrategy}>
                         {currentImages.length > 0 && (
                           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
@@ -1381,11 +1383,12 @@ SpreadsheetEditorField.displayName = "SpreadsheetEditorField";
 
 const ChecklistEditorField = React.memo(({ field, items, onChange }: { field: Field, items: ChecklistItem[], onChange: (value: any) => void }) => {
   const sensors = useSensors(useSensor(PointerSensor));
+  const dndContextId = useId();
   return (
     <div key={field.id} className="space-y-2">
       <Label className="text-sm font-medium">{field.name}</Label>
       <div className="space-y-2">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
+        <DndContext id={`${dndContextId}-checklist`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
           const { active, over } = event;
           if (over && active.id !== over.id) {
             const oldIndex = items.findIndex(item => item.id === active.id);
