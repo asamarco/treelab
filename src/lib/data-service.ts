@@ -370,20 +370,24 @@ export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | nul
 
         const actualTreeId = treeFileDoc._id.toString();
         const nodes = await loadTreeNodes(actualTreeId);
-        const plainDoc: TreeFile = {
-            ...(treeFileDoc as any),
+        
+        // Sanitize the document: Only include fields safe for public exposure.
+        const plainDoc: any = {
             id: actualTreeId,
+            title: treeFileDoc.title,
             templates: treeFileDoc.templates.map((t: any) => ({
                 ...t,
                 preferredChildTemplates: t.preferredChildTemplates || [],
             })),
             tree: nodes,
-            publicId: treeFileDoc.publicId, // Explicitly ensure this is carried over
+            publicId: treeFileDoc.publicId,
+            isPublic: true,
+            createdAt: treeFileDoc.createdAt,
+            updatedAt: treeFileDoc.updatedAt,
+            globalStyle: (treeFileDoc as any).globalStyle,
         };
-        delete (plainDoc as any)._id;
-        delete (plainDoc as any).__v;
 
-        return plainDoc;
+        return plainDoc as TreeFile;
     } catch (err) {
         console.error(`ERROR: [loadPublicTreeFile] Fatal database error:`, err);
         throw err; // Rethrow to see it in Next.js logs
