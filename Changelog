@@ -1,3 +1,12 @@
+v0.7.0
+
+Feature: granular permissions management for shared trees. BREAKING CHANGE (old shares will be treated as read-only and should be manually updated with the desired permission level.
+Feature: Teams, an efficient way to share trees to groups of users
+Improvement: preserve internal clone relationships in copied nodes
+Improvement: split user and admin settings in separate pages
+Improvement: the clone icon tooltip now supports links for quick navigation
+Bugfix: expand/collapse all fixed for root nodes
+
 v0.6.2
 
 Feature: session revocation from user settings
