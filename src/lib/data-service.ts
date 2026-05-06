@@ -384,6 +384,7 @@ export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | nul
             isPublic: true,
             createdAt: treeFileDoc.createdAt,
             updatedAt: treeFileDoc.updatedAt,
+            expandedNodeIds: treeFileDoc.expandedNodeIds || [],
             globalStyle: (treeFileDoc as any).globalStyle,
         };
 
