@@ -141,6 +141,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
         inactivityTimeoutMinutes: currentUser.inactivityTimeoutMinutes,
         showChildrenInEditForm: currentUser.showChildrenInEditForm,
         twoPanelExpansionDepth: currentUser.twoPanelExpansionDepth,
+        treeSettings: currentUser.treeSettings,
+        customGroups: currentUser.customGroups,
       });
     }
   }, [isAuthRequired, currentUser]);
@@ -234,6 +236,16 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setCurrentUser(prev => prev ? { ...prev, twoPanelExpansionDepth: depth } : null);
   };
 
+  const setTreeSettings = (settings: User['treeSettings']) => {
+    if (!isAuthRequired || !currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, treeSettings: settings } : null);
+  };
+
+  const setCustomGroups = (groups: string[]) => {
+    if (!isAuthRequired || !currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, customGroups: groups } : null);
+  };
+
   const setGlobalSettingsState = async (settings: GlobalSettings) => {
     await saveGlobalSettings(settings);
     setAppSettings(settings);
@@ -287,6 +299,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setLastActiveTreeId,
     setShowChildrenInEditForm,
     setTwoPanelExpansionDepth,
+    setTreeSettings,
+    setCustomGroups,
     revokeAllSessions,
   };
 }

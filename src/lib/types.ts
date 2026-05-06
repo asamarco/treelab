@@ -221,6 +221,12 @@ export interface GitCommit {
     date: string;
 }
 
+export interface TreeSetting {
+    treeId: string;
+    groupName: string;
+    order?: number;
+}
+
 export interface User {
     id: string;
     _id?: any; // Mongoose internal
@@ -237,6 +243,8 @@ export interface User {
     twoPanelExpansionDepth?: number;
     rememberMe?: boolean;
     sessionVersion?: number;
+    treeSettings?: TreeSetting[];
+    customGroups?: string[];
 }
 
 export interface GlobalSettings {

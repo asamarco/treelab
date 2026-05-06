@@ -131,9 +131,14 @@ TreeNodeSchema.virtual('id').get(function () {
 export const TreeNodeModel = (models.TreeNode as Model<Omit<TreeNode, 'children'>>) ||
   model<Omit<TreeNode, 'children'>>('TreeNode', TreeNodeSchema);
 
-// --- User Schema and Model ---
 const GitSettingsSchema = new Schema({
   githubPat: String,
+}, { _id: false });
+
+const TreeSettingSchema = new Schema({
+  treeId: { type: String, required: true },
+  groupName: { type: String, required: true },
+  order: { type: Number },
 }, { _id: false });
 
 const UserSchema = new Schema<User>({
@@ -149,6 +154,8 @@ const UserSchema = new Schema<User>({
   twoPanelExpansionDepth: { type: Number, default: 1 },
   gitSettings: GitSettingsSchema,
   sessionVersion: { type: Number, default: 0 },
+  treeSettings: [TreeSettingSchema],
+  customGroups: [String],
 });
 UserSchema.pre('save', function (next) {
   if (this.isNew) {

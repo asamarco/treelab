@@ -42,6 +42,8 @@ interface AuthContextType {
   setLastActiveTreeId: (treeId: string | null) => void;
   setShowChildrenInEditForm: (show: boolean) => void;
   setTwoPanelExpansionDepth: (depth: number) => void;
+  setTreeSettings: (settings: User['treeSettings']) => void;
+  setCustomGroups: (groups: string[]) => void;
   revokeAllSessions: () => Promise<void>;
 }
 
@@ -76,6 +78,8 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setInactivityTimeout: setAuthInactivityTimeout,
     setShowChildrenInEditForm,
     setTwoPanelExpansionDepth,
+    setTreeSettings,
+    setCustomGroups,
     revokeAllSessions,
   } = useAuthHook({ isAuthRequired, defaultUserId });
 
@@ -131,6 +135,8 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     setLastActiveTreeId,
     setShowChildrenInEditForm,
     setTwoPanelExpansionDepth,
+    setTreeSettings,
+    setCustomGroups,
     revokeAllSessions,
   };
 

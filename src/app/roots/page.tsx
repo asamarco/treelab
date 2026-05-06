@@ -63,7 +63,7 @@ import { Octokit } from "octokit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -90,17 +90,19 @@ function DraggableTreeCard({ tree, children }: { tree: TreeFile, children: React
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="cursor-grab"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-5 w-5" />
-      </Button>
-      <div className={cn("w-full", isDragging && "opacity-50")}>
+    <div ref={setNodeRef} style={style} className="flex h-full w-full items-stretch gap-2 transition-opacity">
+      <div className="flex items-center shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="cursor-grab hover:bg-muted"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-5 w-5" />
+        </Button>
+      </div>
+      <div className={cn("flex-1 min-w-0 w-full flex flex-col", isDragging && "opacity-50")}>
         {children}
       </div>
     </div>
@@ -108,9 +110,27 @@ function DraggableTreeCard({ tree, children }: { tree: TreeFile, children: React
 }
 
 
+function DroppableFilterPill({ id, isActive, onClick, title, isGroupingPill }: { id: string, isActive: boolean, onClick: () => void, title: string, isGroupingPill: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id, disabled: !isGroupingPill });
+  return (
+    <Button
+      ref={setNodeRef}
+      variant={isActive ? "default" : "outline"}
+      onClick={onClick}
+      className={cn(
+        "rounded-full shrink-0 transition-all",
+        isOver && "ring-2 ring-primary ring-offset-2 scale-105"
+      )}
+    >
+      {title}
+    </Button>
+  );
+}
+
+
 function ManageRootsPage() {
   const router = useRouter();
-  const { currentUser, users } = useAuthContext();
+  const { currentUser, users, setTreeSettings, setCustomGroups } = useAuthContext();
   const {
     allTrees,
     activeTreeId,
@@ -139,6 +159,7 @@ function ManageRootsPage() {
   const dndContextId = useId();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newTreeTitle, setNewTreeTitle] = useState("");
+  const [newTreeGroup, setNewTreeGroup] = useState("Ungrouped");
   const [isLoadingExamples, setIsLoadingExamples] = useState(false);
   const [availableExamples, setAvailableExamples] = useState<ExampleInfo[]>([]);
   const archiveInputRef = useRef<HTMLInputElement>(null);
@@ -158,7 +179,13 @@ function ManageRootsPage() {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [treeToRename, setTreeToRename] = useState<TreeFile | null>(null);
   const [renamedTitle, setRenamedTitle] = useState("");
+  const [editedGroup, setEditedGroup] = useState<string>("Ungrouped");
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeGroupFilter, setActiveGroupFilter] = useState("All Roots");
+  const [isManageGroupsOpen, setIsManageGroupsOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [editingGroupName, setEditingGroupName] = useState<string | null>(null);
+  const [editingGroupValue, setEditingGroupValue] = useState("");
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
   const [orderedTrees, setOrderedTrees] = useState(allTrees);
   const [selectedViewMode, setSelectedViewMode] = useState<string>("standard");
@@ -235,6 +262,28 @@ function ManageRootsPage() {
     return trees.filter(tree => tree.title.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [allTrees, orderedTrees, searchTerm]);
 
+  const viewingTrees = useMemo(() => {
+    const treeSettings = currentUser?.treeSettings || [];
+    
+    let result = filteredTrees;
+    
+    if (activeGroupFilter !== "All Roots") {
+      result = filteredTrees.filter(tree => {
+        const setting = treeSettings.find(s => s.treeId === tree.id);
+        const groupName = setting?.groupName || "Ungrouped";
+        return groupName === activeGroupFilter;
+      });
+    }
+
+    result.sort((a, b) => {
+        const orderA = treeSettings.find(s => s.treeId === a.id)?.order ?? (a as any).order ?? 0;
+        const orderB = treeSettings.find(s => s.treeId === b.id)?.order ?? (b as any).order ?? 0;
+        return orderA - orderB;
+    });
+
+    return result;
+  }, [filteredTrees, currentUser?.treeSettings, activeGroupFilter]);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -244,25 +293,87 @@ function ManageRootsPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    if (!over) return;
 
-    if (over && active.id !== over.id) {
-      setOrderedTrees((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const reorderedTrees = arrayMove(items, oldIndex, newIndex);
-        const updates = reorderedTrees.map((tree, index) => ({ id: tree.id, order: index }));
-        updateTreeOrder(updates);
-        return reorderedTrees;
-      });
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    if (activeId === overId) return;
+
+    const currentSettings = [...(currentUser?.treeSettings || [])];
+    let treeSetting = currentSettings.find(s => s.treeId === activeId);
+    let activeTreeGroup = treeSetting?.groupName || "Ungrouped";
+
+    // Dropped onto a Filter Pill
+    if (overId.startsWith("group-pill-")) {
+      const targetGroupName = overId.replace("group-pill-", "");
+      if (activeTreeGroup === targetGroupName) return; // already in this group
+      
+      if (!treeSetting) {
+          treeSetting = { treeId: activeId, groupName: targetGroupName, order: 0 };
+          currentSettings.push(treeSetting);
+      } else {
+          treeSetting.groupName = targetGroupName;
+      }
+
+      if (setTreeSettings) {
+          setTreeSettings(currentSettings);
+          toast({ title: "Moved", description: `Root moved to ${targetGroupName}` });
+      }
+      return;
     }
+
+    // Otherwise, dropping onto another tree card for reordering
+    // We only allow reordering if the user is viewing a specific group (or All Roots, which orders globally within groups... wait, usually users sort within a specific group view).
+    // For simplicity, we just sort the `viewingTrees` array.
+    const oldIndex = viewingTrees.findIndex(t => t.id === activeId);
+    const newIndex = viewingTrees.findIndex(t => t.id === overId);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newArray = arrayMove(viewingTrees, oldIndex, newIndex);
+      newArray.forEach((t, i) => {
+          let s = currentSettings.find(cs => cs.treeId === t.id);
+          if (!s) {
+              s = { treeId: t.id, groupName: activeTreeGroup, order: i };
+              currentSettings.push(s);
+          } else {
+              s.order = i;
+          }
+      });
+      if (setTreeSettings) {
+          setTreeSettings(currentSettings);
+      }
+    }
+  };
+
+
+  const handleAddGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    const currentGroups = currentUser?.customGroups || [];
+    if (setCustomGroups && newGroupName.trim() && !currentGroups.includes(newGroupName.trim())) {
+      setCustomGroups([...currentGroups, newGroupName.trim()]);
+    }
+    setNewGroupName("");
   };
 
 
   const handleCreateTree = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTreeTitle.trim()) {
-      await createNewTree(newTreeTitle.trim());
+      const treeId = await createNewTree(newTreeTitle.trim());
+      if (treeId) {
+          const currentSettings = [...(currentUser?.treeSettings || [])];
+          let treeSetting = currentSettings.find(s => s.treeId === treeId);
+          if (!treeSetting) {
+              treeSetting = { treeId, groupName: newTreeGroup, order: currentSettings.length };
+              currentSettings.push(treeSetting);
+          } else {
+              treeSetting.groupName = newTreeGroup;
+          }
+          if (setTreeSettings) {
+              setTreeSettings(currentSettings);
+          }
+      }
       setNewTreeTitle("");
+      setNewTreeGroup("Ungrouped");
       setIsCreateDialogOpen(false);
     }
   };
@@ -471,13 +582,82 @@ function ManageRootsPage() {
 
   const handleRenameTree = (e: React.FormEvent) => {
     e.preventDefault();
-    if (treeToRename && renamedTitle.trim()) {
-      setTreeTitle(treeToRename.id, renamedTitle.trim());
-      toast({ title: "Renamed", description: `Tree renamed to "${renamedTitle.trim()}".` });
+    if (treeToRename) {
+      const isOwner = currentUser?.id === treeToRename.userId;
+      const isAdmin = treeToRename.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin) ?? false;
+      const canRename = isOwner || isAdmin;
+
+      if (canRename && renamedTitle.trim() && renamedTitle.trim() !== treeToRename.title) {
+        setTreeTitle(treeToRename.id, renamedTitle.trim());
+      }
+
+      const currentSettings = [...(currentUser?.treeSettings || [])];
+      let treeSetting = currentSettings.find(s => s.treeId === treeToRename.id);
+      if (!treeSetting) {
+          treeSetting = { treeId: treeToRename.id, groupName: editedGroup, order: 0 };
+          currentSettings.push(treeSetting);
+      } else {
+          treeSetting.groupName = editedGroup;
+      }
+      if (setTreeSettings) {
+          setTreeSettings(currentSettings);
+      }
+
+      toast({ title: "Updated", description: `Tree settings saved.` });
       setIsRenameDialogOpen(false);
       setTreeToRename(null);
       setRenamedTitle("");
+      setEditedGroup("Ungrouped");
     }
+  };
+
+  const handleDeleteGroup = (groupName: string) => {
+    if (groupName === "Ungrouped") return;
+    
+    // 1. Remove from customGroups
+    const newCustomGroups = (currentUser?.customGroups || []).filter(g => g !== groupName);
+    if (setCustomGroups) setCustomGroups(newCustomGroups);
+    
+    // 2. Move trees to Ungrouped in settings
+    const currentSettings = [...(currentUser?.treeSettings || [])];
+    const newSettings = currentSettings.map(s => 
+      s.groupName === groupName ? { ...s, groupName: "Ungrouped" } : s
+    );
+    if (setTreeSettings) setTreeSettings(newSettings);
+    
+    // 3. Reset local state
+    setEditedGroup("Ungrouped");
+    if (activeGroupFilter === groupName) {
+      setActiveGroupFilter("All Roots");
+    }
+    
+    toast({ title: "Group Removed", description: `The group "${groupName}" was deleted and its roots moved to Ungrouped.` });
+  };
+
+  const handleRenameGroup = (oldName: string, newName: string) => {
+    if (!newName.trim() || oldName === newName) {
+      setEditingGroupName(null);
+      return;
+    }
+    
+    // 1. Update customGroups
+    const newCustomGroups = (currentUser?.customGroups || []).map(g => g === oldName ? newName.trim() : g);
+    if (setCustomGroups) setCustomGroups(newCustomGroups);
+    
+    // 2. Update all treeSettings using this group
+    const currentSettings = [...(currentUser?.treeSettings || [])];
+    const newSettings = currentSettings.map(s => 
+      s.groupName === oldName ? { ...s, groupName: newName.trim() } : s
+    );
+    if (setTreeSettings) setTreeSettings(newSettings);
+    
+    // 3. Update active filter if needed
+    if (activeGroupFilter === oldName) {
+      setActiveGroupFilter(newName.trim());
+    }
+
+    setEditingGroupName(null);
+    toast({ title: "Group Renamed", description: `Group "${oldName}" is now "${newName.trim()}".` });
   };
 
   const renderContent = () => {
@@ -515,11 +695,59 @@ function ManageRootsPage() {
       );
     }
 
+    const allCustomGroups = currentUser?.customGroups || [];
+    const treeSettings = currentUser?.treeSettings || [];
+    const ungroupedTreesCount = filteredTrees.filter(tree => {
+      const s = treeSettings.find(st => st.treeId === tree.id);
+      return !s || s.groupName === "Ungrouped";
+    }).length;
+
+    // Auto-reset filter if searching/deleting makes it empty
+    if (activeGroupFilter === "Ungrouped" && ungroupedTreesCount === 0 && filteredTrees.length > 0) {
+      setActiveGroupFilter("All Roots");
+    }
+    
     return (
       <DndContext id={dndContextId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={filteredTrees.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTrees.map((tree: TreeFile) => {
+        <div className="flex w-full overflow-x-auto pb-4 gap-2 mb-4 scrollbar-hide">
+          <DroppableFilterPill 
+            id="group-pill-All Roots" 
+            isActive={activeGroupFilter === "All Roots"} 
+            onClick={() => setActiveGroupFilter("All Roots")} 
+            title="All Roots"
+            isGroupingPill={false}
+          />
+          {ungroupedTreesCount > 0 && (
+            <DroppableFilterPill 
+              id="group-pill-Ungrouped" 
+              isActive={activeGroupFilter === "Ungrouped"} 
+              onClick={() => setActiveGroupFilter("Ungrouped")} 
+              title="Ungrouped"
+              isGroupingPill={true}
+            />
+          )}
+          {allCustomGroups.map(g => {
+            const groupCount = filteredTrees.filter(tree => {
+              const s = treeSettings.find(st => st.treeId === tree.id);
+              return s?.groupName === g;
+            }).length;
+            
+            return (
+              <DroppableFilterPill 
+                key={`group-pill-${g}`}
+                id={`group-pill-${g}`}
+                isActive={activeGroupFilter === g} 
+                onClick={() => setActiveGroupFilter(g)} 
+                title={`${g}${groupCount > 0 ? ` (${groupCount})` : ''}`}
+                isGroupingPill={true}
+              />
+            );
+          })}
+        </div>
+
+        <SortableContext items={viewingTrees.map(t => t.id)} strategy={verticalListSortingStrategy}>
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 w-full h-full">
+            {viewingTrees.map((tree: TreeFile) => {
               const owner = tree.owner || users.find(u => u.id === tree.userId);
               const isOwner = currentUser?.id === tree.userId;
               const isAdmin = tree.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin) ?? false;
@@ -542,17 +770,17 @@ function ManageRootsPage() {
                           <FileText className="h-5 w-5 text-primary" /> {tree.title}
                         </div>
                         <div className="flex">
-                          {canManageTree && (
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTreeToRename(tree);
-                                setRenamedTitle(tree.title);
-                                setIsRenameDialogOpen(true);
-                              }}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTreeToRename(tree);
+                              setRenamedTitle(tree.title);
+                              const currentGroup = currentUser?.treeSettings?.find(s => s.treeId === tree.id)?.groupName || "Ungrouped";
+                              setEditedGroup(currentGroup);
+                              setIsRenameDialogOpen(true);
+                            }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" disabled={!isOwner && allTrees.length <= 1}>
@@ -719,6 +947,12 @@ function ManageRootsPage() {
             })}
           </div>
         </SortableContext>
+        {viewingTrees.length === 0 && (
+           <div className="mt-8 col-span-full min-h-[150px] flex flex-col items-center justify-center text-muted-foreground/50 border-2 border-dashed border-muted-foreground/20 rounded-xl w-full">
+              <p className="text-lg">No roots here</p>
+              <p className="text-sm">Drag roots onto the filter buttons above to assign them</p>
+           </div>
+        )}
       </DndContext>
     );
   }
@@ -806,6 +1040,86 @@ function ManageRootsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <Dialog open={isManageGroupsOpen} onOpenChange={setIsManageGroupsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="mr-2 h-4 w-4" /> Groups
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Manage Groups</DialogTitle>
+                  <DialogDescription>Create, rename, or delete your custom root categories.</DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4 py-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="New group name..." 
+                      value={newGroupName}
+                      onChange={(e) => setNewGroupName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddGroup(e)}
+                    />
+                    <Button onClick={handleAddGroup} disabled={!newGroupName.trim()}>Add</Button>
+                  </div>
+
+                  <div className="border rounded-lg divide-y max-h-[300px] overflow-y-auto">
+                    {(currentUser?.customGroups || []).length === 0 && (
+                      <div className="p-8 text-center text-muted-foreground text-sm">
+                        No custom groups yet.
+                      </div>
+                    )}
+                    {(currentUser?.customGroups || []).map(group => (
+                      <div key={group} className="p-3 flex items-center justify-between group">
+                        {editingGroupName === group ? (
+                          <div className="flex flex-1 gap-2 mr-2">
+                            <Input 
+                              autoFocus
+                              value={editingGroupValue}
+                              onChange={(e) => setEditingGroupValue(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleRenameGroup(group, editingGroupValue)}
+                              onBlur={() => setEditingGroupName(null)}
+                            />
+                            <Button size="sm" onClick={() => handleRenameGroup(group, editingGroupValue)}>Save</Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="font-medium">{group}</span>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  setEditingGroupName(group);
+                                  setEditingGroupValue(group);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteGroup(group)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="ghost">Close</Button>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog
               open={isCreateDialogOpen}
               onOpenChange={setIsCreateDialogOpen}
@@ -821,17 +1135,29 @@ function ManageRootsPage() {
                     <DialogTitle>Create a New Root</DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="tree-title" className="text-right">
-                        Title
-                      </Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="tree-title">Title</Label>
                       <Input
                         id="tree-title"
                         value={newTreeTitle}
                         onChange={(e) => setNewTreeTitle(e.target.value)}
-                        className="col-span-3"
                         placeholder="e.g., My Novel Outline"
+                        required
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new-tree-group">Group</Label>
+                      <Select value={newTreeGroup} onValueChange={setNewTreeGroup}>
+                        <SelectTrigger id="new-tree-group">
+                          <SelectValue placeholder="Select a group" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ungrouped">Ungrouped</SelectItem>
+                          {(currentUser?.customGroups || []).map(g => (
+                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <DialogFooter>
@@ -1271,20 +1597,40 @@ function ManageRootsPage() {
             <DialogContent>
               <form onSubmit={handleRenameTree}>
                 <DialogHeader>
-                  <DialogTitle>Rename Tree</DialogTitle>
+                  <DialogTitle>Edit Tree</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <Label htmlFor="rename-title">New Title</Label>
-                  <Input
-                    id="rename-title"
-                    value={renamedTitle}
-                    onChange={(e) => setRenamedTitle(e.target.value)}
-                    placeholder="Enter new tree title"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="rename-title">Title</Label>
+                    <Input
+                      id="rename-title"
+                      value={renamedTitle}
+                      onChange={(e) => setRenamedTitle(e.target.value)}
+                      placeholder="Enter tree title"
+                      disabled={!(treeToRename?.userId === currentUser?.id || treeToRename?.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin))}
+                    />
+                    {!(treeToRename?.userId === currentUser?.id || treeToRename?.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin)) && (
+                      <p className="text-[10px] text-muted-foreground italic">You don't have permission to rename this shared tree.</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tree-group">Personal Group</Label>
+                    <Select value={editedGroup} onValueChange={setEditedGroup}>
+                      <SelectTrigger id="tree-group">
+                        <SelectValue placeholder="Select a group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Ungrouped">Ungrouped</SelectItem>
+                        {(currentUser?.customGroups || []).map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <DialogFooter>
                   <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
-                  <Button type="submit">Rename</Button>
+                  <Button type="submit">Save Changes</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
