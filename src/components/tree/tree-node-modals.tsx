@@ -278,6 +278,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
       {/* Add Child / Paste Template Dialog */}
       <Dialog open={openModal === 'addChild' || openModal === 'pasteTemplate'} onOpenChange={handleOpenChange}>
         <DialogContent
+          className="max-h-[90vh] flex flex-col max-w-2xl"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
@@ -286,13 +287,16 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
           }}
         >
           <DialogHeader><DialogTitle><CornerDownRight className="inline-block mr-2 h-5 w-5" />Add New Node to "{node.name}"</DialogTitle></DialogHeader>
-          {renderAddDialogContent(handleSaveNewChild)}
+          <div className="flex-1 overflow-y-auto px-1">
+            {renderAddDialogContent(handleSaveNewChild)}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Add Sibling Dialog */}
       <Dialog open={openModal === 'addSibling'} onOpenChange={handleOpenChange}>
         <DialogContent
+          className="max-h-[90vh] flex flex-col max-w-2xl"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
@@ -301,7 +305,9 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
           }}
         >
           <DialogHeader><DialogTitle><ListPlus className="inline-block mr-2 h-5 w-5" />Add Sibling After "{node.name}"</DialogTitle></DialogHeader>
-          {renderAddDialogContent(handleSaveNewSibling)}
+          <div className="flex-1 overflow-y-auto px-1">
+            {renderAddDialogContent(handleSaveNewSibling)}
+          </div>
         </DialogContent>
       </Dialog>
 

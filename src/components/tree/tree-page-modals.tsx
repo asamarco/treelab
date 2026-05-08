@@ -343,6 +343,7 @@ export function TreePageModals({
                 }}
             >
                 <DialogContent
+                    className="max-h-[90vh] flex flex-col max-w-2xl"
                     onInteractOutside={(e) => {
                         const target = e.target as HTMLElement;
                         if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
@@ -351,75 +352,77 @@ export function TreePageModals({
                     }}
                 >
                     <DialogHeader><DialogTitle>Add New Root Node</DialogTitle></DialogHeader>
-                    <div className="space-y-2 pt-4">
-                        <Label>Template</Label>
-                        <Select
-                            value={selectedTemplateForNewNode?.id || ""}
-                            onValueChange={(templateId) => {
-                                if (templateId === 'create_new') {
-                                    router.push('/templates');
-                                    setDialogState({ isAddNodeOpen: false });
-                                    return;
-                                }
-                                const newTemplate = getTemplateById(templateId);
-                                setSelectedTemplateForNewNode(newTemplate || null);
-                            }}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a template">
-                                    {selectedTemplateForNewNode ? (
-                                        <div className="flex items-center gap-2">
-                                            <Icon
-                                                name={(selectedTemplateForNewNode.icon as keyof typeof icons) || "FileText"}
-                                                className="h-4 w-4"
-                                                style={{ color: selectedTemplateForNewNode.color || "hsl(var(--primary))" }}
-                                            />
-                                            <span>{selectedTemplateForNewNode.name}</span>
-                                        </div>
-                                    ) : (
-                                        "Select a template"
-                                    )}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {templates.map((t) => (
-                                    <SelectItem key={t.id} value={t.id}>
-                                        <div className="flex items-center gap-2">
-                                            <Icon
-                                                name={(t.icon as keyof typeof icons) || "FileText"}
-                                                className="h-4 w-4"
-                                                style={{ color: t.color || "hsl(var(--primary))" }}
-                                            />
-                                            <span>{t.name}</span>
+                    <div className="flex-1 overflow-y-auto px-1">
+                        <div className="space-y-2 pt-4">
+                            <Label>Template</Label>
+                            <Select
+                                value={selectedTemplateForNewNode?.id || ""}
+                                onValueChange={(templateId) => {
+                                    if (templateId === 'create_new') {
+                                        router.push('/templates');
+                                        setDialogState({ isAddNodeOpen: false });
+                                        return;
+                                    }
+                                    const newTemplate = getTemplateById(templateId);
+                                    setSelectedTemplateForNewNode(newTemplate || null);
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a template">
+                                        {selectedTemplateForNewNode ? (
+                                            <div className="flex items-center gap-2">
+                                                <Icon
+                                                    name={(selectedTemplateForNewNode.icon as keyof typeof icons) || "FileText"}
+                                                    className="h-4 w-4"
+                                                    style={{ color: selectedTemplateForNewNode.color || "hsl(var(--primary))" }}
+                                                />
+                                                <span>{selectedTemplateForNewNode.name}</span>
+                                            </div>
+                                        ) : (
+                                            "Select a template"
+                                        )}
+                                    </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {templates.map((t) => (
+                                        <SelectItem key={t.id} value={t.id}>
+                                            <div className="flex items-center gap-2">
+                                                <Icon
+                                                    name={(t.icon as keyof typeof icons) || "FileText"}
+                                                    className="h-4 w-4"
+                                                    style={{ color: t.color || "hsl(var(--primary))" }}
+                                                />
+                                                <span>{t.name}</span>
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                    <Separator className="my-1" />
+                                    <SelectItem value="create_new">
+                                        <div className="flex items-center gap-2 text-primary">
+                                            <ListPlus className="h-4 w-4" />
+                                            <span>Create new template...</span>
                                         </div>
                                     </SelectItem>
-                                ))}
-                                <Separator className="my-1" />
-                                <SelectItem value="create_new">
-                                    <div className="flex items-center gap-2 text-primary">
-                                        <ListPlus className="h-4 w-4" />
-                                        <span>Create new template...</span>
-                                    </div>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    {selectedTemplateForNewNode && (
-                        <NodeForm
-                            template={selectedTemplateForNewNode}
-                            onSave={(newNode) => {
-                                onSaveNewRootNode(newNode);
-                                setDialogState({ isAddNodeOpen: false });
-                                setSelectedTemplateForNewNode(null);
-                            }}
-                            onClose={() => {
-                                setDialogState({ isAddNodeOpen: false });
-                                setSelectedTemplateForNewNode(null);
-                            }}
-                            contextualParentId={null}
-                        />
-                    )}
+                        {selectedTemplateForNewNode && (
+                            <NodeForm
+                                template={selectedTemplateForNewNode}
+                                onSave={(newNode) => {
+                                    onSaveNewRootNode(newNode);
+                                    setDialogState({ isAddNodeOpen: false });
+                                    setSelectedTemplateForNewNode(null);
+                                }}
+                                onClose={() => {
+                                    setDialogState({ isAddNodeOpen: false });
+                                    setSelectedTemplateForNewNode(null);
+                                }}
+                                contextualParentId={null}
+                            />
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
 
@@ -647,7 +650,7 @@ export function TreePageModals({
             {/* Multi Node Edit Dialog */}
             <Dialog open={dialogState.isMultiNodeEditOpen || false} onOpenChange={(open) => setDialogState({ isMultiNodeEditOpen: open })}>
                 <DialogContent
-                    className="max-w-2xl"
+                    className="max-h-[90vh] flex flex-col max-w-2xl"
                     onInteractOutside={(e) => {
                         const target = e.target as HTMLElement;
                         if (target.closest('.jcontextmenu') || target.closest('.jcolor') || target.closest('.jexcel')) {
@@ -656,15 +659,17 @@ export function TreePageModals({
                     }}
                 >
                     <DialogHeader><DialogTitle>Editing {selectedNodeIds.length} nodes</DialogTitle></DialogHeader>
-                    {commonTemplateForMultiEdit && (
-                        <NodeForm
-                            template={commonTemplateForMultiEdit}
-                            onSave={handleMultiNodeSave}
-                            onClose={() => setDialogState({ isMultiNodeEditOpen: false })}
-                            contextualParentId={null}
-                            isMultiEdit={true}
-                        />
-                    )}
+                    <div className="flex-1 overflow-y-auto px-1">
+                        {commonTemplateForMultiEdit && (
+                            <NodeForm
+                                template={commonTemplateForMultiEdit}
+                                onSave={handleMultiNodeSave}
+                                onClose={() => setDialogState({ isMultiNodeEditOpen: false })}
+                                contextualParentId={null}
+                                isMultiEdit={true}
+                            />
+                        )}
+                    </div>
                 </DialogContent>
             </Dialog>
 
