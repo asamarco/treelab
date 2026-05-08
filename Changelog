@@ -1,3 +1,9 @@
+v0.7.1
+
+Feature: introduced Groups as an overlayer for organizing and filtering Roots
+Improvement: allow direct typing ind date fields
+Bugfix: fix content overflow in add node dialogs
+
 v0.7.0
 
 Feature: granular permissions management for shared trees. BREAKING CHANGE (old shares will be treated as read-only and should be manually updated with the desired permission level.
