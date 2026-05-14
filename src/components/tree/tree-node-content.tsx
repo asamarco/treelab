@@ -115,7 +115,13 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
         }
     };
 
-    const tableHeaderFields = useMemo(() => template.fields.filter(f => f.type === 'table-header'), [template.fields]);
+    const tableHeaderFields = useMemo(() => {
+        const fields = template.fields.filter(f => f.type === 'table-header');
+        return fields.filter(field => {
+            const columnData = nodeData[field.id];
+            return Array.isArray(columnData) && columnData.some(val => val !== null && val !== undefined && val !== '');
+        });
+    }, [template.fields, nodeData]);
 
     const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
 

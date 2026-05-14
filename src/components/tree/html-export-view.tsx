@@ -39,7 +39,10 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
 
   const pictureFields = template.fields.filter(f => f.type === 'picture');
   const attachmentFields = template.fields.filter(f => f.type === 'attachment');
-  const tableHeaderFields = template.fields.filter(f => f.type === 'table-header');
+  const tableHeaderFields = template.fields.filter(f => f.type === 'table-header').filter(field => {
+    const columnData = (node.data || {})[field.id];
+    return Array.isArray(columnData) && columnData.some(val => val !== null && val !== undefined && val !== '');
+  });
 
   const getTableRowCount = () => {
     if (tableHeaderFields.length === 0) return 0;
