@@ -169,9 +169,9 @@ export function TreeSelectionBar() {
     const handlePreviewSelection = useCallback(() => {
         const topLevelIds = getSelectedTopLevelNodes().map(n => n.node.id);
         if (topLevelIds.length > 0) {
-            setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: topLevelIds });
+            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: topLevelIds });
         } else {
-            toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not find any top-level nodes in your selection to preview.' });
+            toast({ variant: 'destructive', title: 'Preview Error', description: 'Could not find any top-level nodes in your selection to view.' });
         }
     }, [getSelectedTopLevelNodes, setDialogState, toast]);
 
@@ -287,10 +287,7 @@ export function TreeSelectionBar() {
                 if (selectedNodeIds.length === 0) return;
                 event.preventDefault();
                 setDialogState({ isDeleteNodesConfirmOpen: true });
-            } else if (event.key === 'v') {
-                if (selectedNodeIds.length === 0) return;
-                event.preventDefault();
-                handlePreviewSelection();
+
             } else if (event.key === 't' || event.key === 'T') {
                 if (selectedNodeIds.length === 0) return;
                 event.preventDefault();

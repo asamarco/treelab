@@ -40,16 +40,16 @@ import {
 import Link from "next/link";
 
 const DATE_FORMATS = [
-    { value: "dd/MM/yyyy", label: "DD/MM/YYYY" },
-    { value: "MM/dd/yyyy", label: "MM/DD/YYYY" },
-    { value: "yyyy-MM-dd", label: "YYYY-MM-DD" },
-    { value: "PPP", label: "Month Day, Year" },
+  { value: "dd/MM/yyyy", label: "DD/MM/YYYY" },
+  { value: "MM/dd/yyyy", label: "MM/DD/YYYY" },
+  { value: "yyyy-MM-dd", label: "YYYY-MM-DD" },
+  { value: "PPP", label: "Month Day, Year" },
 ];
 
 export default function SettingsPage() {
-  const { 
-    theme, 
-    setTheme, 
+  const {
+    theme,
+    setTheme,
     currentUser,
     changePassword,
     setGitSettings,
@@ -58,7 +58,7 @@ export default function SettingsPage() {
     setTwoPanelExpansionDepth,
     revokeAllSessions,
   } = useAuthContext();
-  
+
   const { toast } = useToast();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -96,7 +96,7 @@ export default function SettingsPage() {
       return;
     }
     if (newPassword.length < 6) {
-       toast({ variant: "destructive", title: "Password too short", description: "Your new password must be at least 6 characters long." });
+      toast({ variant: "destructive", title: "Password too short", description: "Your new password must be at least 6 characters long." });
       return;
     }
 
@@ -113,13 +113,13 @@ export default function SettingsPage() {
     }
     setIsChangingPassword(false);
   };
-  
+
   const handleSaveGitSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     await setGitSettings({ githubPat });
     toast({ title: "Settings Saved", description: "Your GitHub token has been updated." });
   };
-  
+
   const handleInactivityTimeoutSave = () => {
     setInactivityTimeout(inactivityTimeout);
     toast({ title: "Settings Saved", description: "Your inactivity timeout has been updated." });
@@ -132,7 +132,7 @@ export default function SettingsPage() {
         <main className="flex-1 container mx-auto p-4 md:p-8">
           <div className="max-w-2xl mx-auto space-y-8">
             <h1 className="text-3xl font-bold">User Settings</h1>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Appearance</CardTitle>
@@ -177,9 +177,9 @@ export default function SettingsPage() {
                     </div>
                   </RadioGroup>
                 </div>
-                 <div className="space-y-4 pt-4">
+                <div className="space-y-4 pt-4">
                   <Label>Date Format</Label>
-                   <Select value={currentUser?.dateFormat || 'dd/MM/yyyy'} onValueChange={setDateFormat}>
+                  <Select value={currentUser?.dateFormat || 'dd/MM/yyyy'} onValueChange={setDateFormat}>
                     <SelectTrigger className="max-w-md">
                       <SelectValue placeholder="Select date format" />
                     </SelectTrigger>
@@ -195,13 +195,13 @@ export default function SettingsPage() {
 
                 <div className="space-y-4 pt-4">
                   <div className="flex items-center justify-between">
-                    <Label className="text-base">Two-Panel Auto-Expansion Depth</Label>
+                    <Label className="text-base">Auto-Expansion Depth</Label>
                     <span className="text-sm font-medium bg-secondary px-2.5 py-0.5 rounded-full">
                       {currentUser?.twoPanelExpansionDepth ?? 1}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Determines how many levels of descendants are automatically expanded when selecting a node in two-panel view.
+                    Determines how many levels of descendants are automatically expanded in two-panel view and node Explorer.
                   </p>
                   <div className="pt-2 pb-2 px-1">
                     <Slider
@@ -241,54 +241,54 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex justify-end">
                     <Button type="submit" disabled={isChangingPassword}>
-                      {isChangingPassword ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <KeyRound className="mr-2 h-4 w-4"/>}
+                      {isChangingPassword ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <KeyRound className="mr-2 h-4 w-4" />}
                       Change Password
                     </Button>
                   </div>
                 </form>
-                 <Separator />
-                 <div className="space-y-4">
-                    <Label>Automatic Logout</Label>
-                    <p className="text-sm text-muted-foreground">Minutes of inactivity before automatic logout. Set to 0 to disable.</p>
-                    <div className="flex items-center justify-between p-2 rounded-md">
-                        <div className="flex items-center gap-2">
-                            <Input id="inactivity-timeout" type="number" min="0" value={inactivityTimeout} onChange={(e) => setInactivityTimeoutState(Number(e.target.value))} className="w-24" />
-                            <span className="text-sm text-muted-foreground">minutes</span>
-                        </div>
-                        <Button onClick={handleInactivityTimeoutSave}>Save Timeout</Button>
+                <Separator />
+                <div className="space-y-4">
+                  <Label>Automatic Logout</Label>
+                  <p className="text-sm text-muted-foreground">Minutes of inactivity before automatic logout. Set to 0 to disable.</p>
+                  <div className="flex items-center justify-between p-2 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Input id="inactivity-timeout" type="number" min="0" value={inactivityTimeout} onChange={(e) => setInactivityTimeoutState(Number(e.target.value))} className="w-24" />
+                      <span className="text-sm text-muted-foreground">minutes</span>
                     </div>
+                    <Button onClick={handleInactivityTimeoutSave}>Save Timeout</Button>
+                  </div>
                 </div>
-                 <Separator />
-                 <div className="space-y-4">
-                    <Label>Active Sessions</Label>
-                    <div className="pt-1">
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" disabled={isRevokingSessions}>
-                                    {isRevokingSessions ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <LogOut className="mr-2 h-4 w-4"/>}
-                                    Sign Out of All Other Devices
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>This will invalidate all sessions for your account on other devices.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleRevokeSessions} className="bg-destructive hover:bg-destructive/90">Sign Out Everywhere</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
+                <Separator />
+                <div className="space-y-4">
+                  <Label>Active Sessions</Label>
+                  <div className="pt-1">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" disabled={isRevokingSessions}>
+                          {isRevokingSessions ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <LogOut className="mr-2 h-4 w-4" />}
+                          Sign Out of All Other Devices
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>This will invalidate all sessions for your account on other devices.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleRevokeSessions} className="bg-destructive hover:bg-destructive/90">Sign Out Everywhere</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-            
-             <Card>
+
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <Github className="h-5 w-5" /> Git Integration
+                  <Github className="h-5 w-5" /> Git Integration
                 </CardTitle>
                 <CardDescription>Connect your GitHub account to sync your trees.</CardDescription>
               </CardHeader>
@@ -298,11 +298,11 @@ export default function SettingsPage() {
                     <Label htmlFor="github-pat">GitHub Personal Access Token</Label>
                     <Input id="github-pat" type="password" placeholder="ghp_..." value={githubPat} onChange={(e) => setGithubPat(e.target.value)} />
                     <p className="text-xs text-muted-foreground">
-                      Stored securely. Used to sync with your repositories. 
+                      Stored securely. Used to sync with your repositories.
                       Create one in <Link href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener noreferrer" className="underline">GitHub settings</Link>.
                     </p>
                   </div>
-                   <div className="flex justify-end">
+                  <div className="flex justify-end">
                     <Button type="submit">Save Token</Button>
                   </div>
                 </form>

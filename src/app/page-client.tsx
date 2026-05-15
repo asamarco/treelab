@@ -312,7 +312,7 @@ export function TreePage() {
   useEffect(() => {
     const previewNodeId = searchParams.get('previewNode');
     if (previewNodeId) {
-      setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [previewNodeId] });
+      setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [previewNodeId] });
       router.replace(pathname, { scroll: false });
     }
   }, [searchParams, setDialogState, router, pathname]);
@@ -393,6 +393,8 @@ export function TreePage() {
         return;
       }
 
+
+
       switch (event.key) {
         case ' ':
           if (isMobile) return;
@@ -426,7 +428,7 @@ export function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode, tree, setDialogState]);
 
   const filteredTree = useMemo(() => {
     try {

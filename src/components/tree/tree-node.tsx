@@ -52,6 +52,7 @@ interface TreeNodeProps {
   isExplorer?: boolean;
   readOnly?: boolean;
   disableSelection?: boolean;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 function TreeNodeComponentInner({
@@ -66,6 +67,7 @@ function TreeNodeComponentInner({
   isExplorer,
   readOnly = false,
   disableSelection = false,
+  onNodeClick,
 }: TreeNodeProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -319,6 +321,7 @@ function TreeNodeComponentInner({
               isExplorer={isExplorer}
               readOnly={readOnly}
               disableSelection={disableSelection}
+              onNodeClick={onNodeClick}
             />
             <TreeNodeContent
               node={node}
@@ -333,6 +336,7 @@ function TreeNodeComponentInner({
               isExplorer={isExplorer}
               readOnly={readOnly}
               disableSelection={disableSelection}
+              onNodeClick={onNodeClick}
             />
           </Collapsible>
         </CardContent>
@@ -359,6 +363,7 @@ function TreeNodeComponentInner({
                 isExplorer={isExplorer}
                 readOnly={readOnly}
                 disableSelection={disableSelection}
+                onNodeClick={onNodeClick}
               />
               {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />}
             </div>
@@ -387,5 +392,6 @@ export const TreeNodeComponent = React.memo(TreeNodeComponentInner, (prevProps, 
   // onSelect and onExpandedChange are callbacks — compare by reference
   if (prevProps.onSelect !== nextProps.onSelect) return false;
   if (prevProps.onExpandedChange !== nextProps.onExpandedChange) return false;
+  if (prevProps.onNodeClick !== nextProps.onNodeClick) return false;
   return true;
 });

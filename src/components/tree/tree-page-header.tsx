@@ -5,7 +5,7 @@ import { useState } from "react";
 import { 
     Edit, Download, FileJson, FileText, ChevronDown, Rows, Rows3, 
     Archive, GitCommit, Loader2, History, GitPullRequest, Github, 
-    PlusCircle, Undo2, FileCode, Check,
+    PlusCircle, Undo2, FileCode, Check, Eye,
     Redo2, ListOrdered, Users, RefreshCcw, Menu, LayoutPanelLeft, Search, Star, Filter,
     Globe
 } from "lucide-react";
@@ -254,6 +254,14 @@ export function TreePageHeader({
                             {isCompactView ? <Rows className="mr-2 h-4 w-4 text-primary" /> : <Rows3 className="mr-2 h-4 w-4" />}
                             Compact View
                         </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => {
+                            if (allNodes.length > 0) {
+                                setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [allNodes[0].id] });
+                            }
+                        }}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View in Explorer
+                        </DropdownMenuItem>
                         
                         <DropdownMenuSeparator />
                         
@@ -344,6 +352,23 @@ export function TreePageHeader({
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>Compact View (Space)</p></TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-9 w-9" 
+                                    onClick={() => {
+                                        if (allNodes.length > 0) {
+                                            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [allNodes[0].id] });
+                                        }
+                                    }}
+                                >
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>View in Explorer (v)</p></TooltipContent>
                         </Tooltip>
                         <Separator orientation="vertical" className="h-6 mx-1" />
                         <DropdownMenu>

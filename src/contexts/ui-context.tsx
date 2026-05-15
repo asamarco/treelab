@@ -20,8 +20,8 @@ export interface DialogState {
   exportNodes?: TreeNode[];
   exportTitle?: string;
   exportElementId?: string;
-  isNodePreviewOpen?: boolean;
-  nodeIdsForPreview?: string[];
+  isExplorerOpen?: boolean;
+  nodeIdsForExplorer?: string[];
   isChangeTemplateMultipleOpen?: boolean;
   isMultiNodeEditOpen?: boolean;
   isNodeEditOpen?: boolean;

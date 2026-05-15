@@ -1550,7 +1550,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     // 3. Clear UI obstructions
     setDialogState({
-      isNodePreviewOpen: false,
+      isExplorerOpen: false,
       openNodeEditInstanceIds: [],
       isAddChildOpen: false,
       isAddSiblingOpen: false,

@@ -50,10 +50,11 @@ interface TreeNodeContentProps {
     isExplorer?: boolean;
     readOnly?: boolean;
     disableSelection?: boolean;
+    onNodeClick?: (nodeId: string) => void;
 }
 
 
-function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeNodeContentProps) {
+function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false, onNodeClick }: TreeNodeContentProps) {
     const { currentUser } = useAuthContext();
     const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode, updateNode, selectAndCenterNode } = useTreeContext();
     const { setDialogState, isCompactView: globalIsCompactView } = useUIContext();
@@ -576,7 +577,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                                         className="flex items-center gap-2 cursor-pointer"
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [resultNode.id] });
+                                                                            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
                                                                         }}
                                                                     >
                                                                         <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
@@ -692,6 +693,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                         isExplorer={isExplorer}
                                         readOnly={readOnly}
                                         disableSelection={disableSelection}
+                                        onNodeClick={onNodeClick}
                                     />
                                     {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />}
                                 </div>

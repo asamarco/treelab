@@ -63,6 +63,7 @@ interface TreeNodeHeaderProps {
   isExplorer?: boolean;
   readOnly?: boolean;
   disableSelection?: boolean;
+  onNodeClick?: (nodeId: string) => void;
 }
 
 export function TreeNodeHeader({
@@ -84,6 +85,7 @@ export function TreeNodeHeader({
   isExplorer = false,
   readOnly = false,
   disableSelection = false,
+  onNodeClick,
 }: TreeNodeHeaderProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -421,7 +423,20 @@ export function TreeNodeHeader({
             <div className={cn("flex-grow flex gap-1 min-w-0 py-1.5 md:py-1", (isExplorer || isCompactView) ? "items-center py-0" : "items-start")}>
               <p className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", !isCompactView && "mt-1", isMobile && "text-base mt-1.5", isExplorer && "text-sm")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
-                {node.name}
+                {onNodeClick ? (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onNodeClick(node.id);
+                    }}
+                    className="text-left hover:text-primary hover:underline transition-colors"
+                  >
+                    {node.name}
+                  </button>
+                ) : (
+                  node.name
+                )}
               </p>
               {isExplorer && node.isStarred && (
                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-500 ml-1 mt-1 shrink-0" />
@@ -475,8 +490,8 @@ export function TreeNodeHeader({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                      <DropdownMenuItem onSelect={() => setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] })}>
-                        <Eye className="mr-2 h-4 w-4" /> Preview
+                      <DropdownMenuItem onSelect={() => setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [node.id] })}>
+                        <Eye className="mr-2 h-4 w-4" /> Explorer
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => onOpenModal('edit')}>
                         <Edit className="mr-2 h-4 w-4" /> Edit
@@ -507,10 +522,10 @@ export function TreeNodeHeader({
                 <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control mt-0.5">
                   <TooltipProvider>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [node.id] }); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [node.id] }); }}>
                         <Eye className="h-3 w-3" />
                       </Button>
-                    </TooltipTrigger><TooltipContent><p>Preview Node (v)</p></TooltipContent></Tooltip>
+                    </TooltipTrigger><TooltipContent><p>View in Explorer (v)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
                         <Edit className="h-3 w-3" />

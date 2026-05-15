@@ -41,9 +41,10 @@ interface TreeViewProps {
   isExplorer?: boolean;
   readOnly?: boolean;
   disableSelection?: boolean;
+  onNodeClick?: (nodeId: string) => void;
 }
 
-export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false }: TreeViewProps) {
+export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false, onNodeClick }: TreeViewProps) {
   const dndContextId = useId();
   const { currentUser } = useAuthContext();
   const {
@@ -318,6 +319,18 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       return;
     }
 
+    if (event.key === 'v' || event.key === 'V') {
+      event.preventDefault();
+      const targetIds = selectedNodeIds.length > 0 
+        ? selectedNodeIds.map(id => id.split('_')[0]) 
+        : (nodes.length > 0 ? [nodes[0].id] : []);
+      
+      if (targetIds.length > 0) {
+        setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: targetIds });
+      }
+      return;
+    }
+
     if (currentUser) {
       if (event.ctrlKey || event.metaKey) {
         if (event.key === 'v') {
@@ -516,6 +529,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
               isExplorer={isExplorer}
               readOnly={readOnly}
               disableSelection={disableSelection}
+              onNodeClick={onNodeClick}
             />
             {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${node.id}_root`} />}
           </div>

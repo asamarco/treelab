@@ -33,7 +33,7 @@ import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useToast } from "@/hooks/use-toast";
 import { Template, TreeFile, GitCommit, TreeNode } from "@/lib/types";
-import { Github, Loader2, Eye, AlertTriangle, RefreshCcw, ArrowLeft, ArrowRight, ArrowUp, Printer, Download, FileJson, FileCode, FileText, Archive, ChevronDown, CornerDownRight, ListPlus } from "lucide-react";
+import { Github, Loader2, Eye, AlertTriangle, RefreshCcw, ArrowLeft, ArrowRight, ArrowUp, Printer, Download, FileJson, FileCode, FileText, Archive, ChevronDown, ChevronRight, CornerDownRight, ListPlus, Maximize2, Minimize2 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 import { HtmlExportView } from "./html-export-view";
@@ -113,18 +113,19 @@ export function TreePageModals({
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
 
-    // Preview Dialog State
-    const [previewExpandedNodeIds, setPreviewExpandedNodeIds] = useState<string[]>([]);
+    // Explorer Dialog State
+    const [explorerExpandedNodeIds, setExplorerExpandedNodeIds] = useState<string[]>([]);
+    const [isExplorerFullscreen, setIsExplorerFullscreen] = useState(false);
 
     // Change Multiple Templates Dialog State
     const [targetTemplateId, setTargetTemplateId] = useState<string | null>(null);
 
-    const nodesForPreview = useMemo(() => {
-        if (!dialogState.isNodePreviewOpen || !dialogState.nodeIdsForPreview) return [];
+    const nodesForExplorer = useMemo(() => {
+        if (!dialogState.isExplorerOpen || !dialogState.nodeIdsForExplorer) return [];
 
-        return dialogState.nodeIdsForPreview.map(id => findNodeAndParent(id, allNodes)?.node).filter((n): n is TreeNode => !!n);
+        return dialogState.nodeIdsForExplorer.map(id => findNodeAndParent(id, allNodes)?.node).filter((n): n is TreeNode => !!n);
 
-    }, [dialogState.isNodePreviewOpen, dialogState.nodeIdsForPreview, allNodes, findNodeAndParent]);
+    }, [dialogState.isExplorerOpen, dialogState.nodeIdsForExplorer, allNodes, findNodeAndParent]);
 
     const commonTemplateForMultiEdit = useMemo(() => {
         if (!dialogState.isMultiNodeEditOpen || selectedNodeIds.length === 0) return null;
@@ -136,11 +137,11 @@ export function TreePageModals({
         return allSame ? getTemplateById(templateId) : null;
     }, [dialogState.isMultiNodeEditOpen, selectedNodeIds, findNodeAndParent, getTemplateById]);
 
-    const previewNavigation = useMemo(() => {
-        if (nodesForPreview.length !== 1) {
+    const explorerNavigation = useMemo(() => {
+        if (nodesForExplorer.length !== 1) {
             return { prev: null, next: null, parent: null };
         }
-        const nodeInfo = findNodeAndParent(nodesForPreview[0].id, allNodes);
+        const nodeInfo = findNodeAndParent(nodesForExplorer[0].id, allNodes);
         if (!nodeInfo) {
             return { prev: null, next: null, parent: null };
         }
@@ -148,30 +149,56 @@ export function TreePageModals({
         const siblings = parent ? parent.children : allNodes;
 
         // Note: This simple index based navigation might not be ideal for cloned nodes with multiple parents
-        // but for a straightforward preview it's acceptable.
+        // but for a straightforward explorer view it's acceptable.
         const currentIndex = siblings.findIndex(s => s.id === node.id);
 
         const prev = currentIndex > 0 ? siblings[currentIndex - 1] : null;
         const next = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
 
         return { prev, next, parent };
-    }, [nodesForPreview, findNodeAndParent, allNodes]);
+    }, [nodesForExplorer, findNodeAndParent, allNodes]);
+
+    const explorerBreadcrumbs = useMemo(() => {
+        if (nodesForExplorer.length !== 1) return [];
+
+        const crumbs: { id: string; name: string; icon?: string; color?: string; isRoot?: boolean }[] = [];
+        let currentId = nodesForExplorer[0].id;
+        const visited = new Set<string>();
+
+        while (currentId && !visited.has(currentId)) {
+            visited.add(currentId);
+            const info = findNodeAndParent(currentId);
+            if (!info) break;
+            const template = getTemplateById(info.node.templateId);
+            crumbs.unshift({
+                id: info.node.id,
+                name: info.node.name || "Untitled",
+                icon: template?.icon,
+                color: template?.color
+            });
+            currentId = info.parent?.id || '';
+        }
+
+        return crumbs;
+    }, [nodesForExplorer, findNodeAndParent, getTemplateById]);
 
     useEffect(() => {
-        if (dialogState.isNodePreviewOpen && nodesForPreview.length > 0) {
+        if (dialogState.isExplorerOpen && nodesForExplorer.length > 0) {
             const allIds = new Set<string>();
-            const traverse = (nodes: TreeNode[], parentId: string | null) => {
+            const expansionDepth = currentUser?.twoPanelExpansionDepth ?? 1;
+            const traverse = (nodes: TreeNode[], parentId: string | null, depth: number) => {
                 for (const node of nodes) {
                     allIds.add(`${node.id}_${parentId || 'root'}`);
-                    if (node.children) {
-                        traverse(node.children, node.id);
+                    // Limit auto-expansion depth based on user settings to balance performance
+                    if (node.children && depth < expansionDepth) {
+                        traverse(node.children, node.id, depth + 1);
                     }
                 }
             };
-            traverse(nodesForPreview, null);
-            setPreviewExpandedNodeIds(Array.from(allIds));
+            traverse(nodesForExplorer, null, 0);
+            setExplorerExpandedNodeIds(Array.from(allIds));
         }
-    }, [dialogState.isNodePreviewOpen, nodesForPreview]);
+    }, [dialogState.isExplorerOpen, nodesForExplorer, currentUser?.twoPanelExpansionDepth]);
 
 
     const handleFetchHistory = useCallback(async () => {
@@ -275,10 +302,14 @@ export function TreePageModals({
         }
     };
 
-    const handlePreviewNavigate = (nodeId: string | undefined) => {
+    const handleExplorerNavigate = (nodeId: string | undefined) => {
         if (nodeId) {
-            setDialogState({ nodeIdsForPreview: [nodeId] });
+            setDialogState({ nodeIdsForExplorer: [nodeId] });
         }
+    };
+
+    const handleBreadcrumbClick = (id: string) => {
+        handleExplorerNavigate(id);
     };
 
     const handlePrint = () => {
@@ -286,26 +317,26 @@ export function TreePageModals({
     }
 
     const handleExport = (format: 'json' | 'archive' | 'html') => {
-        if (nodesForPreview.length === 0) {
+        if (nodesForExplorer.length === 0) {
             toast({ variant: 'destructive', title: 'Export Error', description: 'Could not find any nodes to export.' });
             return;
         }
 
-        const exportName = `${nodesForPreview.length}-nodes-export`;
-        const exportTitle = `${nodesForPreview.length} Selected Nodes`;
+        const exportName = `${nodesForExplorer.length}-nodes-export`;
+        const exportTitle = `${nodesForExplorer.length} Selected Nodes`;
         const exportId = 'export-container-selection';
 
         switch (format) {
             case 'json':
-                exportNodesAsJson(nodesForPreview, exportName);
+                exportNodesAsJson(nodesForExplorer, exportName);
                 break;
             case 'archive':
-                exportNodesAsArchive(nodesForPreview, exportName);
+                exportNodesAsArchive(nodesForExplorer, exportName);
                 break;
             case 'html':
-                setDialogState({ exportNodes: nodesForPreview, exportTitle, exportElementId: exportId });
+                setDialogState({ exportNodes: nodesForExplorer, exportTitle, exportElementId: exportId });
                 setTimeout(() => {
-                    exportNodesAsHtml(exportId, nodesForPreview, exportTitle);
+                    exportNodesAsHtml(exportId, nodesForExplorer, exportTitle);
                     setDialogState({ exportNodes: undefined });
                 }, 100);
                 break;
@@ -426,54 +457,88 @@ export function TreePageModals({
                 </DialogContent>
             </Dialog>
 
-            {/* Node Preview Dialog */}
-            <Dialog open={dialogState.isNodePreviewOpen || false} onOpenChange={(open) => setDialogState({ isNodePreviewOpen: open, nodeIdsForPreview: open ? dialogState.nodeIdsForPreview : undefined })}>
-                <DialogContent className="max-w-[90vw] max-h-[80vh] flex flex-col printable-area">
+            {/* Explorer Dialog */}
+            <Dialog open={dialogState.isExplorerOpen || false} onOpenChange={(open) => {
+                setDialogState({ isExplorerOpen: open, nodeIdsForExplorer: open ? dialogState.nodeIdsForExplorer : undefined });
+                if (!open) setIsExplorerFullscreen(false);
+            }}>
+                <DialogContent className={`flex flex-col printable-area transition-all duration-200 ${isExplorerFullscreen ? 'max-w-[100vw] max-h-[100vh] w-screen h-screen rounded-none border-0' : 'max-w-[100vw] max-h-[100vh] w-screen h-screen rounded-none border-0 sm:max-w-[90vw] sm:max-h-[80vh] sm:w-full sm:h-full sm:rounded-lg sm:border'}`}>
                     <DialogHeader className="no-print">
-                        <DialogTitle className="sr-only">Node Preview</DialogTitle>
+                        <DialogTitle className="sr-only">Explorer</DialogTitle>
                     </DialogHeader>
-                    <div id="node-preview-content" className="flex-1 overflow-y-auto -mx-6 px-6">
-                        {nodesForPreview.length > 0 && (
+                    <div id="explorer-content" className="flex-1 overflow-y-auto -mx-6 px-6">
+                        {explorerBreadcrumbs.length > 0 && (
+                            <div className="flex items-center flex-wrap gap-1 mb-4 py-2 px-3 bg-muted/30 rounded-md border text-sm no-print sticky top-0 z-10 backdrop-blur-sm">
+                                {explorerBreadcrumbs.map((crumb, index) => (
+                                    <div key={crumb.id} className="flex items-center">
+                                        <button
+                                            onClick={() => handleBreadcrumbClick(crumb.id)}
+                                            className={`flex items-center gap-1.5 hover:text-primary transition-colors py-1 px-1.5 rounded-sm hover:bg-muted/50 ${
+                                                index === explorerBreadcrumbs.length - 1 ? "font-semibold text-foreground pointer-events-none" : "text-muted-foreground"
+                                            }`}
+                                        >
+                                            <Icon
+                                                name={(crumb.icon as keyof typeof icons) || "FileText"}
+                                                className="h-3.5 w-3.5"
+                                                style={{ color: crumb.color || "hsl(var(--primary))" }}
+                                            />
+                                            <span className="truncate max-w-[150px]">{crumb.name}</span>
+                                        </button>
+                                        {index < explorerBreadcrumbs.length - 1 && (
+                                            <ChevronRight className="h-4 w-4 text-muted-foreground/40 mx-0.5" />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {nodesForExplorer.length > 0 && (
                             <TreeView
-                                nodes={nodesForPreview}
-                                overrideExpandedIds={previewExpandedNodeIds}
-                                onExpandedChange={setPreviewExpandedNodeIds}
+                                nodes={nodesForExplorer}
+                                overrideExpandedIds={explorerExpandedNodeIds}
+                                onExpandedChange={setExplorerExpandedNodeIds}
                                 readOnly={true}
+                                onNodeClick={handleExplorerNavigate}
                             />
                         )}
                     </div>
-                    <DialogFooter className="border-t pt-2 -mx-6 px-6 no-print">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">
-                                    <Download className="mr-2 h-4 w-4" /> Export <ChevronDown className="ml-2 h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem onSelect={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleExport('archive')}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Button variant="outline" onClick={handlePrint}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Print
-                        </Button>
-                        <div className="flex-grow"></div>
-                        {nodesForPreview.length === 1 && (
-                            <>
-                                <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.prev?.id)} disabled={!previewNavigation.prev}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Node
-                                </Button>
-                                <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.parent?.id)} disabled={!previewNavigation.parent}>
-                                    <ArrowUp className="mr-2 h-4 w-4" /> Parent Node
-                                </Button>
-                                <Button variant="outline" onClick={() => handlePreviewNavigate(previewNavigation.next?.id)} disabled={!previewNavigation.next}>
-                                    Next Node <ArrowRight className="ml-2 h-4 w-4" />
-                                </Button>
-                            </>
-                        )}
-                    </DialogFooter>
+                    <div className="flex items-center justify-between border-t pt-2 mt-auto -mx-6 px-6 no-print shrink-0">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <Button variant="ghost" size="icon" className="hidden sm:inline-flex" onClick={() => setIsExplorerFullscreen(!isExplorerFullscreen)} title={isExplorerFullscreen ? "Restore" : "Maximize"}>
+                                {isExplorerFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" className="sm:w-auto sm:px-3">
+                                        <Download className="h-4 w-4" /> <span className="hidden sm:inline sm:ml-2">Export</span> <ChevronDown className="hidden sm:inline ml-2 h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onSelect={() => handleExport('json')}><FileJson className="mr-2 h-4 w-4" />JSON</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('html')}><FileCode className="mr-2 h-4 w-4" />HTML</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleExport('archive')}><Archive className="mr-2 h-4 w-4" />Archive (.zip)</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" onClick={handlePrint} title="Print">
+                                <Printer className="h-4 w-4" />
+                                <span className="hidden sm:inline sm:ml-2">Print</span>
+                            </Button>
+                        </div>
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            {nodesForExplorer.length === 1 && (
+                                <>
+                                    <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" onClick={() => handleExplorerNavigate(explorerNavigation.prev?.id)} disabled={!explorerNavigation.prev} title="Previous Node">
+                                        <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline sm:ml-2">Previous</span>
+                                    </Button>
+                                    <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" onClick={() => handleExplorerNavigate(explorerNavigation.parent?.id)} disabled={!explorerNavigation.parent} title="Parent Node">
+                                        <ArrowUp className="h-4 w-4" /> <span className="hidden sm:inline sm:ml-2">Parent</span>
+                                    </Button>
+                                    <Button variant="outline" size="icon" className="sm:w-auto sm:px-3" onClick={() => handleExplorerNavigate(explorerNavigation.next?.id)} disabled={!explorerNavigation.next} title="Next Node">
+                                        <span className="hidden sm:inline sm:mr-2">Next</span> <ArrowRight className="h-4 w-4" />
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
 

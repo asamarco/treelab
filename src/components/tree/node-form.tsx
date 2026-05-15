@@ -103,7 +103,7 @@ const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: strin
     <div ref={setNodeRef} style={style} className="relative group aspect-square">
       <img
         src={src}
-        alt="preview"
+        alt="explorer"
         className="w-full h-full object-cover rounded-md cursor-pointer"
         onClick={onClick}
       />
@@ -734,7 +734,7 @@ export const NodeForm = ({
             disabled={!linkedNodeInfo}
             onClick={() => {
               onClose();
-              setDialogState({ isNodePreviewOpen: true, nodeIdsForPreview: [nodeId] });
+              setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [nodeId] });
             }}
           >
             <Link className="mr-2 h-4 w-4" /> Go to Node
@@ -1003,10 +1003,10 @@ export const NodeForm = ({
 
                 renderedContent = (
                   <div className="space-y-2">
-                    <Input 
-                      placeholder="Paste iframe/embed URL (e.g., https://docs.google.com/.../pubhtml?widget=true)" 
-                      value={formData[field.id] || ""} 
-                      onChange={(e) => handleEmbedChange(e.target.value)} 
+                    <Input
+                      placeholder="Paste iframe/embed URL (e.g., https://docs.google.com/.../pubhtml?widget=true)"
+                      value={formData[field.id] || ""}
+                      onChange={(e) => handleEmbedChange(e.target.value)}
                     />
                     <p className="text-[10px] text-muted-foreground italic mt-1">
                       Note: Many sites block standard URLs from being embedded. Please ensure you use the site's specifically provided "Embed" or "Publish to Web" URL. Standard YouTube links will be auto-converted.
