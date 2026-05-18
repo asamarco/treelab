@@ -488,7 +488,7 @@ export function TreePage() {
   useEffect(() => {
     if (isExplorerMode && explorerNodes.length > 0) {
       const allIds = new Set<string>();
-      const expansionDepth = Math.max(1, currentUser?.twoPanelExpansionDepth ?? 1);
+      const expansionDepth = 0; // Only expand the clicked root node
       const traverse = (nodesToTraverse: TreeNode[], parentId: string | null, depth: number) => {
         for (const node of nodesToTraverse) {
           allIds.add(`${node.id}_${parentId || 'root'}`);
