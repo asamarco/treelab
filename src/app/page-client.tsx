@@ -254,6 +254,7 @@ export function TreePage() {
     exportNodesAsArchive,
     exportNodesAsHtml,
     exportNodesAsJson,
+    expandedNodeIds: globalExpandedNodeIds,
   } = useTreeContext();
   const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isExplorerMode, setIsExplorerMode, isAnyModalOpen } = useUIContext();
   const isMobile = useIsMobile();
@@ -482,25 +483,35 @@ export function TreePage() {
   const handleExplorerNodeClick = useCallback((nodeId: string) => {
     if (isExplorerMode) {
       setExplorerNodeId(nodeId);
+      // In two-panel mode, also select the node so the right panel shows its details.
+      if (isTwoPanelMode) {
+        const nodeInfo = findNodeAndParent(nodeId, tree || []);
+        const parentId = nodeInfo?.parent?.id ?? 'root';
+        setSelectedNodeIds([`${nodeId}_${parentId}`]);
+      }
+    }
+  }, [isExplorerMode, isTwoPanelMode, findNodeAndParent, tree, setSelectedNodeIds]);
+
+  // Seed the explorer expansion state from the global tree whenever explorer mode is enabled.
+  useEffect(() => {
+    if (isExplorerMode) {
+      setExplorerExpandedNodeIds(globalExpandedNodeIds);
     }
   }, [isExplorerMode]);
 
+  // When drilling into a node, also ensure that node is marked as expanded.
   useEffect(() => {
-    if (isExplorerMode && explorerNodes.length > 0) {
-      const allIds = new Set<string>();
-      const expansionDepth = 0; // Only expand the clicked root node
-      const traverse = (nodesToTraverse: TreeNode[], parentId: string | null, depth: number) => {
-        for (const node of nodesToTraverse) {
-          allIds.add(`${node.id}_${parentId || 'root'}`);
-          if (node.children && depth < expansionDepth) {
-            traverse(node.children, node.id, depth + 1);
-          }
-        }
-      };
-      traverse(explorerNodes, null, 0);
-      setExplorerExpandedNodeIds(Array.from(allIds));
+    if (!isExplorerMode || !explorerNodeId || explorerNodes.length === 0) {
+      return;
     }
-  }, [isExplorerMode, explorerNodeId, currentUser?.twoPanelExpansionDepth]);
+    setExplorerExpandedNodeIds(prev => {
+      const next = new Set(prev);
+      for (const node of explorerNodes) {
+        next.add(`${node.id}_root`);
+      }
+      return Array.from(next);
+    });
+  }, [isExplorerMode, explorerNodeId, explorerNodes]);
 
   const resetFilters = () => {
     setTemplateFilter(null);
