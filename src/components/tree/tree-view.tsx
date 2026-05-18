@@ -313,19 +313,19 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       return;
     }
 
-    if (event.key === 'p' || event.key === 'P') {
+    if ((event.key === 'p' || event.key === 'P') && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
       setIsTwoPanelMode(prev => !prev);
       return;
     }
 
-    if (event.key === 'x' || event.key === 'X') {
+    if ((event.key === 'x' || event.key === 'X') && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
       setIsExplorerMode(prev => !prev);
       return;
     }
 
-    if (event.key === 'v' || event.key === 'V') {
+    if ((event.key === 'v' || event.key === 'V') && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
       const targetIds = selectedNodeIds.length > 0 
         ? selectedNodeIds.map(id => id.split('_')[0]) 
@@ -365,7 +365,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
             }
           }
         }
-      } else if (selectedNodeIds.length === 1) {
+      } else if (selectedNodeIds.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
         const instanceId = selectedNodeIds[0];
         const [nodeId, parentIdStr] = instanceId.split('_');
         const contextualParentId = parentIdStr === 'root' ? null : parentIdStr;

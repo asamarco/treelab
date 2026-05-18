@@ -372,6 +372,9 @@ export function TreePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
       const activeElement = document.activeElement as HTMLElement;
       if (
         activeElement &&

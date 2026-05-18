@@ -288,7 +288,7 @@ export function TreeSelectionBar() {
                 event.preventDefault();
                 setDialogState({ isDeleteNodesConfirmOpen: true });
 
-            } else if (event.key === 't' || event.key === 'T') {
+            } else if ((event.key === 't' || event.key === 'T') && !event.ctrlKey && !event.metaKey && !event.altKey) {
                 if (selectedNodeIds.length === 0) return;
                 event.preventDefault();
                 setDialogState({ isChangeTemplateMultipleOpen: true });
