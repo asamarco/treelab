@@ -161,7 +161,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
         return null;
     }
 
-    const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer;
+    const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer || isCompactView;
     const showVerticalLines = isCompactView || isExplorer;
     const verticalLineClass = showVerticalLines ? "border-l border-border/50" : "";
 

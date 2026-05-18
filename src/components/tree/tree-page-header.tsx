@@ -82,7 +82,7 @@ export function TreePageHeader({
         activeTreeId,
         setActiveTreeId,
     } = useTreeContext();
-    const { isCompactView, setIsCompactView, showNodeOrder, setShowNodeOrder, setDialogState, isTwoPanelMode, setIsTwoPanelMode } = useUIContext();
+    const { isCompactView, setIsCompactView, showNodeOrder, setShowNodeOrder, setDialogState, isTwoPanelMode, setIsTwoPanelMode, isExplorerMode, setIsExplorerMode } = useUIContext();
     const isMobile = useIsMobile();
 
     const { toast } = useToast();
@@ -254,13 +254,9 @@ export function TreePageHeader({
                             {isCompactView ? <Rows className="mr-2 h-4 w-4 text-primary" /> : <Rows3 className="mr-2 h-4 w-4" />}
                             Compact View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => {
-                            if (allNodes.length > 0) {
-                                setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [allNodes[0].id] });
-                            }
-                        }}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View in Explorer
+                        <DropdownMenuItem onSelect={() => setIsExplorerMode(!isExplorerMode)}>
+                            <Eye className={cn("mr-2 h-4 w-4", isExplorerMode && "text-primary")} />
+                            {isExplorerMode ? 'Exit Explorer View' : 'View in Explorer'}
                         </DropdownMenuItem>
                         
                         <DropdownMenuSeparator />
@@ -359,16 +355,12 @@ export function TreePageHeader({
                                     variant="ghost" 
                                     size="icon" 
                                     className="h-9 w-9" 
-                                    onClick={() => {
-                                        if (allNodes.length > 0) {
-                                            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [allNodes[0].id] });
-                                        }
-                                    }}
+                                    onClick={() => setIsExplorerMode(!isExplorerMode)}
                                 >
-                                    <Eye className="h-4 w-4" />
+                                    <Eye className={cn("h-4 w-4", isExplorerMode && "text-primary")} />
                                 </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>View in Explorer (v)</p></TooltipContent>
+                            <TooltipContent><p>Toggle Explorer View (x)</p></TooltipContent>
                         </Tooltip>
                         <Separator orientation="vertical" className="h-6 mx-1" />
                         <DropdownMenu>

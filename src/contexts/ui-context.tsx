@@ -39,6 +39,8 @@ interface UIContextType {
   setIsCompactView: (isCompact: boolean | ((prevState: boolean) => boolean)) => void;
   isTwoPanelMode: boolean;
   setIsTwoPanelMode: (isTwoPanel: boolean | ((prevState: boolean) => boolean)) => void;
+  isExplorerMode: boolean;
+  setIsExplorerMode: (isExplorerMode: boolean | ((prevState: boolean) => boolean)) => void;
   showNodeOrder: boolean;
   setShowNodeOrder: (show: boolean | ((prevState: boolean) => boolean)) => void;
   dialogState: Partial<DialogState>;
@@ -54,19 +56,23 @@ export function UIProvider({
   children,
   initialStandardView = false,
   initialCompact = false,
-  initialTwoPanel = false
+  initialTwoPanel = false,
+  initialExplorer = false
 }: {
   children: React.ReactNode,
   initialStandardView?: boolean,
   initialCompact?: boolean,
-  initialTwoPanel?: boolean
+  initialTwoPanel?: boolean,
+  initialExplorer?: boolean
 }) {
   const [isCompactViewPersistent, setIsCompactViewPersistent] = useLocalStorage<boolean>('isCompactView', false);
   const [isTwoPanelModePersistent, setIsTwoPanelModePersistent] = useLocalStorage<boolean>('isTwoPanelMode', false);
+  const [isExplorerModePersistent, setIsExplorerModePersistent] = useLocalStorage<boolean>('isExplorerMode', false);
   const [showNodeOrderPersistent, setShowNodeOrderPersistent] = useLocalStorage<boolean>('showNodeOrder', false);
 
   const [isCompactViewLocal, setIsCompactViewLocal] = useState(initialCompact);
   const [isTwoPanelModeLocal, setIsTwoPanelModeLocal] = useState(initialTwoPanel);
+  const [isExplorerModeLocal, setIsExplorerModeLocal] = useState(initialExplorer);
   const [showNodeOrderLocal, setShowNodeOrderLocal] = useState(false);
 
   const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
@@ -78,6 +84,9 @@ export function UIProvider({
 
   const isTwoPanelMode = initialStandardView ? isTwoPanelModeLocal : isTwoPanelModePersistent;
   const setIsTwoPanelMode = initialStandardView ? setIsTwoPanelModeLocal : setIsTwoPanelModePersistent;
+
+  const isExplorerMode = initialStandardView ? isExplorerModeLocal : isExplorerModePersistent;
+  const setIsExplorerMode = initialStandardView ? setIsExplorerModeLocal : setIsExplorerModePersistent;
 
   const showNodeOrder = initialStandardView ? showNodeOrderLocal : showNodeOrderPersistent;
   const setShowNodeOrder = initialStandardView ? setShowNodeOrderLocal : setShowNodeOrderPersistent;
@@ -99,6 +108,8 @@ export function UIProvider({
     setIsCompactView,
     isTwoPanelMode,
     setIsTwoPanelMode,
+    isExplorerMode,
+    setIsExplorerMode,
     showNodeOrder,
     setShowNodeOrder,
     dialogState,

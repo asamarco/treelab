@@ -277,7 +277,7 @@ export function TreeNodeHeader({
     updateNode(node.id, { isStarred: !node.isStarred });
   };
 
-  const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer;
+  const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer || isCompactView;
 
   return (
     <>
@@ -367,7 +367,7 @@ export function TreeNodeHeader({
       )}
 
       <div className="flex items-start gap-0.5 group/treenode">
-        {!isExplorer && (
+        {!(isExplorer || isCompactView) && (
           <Button
             variant="ghost"
             size="icon"
@@ -401,16 +401,16 @@ export function TreeNodeHeader({
                 className={cn(
                   "flex items-center justify-center rounded-md hover:bg-accent no-print shrink-0",
                   isCompactView ? 'h-7 w-7' : 'h-8 w-8 mt-1',
-                  (!hasContentToToggle && !isExplorer) && "invisible",
+                  (!hasContentToToggle && !(isExplorer || isCompactView)) && "invisible",
                   isMobile && "h-10 w-10",
-                  isExplorer && "cursor-grab h-7 w-7 mt-0 mb-0"
+                  (isExplorer || isCompactView) && "cursor-grab h-7 w-7 mt-0 mb-0"
                 )}
-                {...(isExplorer ? dndAttributes : {})}
-                {...(isExplorer ? dndListeners : {})}
+                {...((isExplorer || isCompactView) ? dndAttributes : {})}
+                {...((isExplorer || isCompactView) ? dndListeners : {})}
               >
                 {hasContentToToggle ? (
                   <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 no-print", isCompactView && 'h-3.5 w-3.5', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
-                ) : isExplorer ? (
+                ) : (isExplorer || isCompactView) ? (
                   <GripVertical className={cn("text-muted-foreground opacity-0 group-hover/treenode:opacity-100 transition-opacity", isCompactView ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
                 ) : null}
               </button>

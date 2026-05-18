@@ -6,14 +6,14 @@
  */
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue } from "react";
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { TreeView } from "@/components/tree/tree-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { ConditionalRuleOperator, QueryDefinition, QueryRule, SimpleQueryRule, Template, TreeNode } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle, Menu, Undo2, Redo2, History, LayoutPanelLeft, ListOrdered, Rows, Rows3, RefreshCcw, GitPullRequest, GitCommit, Download, FileJson, Archive, FileCode } from "lucide-react";
+import { Search, Loader2, Star, Filter, X, Paperclip, Link as LinkIcon, Trash2, PlusCircle, Menu, Undo2, Redo2, History, LayoutPanelLeft, ListOrdered, Rows, Rows3, RefreshCcw, GitPullRequest, GitCommit, Download, FileJson, Archive, FileCode, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Label } from "@/components/ui/label";
@@ -255,7 +255,7 @@ export function TreePage() {
     exportNodesAsHtml,
     exportNodesAsJson,
   } = useTreeContext();
-  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isAnyModalOpen } = useUIContext();
+  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isExplorerMode, setIsExplorerMode, isAnyModalOpen } = useUIContext();
   const isMobile = useIsMobile();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -281,6 +281,7 @@ export function TreePage() {
   const [hasAttachmentsFilter, setHasAttachmentsFilter] = useState(false);
   const [queryFilter, setQueryFilter] = useState<QueryDefinition[]>([]);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
+  const [explorerNodeId, setExplorerNodeId] = useState<string | null>(null);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -421,6 +422,11 @@ export function TreePage() {
           event.preventDefault();
           setIsTwoPanelMode(prev => !prev);
           break;
+        case 'x':
+          if (isMobile) return;
+          event.preventDefault();
+          setIsExplorerMode(prev => !prev);
+          break;
       }
     };
 
@@ -428,7 +434,7 @@ export function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode, tree, setDialogState]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode, setIsExplorerMode, tree, setDialogState]);
 
   const filteredTree = useMemo(() => {
     try {
@@ -442,6 +448,38 @@ export function TreePage() {
       throw error;
     }
   }, [tree, getTemplateById, findNodeAndParent, debouncedSearchTerm, showStarred, templateFilter, createdFrom, createdTo, modifiedFrom, modifiedTo, hasAttachmentsFilter, queryFilter]);
+
+  const explorerNodes = useMemo(() => {
+    if (!isExplorerMode || !explorerNodeId) return filteredTree;
+    const nodeInfo = findNodeAndParent(explorerNodeId, tree || []);
+    if (nodeInfo) {
+      return [nodeInfo.node];
+    }
+    return filteredTree;
+  }, [isMobile, isExplorerMode, explorerNodeId, filteredTree, tree, findNodeAndParent]);
+
+  const explorerBreadcrumbs = useMemo(() => {
+    if (!isExplorerMode || !explorerNodeId) return [];
+    const crumbs: TreeNode[] = [];
+    let currentId: string | null = explorerNodeId;
+    while (currentId) {
+      const nodeInfo = findNodeAndParent(currentId, tree || []);
+      if (!nodeInfo) break;
+      crumbs.unshift(nodeInfo.node);
+      if (nodeInfo.parent) {
+        currentId = nodeInfo.parent.id;
+      } else {
+        break;
+      }
+    }
+    return crumbs;
+  }, [isMobile, isExplorerMode, explorerNodeId, tree, findNodeAndParent]);
+
+  const handleExplorerNodeClick = useCallback((nodeId: string) => {
+    if (isExplorerMode) {
+      setExplorerNodeId(nodeId);
+    }
+  }, [isMobile, isExplorerMode]);
 
   const resetFilters = () => {
     setTemplateFilter(null);
@@ -527,8 +565,36 @@ export function TreePage() {
           <ResizablePanelGroup direction="horizontal" className="flex h-full">
             <ResizablePanel defaultSize={25} minSize={20}>
               <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
-                <div className="p-2">
-                  <TreeView nodes={filteredTree} isCompactOverride={true} isExplorer={true} />
+                <div className="p-2 flex flex-col min-h-0 h-full">
+                  {isExplorerMode && explorerBreadcrumbs.length > 0 && (
+                    <div className="flex items-center flex-wrap gap-1 pb-2 mb-2 border-b">
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground" onClick={() => setExplorerNodeId(null)}>
+                        Home
+                      </Button>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      {explorerBreadcrumbs.map((crumb, index) => (
+                        <React.Fragment key={crumb.id}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={cn("h-6 px-2", index === explorerBreadcrumbs.length - 1 ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
+                            onClick={() => index < explorerBreadcrumbs.length - 1 && setExplorerNodeId(crumb.id)}
+                          >
+                            {crumb.name}
+                          </Button>
+                          {index < explorerBreadcrumbs.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex-1 overflow-y-auto">
+                    <TreeView 
+                      nodes={isExplorerMode ? explorerNodes : filteredTree} 
+                      isCompactOverride={true} 
+                      isExplorer={true} 
+                      onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
+                    />
+                  </div>
                 </div>
               </ScrollArea>
             </ResizablePanel>
@@ -562,7 +628,69 @@ export function TreePage() {
       );
     }
 
-    return <TreeView nodes={filteredTree} />;
+    if (isMobile) {
+      return (
+        <div className="flex-1 flex flex-col min-h-0">
+          {isExplorerMode && explorerBreadcrumbs.length > 0 && (
+            <div className="flex items-center flex-wrap gap-1 px-4 py-2 bg-muted/30 border-b">
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground" onClick={() => setExplorerNodeId(null)}>
+                Home
+              </Button>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              {explorerBreadcrumbs.map((crumb, index) => (
+                <React.Fragment key={crumb.id}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={cn("h-6 px-2", index === explorerBreadcrumbs.length - 1 ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
+                    onClick={() => index < explorerBreadcrumbs.length - 1 && setExplorerNodeId(crumb.id)}
+                  >
+                    {crumb.name}
+                  </Button>
+                  {index < explorerBreadcrumbs.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+          <div className="flex-1 overflow-y-auto">
+            <TreeView 
+              nodes={isExplorerMode ? explorerNodes : filteredTree} 
+              onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col w-full">
+        {isExplorerMode && explorerBreadcrumbs.length > 0 && (
+          <div className="flex items-center flex-wrap gap-1 px-4 py-2 bg-muted/30 border-b mb-4 rounded-md">
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground" onClick={() => setExplorerNodeId(null)}>
+              Home
+            </Button>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            {explorerBreadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.id}>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={cn("h-6 px-2", index === explorerBreadcrumbs.length - 1 ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
+                  onClick={() => index < explorerBreadcrumbs.length - 1 && setExplorerNodeId(crumb.id)}
+                >
+                  {crumb.name}
+                </Button>
+                {index < explorerBreadcrumbs.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
+        <TreeView 
+          nodes={isExplorerMode ? explorerNodes : filteredTree}
+          onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
+        />
+      </div>
+    );
   }
 
 

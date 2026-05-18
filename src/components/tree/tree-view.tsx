@@ -69,7 +69,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     clipboard,
     deleteNodes,
   } = useTreeContext();
-  const { dialogState, setDialogState, setIsTwoPanelMode, isTwoPanelMode, isAnyModalOpen } = useUIContext();
+  const { dialogState, setDialogState, setIsTwoPanelMode, isTwoPanelMode, isExplorerMode, setIsExplorerMode, isAnyModalOpen } = useUIContext();
 
   const isUsingLocalExpansion = !!overrideExpandedIds && !!onExpandedChange;
 
@@ -316,6 +316,12 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     if (event.key === 'p' || event.key === 'P') {
       event.preventDefault();
       setIsTwoPanelMode(prev => !prev);
+      return;
+    }
+
+    if (event.key === 'x' || event.key === 'X') {
+      event.preventDefault();
+      setIsExplorerMode(prev => !prev);
       return;
     }
 
