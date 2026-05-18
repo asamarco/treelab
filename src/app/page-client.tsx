@@ -608,7 +608,7 @@ export function TreePage() {
                       ))}
                     </div>
                   )}
-                  <div className="flex-1 overflow-y-auto">
+                  <div className="flex-1">
                     <TreeView 
                       nodes={isExplorerMode ? explorerNodes : filteredTree} 
                       overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
