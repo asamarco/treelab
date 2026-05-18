@@ -18,9 +18,10 @@ import { useEffect } from "react";
 interface PublicTreeViewClientProps {
   initialTree: TreeFile;
   initialView?: string;
+  initialExplorer?: boolean;
 }
 
-export function PublicTreeViewClient({ initialTree, initialView }: PublicTreeViewClientProps) {
+export function PublicTreeViewClient({ initialTree, initialView, initialExplorer = false }: PublicTreeViewClientProps) {
   const isAuthRequired = true;
   const defaultUserId = "test";
   
@@ -40,6 +41,7 @@ export function PublicTreeViewClient({ initialTree, initialView }: PublicTreeVie
         initialStandardView={true} 
         initialCompact={initialCompact} 
         initialTwoPanel={initialTwoPanel}
+        initialExplorer={initialExplorer}
       >
         <TreeProvider initialTree={initialTree}>
           <PublicViewBanner />

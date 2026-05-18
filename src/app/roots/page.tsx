@@ -189,6 +189,7 @@ function ManageRootsPage() {
   const [isTokenInvalid, setIsTokenInvalid] = useState(false);
   const [orderedTrees, setOrderedTrees] = useState(allTrees);
   const [selectedViewMode, setSelectedViewMode] = useState<string>("standard");
+  const [selectedExplorerMode, setSelectedExplorerMode] = useState<boolean>(false);
   const [sharePermissions, setSharePermissions] = useState<TreePermissions>({
     editNodes: false,
     editTemplates: false,
@@ -566,8 +567,16 @@ function ManageRootsPage() {
   const getPublicUrl = (tree: TreeFile) => {
     const identifier = tree.publicId || tree.id;
     let url = `${window.location.origin}/view/${identifier}`;
+    const params = new URLSearchParams();
     if (selectedViewMode !== 'standard') {
-      url += `?view=${selectedViewMode}`;
+      params.append('view', selectedViewMode);
+    }
+    if (selectedExplorerMode) {
+      params.append('explorer', 'true');
+    }
+    const queryString = params.toString();
+    if (queryString) {
+      url += `?${queryString}`;
     }
     return url;
   }
@@ -1257,6 +1266,7 @@ function ManageRootsPage() {
             if (!open) {
               setSelectedTreeToShare(null);
               setSelectedViewMode("standard");
+              setSelectedExplorerMode(false);
               setEditingShareUserId(null);
             }
             setIsShareDialogOpen(open);
@@ -1577,6 +1587,17 @@ function ManageRootsPage() {
                             <SelectItem value="two-panel">Two-Panel View</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border p-3 mt-2">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="explorer-switch">Enable Explorer View</Label>
+                          <p className="text-xs text-muted-foreground">Allows viewers to drill down into specific nodes.</p>
+                        </div>
+                        <Switch
+                          id="explorer-switch"
+                          checked={selectedExplorerMode}
+                          onCheckedChange={setSelectedExplorerMode}
+                        />
                       </div>
                       <div className="flex gap-2">
                         <Input readOnly value={getPublicUrl(selectedTreeToShare)} />

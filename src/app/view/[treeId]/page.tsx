@@ -32,7 +32,7 @@ export default async function PublicTreeViewPage({
   searchParams,
 }: PageProps) {
   const { treeId } = await params;
-  const { view } = await searchParams;
+  const { view, explorer } = await searchParams;
   const tree = await loadPublicTreeFile(treeId);
 
   if (!tree) {
@@ -57,5 +57,6 @@ export default async function PublicTreeViewPage({
   return <PublicTreeViewClient 
     initialTree={JSON.parse(JSON.stringify(tree))} 
     initialView={typeof view === 'string' ? view : undefined}
+    initialExplorer={explorer === 'true'}
   />;
 }
