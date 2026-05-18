@@ -282,6 +282,7 @@ export function TreePage() {
   const [queryFilter, setQueryFilter] = useState<QueryDefinition[]>([]);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [explorerNodeId, setExplorerNodeId] = useState<string | null>(null);
+  const [explorerExpandedNodeIds, setExplorerExpandedNodeIds] = useState<string[]>([]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -482,7 +483,24 @@ export function TreePage() {
     if (isExplorerMode) {
       setExplorerNodeId(nodeId);
     }
-  }, [isMobile, isExplorerMode]);
+  }, [isExplorerMode]);
+
+  useEffect(() => {
+    if (isExplorerMode && explorerNodes.length > 0) {
+      const allIds = new Set<string>();
+      const expansionDepth = Math.max(1, currentUser?.twoPanelExpansionDepth ?? 1);
+      const traverse = (nodesToTraverse: TreeNode[], parentId: string | null, depth: number) => {
+        for (const node of nodesToTraverse) {
+          allIds.add(`${node.id}_${parentId || 'root'}`);
+          if (node.children && depth < expansionDepth) {
+            traverse(node.children, node.id, depth + 1);
+          }
+        }
+      };
+      traverse(explorerNodes, null, 0);
+      setExplorerExpandedNodeIds(Array.from(allIds));
+    }
+  }, [isExplorerMode, explorerNodeId, currentUser?.twoPanelExpansionDepth]);
 
   const resetFilters = () => {
     setTemplateFilter(null);
@@ -593,6 +611,8 @@ export function TreePage() {
                   <div className="flex-1 overflow-y-auto">
                     <TreeView 
                       nodes={isExplorerMode ? explorerNodes : filteredTree} 
+                      overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
+                      onExpandedChange={isExplorerMode ? (updater) => setExplorerExpandedNodeIds(updater as any) : undefined}
                       isCompactOverride={true} 
                       isExplorer={true} 
                       onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
@@ -658,6 +678,8 @@ export function TreePage() {
           <div className="flex-1 overflow-y-auto">
             <TreeView 
               nodes={isExplorerMode ? explorerNodes : filteredTree} 
+              overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
+              onExpandedChange={isExplorerMode ? (updater) => setExplorerExpandedNodeIds(updater as any) : undefined}
               onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
             />
           </div>
@@ -690,6 +712,8 @@ export function TreePage() {
         )}
         <TreeView 
           nodes={isExplorerMode ? explorerNodes : filteredTree}
+          overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
+          onExpandedChange={isExplorerMode ? (updater) => setExplorerExpandedNodeIds(updater as any) : undefined}
           onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
         />
       </div>

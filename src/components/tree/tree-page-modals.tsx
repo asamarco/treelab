@@ -185,7 +185,7 @@ export function TreePageModals({
     useEffect(() => {
         if (dialogState.isExplorerOpen && nodesForExplorer.length > 0) {
             const allIds = new Set<string>();
-            const expansionDepth = currentUser?.twoPanelExpansionDepth ?? 1;
+            const expansionDepth = Math.max(1, currentUser?.twoPanelExpansionDepth ?? 1);
             const traverse = (nodes: TreeNode[], parentId: string | null, depth: number) => {
                 for (const node of nodes) {
                     allIds.add(`${node.id}_${parentId || 'root'}`);
