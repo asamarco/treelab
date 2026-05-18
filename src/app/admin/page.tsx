@@ -94,6 +94,31 @@ export default function AdminSettingsPage() {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(globalSettings?.customLogoPath || null);
 
+  const [maxUploadSizeInput, setMaxUploadSizeInput] = useState<string>("");
+
+  useEffect(() => {
+    if (globalSettings?.maxUploadSizeMB !== undefined) {
+      setMaxUploadSizeInput(globalSettings.maxUploadSizeMB.toString());
+    } else {
+      setMaxUploadSizeInput("5");
+    }
+  }, [globalSettings?.maxUploadSizeMB]);
+
+  const handleMaxUploadSizeSave = async () => {
+    const val = parseInt(maxUploadSizeInput, 10);
+    if (isNaN(val) || val <= 0) {
+      toast({ variant: "destructive", title: "Invalid Limit", description: "Please enter a valid positive number for the file size limit." });
+      setMaxUploadSizeInput((globalSettings?.maxUploadSizeMB ?? 5).toString());
+      return;
+    }
+    try {
+      await setGlobalSettings({ ...globalSettings, maxUploadSizeMB: val });
+      toast({ title: "Setting Saved", description: `Maximum uploaded file size set to ${val}MB.` });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Save Failed", description: "Could not save the new setting." });
+    }
+  };
+
   useEffect(() => {
     setLogoPreview(globalSettings?.customLogoPath || '/favicon.svg');
   }, [globalSettings]);
@@ -280,10 +305,10 @@ export default function AdminSettingsPage() {
             
             <Card>
               <CardHeader>
-                <CardTitle>Global Access</CardTitle>
+                <CardTitle>Global Settings</CardTitle>
                 <CardDescription>Configure system-wide settings for all users.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-2 rounded-md">
                     <div className="flex items-center gap-2">
                         <Label htmlFor="allow-signups" className="font-medium">Allow Public Sign-ups</Label>
@@ -293,6 +318,35 @@ export default function AdminSettingsPage() {
                         checked={globalSettings.allowPublicRegistration}
                         onCheckedChange={(checked) => setGlobalSettings({ ...globalSettings, allowPublicRegistration: checked })}
                     />
+                </div>
+                <Separator />
+                <div className="space-y-2 p-2">
+                    <Label htmlFor="max-upload-size" className="font-medium">Maximum Upload File Size (MB)</Label>
+                    <div className="flex items-center gap-2 max-w-md">
+                        <Input
+                            id="max-upload-size"
+                            type="number"
+                            min="1"
+                            value={maxUploadSizeInput}
+                            onChange={(e) => setMaxUploadSizeInput(e.target.value)}
+                            onBlur={handleMaxUploadSizeSave}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    handleMaxUploadSizeSave();
+                                }
+                            }}
+                            className="w-24"
+                        />
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            type="button"
+                            onClick={handleMaxUploadSizeSave}
+                        >
+                            Save
+                        </Button>
+                        <span className="text-xs text-muted-foreground ml-2">Enforced on all image and attachment uploads (default: 5MB)</span>
+                    </div>
                 </div>
               </CardContent>
             </Card>

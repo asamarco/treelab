@@ -251,6 +251,7 @@ export interface GlobalSettings {
     _id?: any; // Mongoose internal
     allowPublicRegistration: boolean;
     customLogoPath?: string;
+    maxUploadSizeMB?: number;
     updatedAt?: string;
 }
 

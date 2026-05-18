@@ -284,7 +284,7 @@ export const NodeForm = ({
   });
 
   const { toast } = useToast();
-  const { currentUser } = useAuthContext();
+  const { currentUser, globalSettings } = useAuthContext();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
   const [dragOverStates, setDragOverStates] = useState<Record<string, boolean>>({});
@@ -348,11 +348,12 @@ export const NodeForm = ({
 
   const handleFileUpload = async (file: File, field: Field) => {
     if (!activeTree || !currentUser) return;
-    if (file.size > 5 * 1024 * 1024) {
+    const maxMB = globalSettings?.maxUploadSizeMB ?? 5;
+    if (file.size > maxMB * 1024 * 1024) {
       toast({
         variant: "destructive",
         title: "File too large",
-        description: "Please select a file smaller than 5MB.",
+        description: `Please select a file smaller than ${maxMB}MB.`,
       });
       return;
     }

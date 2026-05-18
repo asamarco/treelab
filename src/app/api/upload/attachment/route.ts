@@ -11,6 +11,7 @@ import { saveAttachment } from '@/lib/data-service';
 import sharp from 'sharp';
 import path from 'path';
 import { getSession } from '@/lib/session';
+import { loadGlobalSettings } from '@/lib/auth-service';
 
 export async function POST(request: NextRequest) {
     try {
@@ -27,6 +28,12 @@ export async function POST(request: NextRequest) {
 
         if (!file || !uniqueFileName || !originalFileName) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+        }
+
+        const globalSettings = await loadGlobalSettings();
+        const maxMB = globalSettings?.maxUploadSizeMB ?? 5;
+        if (file.size > maxMB * 1024 * 1024) {
+            return NextResponse.json({ message: `File size exceeds the maximum limit of ${maxMB}MB` }, { status: 400 });
         }
         
         const bytes = await file.arrayBuffer();

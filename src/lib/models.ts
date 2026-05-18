@@ -192,6 +192,7 @@ export const TeamModel = (models.Team as Model<Team>) ||
 const GlobalSettingsSchema = new Schema<GlobalSettings>({
   allowPublicRegistration: { type: Boolean, default: true },
   customLogoPath: { type: String },
+  maxUploadSizeMB: { type: Number, default: 5 },
   updatedAt: { type: String, default: () => new Date().toISOString() },
 });
 

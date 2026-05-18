@@ -68,6 +68,15 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   const initializeAuth = async () => {
     console.log("INFO: Initializing auth state...");
 
+    try {
+      const loadedSettings = await loadGlobalSettings();
+      if (loadedSettings) {
+        setAppSettings(loadedSettings);
+      }
+    } catch (error) {
+      console.error("ERROR: Failed to load global settings:", error);
+    }
+
     if (!isAuthRequired) {
       console.log("INFO: Authentication not required. Using default user.");
       const dummyUser: User = {
@@ -85,15 +94,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     }
 
     try {
-      const [userFromSession, loadedSettings] = await Promise.all([
-        getSessionUser(),
-        loadGlobalSettings(),
-      ]);
-
-      if (loadedSettings) {
-        setAppSettings(loadedSettings);
-      }
-
+      const userFromSession = await getSessionUser();
       setCurrentUser(userFromSession);
 
       if (userFromSession) {
