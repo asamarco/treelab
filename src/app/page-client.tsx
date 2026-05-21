@@ -52,7 +52,9 @@ import {
 } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { startOfDay, endOfDay, parse } from "date-fns";
-import { hasAttachments } from "@/components/tree/tree-node-utils";
+import { hasAttachments, getConditionalStyle } from "@/components/tree/tree-node-utils";
+import { Icon } from "@/components/icon";
+import { icons } from "lucide-react";
 import { cn, evaluateCondition, generateClientSideId } from "@/lib/utils";
 import { useUIContext } from "@/contexts/ui-context";
 import { Separator } from "@/components/ui/separator";
@@ -596,30 +598,35 @@ export function TreePage() {
         <div className="h-[calc(100vh-9rem)]">
           <ResizablePanelGroup direction="horizontal" className="flex h-full">
             <ResizablePanel defaultSize={25} minSize={20}>
-              <ScrollArea className="h-full rounded-lg border bg-card/30 mr-2">
-                <div className="p-2 flex flex-col min-h-0 h-full">
-                  {isExplorerMode && explorerBreadcrumbs.length > 0 && (
-                    <div className="flex items-center flex-wrap gap-1 pb-2 mb-2 border-b">
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground" onClick={() => setExplorerNodeId(null)}>
-                        Home
-                      </Button>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      {explorerBreadcrumbs.map((crumb, index) => (
+              <div className="h-full flex flex-col rounded-lg border bg-card/30 mr-2 overflow-hidden">
+                {isExplorerMode && explorerBreadcrumbs.length > 0 && (
+                  <div className="flex items-center flex-wrap gap-1 px-3 py-2 border-b bg-card/50 shrink-0">
+                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-muted-foreground hover:text-foreground text-xs" onClick={() => setExplorerNodeId(null)}>
+                      Home
+                    </Button>
+                    {explorerBreadcrumbs.map((crumb, index) => {
+                      const crumbTemplate = getTemplateById(crumb.templateId);
+                      const { icon: crumbIcon, color: crumbColor } = getConditionalStyle(crumb, crumbTemplate);
+                      const isLast = index === explorerBreadcrumbs.length - 1;
+                      return (
                         <React.Fragment key={crumb.id}>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className={cn("h-6 px-2", index === explorerBreadcrumbs.length - 1 ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
-                            onClick={() => index < explorerBreadcrumbs.length - 1 && setExplorerNodeId(crumb.id)}
+                            className={cn("h-6 px-1.5 flex items-center gap-1 text-xs", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
+                            onClick={() => !isLast && setExplorerNodeId(crumb.id)}
                           >
-                            {crumb.name}
+                            <Icon name={(crumbIcon as keyof typeof icons) || 'FileText'} className="h-3.5 w-3.5 shrink-0" style={{ color: crumbColor || 'hsl(var(--primary))' }} />
+                            <span className="truncate max-w-[80px]">{crumb.name}</span>
                           </Button>
-                          {index < explorerBreadcrumbs.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                         </React.Fragment>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex-1">
+                      );
+                    })}
+                  </div>
+                )}
+                <ScrollArea className="flex-1">
+                  <div className="p-2">
                     <TreeView 
                       nodes={isExplorerMode ? explorerNodes : filteredTree} 
                       overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
@@ -629,8 +636,8 @@ export function TreePage() {
                       onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
                     />
                   </div>
-                </div>
-              </ScrollArea>
+                </ScrollArea>
+              </div>
             </ResizablePanel>
 
             <ResizableHandle withHandle />
@@ -663,27 +670,45 @@ export function TreePage() {
     }
 
     if (isMobile) {
+      const mobileCrumbs = explorerBreadcrumbs;
+      const maxVisibleMobile = 3;
+      const showEllipsis = mobileCrumbs.length > maxVisibleMobile;
+      const visibleMobileCrumbs = showEllipsis ? mobileCrumbs.slice(-maxVisibleMobile) : mobileCrumbs;
+
       return (
         <div className="flex-1 flex flex-col min-h-0">
           {isExplorerMode && explorerBreadcrumbs.length > 0 && (
-            <div className="flex items-center flex-wrap gap-1 px-4 py-2 bg-muted/30 border-b">
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground" onClick={() => setExplorerNodeId(null)}>
+            <div 
+              className="sticky z-10 flex items-center flex-wrap gap-1 px-3 py-2 bg-background/95 backdrop-blur-sm border-b shrink-0"
+              style={{ top: currentUser ? "calc(4rem + 58px)" : "58px" }}
+            >
+              <Button variant="ghost" size="sm" className="h-6 px-1.5 text-muted-foreground hover:text-foreground text-xs" onClick={() => setExplorerNodeId(null)}>
                 Home
               </Button>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              {explorerBreadcrumbs.map((crumb, index) => (
-                <React.Fragment key={crumb.id}>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className={cn("h-6 px-2", index === explorerBreadcrumbs.length - 1 ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
-                    onClick={() => index < explorerBreadcrumbs.length - 1 && setExplorerNodeId(crumb.id)}
-                  >
-                    {crumb.name}
-                  </Button>
-                  {index < explorerBreadcrumbs.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                </React.Fragment>
-              ))}
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              {showEllipsis && (
+                <>
+                  <span className="text-muted-foreground text-xs px-1">...</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                </>
+              )}
+              {visibleMobileCrumbs.map((crumb, index) => {
+                const actualIndex = showEllipsis ? mobileCrumbs.length - maxVisibleMobile + index : index;
+                const isLast = actualIndex === mobileCrumbs.length - 1;
+                return (
+                  <React.Fragment key={crumb.id}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={cn("h-6 px-1.5 text-xs truncate max-w-[80px]", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
+                      onClick={() => !isLast && setExplorerNodeId(crumb.id)}
+                    >
+                      {crumb.name}
+                    </Button>
+                    {!isLast && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                  </React.Fragment>
+                );
+              })}
             </div>
           )}
           <div className="flex-1 overflow-y-auto">
@@ -701,24 +726,32 @@ export function TreePage() {
     return (
       <div className="flex flex-col w-full">
         {isExplorerMode && explorerBreadcrumbs.length > 0 && (
-          <div className="flex items-center flex-wrap gap-1 px-4 py-2 bg-muted/30 border-b mb-4 rounded-md">
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground" onClick={() => setExplorerNodeId(null)}>
+          <div 
+            className="sticky z-10 flex items-center flex-wrap gap-1 px-4 py-2 bg-background/95 backdrop-blur-sm border-b mb-4 rounded-md shadow-sm"
+            style={{ top: currentUser ? "calc(4rem + 58px)" : "58px" }}
+          >
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground text-xs" onClick={() => setExplorerNodeId(null)}>
               Home
             </Button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            {explorerBreadcrumbs.map((crumb, index) => (
-              <React.Fragment key={crumb.id}>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={cn("h-6 px-2", index === explorerBreadcrumbs.length - 1 ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
-                  onClick={() => index < explorerBreadcrumbs.length - 1 && setExplorerNodeId(crumb.id)}
-                >
-                  {crumb.name}
-                </Button>
-                {index < explorerBreadcrumbs.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-              </React.Fragment>
-            ))}
+            {explorerBreadcrumbs.map((crumb, index) => {
+              const crumbTemplate = getTemplateById(crumb.templateId);
+              const { icon: crumbIcon, color: crumbColor } = getConditionalStyle(crumb, crumbTemplate);
+              const isLast = index === explorerBreadcrumbs.length - 1;
+              return (
+                <React.Fragment key={crumb.id}>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className={cn("h-6 px-1.5 flex items-center gap-1 text-xs", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
+                    onClick={() => !isLast && setExplorerNodeId(crumb.id)}
+                  >
+                    <Icon name={(crumbIcon as keyof typeof icons) || 'FileText'} className="h-3.5 w-3.5 shrink-0" style={{ color: crumbColor || 'hsl(var(--primary))' }} />
+                    <span>{crumb.name}</span>
+                  </Button>
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
         <TreeView 
