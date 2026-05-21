@@ -458,12 +458,12 @@ export function TreePage() {
 
   const explorerNodes = useMemo(() => {
     if (!isExplorerMode || !explorerNodeId) return filteredTree;
-    const nodeInfo = findNodeAndParent(explorerNodeId, tree || []);
+    const nodeInfo = findNodeAndParent(explorerNodeId, filteredTree);
     if (nodeInfo) {
       return [nodeInfo.node];
     }
-    return filteredTree;
-  }, [isMobile, isExplorerMode, explorerNodeId, filteredTree, tree, findNodeAndParent]);
+    return [];
+  }, [isExplorerMode, explorerNodeId, filteredTree, findNodeAndParent]);
 
   const explorerBreadcrumbs = useMemo(() => {
     if (!isExplorerMode || !explorerNodeId) return [];
@@ -1073,6 +1073,7 @@ export function TreePage() {
               conflictState={conflictState}
               onConflictResolve={resolveConflict}
               syncFromRepo={syncFromRepo}
+              filteredTree={filteredTree}
             />
           )}
 

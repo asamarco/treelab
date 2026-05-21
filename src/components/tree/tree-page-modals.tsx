@@ -56,6 +56,7 @@ interface TreePageModalsProps {
     conflictState: { localTree: TreeFile, serverTree: TreeFile } | null;
     onConflictResolve: (resolution: 'local' | 'server') => Promise<void>;
     syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
+    filteredTree?: TreeNode[];
 }
 
 export function TreePageModals({
@@ -66,6 +67,7 @@ export function TreePageModals({
     conflictState,
     onConflictResolve,
     syncFromRepo,
+    filteredTree,
 }: TreePageModalsProps) {
     const { currentUser } = useAuthContext();
     const router = useRouter();
@@ -123,9 +125,10 @@ export function TreePageModals({
     const nodesForExplorer = useMemo(() => {
         if (!dialogState.isExplorerOpen || !dialogState.nodeIdsForExplorer) return [];
 
-        return dialogState.nodeIdsForExplorer.map(id => findNodeAndParent(id, allNodes)?.node).filter((n): n is TreeNode => !!n);
+        const searchTree = filteredTree || allNodes;
+        return dialogState.nodeIdsForExplorer.map(id => findNodeAndParent(id, searchTree)?.node).filter((n): n is TreeNode => !!n);
 
-    }, [dialogState.isExplorerOpen, dialogState.nodeIdsForExplorer, allNodes, findNodeAndParent]);
+    }, [dialogState.isExplorerOpen, dialogState.nodeIdsForExplorer, allNodes, filteredTree, findNodeAndParent]);
 
     const commonTemplateForMultiEdit = useMemo(() => {
         if (!dialogState.isMultiNodeEditOpen || selectedNodeIds.length === 0) return null;
@@ -141,12 +144,13 @@ export function TreePageModals({
         if (nodesForExplorer.length !== 1) {
             return { prev: null, next: null, parent: null };
         }
-        const nodeInfo = findNodeAndParent(nodesForExplorer[0].id, allNodes);
+        const searchTree = filteredTree || allNodes;
+        const nodeInfo = findNodeAndParent(nodesForExplorer[0].id, searchTree);
         if (!nodeInfo) {
             return { prev: null, next: null, parent: null };
         }
         const { node, parent } = nodeInfo;
-        const siblings = parent ? parent.children : allNodes;
+        const siblings = parent ? parent.children : searchTree;
 
         // Note: This simple index based navigation might not be ideal for cloned nodes with multiple parents
         // but for a straightforward explorer view it's acceptable.
@@ -156,7 +160,7 @@ export function TreePageModals({
         const next = currentIndex < siblings.length - 1 ? siblings[currentIndex + 1] : null;
 
         return { prev, next, parent };
-    }, [nodesForExplorer, findNodeAndParent, allNodes]);
+    }, [nodesForExplorer, findNodeAndParent, allNodes, filteredTree]);
 
     const explorerBreadcrumbs = useMemo(() => {
         if (nodesForExplorer.length !== 1) return [];
@@ -164,10 +168,11 @@ export function TreePageModals({
         const crumbs: { id: string; name: string; icon?: string; color?: string; isRoot?: boolean }[] = [];
         let currentId = nodesForExplorer[0].id;
         const visited = new Set<string>();
+        const searchTree = filteredTree || allNodes;
 
         while (currentId && !visited.has(currentId)) {
             visited.add(currentId);
-            const info = findNodeAndParent(currentId);
+            const info = findNodeAndParent(currentId, searchTree);
             if (!info) break;
             const template = getTemplateById(info.node.templateId);
             crumbs.unshift({
@@ -180,7 +185,7 @@ export function TreePageModals({
         }
 
         return crumbs;
-    }, [nodesForExplorer, findNodeAndParent, getTemplateById]);
+    }, [nodesForExplorer, findNodeAndParent, getTemplateById, filteredTree, allNodes]);
 
     useEffect(() => {
         if (dialogState.isExplorerOpen && nodesForExplorer.length > 0) {
