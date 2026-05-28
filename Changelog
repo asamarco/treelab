@@ -1,3 +1,8 @@
+v0.7.3
+
+Feature: Explorer view option for both desktop and mobile interface
+Feature: admin setting to define maximum upload size
+
 v0.7.2
 
 Improvement: Node preview redefined 'Explorer', more accessible, with internal links for navigation and breadcrumb view.
