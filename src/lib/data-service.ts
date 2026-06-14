@@ -627,6 +627,14 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
     if (!session?.userId) throw new Error("Authentication required.");
 
     await connectToDatabase();
+
+    const tree = await TreeModel.findById(nodeData.treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+    const perms = await getTreePermissions(tree, session.userId);
+    if (!perms.editNodes) {
+        throw new Error("Authorization denied: You do not have permission to edit nodes.");
+    }
+
     const { id, name, data, ...rest } = nodeData as any;
 
     const dataToSave = {
@@ -687,6 +695,18 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
 }
 
 export const resequenceSiblings = async (parentId: string | null, treeId: string): Promise<void> => {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+
+    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+    const perms = await getTreePermissions(tree, session.userId);
+    if (!perms.editNodes) {
+        throw new Error("Authorization denied: You do not have permission to edit nodes.");
+    }
+
     const parentQuery = parentId ? { parentIds: parentId } : { $or: [{ parentIds: { $size: 0 } }, { parentIds: ['root'] }] };
     const siblings = await TreeNodeModel.find({ treeId, ...parentQuery }).exec();
 
@@ -820,7 +840,18 @@ export async function batchDeleteNodes(deletions: { nodeId: string; parentIdToUn
 
 
 export async function reorderSiblingsForAdd(treeId: string, parentId: string | null, order: number, timestamp?: string) {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
     await connectToDatabase();
+
+    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+    const perms = await getTreePermissions(tree, session.userId);
+    if (!perms.editNodes) {
+        throw new Error("Authorization denied: You do not have permission to edit nodes.");
+    }
+
     const parentIdToUpdate = parentId || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
 
@@ -862,6 +893,13 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
 
     const treeId = nodes[0]?.treeId; // Assume all nodes are for the same tree
     if (!treeId) throw new Error("Batch create requires nodes to have a treeId.");
+
+    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+    const perms = await getTreePermissions(tree, session.userId);
+    if (!perms.editNodes) {
+        throw new Error("Authorization denied: You do not have permission to edit nodes.");
+    }
 
     const newTimestamp = timestamp || new Date().toISOString();
 
