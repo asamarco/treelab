@@ -967,24 +967,33 @@ export async function copyNodesAction(
   const idMap = new Map<string, string>();
   const allNewNodesFlat: any[] = [];
 
-  const parentInfo = findNodeAndContextualParent(targetNodeId, contextualParentId, activeTree.tree);
-  if (!parentInfo) return;
-  const { node: targetNode, parent: targetParent } = parentInfo;
+  const parentInfo = (targetNodeId === 'start' || targetNodeId === 'end') ? null : findNodeAndContextualParent(targetNodeId, contextualParentId, activeTree.tree);
+  if (!parentInfo && targetNodeId !== 'start' && targetNodeId !== 'end') return;
+  const targetNode = parentInfo?.node;
+  const targetParent = parentInfo?.parent;
 
   const newParentIdForTopNodes = (position === 'child' || position === 'child-bottom')
     ? targetNodeId
-    : (targetParent?.id || 'root');
+    : (targetNodeId === 'start' || targetNodeId === 'end' ? (contextualParentId || 'root') : (targetParent?.id || 'root'));
 
   const siblings = (newParentIdForTopNodes === 'root' ? activeTree.tree : findNodeAndContextualParent(newParentIdForTopNodes, null, activeTree.tree)?.node.children) || [];
   let newOrderForTopNodes;
 
   if (position === 'child' || position === 'child-bottom') {
-    const childrenOfTarget = targetNode.children || [];
+    const childrenOfTarget = targetNode ? (targetNode.children || []) : [];
     newOrderForTopNodes = childrenOfTarget.length > 0
       ? Math.max(...childrenOfTarget.map(c => getContextualOrder(c, childrenOfTarget, targetNodeId))) + 1
       : 0;
   } else {
-    newOrderForTopNodes = getContextualOrder(targetNode, siblings, newParentIdForTopNodes === 'root' ? null : newParentIdForTopNodes) + 1;
+    if (targetNodeId === 'start') {
+      newOrderForTopNodes = 0;
+    } else if (targetNodeId === 'end') {
+      newOrderForTopNodes = siblings.length > 0
+        ? Math.max(...siblings.map(s => getContextualOrder(s, siblings, newParentIdForTopNodes === 'root' ? null : newParentIdForTopNodes))) + 1
+        : 0;
+    } else {
+      newOrderForTopNodes = targetNode ? getContextualOrder(targetNode, siblings, newParentIdForTopNodes === 'root' ? null : newParentIdForTopNodes) + 1 : 0;
+    }
   }
 
 
@@ -1179,9 +1188,9 @@ export async function moveNodesAction(
         } = move;
 
         const nodeToMove = allNodesMap.get(nodeId);
-        const targetNode = allNodesMap.get(targetNodeId);
+        const targetNode = (targetNodeId === 'start' || targetNodeId === 'end') ? null : allNodesMap.get(targetNodeId);
 
-        if (!nodeToMove || !targetNode) {
+        if (!nodeToMove || (targetNodeId !== 'start' && targetNodeId !== 'end' && !targetNode)) {
           console.warn(`Could not find nodeToMove (${nodeId}) or targetNode (${targetNodeId}) in draft.`);
           return;
         }
@@ -1209,10 +1218,10 @@ export async function moveNodesAction(
           nodeToMove.order.push(-1); // placeholder, will be updated after resequencing
         }
 
-        let targetIndex = newSiblings.findIndex((n) => n.id === targetNodeId);
-        let insertIndex = isChildDrop ? newSiblings.length : targetIndex !== -1 ? targetIndex + 1 : newSiblings.length;
+        let targetIndex = targetNodeId === 'start' ? -1 : newSiblings.findIndex((n) => n.id === targetNodeId);
+        let insertIndex = isChildDrop ? newSiblings.length : targetNodeId === 'start' ? 0 : targetIndex !== -1 ? targetIndex + 1 : newSiblings.length;
 
-        if (isChildDrop) {
+        if (isChildDrop && targetNode) {
           targetNode.children.push(nodeToMove);
         } else {
           newSiblings.splice(insertIndex, 0, nodeToMove);
@@ -1360,11 +1369,11 @@ export async function pasteNodesAsClonesAction(
   const { activeTree, findNodeAndContextualParent, executeCommand, findNodeAndParent, activeTreeId } = ctx;
   if (!activeTree || nodeIdsToClone.length === 0) return;
 
-  const parentInfo = findNodeAndContextualParent(targetNodeId, contextualParentId, activeTree.tree);
+  const parentInfo = (targetNodeId === 'start' || targetNodeId === 'end') ? null : findNodeAndContextualParent(targetNodeId, contextualParentId, activeTree.tree);
   const targetNode = parentInfo?.node;
-  if (!targetNode) return;
+  if (!targetNode && targetNodeId !== 'start' && targetNodeId !== 'end') return;
 
-  const newParentId = as === 'child' ? targetNodeId : parentInfo?.parent?.id || null;
+  const newParentId = as === 'child' ? targetNodeId : (targetNodeId === 'start' || targetNodeId === 'end' ? (contextualParentId || null) : parentInfo?.parent?.id || null);
   const parentNodeForSiblings = newParentId ? findNodeAndParent(newParentId, activeTree.tree)?.node : null;
   const siblings = parentNodeForSiblings ? parentNodeForSiblings.children : (activeTree.tree || []);
 
@@ -1372,7 +1381,13 @@ export async function pasteNodesAsClonesAction(
   if (as === 'child') {
     newOrder = siblings.length > 0 ? Math.max(...siblings.map(c => getContextualOrder(c, siblings, newParentId))) + 1 : 0;
   } else {
-    newOrder = getContextualOrder(targetNode, siblings, newParentId) + 1;
+    if (targetNodeId === 'start') {
+      newOrder = 0;
+    } else if (targetNodeId === 'end') {
+      newOrder = siblings.length > 0 ? Math.max(...siblings.map(c => getContextualOrder(c, siblings, newParentId))) + 1 : 0;
+    } else {
+      newOrder = targetNode ? getContextualOrder(targetNode, siblings, newParentId) + 1 : 0;
+    }
     await reorderSiblingsForAdd(activeTree.id, newParentId, newOrder);
   }
 

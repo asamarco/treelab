@@ -679,6 +679,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                             )}
                             onClick={(e) => e.stopPropagation()}
                         >
+                            {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_start_${node.id}`} />}
                             {node.children.map((childNode) => (
                                 <div key={`${childNode.id}_${node.id}`}>
                                     <TreeNodeComponent

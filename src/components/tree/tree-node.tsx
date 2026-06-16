@@ -349,6 +349,7 @@ function TreeNodeComponentInner({
       )}
       {isExplorer && node.children && node.children.length > 0 && isExpanded && (
         <div className="pl-3 ml-[7px] border-l border-border/50">
+          {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_start_${node.id}`} />}
           {node.children.map((childNode) => (
             <div key={`${childNode.id}_${node.id}`}>
               <TreeNodeComponent

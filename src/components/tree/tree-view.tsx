@@ -157,7 +157,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     if (isCopyOperation) {
       const fullNodeToCopy = findNodeAndParent(activeNodeId)?.node;
       if (fullNodeToCopy) {
-        pasteNodes(overNodeId, isDroppingOnGap ? 'sibling' : 'child', null, [fullNodeToCopy]);
+        pasteNodes(overNodeId, isDroppingOnGap ? 'sibling' : 'child', targetContextualParentId, [fullNodeToCopy]);
       }
       return;
     }
@@ -521,6 +521,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       collisionDetection={closestCenter}
     >
       <div id="tree-view-container" className="pr-1 pb-1">
+        {!readOnly && !disableSelection && <TreeNodeDropZone id="gap_start_root" />}
         {nodes.map((node, index) => (
           <div key={`${node.id}-root-wrapper`}>
             <TreeNodeComponent
