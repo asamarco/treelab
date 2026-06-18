@@ -9,7 +9,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem } from "@/lib/types";
+import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem, QueryRule, ConditionalRuleOperator } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { CardContent } from "../ui/card";
@@ -36,6 +36,16 @@ import { Label } from "../ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TreeSpreadsheetField } from "./tree-spreadsheet-field";
 
+const operatorLabels: Record<string, string> = {
+    equals: 'Equals',
+    not_equals: 'Not Equals',
+    contains: 'Contains',
+    not_contains: 'Does Not Contain',
+    is_not_empty: 'Is Not Empty',
+    is_empty: 'Is Empty',
+    greater_than: 'Greater Than',
+    less_than: 'Less Than',
+};
 
 interface TreeNodeContentProps {
     node: TreeNode;
@@ -563,53 +573,98 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                         const queryResult = queriesAndResults.find(q => q.field.id === field.id);
                                         if (!queryResult || !queryResult.results) return null;
                                         const { results } = queryResult;
+                                        const queryDefinitions: QueryDefinition[] = Array.isArray(value) ? value : [];
+
+                                        const finalQueryStr = queryDefinitions.map(queryDef => {
+                                            const targetTemplate = getTemplateById(queryDef.targetTemplateId || '');
+                                            const targetTemplateName = targetTemplate ? targetTemplate.name : 'any';
+
+                                            const ruleStrings = (queryDef.rules || []).map(rule => {
+                                                if (rule.type === 'field') {
+                                                    const ruleField = targetTemplate?.fields.find(f => f.id === rule.fieldId);
+                                                    const fieldName = ruleField ? ruleField.name : rule.fieldId || 'Field';
+                                                    const op = operatorLabels[rule.operator || ''] || rule.operator || 'equals';
+                                                    const hasNoVal = rule.operator === 'is_empty' || rule.operator === 'is_not_empty';
+                                                    return `'${fieldName}' ${op.toLowerCase()}${hasNoVal ? '' : ` '${rule.value || ''}'`}`;
+                                                } else {
+                                                    const relTemplate = rule.relationTemplateId ? getTemplateById(rule.relationTemplateId) : null;
+                                                    const relTemplateName = relTemplate ? relTemplate.name : 'any';
+                                                    const relRulesStr = (rule.relationRules || []).map(relRule => {
+                                                        const relField = relTemplate?.fields.find(f => f.id === relRule.fieldId);
+                                                        const relFieldName = relField ? relField.name : relRule.fieldId || 'Field';
+                                                        const relOp = operatorLabels[relRule.operator || ''] || relRule.operator || 'equals';
+                                                        const relHasNoVal = relRule.operator === 'is_empty' || relRule.operator === 'is_not_empty';
+                                                        return `'${relFieldName}' ${relOp.toLowerCase()}${relHasNoVal ? '' : ` '${relRule.value || ''}'`}`;
+                                                    }).join(' AND ');
+
+                                                    const relCond = relRulesStr ? ` where ${relRulesStr}` : '';
+                                                    return `has ${rule.type} '${relTemplateName}'${relCond}`;
+                                                }
+                                            });
+
+                                            const joinedRules = ruleStrings.join(' AND ');
+                                            const rulesPart = ruleStrings.length > 0 ? ` where ${joinedRules}` : '';
+                                            const groupStr = `'${targetTemplateName}' nodes${rulesPart}`;
+                                            return queryDefinitions.length > 1 ? `(${groupStr})` : groupStr;
+                                        }).join(' OR ');
+
+                                        const displayQuery = finalQueryStr || 'No query defined';
 
                                         return (
-                                            <div key={field.id} className="mt-4 space-y-1 pt-2">
-                                                {results.length > 0 ? (
-                                                    results.map(resultNode => {
-                                                        const resultTemplate = getTemplateById(resultNode.templateId);
-                                                        const { icon: resultIcon, color: resultColor } = getConditionalStyle(resultNode, resultTemplate);
-                                                        return (
-                                                            <div key={resultNode.id} className="flex items-center justify-between gap-2 p-1.5 -ml-1.5 rounded-md hover:bg-accent group/queryresult">
-                                                                <div className="flex items-center gap-2 overflow-hidden flex-grow">
-                                                                    <div
-                                                                        className="flex items-center gap-2 cursor-pointer"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
-                                                                        }}
-                                                                    >
-                                                                        <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
-                                                                        <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
+                                            <div key={field.id} className="mt-4 pt-2 border-t border-border/40 min-w-0">
+                                                <div className="flex flex-col gap-1 mb-2">
+                                                    <p className={cn("text-xs text-muted-foreground/80 bg-muted/40 p-2 rounded border border-border/50 break-words", isCompactView ? "text-[11px]" : "text-xs")}>
+                                                        {displayQuery}
+                                                    </p>
+                                                </div>
+
+                                                {/* Results List */}
+                                                <div className="space-y-1 mt-1 pl-1">
+                                                    {results.length > 0 ? (
+                                                        results.map(resultNode => {
+                                                            const resultTemplate = getTemplateById(resultNode.templateId);
+                                                            const { icon: resultIcon, color: resultColor } = getConditionalStyle(resultNode, resultTemplate);
+                                                            return (
+                                                                <div key={resultNode.id} className="flex items-center justify-between gap-2 p-1.5 -ml-1.5 rounded-md hover:bg-accent group/queryresult">
+                                                                    <div className="flex items-center gap-2 overflow-hidden flex-grow">
+                                                                        <div
+                                                                            className="flex items-center gap-2 cursor-pointer"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
+                                                                            }}
+                                                                        >
+                                                                            <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
+                                                                            <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
+                                                                        </div>
+                                                                        <TooltipProvider>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <Button
+                                                                                        variant="ghost"
+                                                                                        size="icon"
+                                                                                        className="h-6 w-6 shrink-0 opacity-0 group-hover/queryresult:opacity-100"
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            selectAndCenterNode({ nodeId: resultNode.id });
+                                                                                        }}
+                                                                                    >
+                                                                                        <Crosshair className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>
+                                                                                    <p>Locate node in tree</p>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
                                                                     </div>
-                                                                    <TooltipProvider>
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                <Button
-                                                                                    variant="ghost"
-                                                                                    size="icon"
-                                                                                    className="h-6 w-6 shrink-0 opacity-0 group-hover/queryresult:opacity-100"
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        selectAndCenterNode({ nodeId: resultNode.id });
-                                                                                    }}
-                                                                                >
-                                                                                    <Crosshair className="h-4 w-4" />
-                                                                                </Button>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>
-                                                                                <p>Locate node in tree</p>
-                                                                            </TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <p className="text-sm text-muted-foreground italic px-2 py-1">Query returned no results.</p>
-                                                )}
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <p className="text-sm text-muted-foreground italic px-2 py-1">Query returned no results.</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         );
                                     }
@@ -624,10 +679,10 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                     <TooltipProvider>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="icon" 
-                                                                    className="h-6 w-6 rounded-full" 
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-6 w-6 rounded-full"
                                                                     onClick={() => setFullScreenEmbedUrl(url)}
                                                                 >
                                                                     <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -638,10 +693,10 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                     </TooltipProvider>
                                                 </div>
                                                 <div className="w-full rounded-md border bg-background overflow-hidden relative">
-                                                    <iframe 
-                                                        src={url} 
+                                                    <iframe
+                                                        src={url}
                                                         title={field.name}
-                                                        className="w-full border-0 block" 
+                                                        className="w-full border-0 block"
                                                         style={{ height: `${height}px` }}
                                                         allowFullScreen
                                                         sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
@@ -721,7 +776,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                     </div>
                 </DialogContent>
             </Dialog>
-            
+
             {/* Embed Lightbox */}
             <Dialog open={!!fullScreenEmbedUrl} onOpenChange={(open) => !open && setFullScreenEmbedUrl(null)}>
                 <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden border-none bg-background shadow-2xl">
@@ -729,20 +784,20 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                         <DialogTitle>Full Screen Embed</DialogTitle>
                     </DialogHeader>
                     <div className="absolute top-2 right-2 z-[60]">
-                        <Button 
-                            variant="secondary" 
-                            size="icon" 
-                            className="h-8 w-8 rounded-full shadow-lg bg-background/80 hover:bg-background transition-colors" 
+                        <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 rounded-full shadow-lg bg-background/80 hover:bg-background transition-colors"
                             onClick={() => setFullScreenEmbedUrl(null)}
                         >
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
                     {fullScreenEmbedUrl && (
-                        <iframe 
-                            src={fullScreenEmbedUrl} 
+                        <iframe
+                            src={fullScreenEmbedUrl}
                             title="Full Screen View"
-                            className="w-full h-full border-0" 
+                            className="w-full h-full border-0"
                             allowFullScreen
                             sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
                         />
