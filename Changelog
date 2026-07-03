@@ -1,3 +1,8 @@
+v0.7.4
+
+Improvement: full-size image viewer now allows navigation thorugh all the contents of the picture field
+Bugfix: Ensure persistence of nodes copied across different trees
+
 v0.7.3
 
 Feature: Explorer view option for both desktop and mobile interface
