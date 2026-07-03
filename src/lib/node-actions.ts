@@ -960,7 +960,7 @@ export async function copyNodesAction(
   contextualParentId: string | null,
   nodes?: TreeNode[]
 ) {
-  const { clipboard, activeTree, findNodeAndContextualParent } = ctx;
+  const { clipboard, activeTree, findNodeAndContextualParent, currentUser } = ctx;
   const nodesToProcess = nodes || clipboard?.nodes;
   if (!nodesToProcess || !activeTree) return;
 
@@ -1055,6 +1055,8 @@ export async function copyNodesAction(
           ...rest,
           id: newId,
           _id: newId,
+          treeId: activeTree.id,
+          userId: currentUser?.id || rest.userId,
           parentIds: finalParentIds,
           order: [orderToUse],
           children: []
