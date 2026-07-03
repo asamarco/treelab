@@ -494,6 +494,11 @@ export function TreePage() {
     }
   }, [isExplorerMode, isTwoPanelMode, findNodeAndParent, tree, setSelectedNodeIds]);
 
+  // Reset explorer view to home when switching trees.
+  useEffect(() => {
+    setExplorerNodeId(null);
+  }, [activeTree?.id]);
+
   // Seed the explorer expansion state from the global tree whenever explorer mode is enabled.
   useEffect(() => {
     if (isExplorerMode) {
