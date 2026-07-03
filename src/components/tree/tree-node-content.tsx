@@ -16,7 +16,7 @@ import { CardContent } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { RenderWithLinks } from "./render-with-links";
 import { Icon } from "../icon";
-import { Download, Grid, Rows, Crosshair, X, Maximize2 } from "lucide-react";
+import { Download, Grid, Rows, Crosshair, X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
 import { TreeNodeComponent } from "./tree-node";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -78,8 +78,43 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
     const [containerWidths, setContainerWidths] = useState<Record<string, number>>({});
     const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number, height: number }>>({});
-    const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+    const [fullScreenGallery, setFullScreenGallery] = useState<{ images: string[]; index: number } | null>(null);
     const [fullScreenEmbedUrl, setFullScreenEmbedUrl] = useState<string | null>(null);
+
+    const openFullScreenGallery = useCallback((images: string[], index: number) => {
+        setFullScreenGallery({ images, index });
+    }, []);
+
+    const goToPrevImage = useCallback(() => {
+        setFullScreenGallery(prev => {
+            if (!prev || prev.images.length <= 1) return prev;
+            const newIndex = prev.index === 0 ? prev.images.length - 1 : prev.index - 1;
+            return { ...prev, index: newIndex };
+        });
+    }, []);
+
+    const goToNextImage = useCallback(() => {
+        setFullScreenGallery(prev => {
+            if (!prev || prev.images.length <= 1) return prev;
+            const newIndex = prev.index === prev.images.length - 1 ? 0 : prev.index + 1;
+            return { ...prev, index: newIndex };
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!fullScreenGallery) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goToPrevImage();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                goToNextImage();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [fullScreenGallery, goToPrevImage, goToNextImage]);
 
     let tableRendered = false;
 
@@ -461,7 +496,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                                                         alt={`${field.name} ${index + 1}`}
                                                                                         className="object-contain w-full cursor-zoom-in"
                                                                                         style={{ maxHeight: `${maxHeight}px` }}
-                                                                                        onClick={(e) => { e.stopPropagation(); setFullScreenImage(src); }}
+                                                                                        onClick={(e) => { e.stopPropagation(); openFullScreenGallery(images, index); }}
                                                                                         onLoad={(e) => {
                                                                                             const img = e.currentTarget;
                                                                                             setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
@@ -488,7 +523,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                                     alt={`${field.name} ${index + 1}`}
                                                                     className="object-contain max-w-full h-auto rounded-md cursor-zoom-in"
                                                                     style={{ maxHeight: `${maxHeight}px` }}
-                                                                    onClick={(e) => { e.stopPropagation(); setFullScreenImage(src); }}
+                                                                    onClick={(e) => { e.stopPropagation(); openFullScreenGallery(images, index); }}
                                                                     onLoad={(e) => {
                                                                         const img = e.currentTarget;
                                                                         setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
@@ -760,18 +795,45 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
             </div>
 
             {/* Image Lightbox */}
-            <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
+            <Dialog open={!!fullScreenGallery} onOpenChange={(open) => !open && setFullScreenGallery(null)}>
                 <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
                     <DialogHeader className="sr-only">
                         <DialogTitle>Full Screen Image</DialogTitle>
                     </DialogHeader>
                     <div className="relative w-full h-full flex items-center justify-center group/lightbox">
-                        {fullScreenImage && (
-                            <img
-                                src={fullScreenImage}
-                                alt="Full screen view"
-                                className="max-w-full max-h-[90vh] object-contain"
-                            />
+                        {fullScreenGallery && (
+                            <>
+                                <img
+                                    src={fullScreenGallery.images[fullScreenGallery.index]}
+                                    alt={`Full screen view ${fullScreenGallery.index + 1} of ${fullScreenGallery.images.length}`}
+                                    className="max-w-full max-h-[90vh] object-contain"
+                                />
+                                {fullScreenGallery.images.length > 1 && (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/lightbox:opacity-100 transition-opacity"
+                                            onClick={(e) => { e.stopPropagation(); goToPrevImage(); }}
+                                            aria-label="Previous image"
+                                        >
+                                            <ChevronLeft className="h-6 w-6" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/lightbox:opacity-100 transition-opacity"
+                                            onClick={(e) => { e.stopPropagation(); goToNextImage(); }}
+                                            aria-label="Next image"
+                                        >
+                                            <ChevronRight className="h-6 w-6" />
+                                        </Button>
+                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+                                            {fullScreenGallery.index + 1} / {fullScreenGallery.images.length}
+                                        </div>
+                                    </>
+                                )}
+                            </>
                         )}
                     </div>
                 </DialogContent>
