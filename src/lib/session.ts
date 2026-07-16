@@ -6,12 +6,13 @@
  */
 import 'server-only';
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { User } from './types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { connectToDatabase } from './mongodb';
 import { UserModel } from './models';
+import { validatePersonalAccessToken } from './token-service';
 
 const secretKey = process.env.JWT_SECRET_KEY;
 if (!secretKey) {
@@ -98,7 +99,18 @@ export function clearSession(response: NextResponse) {
 export async function getSession(): Promise<{ userId: string, rememberMe?: boolean } | null> {
   // Prevent caching of the session
   noStore();
+
+  // 1. Check for Personal Access Token in Authorization header
+  const authHeader = (await headers()).get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer tlab_')) {
+    const token = authHeader.substring(7);
+    const userId = await validatePersonalAccessToken(token);
+    if (userId) {
+      return { userId, rememberMe: false };
+    }
+  }
   
+  // 2. Fallback to cookie
   const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!sessionCookie) return null;
 

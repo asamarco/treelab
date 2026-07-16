@@ -36,7 +36,7 @@ export function PublicTreeViewClient({ initialTree, initialView, initialExplorer
   const initialTwoPanel = initialView === 'two-panel';
 
   return (
-    <AuthProvider isAuthRequired={isAuthRequired} defaultUserId={defaultUserId}>
+    <AuthProvider isAuthRequired={isAuthRequired} defaultUserId={defaultUserId} isApiEnabled={false}>
       <UIProvider 
         initialStandardView={true} 
         initialCompact={initialCompact} 

@@ -198,3 +198,41 @@ const GlobalSettingsSchema = new Schema<GlobalSettings>({
 
 export const GlobalSettingsModel = (models.GlobalSettings as Model<GlobalSettings>) ||
   model<GlobalSettings>('GlobalSettings', GlobalSettingsSchema);
+
+// --- PersonalAccessToken Schema and Model ---
+/**
+ * Stores hashed personal access tokens used for programmatic API access.
+ * The raw token is NEVER stored; only its SHA-256 hash and a display prefix.
+ */
+export interface PersonalAccessTokenDoc {
+  _id: string;
+  id: string;
+  userId: string;       // Owner of the token
+  name: string;         // Human-readable label
+  tokenHash: string;    // SHA-256(rawToken), hex-encoded
+  prefix: string;       // First 8 chars of raw token for display (e.g. "tlab_Ab1c")
+  createdAt: string;
+  lastUsedAt?: string;
+  expiresAt?: string;   // ISO string or undefined = never expires
+}
+
+const PersonalAccessTokenSchema = new Schema<PersonalAccessTokenDoc>({
+  _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
+  userId: { type: String, required: true, index: true },
+  name: { type: String, required: true },
+  tokenHash: { type: String, required: true, unique: true, index: true, select: false },
+  prefix: { type: String, required: true },
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  lastUsedAt: { type: String },
+  expiresAt: { type: String },
+});
+PersonalAccessTokenSchema.pre('save', function (next) {
+  if (this.isNew) {
+    this._id = this.id;
+  }
+  next();
+});
+
+export const PersonalAccessTokenModel =
+  (models.PersonalAccessToken as Model<PersonalAccessTokenDoc>) ||
+  model<PersonalAccessTokenDoc>('PersonalAccessToken', PersonalAccessTokenSchema);

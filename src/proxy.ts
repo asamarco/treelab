@@ -31,15 +31,15 @@ export function proxy(request: NextRequest) {
 
   const cspHeader = [
     `default-src 'self'`,
-    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net`,
     `font-src 'self' https://fonts.gstatic.com`,
     `img-src 'self' data: *`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDevelopment ? "'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net ${isDevelopment ? "'unsafe-eval'" : ""}`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,
     `frame-src *`,
-    `connect-src 'self' *.cloudworkstations.dev api.github.com`,
+    `connect-src 'self' *.cloudworkstations.dev api.github.com https://cdn.jsdelivr.net`,
   ].join('; ');
 
   const requestHeaders = new Headers(request.headers);

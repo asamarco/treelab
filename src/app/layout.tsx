@@ -45,6 +45,7 @@ export const viewport: Viewport = {
 interface AppConfig {
     REQUIRE_AUTHENTICATION?: boolean;
     USERID?: string;
+    ENABLE_API?: boolean;
 }
 
 export default function RootLayout({
@@ -66,6 +67,7 @@ export default function RootLayout({
   
   const isAuthRequired = appConfig.REQUIRE_AUTHENTICATION ?? true;
   const defaultUserId = appConfig.USERID || "test";
+  const isApiEnabled = appConfig.ENABLE_API ?? false;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -87,6 +89,7 @@ export default function RootLayout({
         <AuthProvider
           isAuthRequired={isAuthRequired}
           defaultUserId={defaultUserId}
+          isApiEnabled={isApiEnabled}
         >
           <UIProvider>
             <TreeProvider>

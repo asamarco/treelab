@@ -46,6 +46,237 @@ const DATE_FORMATS = [
   { value: "PPP", label: "Month Day, Year" },
 ];
 
+// ---------------------------------------------------------------------------
+// Personal Access Token types (mirrors token-service.ts)
+// ---------------------------------------------------------------------------
+interface PatMeta {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+  expiresAt?: string;
+}
+
+// ---------------------------------------------------------------------------
+// PAT Management Card component (self-contained)
+// ---------------------------------------------------------------------------
+function PersonalAccessTokensCard() {
+  const { toast } = useToast();
+  const [tokens, setTokens] = useState<PatMeta[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newTokenName, setNewTokenName] = useState("");
+  const [newTokenExpiry, setNewTokenExpiry] = useState("");
+  const [revealedToken, setRevealedToken] = useState<string | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const fetchTokens = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/v1/tokens");
+      if (res.ok) {
+        const data = await res.json();
+        setTokens(data.tokens ?? []);
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Could not load tokens." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchTokens(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTokenName.trim()) return;
+    setIsCreating(true);
+    try {
+      const body: Record<string, string> = { name: newTokenName.trim() };
+      if (newTokenExpiry) body.expiresAt = new Date(newTokenExpiry).toISOString();
+
+      const res = await fetch("/api/v1/tokens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to create token.");
+
+      setRevealedToken(data.rawToken);
+      setTokens((prev) => [data.token, ...prev]);
+      setNewTokenName("");
+      setNewTokenExpiry("");
+      setShowCreateForm(false);
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleRevoke = async (tokenId: string, tokenName: string) => {
+    try {
+      const res = await fetch(`/api/v1/tokens/${tokenId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to revoke.");
+      }
+      setTokens((prev) => prev.filter((t) => t.id !== tokenId));
+      toast({ title: "Token revoked", description: `"${tokenName}" has been revoked.` });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message });
+    }
+  };
+
+  const formatDate = (iso?: string) =>
+    iso ? new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <KeyRound className="h-5 w-5" />
+          Personal Access Tokens
+        </CardTitle>
+        <CardDescription>
+          Use tokens to authenticate programmatic access to the{" "}
+          <code className="text-xs bg-muted px-1 py-0.5 rounded">/api/v1/</code> REST API.
+          Tokens inherit your permissions on each tree.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* One-time reveal dialog */}
+        {revealedToken && (
+          <AlertDialog open onOpenChange={() => setRevealedToken(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Copy your new token</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3">
+                  <p>This token will <strong>not</strong> be shown again. Store it somewhere safe.</p>
+                  <div
+                    id="revealed-pat-token"
+                    className="font-mono text-xs bg-muted border rounded p-3 break-all select-all cursor-text"
+                  >
+                    {revealedToken}
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogAction
+                  id="copy-pat-token-btn"
+                  onClick={() => {
+                    navigator.clipboard.writeText(revealedToken);
+                    toast({ title: "Copied to clipboard." });
+                  }}
+                >
+                  Copy &amp; Close
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        {/* Token list */}
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading tokens…
+          </div>
+        ) : tokens.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">No tokens yet.</p>
+        ) : (
+          <div className="divide-y rounded-md border overflow-hidden">
+            {tokens.map((t) => (
+              <div key={t.id} className="flex items-center justify-between px-4 py-3 bg-card">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {t.prefix}…
+                    <span className="ml-2 not-mono">
+                      Created {formatDate(t.createdAt)}
+                      {t.lastUsedAt && ` · Last used ${formatDate(t.lastUsedAt)}`}
+                      {t.expiresAt && ` · Expires ${formatDate(t.expiresAt)}`}
+                    </span>
+                  </p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button id={`revoke-pat-${t.id}`} variant="destructive" size="sm">Revoke</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Revoke &ldquo;{t.name}&rdquo;?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Any scripts using this token will stop working immediately.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleRevoke(t.id, t.name)}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Revoke Token
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Create form */}
+        {showCreateForm ? (
+          <form onSubmit={handleCreate} className="space-y-3 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-pat-name">Token name</Label>
+              <Input
+                id="new-pat-name"
+                placeholder="e.g. CI script, Local dev"
+                value={newTokenName}
+                onChange={(e) => setNewTokenName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-pat-expiry">Expiry date <span className="text-muted-foreground">(optional)</span></Label>
+              <Input
+                id="new-pat-expiry"
+                type="date"
+                value={newTokenExpiry}
+                onChange={(e) => setNewTokenExpiry(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Leave blank for a non-expiring token.</p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="ghost" onClick={() => setShowCreateForm(false)}>Cancel</Button>
+              <Button type="submit" id="create-pat-btn" disabled={isCreating}>
+                {isCreating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Generate Token
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button
+            id="show-create-pat-form-btn"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCreateForm(true)}
+          >
+            Generate new token
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Settings Page
+// ---------------------------------------------------------------------------
 export default function SettingsPage() {
   const {
     theme,
@@ -57,6 +288,7 @@ export default function SettingsPage() {
     setInactivityTimeout,
     setTwoPanelExpansionDepth,
     revokeAllSessions,
+    isApiEnabled,
   } = useAuthContext();
 
   const { toast } = useToast();
@@ -284,6 +516,9 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Personal Access Tokens */}
+            {isApiEnabled && <PersonalAccessTokensCard />}
 
             <Card>
               <CardHeader>

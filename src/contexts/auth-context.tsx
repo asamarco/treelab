@@ -19,6 +19,7 @@ interface AuthContextType {
   currentUser: User | null;
   isAuthLoading: boolean;
   isAuthRequired: boolean;
+  isApiEnabled: boolean;
   users: User[];
   login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   register: (username: string, password: string) => Promise<boolean>;
@@ -53,9 +54,10 @@ interface AuthProviderProps {
   children: ReactNode;
   isAuthRequired: boolean;
   defaultUserId: string;
+  isApiEnabled: boolean;
 }
 
-export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthProviderProps) {
+export function AuthProvider({ children, isAuthRequired, defaultUserId, isApiEnabled }: AuthProviderProps) {
   const {
     currentUser,
     isAuthLoading,
@@ -114,6 +116,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId }: AuthPr
     currentUser,
     isAuthLoading,
     isAuthRequired,
+    isApiEnabled,
     users,
     login,
     register,
