@@ -85,6 +85,7 @@ const TreeFileSchema = new Schema<Omit<TreeFile, 'tree'>>({
   title: { type: String, required: true },
   templates: [TemplateSchema],
   expandedNodeIds: [String],
+  lastDrilledNodeId: { type: String, default: null },
   gitSync: GitSyncSchema,
   order: { type: Number, default: 0 },
   createdAt: { type: String, default: () => new Date().toISOString() },

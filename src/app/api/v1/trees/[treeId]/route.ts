@@ -43,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   const { treeId } = await params;
   // Only forward the whitelisted keys that were actually supplied
   // (Schema-level .refine() already enforces ≥1 field)
-  const allowed = ['title', 'isPublic', 'templates', 'expandedNodeIds'] as const;
+  const allowed = ['title', 'isPublic', 'templates', 'expandedNodeIds', 'lastDrilledNodeId'] as const;
   const updates: Record<string, any> = {};
   for (const key of allowed) {
     if (key in parsed.data) updates[key] = (parsed.data as any)[key];

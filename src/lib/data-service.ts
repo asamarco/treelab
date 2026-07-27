@@ -222,9 +222,9 @@ export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & {
     const { id, ...treeData } = treeFile;
     const newTimestamp = timestamp || new Date().toISOString();
 
-    // Check if the only update is for expandedNodeIds
+    // Check if the update is only for view state (expandedNodeIds, lastDrilledNodeId)
     const updateKeys = Object.keys(treeData);
-    const isOnlyViewChange = updateKeys.length === 1 && updateKeys[0] === 'expandedNodeIds';
+    const isOnlyViewChange = updateKeys.every(k => k === 'expandedNodeIds' || k === 'lastDrilledNodeId');
 
     const updatePayload: any = { $set: { ...treeData } };
 

@@ -257,6 +257,8 @@ export function TreePage() {
     exportNodesAsHtml,
     exportNodesAsJson,
     expandedNodeIds: globalExpandedNodeIds,
+    lastDrilledNodeId,
+    setLastDrilledNodeId,
   } = useTreeContext();
   const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isExplorerMode, setIsExplorerMode, isAnyModalOpen } = useUIContext();
   const isMobile = useIsMobile();
@@ -485,6 +487,7 @@ export function TreePage() {
   const handleExplorerNodeClick = useCallback((nodeId: string) => {
     if (isExplorerMode) {
       setExplorerNodeId(nodeId);
+      setLastDrilledNodeId(nodeId);
       // In two-panel mode, also select the node so the right panel shows its details.
       if (isTwoPanelMode) {
         const nodeInfo = findNodeAndParent(nodeId, tree || []);
@@ -492,12 +495,55 @@ export function TreePage() {
         setSelectedNodeIds([`${nodeId}_${parentId}`]);
       }
     }
-  }, [isExplorerMode, isTwoPanelMode, findNodeAndParent, tree, setSelectedNodeIds]);
+  }, [isExplorerMode, isTwoPanelMode, findNodeAndParent, tree, setSelectedNodeIds, setLastDrilledNodeId]);
 
-  // Reset explorer view to home when switching trees.
+  const updateExplorerNodeId = useCallback((nodeId: string | null) => {
+    setExplorerNodeId(nodeId);
+    setLastDrilledNodeId(nodeId);
+    if (isExplorerMode && isTwoPanelMode && nodeId) {
+      const nodeInfo = findNodeAndParent(nodeId, tree || []);
+      const parentId = nodeInfo?.parent?.id ?? 'root';
+      setSelectedNodeIds([`${nodeId}_${parentId}`]);
+    }
+  }, [setLastDrilledNodeId, isExplorerMode, isTwoPanelMode, findNodeAndParent, tree, setSelectedNodeIds]);
+
+  // Restore explorer view to active tree's last drilled-down node when switching trees or loading.
   useEffect(() => {
-    setExplorerNodeId(null);
-  }, [activeTree?.id]);
+    if (!isExplorerMode) {
+      // Option 1: If switching trees while explorer mode is off, clear drilled-down state
+      setExplorerNodeId(null);
+      if (activeTree?.lastDrilledNodeId) {
+        setLastDrilledNodeId(null);
+      }
+      return;
+    }
+
+    if (activeTree?.lastDrilledNodeId) {
+      const nodeInfo = findNodeAndParent(activeTree.lastDrilledNodeId, tree || []);
+      if (nodeInfo) {
+        setExplorerNodeId(activeTree.lastDrilledNodeId);
+        if (isTwoPanelMode) {
+          const parentId = nodeInfo.parent?.id ?? 'root';
+          setSelectedNodeIds([`${activeTree.lastDrilledNodeId}_${parentId}`]);
+        }
+      } else {
+        // Fallback if node no longer exists
+        updateExplorerNodeId(null);
+      }
+    } else {
+      setExplorerNodeId(null);
+    }
+  }, [activeTree?.id, activeTree?.lastDrilledNodeId, tree, findNodeAndParent, isExplorerMode, isTwoPanelMode, setSelectedNodeIds, setLastDrilledNodeId, updateExplorerNodeId]);
+
+  // Option 2: Whenever explorer mode is turned off, clear the drilled-down state so next activation starts fresh at root.
+  useEffect(() => {
+    if (!isExplorerMode) {
+      setExplorerNodeId(null);
+      if (lastDrilledNodeId) {
+        setLastDrilledNodeId(null);
+      }
+    }
+  }, [isExplorerMode, lastDrilledNodeId, setLastDrilledNodeId]);
 
   // Seed the explorer expansion state from the global tree whenever explorer mode is enabled.
   useEffect(() => {
@@ -606,7 +652,7 @@ export function TreePage() {
               <div className="h-full flex flex-col rounded-lg border bg-card/30 mr-2 overflow-hidden">
                 {isExplorerMode && explorerBreadcrumbs.length > 0 && (
                   <div className="flex items-center flex-wrap gap-1 px-3 py-2 border-b bg-card/50 shrink-0">
-                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-muted-foreground hover:text-foreground text-xs" onClick={() => setExplorerNodeId(null)}>
+                    <Button variant="ghost" size="sm" className="h-6 px-1.5 text-muted-foreground hover:text-foreground text-xs" onClick={() => updateExplorerNodeId(null)}>
                       Home
                     </Button>
                     {explorerBreadcrumbs.map((crumb, index) => {
@@ -620,7 +666,7 @@ export function TreePage() {
                             variant="ghost" 
                             size="sm" 
                             className={cn("h-6 px-1.5 flex items-center gap-1 text-xs", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
-                            onClick={() => !isLast && setExplorerNodeId(crumb.id)}
+                            onClick={() => !isLast && updateExplorerNodeId(crumb.id)}
                           >
                             <Icon name={(crumbIcon as keyof typeof icons) || 'FileText'} className="h-3.5 w-3.5 shrink-0" style={{ color: crumbColor || 'hsl(var(--primary))' }} />
                             <span className="truncate max-w-[80px]">{crumb.name}</span>
@@ -687,7 +733,7 @@ export function TreePage() {
               className="sticky z-10 flex items-center flex-wrap gap-1 px-3 py-2 bg-background/95 backdrop-blur-sm border-b shrink-0"
               style={{ top: currentUser ? "calc(4rem + 58px)" : "58px" }}
             >
-              <Button variant="ghost" size="sm" className="h-6 px-1.5 text-muted-foreground hover:text-foreground text-xs" onClick={() => setExplorerNodeId(null)}>
+              <Button variant="ghost" size="sm" className="h-6 px-1.5 text-muted-foreground hover:text-foreground text-xs" onClick={() => updateExplorerNodeId(null)}>
                 Home
               </Button>
               <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -706,7 +752,7 @@ export function TreePage() {
                       variant="ghost" 
                       size="sm" 
                       className={cn("h-6 px-1.5 text-xs truncate max-w-[80px]", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
-                      onClick={() => !isLast && setExplorerNodeId(crumb.id)}
+                      onClick={() => !isLast && updateExplorerNodeId(crumb.id)}
                     >
                       {crumb.name}
                     </Button>
@@ -735,7 +781,7 @@ export function TreePage() {
             className="sticky z-10 flex items-center flex-wrap gap-1 px-4 py-2 bg-background/95 backdrop-blur-sm border-b mb-4 rounded-md shadow-sm"
             style={{ top: currentUser ? "calc(4rem + 58px)" : "58px" }}
           >
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground text-xs" onClick={() => setExplorerNodeId(null)}>
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-muted-foreground hover:text-foreground text-xs" onClick={() => updateExplorerNodeId(null)}>
               Home
             </Button>
             {explorerBreadcrumbs.map((crumb, index) => {
@@ -749,7 +795,7 @@ export function TreePage() {
                     variant="ghost" 
                     size="sm" 
                     className={cn("h-6 px-1.5 flex items-center gap-1 text-xs", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
-                    onClick={() => !isLast && setExplorerNodeId(crumb.id)}
+                    onClick={() => !isLast && updateExplorerNodeId(crumb.id)}
                   >
                     <Icon name={(crumbIcon as keyof typeof icons) || 'FileText'} className="h-3.5 w-3.5 shrink-0" style={{ color: crumbColor || 'hsl(var(--primary))' }} />
                     <span>{crumb.name}</span>

@@ -1134,6 +1134,21 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
   }, [activeTreeId, activeTree?.expandedNodeIds, setAllTrees, currentUser]);
 
+  const setLastDrilledNodeId = useCallback((nodeId: string | null) => {
+    if (!activeTreeId) return;
+
+    setAllTrees((draft) => {
+      const tree = draft.find((t) => t.id === activeTreeId);
+      if (tree) {
+        tree.lastDrilledNodeId = nodeId;
+      }
+    });
+
+    if (currentUser) {
+      saveTreeFile({ id: activeTreeId, lastDrilledNodeId: nodeId });
+    }
+  }, [activeTreeId, setAllTrees, currentUser]);
+
   const expandToNode = useCallback((nodeId: string) => {
     if (!activeTree) return;
     const pathToExpand: string[] = [];
@@ -1711,6 +1726,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     updateActiveTree,
     selectAndCenterNode,
     getNodeInstancePaths,
+    lastDrilledNodeId: activeTree?.lastDrilledNodeId ?? null,
+    setLastDrilledNodeId,
     // Properties that were missing from TreeContextType
     templates: activeTree?.templates ?? [],
     tree: activeTree?.tree ?? [],

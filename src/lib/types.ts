@@ -179,6 +179,7 @@ export interface TreeFile {
     tree: TreeNode[]; // Still used on the client-side after reconstruction
     templates: Template[];
     expandedNodeIds: string[];
+    lastDrilledNodeId?: string | null;
     gitSync?: GitSync;
     sharedWith?: string[];
     shares?: TreeShare[];
@@ -418,6 +419,8 @@ export interface UseTreeRootsResult {
     importTemplates: (newTemplates: Template[]) => void;
     expandedNodeIds: string[];
     setExpandedNodeIds: (updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable?: boolean) => void;
+    lastDrilledNodeId?: string | null;
+    setLastDrilledNodeId: (nodeId: string | null) => void;
     expandAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;
     expandToNode: (nodeId: string) => void;
     collapseAllFromNode: (nodes: { nodeId: string; parentId: string | null; }[]) => void;

@@ -209,6 +209,7 @@ export const PatchTreeBodySchema = z
     isPublic: z.boolean().optional(),
     templates: z.array(CreateTemplateBodySchema).max(100).optional(),
     expandedNodeIds: z.array(z.string()).max(5000).optional(),
+    lastDrilledNodeId: z.string().nullable().optional(),
   })
   .strict()
   .refine((d) => Object.keys(d).length > 0, { message: 'At least one field must be provided.' })
