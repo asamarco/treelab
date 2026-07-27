@@ -15,29 +15,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validatePersonalAccessToken } from './token-service';
 import { getSession } from './session';
-import fs from 'fs';
-import path from 'path';
-
-// ---------------------------------------------------------------------------
-// Config check
-// ---------------------------------------------------------------------------
 export function isApiEnabled(): boolean {
-  try {
-    const configPath = path.join(process.cwd(), 'config.json');
-    if (!fs.existsSync(configPath)) return false;
-    const configContent = fs.readFileSync(configPath, 'utf8');
-    const config = JSON.parse(configContent);
-    return config.ENABLE_API === true;
-  } catch (error) {
-    return false;
-  }
+  return process.env.ENABLE_API === 'true';
+}
+
+function getRateLimitConfig(): { rateLimit: number; windowMs: number } {
+  const rateLimit = process.env.API_RATE_LIMIT_REQUESTS ? parseInt(process.env.API_RATE_LIMIT_REQUESTS, 10) : 120;
+  const windowSeconds = process.env.API_RATE_LIMIT_WINDOW_SECONDS ? parseInt(process.env.API_RATE_LIMIT_WINDOW_SECONDS, 10) : 60;
+  return { rateLimit: isNaN(rateLimit) ? 120 : rateLimit, windowMs: (isNaN(windowSeconds) ? 60 : windowSeconds) * 1000 };
 }
 
 // ---------------------------------------------------------------------------
 // Rate Limiter (in-process, per userId)
 // ---------------------------------------------------------------------------
-const RATE_LIMIT = 120;          // max requests per window
-const WINDOW_MS = 60 * 1000;    // 60 seconds
 
 interface Bucket {
   count: number;
@@ -46,33 +36,35 @@ interface Bucket {
 
 const rateLimitStore = new Map<string, Bucket>();
 
-function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetAt: number } {
+function checkRateLimit(userId: string): { allowed: boolean; remaining: number; resetAt: number; limit: number } {
   const now = Date.now();
+  const { rateLimit, windowMs } = getRateLimitConfig();
   const bucket = rateLimitStore.get(userId);
 
-  if (!bucket || now - bucket.windowStart >= WINDOW_MS) {
+  if (!bucket || now - bucket.windowStart >= windowMs) {
     // Start a fresh window
     rateLimitStore.set(userId, { count: 1, windowStart: now });
-    return { allowed: true, remaining: RATE_LIMIT - 1, resetAt: now + WINDOW_MS };
+    return { allowed: true, remaining: Math.max(0, rateLimit - 1), resetAt: now + windowMs, limit: rateLimit };
   }
 
   bucket.count += 1;
-  const remaining = Math.max(0, RATE_LIMIT - bucket.count);
-  const resetAt = bucket.windowStart + WINDOW_MS;
+  const remaining = Math.max(0, rateLimit - bucket.count);
+  const resetAt = bucket.windowStart + windowMs;
 
-  return { allowed: bucket.count <= RATE_LIMIT, remaining, resetAt };
+  return { allowed: bucket.count <= rateLimit, remaining, resetAt, limit: rateLimit };
 }
 
 // Periodically clean up stale buckets to prevent unbounded memory growth
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now();
+    const { windowMs } = getRateLimitConfig();
     for (const [key, bucket] of rateLimitStore.entries()) {
-      if (now - bucket.windowStart >= WINDOW_MS * 2) {
+      if (now - bucket.windowStart >= windowMs * 2) {
         rateLimitStore.delete(key);
       }
     }
-  }, WINDOW_MS * 5);
+  }, 60 * 1000 * 5);
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +122,7 @@ export async function authenticateRequest(
       {
         status: 429,
         headers: {
-          'X-RateLimit-Limit': String(RATE_LIMIT),
+          'X-RateLimit-Limit': String(rl.limit),
           'X-RateLimit-Remaining': '0',
           'X-RateLimit-Reset': String(Math.ceil(rl.resetAt / 1000)),
           'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)),
@@ -151,9 +143,10 @@ export function withRateLimitHeaders(
 ): NextResponse {
   const bucket = rateLimitStore.get(userId);
   if (!bucket) return response;
-  const remaining = Math.max(0, RATE_LIMIT - bucket.count);
-  const resetAt = Math.ceil((bucket.windowStart + WINDOW_MS) / 1000);
-  response.headers.set('X-RateLimit-Limit', String(RATE_LIMIT));
+  const { rateLimit, windowMs } = getRateLimitConfig();
+  const remaining = Math.max(0, rateLimit - bucket.count);
+  const resetAt = Math.ceil((bucket.windowStart + windowMs) / 1000);
+  response.headers.set('X-RateLimit-Limit', String(rateLimit));
   response.headers.set('X-RateLimit-Remaining', String(remaining));
   response.headers.set('X-RateLimit-Reset', String(resetAt));
   return response;

@@ -42,12 +42,6 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-interface AppConfig {
-    REQUIRE_AUTHENTICATION?: boolean;
-    USERID?: string;
-    ENABLE_API?: boolean;
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -55,19 +49,9 @@ export default function RootLayout({
 }>) {
   noStore();
   
-  // Read configuration from config.json
-  const configPath = path.join(process.cwd(), 'config.json');
-  let appConfig: AppConfig = {};
-  try {
-    const configFile = fs.readFileSync(configPath, 'utf8');
-    appConfig = JSON.parse(configFile);
-  } catch (error) {
-    console.error("Could not read or parse config.json, using defaults.", error);
-  }
-  
-  const isAuthRequired = appConfig.REQUIRE_AUTHENTICATION ?? true;
-  const defaultUserId = appConfig.USERID || "test";
-  const isApiEnabled = appConfig.ENABLE_API ?? false;
+  const isAuthRequired = process.env.REQUIRE_AUTHENTICATION !== 'false';
+  const defaultUserId = process.env.USERID || "test";
+  const isApiEnabled = process.env.ENABLE_API === 'true';
 
   return (
     <html lang="en" suppressHydrationWarning>

@@ -12,15 +12,20 @@ test.describe.serial('REST API (v1)', () => {
 
   test.beforeAll(async ({ browser }) => {
     // Store original config and ensure API is disabled first
-    const configPath = path.join(process.cwd(), 'config.json');
+    const envPath = path.join(process.cwd(), '.env');
+    const txtPath = path.join(process.cwd(), 'config.txt');
+    const jsonPath = path.join(process.cwd(), 'config.json');
+    const configPath = fs.existsSync(envPath) ? envPath : fs.existsSync(txtPath) ? txtPath : jsonPath;
+
     originalConfigContent = fs.readFileSync(configPath, 'utf8');
 
-    const configObj = JSON.parse(originalConfigContent);
-    const apiWasEnabled = configObj.ENABLE_API;
-    
-    // Test that API is disabled and returns 404
-    configObj.ENABLE_API = false;
-    fs.writeFileSync(configPath, JSON.stringify(configObj, null, 2), 'utf8');
+    if (configPath.endsWith('.env') || configPath.endsWith('.txt')) {
+      fs.writeFileSync(configPath, originalConfigContent.replace(/ENABLE_API=true/g, 'ENABLE_API=false'), 'utf8');
+    } else {
+      const configObj = JSON.parse(originalConfigContent);
+      configObj.ENABLE_API = false;
+      fs.writeFileSync(configPath, JSON.stringify(configObj, null, 2), 'utf8');
+    }
 
     const checkDisabledContext = await playwrightRequest.newContext({
       baseURL: 'http://localhost:9002',
@@ -30,8 +35,7 @@ test.describe.serial('REST API (v1)', () => {
     await checkDisabledContext.dispose();
 
     // Now enable API for the actual tests
-    configObj.ENABLE_API = true;
-    fs.writeFileSync(configPath, JSON.stringify(configObj, null, 2), 'utf8');
+    fs.writeFileSync(configPath, originalConfigContent, 'utf8');
 
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -80,8 +84,11 @@ test.describe.serial('REST API (v1)', () => {
   });
 
   test.afterAll(async () => {
-    // Restore original config.json
-    const configPath = path.join(process.cwd(), 'config.json');
+    // Restore original config
+    const txtPath = path.join(process.cwd(), 'config.txt');
+    const jsonPath = path.join(process.cwd(), 'config.json');
+    const configPath = fs.existsSync(txtPath) ? txtPath : jsonPath;
+
     if (originalConfigContent) {
       fs.writeFileSync(configPath, originalConfigContent, 'utf8');
     }
