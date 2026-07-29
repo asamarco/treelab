@@ -45,67 +45,84 @@ While the URLs are unguessable, they effectively act as secret keys, anyone with
 
 ##   Getting Started & Configuration
 
-The recommended setup is to use docker with docker-compose which will run treelab together with a mongodb container. This is an example docker-compose.yml
+The recommended setup is to use Docker with docker-compose, which will run Treelab together with a MongoDB container.
+
+### docker-compose
+
+Create a `docker-compose.yml` and a `.env` file (see below) in the same directory, then run `docker compose up -d`.
 
 ```yml
 services:
     treelab:
-        ports:
-            - 3000:3000
         image: ghcr.io/asamarco/treelab
         container_name: treelab
+        ports:
+            - "3000:3000"
         volumes:
             - ./data:/app/data
-            - ./config.json:/app/config.json
         restart: unless-stopped
         env_file: .env
-        depends_on: 
+        depends_on:
             - mongo
-    
+
     mongo:
-        container_name: mongodb
         image: mongo:8.0
+        container_name: mongodb
         restart: unless-stopped
+        env_file: .env
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USER}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
         volumes:
-           - ./db:/data/db
+            - mongo-data:/data/db
+
+volumes:
+    mongo-data:
 ```
 
-NOTE: The data folder where the attachments will be saved should have read and write permissions for the user 65532 (standard user in distroless docker images).
-```chown -D 65532:65532 data/```
-
-### Setup
-
-This application requires some initial setup to connect to its database and define its core behavior.
+> **Note:** The `data` folder (where attachments are stored) must be readable and writable by user `65532` (the default non-root user in distroless Docker images):
+> ```sh
+> chown -R 65532:65532 data/
+> ```
 
 ### Environment Variables (`.env`)
 
-Create a `.env` file in the root of your project. This file is for secret keys and should not be committed to version control.
+Create a `.env` file alongside your `docker-compose.yml`. This file holds all secrets and runtime settings.
 
+```sh
+# ── Database Credentials & Connection ──────────────────────────────────────────
+MONGODB_USER=admin          # MongoDB username (used by both the app and the mongo container on first init)
+MONGODB_PASSWORD=secret     # MongoDB password (used by both the app and the mongo container on first init)
+MONGODB_URI=mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongo:27017/treelab?authSource=admin
+
+# ── Security & Encryption Keys ─────────────────────────────────────────────────
+ENCRYPTION_KEY=ThisIsASecretKeyForEncryption123   # 32-char AES-256-GCM key — generate with: openssl rand -base64 24
+JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_chars  # JWT signing key (min. 32 chars)
+
+# ── Authentication ─────────────────────────────────────────────────────────────
+REQUIRE_AUTHENTICATION=true  # Set to false to disable login and run in single-user mode
+USERID=test                  # Fallback user ID when REQUIRE_AUTHENTICATION=false
+SECURE_COOKIE=true           # Set to false to allow auth over plain HTTP (no TLS)
+
+# ── Session Duration ───────────────────────────────────────────────────────────
+SESSION_EXPIRY_HOURS=12          # Session lifetime in hours for standard logins
+SESSION_REMEMBER_ME_DAYS=30      # Session lifetime in days when "Remember Me" is checked
+
+# ── REST API ───────────────────────────────────────────────────────────────────
+ENABLE_API=false                    # Set to true to enable /api/v1 REST endpoints and PAT management UI
+API_RATE_LIMIT_REQUESTS=120         # Max requests per user per time window
+API_RATE_LIMIT_WINDOW_SECONDS=60    # Rate-limit reset window in seconds
 ```
-# The connection string for your MongoDB database.
-MONGODB_URI="mongodb://..."
 
-# A 32-character secret key used for encrypting sensitive data in the database.
-# You can generate one using an online tool or command line (e.g., openssl rand -base64 24).
-ENCRYPTION_KEY="your_32_character_secret_encryption_key"
+#### Key variables explained
 
-# A 32-character secret key used for signing authentication sessions
-JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_chars
-```
-
-### Application Config (`config.json`)
-
-This file controls the application's runtime behavior.
-
-```json
-{
-  "REQUIRE_AUTHENTICATION": true,
-  "USERID": "test"
-}
-```
-
--   `REQUIRE_AUTHENTICATION`:
-    -   Set to `true` to enable multi-user mode with login/registration. This is the standard mode for production.
-    -   Set to `false` to run the app in a single-user "demo" mode. All data will be associated with the `USERID` specified below.
--   `USERID`:
-    -   Only used when `REQUIRE_AUTHENTICATION` is `false`. This string will be the user ID for all data created in demo mode.
+| Variable | Description |
+|---|---|
+| `MONGODB_USER` / `MONGODB_PASSWORD` | Credentials shared between the app and the MongoDB container's first-init setup. |
+| `MONGODB_URI` | Full connection string. Uses the variables above when running with the provided compose file. |
+| `ENCRYPTION_KEY` | 32-character key for AES-256-GCM encryption of sensitive data at rest. |
+| `JWT_SECRET_KEY` | Secret used to sign and verify user session tokens (min. 32 characters). |
+| `REQUIRE_AUTHENTICATION` | `true` enables multi-user login/registration (recommended for production). `false` runs the app in single-user demo mode using the `USERID` below. |
+| `USERID` | Active user ID when `REQUIRE_AUTHENTICATION=false`. |
+| `SECURE_COOKIE` | Set to `false` only if accessing the app over plain HTTP without TLS. |
+| `ENABLE_API` | Set to `true` to expose the `/api/v1` REST API and Personal Access Token (PAT) management UI. |
