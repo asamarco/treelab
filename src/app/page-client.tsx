@@ -594,8 +594,21 @@ export function TreePage() {
     if (!isTwoPanelMode || deferredSelectedNodeIds.length === 0) return [];
 
     const nodes = deferredSelectedNodeIds
-      .map(id => findNodeAndParent(id.split('_')[0])?.node)
-      .filter((n): n is TreeNode => !!n);
+      .map(instanceId => {
+        const parts = instanceId.split('_');
+        const nodeId = parts[0];
+        const contextualParentId = parts.slice(1).join('_') || null;
+        const nodeInfo = findNodeAndParent(nodeId);
+        if (!nodeInfo) return null;
+        const parent = contextualParentId && contextualParentId !== 'root'
+          ? findNodeAndParent(contextualParentId)?.node ?? nodeInfo.parent
+          : nodeInfo.parent;
+        return {
+          node: nodeInfo.node,
+          contextualParentId: parent ? parent.id : null,
+        };
+      })
+      .filter((item): item is { node: TreeNode; contextualParentId: string | null } => !!item);
 
     return nodes;
   }, [isTwoPanelMode, deferredSelectedNodeIds, findNodeAndParent]);
@@ -613,7 +626,9 @@ export function TreePage() {
           }
         }
       };
-      traverse(nodesForDetails, null, 0);
+      nodesForDetails.forEach(item => {
+        traverse([item.node], item.contextualParentId, 0);
+      });
       setDetailsExpandedNodeIds(Array.from(allIds));
     }
   }, [isTwoPanelMode, nodesForDetails, currentUser?.twoPanelExpansionDepth]);

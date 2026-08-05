@@ -33,8 +33,13 @@ import { getContextualOrder } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
 import { isAnySpreadsheetFocused } from "@/lib/spreadsheet-focus-state";
 
+interface TreeViewItem {
+  node: TreeNode;
+  contextualParentId?: string | null;
+}
+
 interface TreeViewProps {
-  nodes: TreeNode[];
+  nodes: (TreeNode | TreeViewItem)[];
   overrideExpandedIds?: string[];
   onExpandedChange?: (updater: SetStateAction<string[]>) => void;
   isCompactOverride?: boolean;
@@ -45,6 +50,15 @@ interface TreeViewProps {
 }
 
 export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false, onNodeClick }: TreeViewProps) {
+  const normalizedItems = useMemo<TreeViewItem[]>(() => {
+    return nodes.map(item => {
+      if (item && typeof item === 'object' && 'node' in item) {
+        return item as TreeViewItem;
+      }
+      return { node: item as TreeNode, contextualParentId: null };
+    });
+  }, [nodes]);
+  const rootNodes = useMemo(() => normalizedItems.map(i => i.node), [normalizedItems]);
   const dndContextId = useId();
   const { currentUser } = useAuthContext();
   const {
@@ -194,19 +208,20 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     const result: { instanceId: string; node: TreeNode }[] = [];
     const expandedIdSet = new Set(expandedNodeIds);
 
-    const traverse = (nodesToTraverse: TreeNode[], parentId: string | null) => {
-      for (const node of nodesToTraverse) {
-        const instanceId = `${node.id}_${parentId || 'root'}`;
-        result.push({ instanceId, node });
+    const traverse = (itemsToTraverse: TreeViewItem[], defaultParentId: string | null) => {
+      for (const item of itemsToTraverse) {
+        const parentId = item.contextualParentId !== undefined ? item.contextualParentId : defaultParentId;
+        const instanceId = `${item.node.id}_${parentId || 'root'}`;
+        result.push({ instanceId, node: item.node });
 
-        if (expandedIdSet.has(instanceId) && node.children) {
-          traverse(node.children, node.id);
+        if (expandedIdSet.has(instanceId) && item.node.children) {
+          traverse(item.node.children.map(child => ({ node: child, contextualParentId: item.node.id })), item.node.id);
         }
       }
     };
-    traverse(nodes, null);
+    traverse(normalizedItems, null);
     return result;
-  }, [nodes, expandedNodeIds]);
+  }, [normalizedItems, expandedNodeIds]);
 
   const handleSelect = (instanceId: string, isShiftClick: boolean, isCtrlClick: boolean, isLongPress: boolean = false) => {
     if (readOnly || disableSelection) return;
@@ -329,7 +344,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
       event.preventDefault();
       const targetIds = selectedNodeIds.length > 0 
         ? selectedNodeIds.map(id => id.split('_')[0]) 
-        : (nodes.length > 0 ? [nodes[0].id] : []);
+        : (rootNodes.length > 0 ? [rootNodes[0].id] : []);
       
       if (targetIds.length > 0) {
         setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: targetIds });
@@ -522,14 +537,14 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
     >
       <div id="tree-view-container" className="pr-1 pb-1">
         {!readOnly && !disableSelection && <TreeNodeDropZone id="gap_start_root" />}
-        {nodes.map((node, index) => (
-          <div key={`${node.id}-root-wrapper`}>
+        {normalizedItems.map((item, index) => (
+          <div key={`${item.node.id}-${item.contextualParentId || 'root'}-wrapper`}>
             <TreeNodeComponent
-              node={node}
+              node={item.node}
               level={0}
-              siblings={nodes}
+              siblings={rootNodes}
               onSelect={handleSelect as any}
-              contextualParentId={null}
+              contextualParentId={item.contextualParentId ?? null}
               overrideExpandedIds={expandedNodeIds}
               onExpandedChange={setExpandedNodeIds as any}
               isCompactOverride={isCompactOverride}
@@ -538,7 +553,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
               disableSelection={disableSelection}
               onNodeClick={onNodeClick}
             />
-            {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${node.id}_root`} />}
+            {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${item.node.id}_${item.contextualParentId || 'root'}`} />}
           </div>
         ))}
         {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_end_root`} className="h-4" />}
