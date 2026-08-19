@@ -234,6 +234,24 @@ export function TreeNodeHeader({
   const handlePasteAsClone = (as: 'child' | 'sibling') => {
     if (!clipboard.nodes || clipboard.operation === 'cut') return;
 
+    // Determine the destination parent id for this operation
+    const destinationParentId = as === 'child'
+      ? node.id
+      : (contextualParentId ?? 'root');
+
+    // Forbid cloning under the same parent the node already belongs to
+    const conflictingNode = clipboard.nodes.find(n =>
+      (n.parentIds || []).includes(destinationParentId)
+    );
+
+    if (conflictingNode) {
+      toast({
+        title: 'Cannot paste as clone here',
+        description: `"${conflictingNode.name}" is already a ${as === 'child' ? 'child of this node' : 'sibling of this node'}. Cloning under the same parent is not allowed.`,
+      });
+      return;
+    }
+
     const nodeIdsToClone = clipboard.nodes.map(n => n.id);
     pasteNodesAsClones(node.id, as, nodeIdsToClone, contextualParentId).then(() => {
       toast({ title: `Cloned ${clipboard.nodes?.length} node(s)`, description: `Pasted as clones.` });
