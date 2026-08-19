@@ -371,42 +371,42 @@ export function TreeSelectionBar() {
                     <div className="flex-grow border-t sm:border-t-0 sm:border-l w-full sm:w-auto pt-2 sm:pt-0 sm:pl-2 flex items-center justify-center sm:justify-start gap-1">
                         <TooltipProvider>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePreviewSelection}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Preview Selection" onClick={handlePreviewSelection}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
                                 <TooltipContent><p>Preview Selection (v)</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDialogState({ isChangeTemplateMultipleOpen: true })}><RefreshCcw className="h-4 w-4" /></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Change Template" onClick={() => setDialogState({ isChangeTemplateMultipleOpen: true })}><RefreshCcw className="h-4 w-4" /></Button></TooltipTrigger>
                                 <TooltipContent><p>Change Template (t)</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEditSelection} disabled={!areAllSameTemplate}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit Selection" onClick={handleEditSelection} disabled={!areAllSameTemplate}>
                                         <Pencil className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent><p>Edit Selection</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopySelection}><Copy className="h-4 w-4" /></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Copy" onClick={handleCopySelection}><Copy className="h-4 w-4" /></Button></TooltipTrigger>
                                 <TooltipContent><p>Copy (Ctrl+C)</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCutSelection}><Scissors className="h-4 w-4" /></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Cut" onClick={handleCutSelection}><Scissors className="h-4 w-4" /></Button></TooltipTrigger>
                                 <TooltipContent><p>Cut (Ctrl+X)</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleExpandAllSelection}><ChevronsUpDown className="h-4 w-4" /></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Expand All" onClick={handleExpandAllSelection}><ChevronsUpDown className="h-4 w-4" /></Button></TooltipTrigger>
                                 <TooltipContent><p>Expand All</p></TooltipContent>
                             </Tooltip>
                             <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCollapseAllSelection}><ChevronsDownUp className="h-4 w-4" /></Button></TooltipTrigger>
+                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Collapse All" onClick={handleCollapseAllSelection}><ChevronsDownUp className="h-4 w-4" /></Button></TooltipTrigger>
                                 <TooltipContent><p>Collapse All</p></TooltipContent>
                             </Tooltip>
                             <DropdownMenu>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8"><Download className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Export Selection"><Download className="h-4 w-4" /></Button>
                                         </DropdownMenuTrigger>
                                     </TooltipTrigger>
                                     <TooltipContent><p>Export Selection</p></TooltipContent>
@@ -422,6 +422,7 @@ export function TreeSelectionBar() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-destructive hover:text-destructive"
+                                aria-label="Delete Nodes"
                                 onClick={() => setDialogState({ isDeleteNodesConfirmOpen: true })}
                             >
                                 <Trash2 className="h-4 w-4" />
@@ -430,7 +431,7 @@ export function TreeSelectionBar() {
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedNodeIds([])}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Clear selection" onClick={() => setSelectedNodeIds([])}>
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </TooltipTrigger>

@@ -522,39 +522,39 @@ export function TreeNodeHeader({
                 <div className="flex items-center opacity-0 group-hover/treenode:opacity-100 transition-opacity read-only-control mt-0.5">
                   <TooltipProvider>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [node.id] }); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="View in Explorer" onClick={(e) => { e.stopPropagation(); setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [node.id] }); }}>
                         <Eye className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>View in Explorer (v)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Edit Node" onClick={(e) => { e.stopPropagation(); onOpenModal('edit'); }}>
                         <Edit className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>Edit Node (e)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); if (isExpanded) { handleCollapseAll(); } else { handleExpandAll(); } }} disabled={!node.children || node.children.length === 0}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={isExpanded ? 'Collapse All' : 'Expand All'} onClick={(e) => { e.stopPropagation(); if (isExpanded) { handleCollapseAll(); } else { handleExpandAll(); } }} disabled={!node.children || node.children.length === 0}>
                         <ChevronsUpDown className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>{isExpanded ? 'Collapse All (Ctrl+Left)' : 'Expand All (Ctrl+Right)'}</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Move Up" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'up', contextualParentId); }} disabled={contextualOrder === minOrder}>
                         <ArrowUp className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>Move Up (i)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Move Down" onClick={(e) => { e.stopPropagation(); moveNodeOrder(node.id, 'down', contextualParentId); }} disabled={contextualOrder === maxOrder}>
                         <ArrowDown className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>Move Down (k)</p></TooltipContent></Tooltip>
                     <div className="w-2"></div>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Add Child" onClick={(e) => { e.stopPropagation(); onOpenModal('addChild'); }}>
                         <CornerDownRight className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>Add Child (Enter)</p></TooltipContent></Tooltip>
                     <Tooltip><TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Add Sibling" onClick={(e) => { e.stopPropagation(); onOpenModal('addSibling'); }}>
                         <Plus className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger><TooltipContent><p>Add Sibling (+)</p></TooltipContent></Tooltip>
