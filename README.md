@@ -96,7 +96,7 @@ MONGODB_PASSWORD=secret     # MongoDB password (used by both the app and the mon
 MONGODB_URI=mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongo:27017/treelab?authSource=admin
 
 # ── Security & Encryption Keys ─────────────────────────────────────────────────
-ENCRYPTION_KEY=ThisIsASecretKeyForEncryption123   # 32-char AES-256-GCM key — generate with: openssl rand -base64 24
+DB_ENCRYPTION_KEY=ThisIsASecretKeyForEncryption123   # 32-char AES-256-GCM key — generate with: openssl rand -base64 24
 JWT_SECRET_KEY=your_super_secret_jwt_key_at_least_32_chars  # JWT signing key (min. 32 chars)
 
 # ── Authentication ─────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ API_RATE_LIMIT_WINDOW_SECONDS=60    # Rate-limit reset window in seconds
 |---|---|
 | `MONGODB_USER` / `MONGODB_PASSWORD` | Credentials shared between the app and the MongoDB container's first-init setup. |
 | `MONGODB_URI` | Full connection string. Uses the variables above when running with the provided compose file. |
-| `ENCRYPTION_KEY` | 32-character key for AES-256-GCM encryption of sensitive data at rest. |
+| `DB_ENCRYPTION_KEY` | 32-character key for AES-256-GCM encryption of sensitive data at rest. |
 | `JWT_SECRET_KEY` | Secret used to sign and verify user session tokens (min. 32 characters). |
 | `REQUIRE_AUTHENTICATION` | `true` enables multi-user login/registration (recommended for production). `false` runs the app in single-user demo mode using the `USERID` below. |
 | `USERID` | Active user ID when `REQUIRE_AUTHENTICATION=false`. |
