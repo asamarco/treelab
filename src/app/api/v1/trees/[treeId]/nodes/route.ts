@@ -1,14 +1,11 @@
-/**
- * @fileoverview
- * GET  /api/v1/trees/[treeId]/nodes        — list nodes (?format=flat|tree)
- * POST /api/v1/trees/[treeId]/nodes        — create a node
- */
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest, withRateLimitHeaders, sanitizeErrorMessage, errorStatus } from '@/lib/api-auth';
 import { loadTreeNodes, createNode } from '@/lib/data-service';
 import { CreateNodeBodySchema, FormatQuerySchema } from '@/lib/api-schemas';
 import { TreeNode } from '@/lib/types';
 import { generateClientSideId } from '@/lib/utils';
+import { connectToDatabase } from '@/lib/mongodb';
+import { TreeNodeModel } from '@/lib/models';
 
 type Ctx = { params: Promise<{ treeId: string }> };
 
@@ -24,6 +21,29 @@ function flattenNodes(nodes: TreeNode[]): Omit<TreeNode, 'children'>[] {
   };
   traverse(nodes);
   return result;
+}
+
+/**
+ * Returns the next available order value for a new node under the given parent.
+ * Queries existing siblings and returns max(contextualOrder) + 1, or 0 if none exist.
+ */
+async function computeNextOrder(treeId: string, parentId: string): Promise<number> {
+  await connectToDatabase();
+  const siblings = await TreeNodeModel
+    .find({ treeId, parentIds: parentId })
+    .select('parentIds order')
+    .lean<{ parentIds: string[]; order: number[] }[]>();
+
+  if (siblings.length === 0) return 0;
+
+  let max = -1;
+  for (const s of siblings) {
+    const idx = s.parentIds.indexOf(parentId);
+    if (idx !== -1 && s.order[idx] !== undefined) {
+      max = Math.max(max, s.order[idx]);
+    }
+  }
+  return max + 1;
 }
 
 export async function GET(request: NextRequest, { params }: Ctx) {
@@ -62,13 +82,19 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     const { treeId } = await params;
     const { name, templateId, id, data, parentIds, order, isStarred } = parsed.data;
 
+    // If the caller did not provide an order, compute one server-side so nodes
+    // don't all land on position 0. We resolve the order for the first (primary)
+    // parent; callers who need multi-parent precision should supply order explicitly.
+    const primaryParent = (parentIds ?? ['root'])[0];
+    const resolvedOrder = order ?? [await computeNextOrder(String(treeId), primaryParent)];
+
     const nodeData: Omit<TreeNode, 'id' | 'children'> & { id?: string } = {
       id: id ?? generateClientSideId(),
       name,
       templateId,
       data: data ?? {},
       parentIds: parentIds ?? ['root'],
-      order: order ?? [0],
+      order: resolvedOrder,
       treeId: String(treeId),
       userId: auth.userId,
       isStarred: isStarred ?? false,

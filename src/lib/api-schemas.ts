@@ -243,7 +243,12 @@ export const CreateNodeBodySchema = z.object({
   id: z.string().max(100).optional().openapi({ description: 'Client-generated ID. One is auto-generated if omitted.' }),
   data: safeRecord().default({}).openapi({ description: 'Field values keyed by field ID.' }),
   parentIds: z.array(z.string()).max(20).default(['root']).openapi({ example: ['root'], description: 'Use `["root"]` for top-level nodes.' }),
-  order: z.array(z.number()).max(20).default([0]),
+  order: z.array(z.number()).max(20).optional().openapi({
+    description: 'Position index per parent. `order[i]` is the zero-based rank of this node under `parentIds[i]`. ' +
+      'If omitted the server appends the node after the last existing sibling (safe default for sequential imports). ' +
+      'Pass an explicit value only when you need precise placement.',
+    example: [2],
+  }),
   isStarred: z.boolean().default(false),
 }).strict();
 
