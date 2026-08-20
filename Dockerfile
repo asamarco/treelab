@@ -1,5 +1,5 @@
 # 1. Builder
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # 2. Runner (distroless, minimal)
-FROM gcr.io/distroless/nodejs20-debian12 AS runner
+FROM gcr.io/distroless/nodejs24-debian13 AS runner
 
 WORKDIR /app
 
