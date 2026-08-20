@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   if (!isApiEnabled()) {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
-  const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
-  const doc = generateOpenApiDocument(baseUrl);
+  //const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`; //Issues with reverse proxy
+  const doc = generateOpenApiDocument(''); // relative: resolves against whatever origin loaded the page
   return NextResponse.json(doc, {
     headers: {
       // Allow Swagger UI / ReDoc on other origins to fetch this
