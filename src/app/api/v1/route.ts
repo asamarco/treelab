@@ -19,7 +19,7 @@ export async function GET() {
       header: 'Authorization: Bearer <token>',
       manage: '/settings  →  Personal Access Tokens',
     },
-    rateLimiting: '120 requests / 60 seconds per user',
+    rateLimiting: '120 requests / 60 seconds (default; may be configurable)',
     documentation: {
       swaggerUi: '/api/v1/docs',
       redoc: '/api/v1/redoc',

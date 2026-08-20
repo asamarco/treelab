@@ -551,7 +551,7 @@ Authorization: Bearer tlab_your_token_here
 
 ## Rate Limiting
 
-**120 requests per 60 seconds** per authenticated user. Responses include:
+**120 requests per 60 seconds (default; may be configurable)** per authenticated user. Responses include:
 - \`X-RateLimit-Remaining\` — requests left in the current window
 - \`X-RateLimit-Reset\` — Unix timestamp when the window resets
 - \`Retry-After\` — seconds to wait (on 429 responses only)

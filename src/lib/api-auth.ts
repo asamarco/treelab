@@ -8,7 +8,7 @@
  *
  * Rate limiting:
  * A simple in-process token bucket is applied per authenticated userId.
- * Limit: 120 requests / 60 seconds.
+ * Limit: 120 requests / 60 seconds (default; may be configurable).
  * This guards against accidental infinite loops in scripts — not exploit mitigation.
  * For multi-instance deployments, replace with a Redis-backed solution.
  */
