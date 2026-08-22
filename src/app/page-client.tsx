@@ -510,16 +510,20 @@ export function TreePage() {
   // Restore explorer view to active tree's last drilled-down node when switching trees or loading.
   useEffect(() => {
     if (!isExplorerMode) {
-      // Option 1: If switching trees while explorer mode is off, clear drilled-down state
+      // Explorer mode is off — clear the local drilled-down state so the UI is clean.
+      // Do NOT touch lastDrilledNodeId in the DB: we want to remember where the user was
+      // so that re-enabling explorer mode returns them to the same node.
       setExplorerNodeId(null);
-      if (activeTree?.lastDrilledNodeId) {
-        setLastDrilledNodeId(null);
-      }
       return;
     }
 
+    // Guard: wait until tree data is actually loaded. Without this, findNodeAndParent
+    // always returns null on a fresh page load (tree is []) and we'd incorrectly
+    // wipe the persisted lastDrilledNodeId from the DB via the fallback branch.
+    if (!tree || tree.length === 0) return;
+
     if (activeTree?.lastDrilledNodeId) {
-      const nodeInfo = findNodeAndParent(activeTree.lastDrilledNodeId, tree || []);
+      const nodeInfo = findNodeAndParent(activeTree.lastDrilledNodeId, tree);
       if (nodeInfo) {
         setExplorerNodeId(activeTree.lastDrilledNodeId);
         if (isTwoPanelMode) {
@@ -527,30 +531,22 @@ export function TreePage() {
           setSelectedNodeIds([`${activeTree.lastDrilledNodeId}_${parentId}`]);
         }
       } else {
-        // Fallback if node no longer exists
-        updateExplorerNodeId(null);
+        // Node no longer exists in the tree — clear local state only.
+        // Do NOT call updateExplorerNodeId here as that would also write null to the DB.
+        setExplorerNodeId(null);
       }
     } else {
       setExplorerNodeId(null);
     }
-  }, [activeTree?.id, activeTree?.lastDrilledNodeId, tree, findNodeAndParent, isExplorerMode, isTwoPanelMode, setSelectedNodeIds, setLastDrilledNodeId, updateExplorerNodeId]);
+  }, [activeTree?.id, activeTree?.lastDrilledNodeId, tree, findNodeAndParent, isExplorerMode, isTwoPanelMode, setSelectedNodeIds]);
 
-  // Option 2: Whenever explorer mode is turned off, clear the drilled-down state so next activation starts fresh at root.
-  useEffect(() => {
-    if (!isExplorerMode) {
-      setExplorerNodeId(null);
-      if (lastDrilledNodeId) {
-        setLastDrilledNodeId(null);
-      }
-    }
-  }, [isExplorerMode, lastDrilledNodeId, setLastDrilledNodeId]);
-
-  // Seed the explorer expansion state from the global tree whenever explorer mode is enabled.
+  // Seed the explorer expansion state from the global tree whenever explorer mode is enabled
+  // or when the active tree changes (e.g. on page reload while already in explorer mode).
   useEffect(() => {
     if (isExplorerMode) {
       setExplorerExpandedNodeIds(globalExpandedNodeIds);
     }
-  }, [isExplorerMode]);
+  }, [isExplorerMode, activeTree?.id]);
 
   // When drilling into a node, also ensure that node is marked as expanded.
   useEffect(() => {

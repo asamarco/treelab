@@ -189,9 +189,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         setAllTrees((draft: WritableDraft<TreeFile[]>) => {
           const index = draft.findIndex((t: TreeFile) => t.id === idToLoad);
           if (index > -1) {
-            // Preserve expanded state while updating everything else
+            // Preserve view state while updating everything else.
+            // Use the in-memory values as they are always at least as fresh as the DB
+            // (saves are async and may not have completed before this reload was triggered).
             const oldExpanded = draft[index].expandedNodeIds;
-            draft[index] = { ...reloadedTree, expandedNodeIds: oldExpanded };
+            const oldLastDrilled = draft[index].lastDrilledNodeId;
+            draft[index] = {
+              ...reloadedTree,
+              expandedNodeIds: oldExpanded,
+              lastDrilledNodeId: oldLastDrilled ?? reloadedTree.lastDrilledNodeId,
+            };
           }
         });
         toast({ title: "Tree Reloaded", description: "The latest version of the tree has been loaded." });
