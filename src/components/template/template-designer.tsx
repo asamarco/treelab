@@ -92,7 +92,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { TemplateNameInput } from "./template-name-input";
 import { TemplateTextarea } from "./template-textarea";
-import { cn } from "@/lib/utils";
+import { cn, generateClientSideId } from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import {
   AlertDialog,
@@ -957,7 +957,7 @@ export function TemplateDesigner({
                   className="mt-4"
                   onClick={() =>
                     append({
-                      id: new Date().toISOString() + Math.random(),
+                      id: generateClientSideId(),
                       name: "",
                       type: "text",
                     })
@@ -1079,7 +1079,7 @@ export function TemplateDesigner({
                   </SortableContext>
                 </DndContext>
                 <Button type="button" variant="outline" className="mt-4" onClick={() => appendRule({
-                  id: new Date().toISOString() + Math.random(),
+                  id: generateClientSideId(),
                   fieldId: '',
                   operator: 'equals',
                   value: '',

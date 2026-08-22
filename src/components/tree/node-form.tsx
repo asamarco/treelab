@@ -681,7 +681,7 @@ export const NodeForm = ({
 
 
     const newNode: TreeNode = {
-      id: node?.id || new Date().toISOString(),
+      id: node?.id || generateClientSideId(),
       name: finalName,
       templateId: template.id,
       data: finalFormData || {},

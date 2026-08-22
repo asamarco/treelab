@@ -167,7 +167,7 @@ function TemplatesPage() {
   const selectedTemplate = useMemo(() => {
     if (!selectedTemplateId) return null;
     if (selectedTemplateId.startsWith('new_')) {
-      const newFieldId = new Date().toISOString() + Math.random();
+      const newFieldId = generateClientSideId();
       return {
         id: selectedTemplateId,
         name: "",
