@@ -1,11 +1,11 @@
 {
-  "id": "uet3xb",
+  "id": "folder",
   "name": "Folder",
   "icon": "Folder",
   "color": "#fbd539",
   "fields": [
     {
-      "id": "cbx5ubp",
+      "id": "name",
       "name": "Name",
       "type": "text",
       "options": []

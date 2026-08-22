@@ -1,5 +1,5 @@
 {
-  "id": "2025-08-18T14:27:09.205Z2nqu2su",
+  "id": "note",
   "name": "Note",
   "icon": "NotebookPen",
   "color": "#2FBF9A",
@@ -7,19 +7,19 @@
   "bodyTemplate": "{Long text}",
   "fields": [
     {
-      "id": "2025-08-18T14:27:09.205Zk07y9yo",
+      "id": "name",
       "name": "Note",
       "type": "text",
       "options": []
     },
     {
-      "id": "2025-08-18T14:27:09.205Zvjv2ggy",
+      "id": "content",
       "name": "Long text",
       "type": "textarea",
       "options": []
     },
     {
-      "id": "2025-08-18T14:27:09.205Z0qxilez",
+      "id": "type",
       "name": "Type",
       "type": "dropdown",
       "options": [
@@ -31,18 +31,18 @@
       ]
     },
     {
-      "id": "2026-02-03T19:29:10.689Z0.5972357575257925",
+      "id": "tasks",
       "name": "Tasks",
       "type": "checklist"
     },
     {
-      "id": "2025-08-18T14:27:09.205Zfhhl510",
+      "id": "gallery",
       "name": "Gallery",
       "type": "picture",
       "options": []
     },
     {
-      "id": "2025-08-18T14:27:09.205Znjun80s",
+      "id": "attachments",
       "name": "Attachments",
       "type": "attachment",
       "options": []
@@ -50,40 +50,40 @@
   ],
   "conditionalRules": [
     {
-      "id": "2025-08-18T14:27:09.205Zxr25bub",
-      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+      "id": "note_warning",
+      "fieldId": "type",
       "operator": "equals",
       "value": "Warning",
       "icon": "TriangleAlert",
       "color": "#DF6320"
     },
     {
-      "id": "2025-08-18T14:27:09.205Zsdw4ihh",
-      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+      "id": "note_failure",
+      "fieldId": "type",
       "operator": "equals",
       "value": "Failure",
       "icon": "X",
       "color": "#BA1C2E"
     },
     {
-      "id": "2025-08-18T14:27:09.205Zn6dfbdl",
-      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+      "id": "note_success",
+      "fieldId": "type",
       "operator": "equals",
       "value": "Success",
       "icon": "Check",
       "color": "#2EBA1C"
     },
     {
-      "id": "2025-08-18T14:27:09.205Zn5g9qx5",
-      "fieldId": "2025-08-18T14:27:09.205Zfhhl510",
+      "id": "note_gallery_not_empty",
+      "fieldId": "gallery",
       "operator": "is_not_empty",
       "value": "",
       "icon": "Image",
       "color": "#FFD24A"
     },
     {
-      "id": "2025-11-26T15:18:25.784Z0.47156801310435925",
-      "fieldId": "2025-08-18T14:27:09.205Z0qxilez",
+      "id": "note_info",
+      "fieldId": "type",
       "operator": "equals",
       "value": "Info",
       "icon": "Info",
