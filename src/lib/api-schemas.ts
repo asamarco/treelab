@@ -316,6 +316,11 @@ registry.registerPath({
   summary: 'List all accessible trees',
   description: 'Returns all trees owned by or shared with the caller. Node data is excluded; use the `/nodes` sub-resource.',
   security: sec,
+  request: {
+    query: z.object({
+      name: z.string().optional().openapi({ description: 'Case-insensitive substring filter on tree title.' }),
+    }),
+  },
   responses: {
     200: { description: 'OK', content: { 'application/json': { schema: z.object({ trees: z.array(TreeSummarySchema), count: z.number() }) } } },
     401: { description: 'Unauthorized', content: { 'application/json': { schema: ErrorResponseSchema } } },
@@ -382,7 +387,12 @@ registry.registerPath({
   method: 'get', path: '/api/v1/trees/{treeId}/templates', tags: ['Templates'],
   summary: 'List all templates in a tree',
   security: sec,
-  request: { params: z.object({ treeId: z.string().openapi({ example: '507f1f77bcf86cd799439011' }) }) },
+  request: {
+    params: z.object({ treeId: z.string().openapi({ example: '507f1f77bcf86cd799439011' }) }),
+    query: z.object({
+      name: z.string().optional().openapi({ description: 'Case-insensitive substring filter on template name.' }),
+    }),
+  },
   responses: {
     200: { description: 'OK', content: { 'application/json': { schema: z.object({ templates: z.array(TemplateSchema), count: z.number() }) } } },
     401: { description: 'Unauthorized', content: { 'application/json': { schema: ErrorResponseSchema } } },
@@ -405,6 +415,19 @@ registry.registerPath({
     400: { description: 'Validation error', content: { 'application/json': { schema: ErrorResponseSchema } } },
     401: { description: 'Unauthorized', content: { 'application/json': { schema: ErrorResponseSchema } } },
     403: { description: 'Forbidden — requires editTemplates permission', content: { 'application/json': { schema: ErrorResponseSchema } } },
+  },
+});
+
+registry.registerPath({
+  method: 'get', path: '/api/v1/trees/{treeId}/templates/{templateId}', tags: ['Templates'],
+  summary: 'Get a single template',
+  security: sec,
+  request: { params: z.object({ treeId: z.string().openapi({ example: '507f1f77bcf86cd799439011' }), templateId: z.string().openapi({ example: 'tmpl_abc123' }) }) },
+  responses: {
+    200: { description: 'OK', content: { 'application/json': { schema: z.object({ template: TemplateSchema }) } } },
+    401: { description: 'Unauthorized', content: { 'application/json': { schema: ErrorResponseSchema } } },
+    403: { description: 'Forbidden', content: { 'application/json': { schema: ErrorResponseSchema } } },
+    404: { description: 'Tree or template not found', content: { 'application/json': { schema: ErrorResponseSchema } } },
   },
 });
 
@@ -443,14 +466,17 @@ registry.registerPath({
 registry.registerPath({
   method: 'get', path: '/api/v1/trees/{treeId}/nodes', tags: ['Nodes'],
   summary: 'List all nodes in a tree',
-  description: 'Returns nodes in flat (default) or hierarchical format.',
+  description: 'Returns nodes in flat (default) or hierarchical format. When `name` is supplied the response is always flat.',
   security: sec,
   request: {
     params: z.object({ treeId: z.string().openapi({ example: '507f1f77bcf86cd799439011' }) }),
     query: z.object({
       format: z.enum(['flat', 'tree']).default('flat').openapi({
-        description: '`flat` — array matching the `tree.json` export format. `tree` — nested children arrays.',
+        description: '`flat` — array matching the `tree.json` export format. `tree` — nested children arrays. Ignored when any filter is set.',
       }),
+      name: z.string().optional().openapi({ description: 'Case-insensitive substring filter on node name.' }),
+      templateId: z.string().optional().openapi({ description: 'Exact match on `templateId`. Returns only nodes belonging to this template.' }),
+      templateName: z.string().optional().openapi({ description: 'Case-insensitive substring match on the template name. Resolved server-side to matching template IDs.' }),
     }),
   },
   responses: {

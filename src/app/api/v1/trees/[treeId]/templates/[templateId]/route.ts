@@ -1,5 +1,6 @@
 /**
  * @fileoverview
+ * GET    /api/v1/trees/[treeId]/templates/[templateId]  — get a single template
  * PUT    /api/v1/trees/[treeId]/templates/[templateId]  — replace a template
  * DELETE /api/v1/trees/[treeId]/templates/[templateId]  — remove a template
  */
@@ -10,6 +11,25 @@ import { CreateTemplateBodySchema } from '@/lib/api-schemas';
 import { Template } from '@/lib/types';
 
 type Ctx = { params: Promise<{ treeId: string; templateId: string }> };
+
+export async function GET(request: NextRequest, { params }: Ctx) {
+  const auth = await authenticateRequest(request);
+  if (auth instanceof NextResponse) return auth;
+
+  try {
+    const { treeId, templateId } = await params;
+    const tree = await loadTreeFile(String(treeId));
+    if (!tree) return NextResponse.json({ error: 'Tree not found.' }, { status: 404 });
+
+    const template = tree.templates.find((t) => t.id === String(templateId));
+    if (!template) return NextResponse.json({ error: 'Template not found.' }, { status: 404 });
+
+    return withRateLimitHeaders(NextResponse.json({ template }), auth.userId);
+  } catch (error: any) {
+    const msg = sanitizeErrorMessage(error);
+    return NextResponse.json({ error: msg }, { status: errorStatus(msg) });
+  }
+}
 
 export async function PUT(request: NextRequest, { params }: Ctx) {
   const auth = await authenticateRequest(request);

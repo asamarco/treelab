@@ -18,11 +18,16 @@ export async function GET(request: NextRequest, { params }: Ctx) {
 
   try {
     const { treeId } = await params;
+    const nameFilter = request.nextUrl.searchParams.get('name')?.toLowerCase() ?? '';
     const tree = await loadTreeFile(String(treeId));
     if (!tree) return NextResponse.json({ error: 'Tree not found.' }, { status: 404 });
 
+    const templates = nameFilter
+      ? tree.templates.filter((t) => t.name?.toLowerCase().includes(nameFilter))
+      : tree.templates;
+
     return withRateLimitHeaders(
-      NextResponse.json({ templates: tree.templates, count: tree.templates.length }),
+      NextResponse.json({ templates, count: templates.length }),
       auth.userId,
     );
   } catch (error: any) {

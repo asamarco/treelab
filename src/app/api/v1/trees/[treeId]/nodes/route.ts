@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest, withRateLimitHeaders, sanitizeErrorMessage, errorStatus } from '@/lib/api-auth';
-import { loadTreeNodes, createNode } from '@/lib/data-service';
+import { loadTreeNodes, loadTreeFile, createNode } from '@/lib/data-service';
 import { CreateNodeBodySchema, FormatQuerySchema } from '@/lib/api-schemas';
 import { TreeNode } from '@/lib/types';
 import { generateClientSideId } from '@/lib/utils';
@@ -52,13 +52,48 @@ export async function GET(request: NextRequest, { params }: Ctx) {
 
   try {
     const { treeId } = await params;
-    const format = FormatQuerySchema.safeParse(request.nextUrl.searchParams.get('format') ?? 'flat');
+    const sp = request.nextUrl.searchParams;
+    const nameFilter       = sp.get('name')?.toLowerCase() ?? '';
+    const templateIdFilter = sp.get('templateId') ?? '';
+    const templateName     = sp.get('templateName')?.toLowerCase() ?? '';
+
+    const format = FormatQuerySchema.safeParse(sp.get('format') ?? 'flat');
     if (!format.success) {
       return NextResponse.json({ error: 'Invalid format. Use "flat" or "tree".' }, { status: 400 });
     }
-    const hierarchicalNodes = await loadTreeNodes(String(treeId));
-    const responseNodes = format.data === 'tree' ? hierarchicalNodes : flattenNodes(hierarchicalNodes);
 
+    // Resolve templateName → matching templateIds (requires loading the tree file).
+    let resolvedTemplateIds: Set<string> | null = null;
+    if (templateName) {
+      const tree = await loadTreeFile(String(treeId));
+      if (!tree) return NextResponse.json({ error: 'Tree not found.' }, { status: 404 });
+      resolvedTemplateIds = new Set(
+        tree.templates
+          .filter((t) => t.name?.toLowerCase().includes(templateName))
+          .map((t) => t.id),
+      );
+    }
+
+    const hierarchicalNodes = await loadTreeNodes(String(treeId));
+    const anyFilter = nameFilter || templateIdFilter || resolvedTemplateIds;
+
+    // Any active filter forces flat output — hierarchy is misleading when ancestors
+    // are excluded from the result set.
+    if (anyFilter) {
+      const flat = flattenNodes(hierarchicalNodes);
+      const filtered = flat.filter((n) => {
+        if (nameFilter && !n.name?.toLowerCase().includes(nameFilter)) return false;
+        if (templateIdFilter && n.templateId !== templateIdFilter) return false;
+        if (resolvedTemplateIds && !resolvedTemplateIds.has(n.templateId)) return false;
+        return true;
+      });
+      return withRateLimitHeaders(
+        NextResponse.json({ nodes: filtered, count: filtered.length, format: 'flat' }),
+        auth.userId,
+      );
+    }
+
+    const responseNodes = format.data === 'tree' ? hierarchicalNodes : flattenNodes(hierarchicalNodes);
     return withRateLimitHeaders(
       NextResponse.json({ nodes: responseNodes, count: responseNodes.length, format: format.data }),
       auth.userId,

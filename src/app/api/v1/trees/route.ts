@@ -15,16 +15,19 @@ export async function GET(request: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   try {
+    const nameFilter = request.nextUrl.searchParams.get('name')?.toLowerCase() ?? '';
     const trees = await loadAllTreeFiles();
-    const summary = trees.map((t: TreeFile) => ({
-      id: t.id,
-      title: t.title,
-      isPublic: t.isPublic,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
-      templateCount: t.templates?.length ?? 0,
-      nodeCount: t.tree?.length ?? 0,
-    }));
+    const summary = trees
+      .filter((t: TreeFile) => !nameFilter || t.title?.toLowerCase().includes(nameFilter))
+      .map((t: TreeFile) => ({
+        id: t.id,
+        title: t.title,
+        isPublic: t.isPublic,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+        templateCount: t.templates?.length ?? 0,
+        nodeCount: t.tree?.length ?? 0,
+      }));
     return withRateLimitHeaders(NextResponse.json({ trees: summary, count: summary.length }), auth.userId);
   } catch (error: any) {
     const msg = sanitizeErrorMessage(error);
