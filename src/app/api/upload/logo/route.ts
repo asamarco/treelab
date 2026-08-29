@@ -9,6 +9,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getSession } from '@/lib/session';
 import { fetchAllUsers } from '@/lib/auth-service';
+import { getDataDir } from '@/lib/data-dir';
 
 export async function POST(request: NextRequest) {
     try {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ message: 'Invalid file type. Only SVG is allowed.' }, { status: 400 });
         }
 
-        const dataDir = path.resolve(process.cwd(), process.env.DATA_DIR || 'data');
+        const dataDir = getDataDir();
         const customDir = path.join(dataDir, 'custom');
         
         // Ensure the 'custom' directory exists

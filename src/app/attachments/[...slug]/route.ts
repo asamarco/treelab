@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import { lookup } from 'mime-types';
+import { getDataDir } from '@/lib/data-dir';
 
 export async function GET(request: NextRequest, { params }: any) {
   const { slug } = await params;
@@ -30,9 +31,8 @@ export async function GET(request: NextRequest, { params }: any) {
   const searchParams = request.nextUrl.searchParams;
   const originalFileName = searchParams.get('name') || fileName;
 
-  const attachmentsDir = path.resolve(
-    process.cwd(),
-    process.env.DATA_DIR || 'data',
+  const attachmentsDir = path.join(
+    getDataDir(),
     'users',
     userId,
     'attachments'

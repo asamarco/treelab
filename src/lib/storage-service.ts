@@ -13,6 +13,7 @@ import { decrypt } from './encryption';
 import { TreeFile, TreeNode, Template, AttachmentInfo, StorageInfo, PurgeResult, Team, GlobalSettings } from './types';
 import { getSession } from './session';
 import { fetchAllUsers } from './auth-service';
+import { getDataDir } from './data-dir';
 
 
 async function getAllReferencedFileNames(userId?: string, treeId?: string): Promise<Set<string>> {
@@ -113,7 +114,7 @@ export async function getStorageInfo(treeId?: string, isGlobal: boolean = false)
     const isAdmin = currentUser?.isAdmin || false;
     const userId = session.userId;
 
-    const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+    const DATA_DIR = getDataDir();
     const USERS_DIR = path.join(DATA_DIR, 'users');
     const defaultInfo: StorageInfo = {
         totalSize: 0,
@@ -200,7 +201,7 @@ export async function purgeUnusedFiles(treeId?: string, isGlobal: boolean = fals
     const isAdmin = currentUser?.isAdmin || false;
     const userId = session.userId;
 
-    const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+    const DATA_DIR = getDataDir();
     const USERS_DIR = path.join(DATA_DIR, 'users');
     
     let allFiles: { name: string, size: number, path: string }[] = [];

@@ -20,6 +20,7 @@ import crypto from 'crypto';
 import { generateJsonForExport, generateNodeName, getContextualOrder } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSession } from './session';
+import { getDataDir } from './data-dir';
 
 
 export async function hashPassword(password: string): Promise<string> {
@@ -1065,7 +1066,7 @@ export async function saveAttachment(userId: string, relativePath: string, dataU
     const session = await getSession();
     if (!session?.userId || session.userId !== userId) throw new Error("Authentication required.");
 
-    const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+    const DATA_DIR = getDataDir();
     const USERS_DIR = path.join(DATA_DIR, 'users');
 
     const cleanRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
@@ -1160,7 +1161,7 @@ export async function fetchFileAsBuffer(userId: string, serverPath: string): Pro
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
-    const DATA_DIR = path.join(process.cwd(), process.env.DATA_DIR || 'data');
+    const DATA_DIR = getDataDir();
 
     const pathParts = serverPath.split('/').filter(Boolean); // e.g., ['attachments', 'userId', 'fileName.ext']
     if (pathParts.length < 3 || pathParts[0] !== 'attachments') {

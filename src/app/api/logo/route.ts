@@ -7,10 +7,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { getDataDir } from '@/lib/data-dir';
 
 export async function GET(request: NextRequest) {
     try {
-        const dataDir = path.resolve(process.cwd(), process.env.DATA_DIR || 'data');
+        const dataDir = getDataDir();
         const logoPath = path.join(dataDir, 'custom', 'logo.svg');
 
         const fileBuffer = await fs.readFile(logoPath);
