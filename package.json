@@ -1,6 +1,6 @@
 {
-  "name": "nextn",
-  "version": "0.7.3",
+  "name": "treelab",
+  "version": "0.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbo -p 9002",
@@ -64,7 +64,7 @@
     "react-hook-form": "^7.54.2",
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.1",
-    "sharp": "^0.33.4",
+    "sharp": "^0.35.3",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.1",

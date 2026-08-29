@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
         if (isTiff) {
             try {
-                const pngBuffer = await sharp(buffer, { failOnError: false }).png().toBuffer();
+                const pngBuffer = await sharp(buffer, { failOn: 'none' }).png().toBuffer();
                 finalDataUri = `data:image/png;base64,${pngBuffer.toString('base64')}`;
                 
                 const parsedPath = path.parse(uniqueFileName);
