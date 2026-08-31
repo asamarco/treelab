@@ -99,6 +99,39 @@ async function getTreePermissions(tree: Pick<TreeFile, 'userId' | 'sharedWith' |
     };
 }
 
+async function authorizeTreeAccess(
+    treeId: string,
+    requiredPermission?: 'owner' | 'admin' | 'editNodes' | 'editTemplates' | 'hasAccess'
+) {
+    const session = await getSession();
+    if (!session?.userId) throw new Error("Authentication required.");
+
+    await connectToDatabase();
+
+    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
+    if (!tree) throw new Error("Tree not found.");
+
+    const perms = await getTreePermissions(tree, session.userId);
+
+    if (requiredPermission === 'owner' && !perms.isOwner) {
+        throw new Error("Authorization denied: Only the owner can perform this action.");
+    }
+    if (requiredPermission === 'admin' && !perms.isOwner && !perms.admin) {
+        throw new Error("Authorization denied: Only the owner or an admin can perform this action.");
+    }
+    if (requiredPermission === 'editNodes' && !perms.editNodes) {
+        throw new Error("Authorization denied: You do not have permission to edit nodes.");
+    }
+    if (requiredPermission === 'editTemplates' && !perms.editTemplates) {
+        throw new Error("Authorization denied: You do not have permission to edit templates.");
+    }
+    if (requiredPermission === 'hasAccess' && !perms.hasAccess) {
+        throw new Error("Authorization denied.");
+    }
+
+    return { session, tree, perms };
+}
+
 export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
@@ -192,30 +225,24 @@ export async function createTreeFile(treeFile: Omit<TreeFile, 'tree' | 'id'>, in
 }
 
 export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & { id: string }, timestamp?: string): Promise<string> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
+    const { perms } = await authorizeTreeAccess(treeFile.id);
 
-    await connectToDatabase();
-
-    const existingTree = await TreeModel.findById(treeFile.id).lean<Omit<TreeFile, 'tree'>>();
-    if (!existingTree) throw new Error("Tree not found.");
-    const savePerms = await getTreePermissions(existingTree, session.userId);
-    if (!savePerms.isOwner) {
+    if (!perms.isOwner) {
         const updateKeys = Object.keys(treeFile).filter(k => k !== 'id');
         const isTemplateUpdate = updateKeys.includes('templates');
         const isTitleUpdate = updateKeys.includes('title');
         const isGitSyncUpdate = updateKeys.includes('gitSync');
         
-        if (isTemplateUpdate && !savePerms.editTemplates) {
+        if (isTemplateUpdate && !perms.editTemplates) {
             throw new Error("Authorization denied: You do not have permission to edit templates.");
         }
-        if (isTitleUpdate && !savePerms.admin) {
+        if (isTitleUpdate && !perms.admin) {
              throw new Error("Authorization denied: You do not have permission to edit the tree title.");
         }
-        if (isGitSyncUpdate && !savePerms.admin && !savePerms.editNodes && !savePerms.editTemplates) {
+        if (isGitSyncUpdate && !perms.admin && !perms.editNodes && !perms.editTemplates) {
              throw new Error("Authorization denied: You do not have permission to configure GitHub sync.");
         }
-        if (!savePerms.hasAccess) {
+        if (!perms.hasAccess) {
             throw new Error("Authorization denied.");
         }
     }
@@ -626,17 +653,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
 }
 
 export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & { _id?: string, id?: string }): Promise<TreeNode> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
-    const tree = await TreeModel.findById(nodeData.treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const perms = await getTreePermissions(tree, session.userId);
-    if (!perms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    const { session } = await authorizeTreeAccess(nodeData.treeId, 'editNodes');
 
     const { id, name, data, ...rest } = nodeData as any;
 
@@ -674,12 +691,7 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
         throw new Error("Node not found for update.");
     }
 
-    const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const updatePerms = await getTreePermissions(tree, session.userId);
-    if (!updatePerms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(node.treeId, 'editNodes');
 
     const { name, data, ...restOfUpdates } = updates;
     const newTimestamp = timestamp || new Date().toISOString();
@@ -698,17 +710,7 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
 }
 
 export const resequenceSiblings = async (parentId: string | null, treeId: string): Promise<void> => {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const perms = await getTreePermissions(tree, session.userId);
-    if (!perms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(treeId, 'editNodes');
 
     const parentQuery = parentId ? { parentIds: parentId } : { $or: [{ parentIds: { $size: 0 } }, { parentIds: ['root'] }] };
     const siblings = await TreeNodeModel.find({ treeId, ...parentQuery }).exec();
@@ -756,12 +758,7 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     const node = await TreeNodeModel.findById(nodeId).exec();
     if (!node) return { deletedIds: [], newTimestamp: new Date().toISOString() };
 
-    const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const deletePerms = await getTreePermissions(tree, session.userId);
-    if (!deletePerms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(node.treeId.toString(), 'editNodes');
 
     const treeId = node.treeId.toString();
     const parentId = parentIdToUnlink ?? 'root';
@@ -843,17 +840,7 @@ export async function batchDeleteNodes(deletions: { nodeId: string; parentIdToUn
 
 
 export async function reorderSiblingsForAdd(treeId: string, parentId: string | null, order: number, timestamp?: string) {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const perms = await getTreePermissions(tree, session.userId);
-    if (!perms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(treeId, 'editNodes');
 
     const parentIdToUpdate = parentId || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
@@ -887,22 +874,12 @@ export async function reorderSiblingsForAdd(treeId: string, parentId: string | n
 
 
 export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'children' | '_id'>>[], timestamp?: string): Promise<{ createdNodes: TreeNode[], newTimestamp: string }> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
     if (nodes.length === 0) return { createdNodes: [], newTimestamp: timestamp || new Date().toISOString() };
 
     const treeId = nodes[0]?.treeId; // Assume all nodes are for the same tree
     if (!treeId) throw new Error("Batch create requires nodes to have a treeId.");
 
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const perms = await getTreePermissions(tree, session.userId);
-    if (!perms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    const { session } = await authorizeTreeAccess(treeId, 'editNodes');
 
     const newTimestamp = timestamp || new Date().toISOString();
 
@@ -954,13 +931,7 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
         throw new Error("Batch updates can only target nodes within the same tree.");
     }
 
-    // Authorization check
-    const tree = await TreeModel.findById(firstTreeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const batchUpdatePerms = await getTreePermissions(tree, session.userId);
-    if (!batchUpdatePerms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(firstTreeId.toString(), 'editNodes');
 
     const newTimestamp = timestamp || new Date().toISOString();
 
@@ -997,12 +968,7 @@ export async function addParentToNode(nodeId: string, newParentId: string | null
         throw new Error("Node to clone not found");
     }
 
-    const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const clonePerms = await getTreePermissions(tree, session.userId);
-    if (!clonePerms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(node.treeId.toString(), 'editNodes');
 
     const parentIdToAdd = newParentId || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
@@ -1035,12 +1001,7 @@ export async function removeParentFromNode(nodeId: string, parentIdToRemove: str
         throw new Error("Node not found for unlinking.");
     }
 
-    const tree = await TreeModel.findById(node.treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const unlinkPerms = await getTreePermissions(tree, session.userId);
-    if (!unlinkPerms.editNodes) {
-        throw new Error("Authorization denied: You do not have permission to edit nodes.");
-    }
+    await authorizeTreeAccess(node.treeId.toString(), 'editNodes');
 
     const treeId = node.treeId.toString();
     const parentIdString = parentIdToRemove || 'root';
@@ -1415,15 +1376,7 @@ export async function getTreeFromGit(token: string, owner: string, repo: string,
 }
 
 export async function shareTreeWithUser(treeId: string, userId: string, permissions?: Partial<TreePermissions>): Promise<void> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const sharePerms = await getTreePermissions(tree, session.userId);
-    if (!sharePerms.isOwner && !sharePerms.admin) throw new Error("Authorization denied: Only the owner or an admin can share a tree.");
+    await authorizeTreeAccess(treeId, 'admin');
 
     const resolvedPermissions: TreePermissions = {
         editNodes: permissions?.editNodes ?? false,
@@ -1444,15 +1397,7 @@ export async function shareTreeWithUser(treeId: string, userId: string, permissi
 }
 
 export async function revokeShareFromUser(treeId: string, userId: string): Promise<void> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const revokePerms = await getTreePermissions(tree, session.userId);
-    if (!revokePerms.isOwner && !revokePerms.admin) throw new Error("Authorization denied: Only the owner or an admin can revoke shares.");
+    await authorizeTreeAccess(treeId, 'admin');
 
     // Remove from both legacy sharedWith and new shares
     await TreeModel.findByIdAndUpdate(treeId, {
@@ -1461,15 +1406,7 @@ export async function revokeShareFromUser(treeId: string, userId: string): Promi
 }
 
 export async function setTreePublicStatus(treeId: string, isPublic: boolean): Promise<string | undefined> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const publicPerms = await getTreePermissions(tree, session.userId);
-    if (!publicPerms.isOwner && !publicPerms.admin) throw new Error("Authorization denied: Only the owner or an admin can change public status.");
+    const { tree } = await authorizeTreeAccess(treeId, 'admin');
 
     // Generate a publicId if the tree doesn't have one yet (Mongoose defaults don't run on findByIdAndUpdate)
     const updatePayload: Record<string, any> = { isPublic };
@@ -1581,20 +1518,13 @@ export async function renameTeam(teamId: string, newName: string): Promise<void>
 }
 
 export async function shareTreeWithTeam(treeId: string, teamId: string, permissions?: Partial<TreePermissions>): Promise<void> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const sharePerms = await getTreePermissions(tree, session.userId);
-    if (!sharePerms.isOwner && !sharePerms.admin) throw new Error("Authorization denied.");
+    const { session, perms } = await authorizeTreeAccess(treeId, 'admin');
 
     // Check if the user belongs to the team they are sharing with
     const team = await TeamModel.findById(teamId).lean<Team>();
     if (!team) throw new Error("Team not found.");
     const isMember = team.memberIds.includes(session.userId) || team.leaderIds.includes(session.userId);
-    if (!isMember && !sharePerms.isOwner) throw new Error("Authorization denied: You can only share trees with teams you belong to.");
+    if (!isMember && !perms.isOwner) throw new Error("Authorization denied: You can only share trees with teams you belong to.");
 
     const resolvedPermissions: TreePermissions = {
         editNodes: permissions?.editNodes ?? false,
@@ -1609,14 +1539,7 @@ export async function shareTreeWithTeam(treeId: string, teamId: string, permissi
 }
 
 export async function revokeShareFromTeam(treeId: string, teamId: string): Promise<void> {
-    const session = await getSession();
-    if (!session?.userId) throw new Error("Authentication required.");
-
-    await connectToDatabase();
-    const tree = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
-    if (!tree) throw new Error("Tree not found.");
-    const revokePerms = await getTreePermissions(tree, session.userId);
-    if (!revokePerms.isOwner && !revokePerms.admin) throw new Error("Authorization denied.");
+    await authorizeTreeAccess(treeId, 'admin');
 
     await TreeModel.findByIdAndUpdate(treeId, {
         $pull: { teamShares: { teamId } }
