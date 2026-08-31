@@ -39,7 +39,7 @@ export function proxy(request: NextRequest) {
     `base-uri 'self'`,
     `form-action 'self',
     `frame-src *`,
-    `frame-ancestors 'self' https://asa.pm``,
+    `frame-ancestors 'self' https://asa.pm`,
     `connect-src 'self' *.cloudworkstations.dev api.github.com https://cdn.jsdelivr.net`,
   ].join('; ');
 
