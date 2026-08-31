@@ -33,6 +33,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [globalSettings, setAppSettings] = useState<GlobalSettings>({ allowPublicRegistration: true });
+  const [githubTokenStatus, setGithubTokenStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid' | null>(null);
   const { toast } = useToast();
 
   const handleLogout = useCallback(async (isIdle: boolean = false) => {
@@ -63,6 +64,39 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     : 0;
 
   useIdleTimer(() => handleLogout(true), idleTime);
+
+  /**
+   * Calls the server-side validation endpoint for the current user's stored GitHub PAT.
+   * Pass an explicit `token` string to validate a not-yet-saved token (e.g. from Settings).
+   */
+  const checkGithubToken = useCallback(async (token?: string) => {
+    setGithubTokenStatus('checking');
+    try {
+      const url = token
+        ? `/api/v1/github/validate-token?token=${encodeURIComponent(token)}`
+        : '/api/v1/github/validate-token';
+      const res = await fetch(url);
+      if (!res.ok) {
+        setGithubTokenStatus('idle');
+        return;
+      }
+      const data: { valid: boolean | null; reason?: string } = await res.json();
+      if (data.valid === true) {
+        setGithubTokenStatus('valid');
+      } else if (data.valid === false) {
+        setGithubTokenStatus('invalid');
+      } else {
+        // null → inconclusive (network error, etc.) — don't flag as broken
+        setGithubTokenStatus('idle');
+      }
+    } catch {
+      setGithubTokenStatus('idle');
+    }
+  }, []);
+
+  const dismissGithubTokenWarning = useCallback(() => {
+    setGithubTokenStatus('idle');
+  }, []);
 
 
   const initializeAuth = async () => {
@@ -99,6 +133,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
 
       if (userFromSession) {
         console.log(`INFO: Restored user '${userFromSession.username}'.`);
+        // Asynchronously validate the stored GitHub PAT without blocking the UI.
+        if (userFromSession.gitSettings?.githubPat) {
+          checkGithubToken();
+        }
       }
 
     } catch (error) {
@@ -303,5 +341,8 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setTreeSettings,
     setCustomGroups,
     revokeAllSessions,
+    githubTokenStatus,
+    checkGithubToken,
+    dismissGithubTokenWarning,
   };
 }

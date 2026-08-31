@@ -46,6 +46,11 @@ interface AuthContextType {
   setTreeSettings: (settings: User['treeSettings']) => void;
   setCustomGroups: (groups: string[]) => void;
   revokeAllSessions: () => Promise<void>;
+
+  // GitHub PAT validation
+  githubTokenStatus: 'idle' | 'checking' | 'valid' | 'invalid' | null;
+  checkGithubToken: (token?: string) => Promise<void>;
+  dismissGithubTokenWarning: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,6 +88,9 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId, isApiEna
     setTreeSettings,
     setCustomGroups,
     revokeAllSessions,
+    githubTokenStatus,
+    checkGithubToken,
+    dismissGithubTokenWarning,
   } = useAuthHook({ isAuthRequired, defaultUserId });
 
   const [theme, setThemeState] = useState<Theme>("system");
@@ -141,6 +149,9 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId, isApiEna
     setTreeSettings,
     setCustomGroups,
     revokeAllSessions,
+    githubTokenStatus,
+    checkGithubToken,
+    dismissGithubTokenWarning,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

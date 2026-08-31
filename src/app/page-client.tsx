@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { getLatestCommitSha } from "@/lib/data-service";
 import { Switch } from "@/components/ui/switch";
 import { AppHeader } from "@/components/header";
+import { GithubTokenBanner } from "@/components/github-token-banner";
 import { TreePageHeader } from "@/components/tree/tree-page-header";
 import { TreePageModals } from "@/components/tree/tree-page-modals";
 import { TreeSelectionBar } from "@/components/tree/tree-selection-bar";
@@ -1103,6 +1104,7 @@ export function TreePage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
+      <GithubTokenBanner />
       <main className={cn("flex-1 px-4 sm:px-6 lg:px-8 pb-4 md:pb-8 flex flex-col", isTwoPanelMode && !isMobile && "pb-0 md:pb-0")}>
         <div className={cn("sticky z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-[10px] border-b", currentUser ? "top-16" : "top-0")}>
           {activeTree && (

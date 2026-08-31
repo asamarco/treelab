@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/header";
+import { GithubTokenBanner } from "@/components/github-token-banner";
 import {
   Card,
   CardContent,
@@ -24,7 +25,7 @@ import { useAuthContext } from "@/contexts/auth-context";
 import { Separator } from "@/components/ui/separator";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, KeyRound, Github, LogOut } from "lucide-react";
+import { Loader2, KeyRound, Github, LogOut, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   AlertDialog,
@@ -289,6 +290,9 @@ export default function SettingsPage() {
     setTwoPanelExpansionDepth,
     revokeAllSessions,
     isApiEnabled,
+    githubTokenStatus,
+    checkGithubToken,
+    dismissGithubTokenWarning,
   } = useAuthContext();
 
   const { toast } = useToast();
@@ -321,6 +325,26 @@ export default function SettingsPage() {
     }
   }, [currentUser]);
 
+  // Re-check the stored token when the settings page opens, so the badge is fresh.
+  useEffect(() => {
+    if (currentUser?.gitSettings?.githubPat) {
+      checkGithubToken();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Debounced live-validation: check the token while the user is typing a new one.
+  useEffect(() => {
+    // Only validate if the value has actually changed from what's stored.
+    const stored = currentUser?.gitSettings?.githubPat ?? "";
+    if (!githubPat || githubPat === stored) return;
+
+    const timer = setTimeout(() => {
+      // Validate the not-yet-saved token value.
+      checkGithubToken(githubPat);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [githubPat]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -350,6 +374,12 @@ export default function SettingsPage() {
     e.preventDefault();
     await setGitSettings({ githubPat });
     toast({ title: "Settings Saved", description: "Your GitHub token has been updated." });
+    // Re-validate after save so the status badge updates immediately.
+    if (githubPat) {
+      checkGithubToken(githubPat);
+    } else {
+      dismissGithubTokenWarning();
+    }
   };
 
   const handleInactivityTimeoutSave = () => {
@@ -361,6 +391,7 @@ export default function SettingsPage() {
     <ProtectedRoute>
       <div className="flex flex-col min-h-screen bg-muted/20">
         <AppHeader />
+        <GithubTokenBanner />
         <main className="flex-1 container mx-auto p-4 md:p-8">
           <div className="max-w-2xl mx-auto space-y-8">
             <h1 className="text-3xl font-bold">User Settings</h1>
@@ -530,14 +561,57 @@ export default function SettingsPage() {
               <CardContent>
                 <form onSubmit={handleSaveGitSettings} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="github-pat">GitHub Personal Access Token</Label>
-                    <Input id="github-pat" type="password" placeholder="ghp_..." value={githubPat} onChange={(e) => setGithubPat(e.target.value)} />
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="github-pat">GitHub Personal Access Token</Label>
+                      {/* Status badge */}
+                      {githubTokenStatus === "checking" && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Checking…
+                        </span>
+                      )}
+                      {githubTokenStatus === "valid" && (
+                        <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Valid
+                        </span>
+                      )}
+                      {githubTokenStatus === "invalid" && (
+                        <span className="flex items-center gap-1 text-xs text-destructive">
+                          <AlertTriangle className="h-3.5 w-3.5" /> Invalid or expired
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      id="github-pat"
+                      type="password"
+                      placeholder="ghp_..."
+                      value={githubPat}
+                      onChange={(e) => setGithubPat(e.target.value)}
+                    />
                     <p className="text-xs text-muted-foreground">
                       Stored securely. Used to sync with your repositories.
-                      Create one in <Link href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener noreferrer" className="underline">GitHub settings</Link>.
+                      Create one in{" "}
+                      <Link
+                        href="https://github.com/settings/tokens?type=beta"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        GitHub settings
+                      </Link>
+                      .
                     </p>
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={!githubPat || githubTokenStatus === "checking"}
+                      onClick={() => checkGithubToken(githubPat || undefined)}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                      Check now
+                    </Button>
                     <Button type="submit">Save Token</Button>
                   </div>
                 </form>
