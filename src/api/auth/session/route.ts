@@ -9,19 +9,8 @@ import { getSession } from '@/lib/session';
 import { UserModel } from '@/lib/models';
 import { decrypt } from '@/lib/encryption';
 import { connectToDatabase } from '@/lib/mongodb';
+import { toPlainObject } from '@/lib/utils';
 
-// Helper to convert a Mongoose doc to a plain object.
-const toPlainObject = (doc: any): any => {
-    if (!doc) return null;
-    const obj = doc.toObject ? doc.toObject({getters: true, virtuals: true}) : doc;
-    const plain: any = { id: obj._id.toString() };
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
-            plain[key] = obj[key];
-        }
-    }
-    return plain;
-};
 
 
 export async function GET(request: NextRequest) {

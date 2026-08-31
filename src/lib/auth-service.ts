@@ -13,6 +13,7 @@ import { encrypt, decrypt } from './encryption';
 import { createSessionInServerAction, getSession } from './session';
 import crypto from 'crypto';
 import { unstable_noStore as noStore } from 'next/cache';
+import { toPlainObject } from './utils';
 
 // --- Password Hashing (Server-Side only) ---
 const hashPassword = (password: string, salt: string): Promise<string> => {
@@ -24,19 +25,6 @@ const hashPassword = (password: string, salt: string): Promise<string> => {
     });
 };
 
-
-// Helper to convert a Mongoose doc to a plain object.
-const toPlainObject = (doc: any): any => {
-    if (!doc) return null;
-    const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
-    const plain: any = { id: obj._id.toString() };
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
-            plain[key] = obj[key];
-        }
-    }
-    return plain;
-};
 
 // --- User Functions ---
 

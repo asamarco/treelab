@@ -17,7 +17,7 @@ import { UserModel, TreeModel, TreeNodeModel, TeamModel } from './models';
 import { encrypt, decrypt } from './encryption';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
-import { generateJsonForExport, generateNodeName, getContextualOrder } from './utils';
+import { generateJsonForExport, generateNodeName, getContextualOrder, toPlainObject } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSession } from './session';
 import { getDataDir } from './data-dir';
@@ -156,19 +156,6 @@ export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
     return toPlainObject(node);
 }
 
-// Helper to convert a Mongoose doc to a plain object, ensuring it's serializable.
-const toPlainObject = (doc: any): any => {
-    if (!doc) return null;
-    const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
-
-    const plain: any = { id: obj._id ? obj._id.toString() : obj.id };
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
-            plain[key] = obj[key];
-        }
-    }
-    return plain;
-};
 
 // Internal helper for hydrating user profiles
 async function fetchUserProfilesInternal(userIds: string[]): Promise<Record<string, { id: string, username: string }>> {

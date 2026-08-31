@@ -227,3 +227,20 @@ export function extractOriginalName(fileName: string): string {
 
   return fileName;
 }
+
+/**
+ * Helper to convert a Mongoose doc or object to a plain object, ensuring it's serializable.
+ */
+export function toPlainObject<T = any>(doc: any): T {
+    if (!doc) return null as unknown as T;
+    const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
+
+    const plain: any = { id: obj._id ? obj._id.toString() : obj.id };
+    for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
+            plain[key] = obj[key];
+        }
+    }
+    return plain as T;
+}
+
