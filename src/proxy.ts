@@ -37,9 +37,9 @@ export function proxy(request: NextRequest) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net ${isDevelopment ? "'unsafe-eval'" : ""}`,
     `object-src 'none'`,
     `base-uri 'self'`,
-    `form-action 'self' https://asa.pm`,
+    `form-action 'self',
     `frame-src *`,
-    `frame-ancestors 'self'`,
+    `frame-ancestors 'self' https://asa.pm``,
     `connect-src 'self' *.cloudworkstations.dev api.github.com https://cdn.jsdelivr.net`,
   ].join('; ');
 
