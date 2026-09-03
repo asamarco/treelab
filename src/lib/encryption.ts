@@ -5,7 +5,7 @@
  * and decryption of data using Node.js's built-in crypto module.
  *
  * It uses AES-256-GCM, a modern and secure authenticated encryption algorithm.
- * The encryption key is read from the `ENCRYPTION_KEY` environment variable.
+ * The encryption key is read from the `DB_ENCRYPTION_KEY` environment variable.
  */
 'use server';
 
@@ -15,12 +15,18 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY;
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-    throw new Error('ENCRYPTION_KEY environment variable must be a 32-character string.');
+if (!DB_ENCRYPTION_KEY) {
+    throw new Error('DB_ENCRYPTION_KEY environment variable is not set.');
 }
-const key = Buffer.from(ENCRYPTION_KEY, 'utf-8');
+const key = Buffer.from(DB_ENCRYPTION_KEY, 'utf-8');
+if (key.length !== 32) {
+    throw new Error(
+        `DB_ENCRYPTION_KEY must encode to exactly 32 bytes when UTF-8 encoded (AES-256). ` +
+        `Got ${key.length} bytes. Use only ASCII characters or a hex/base64 value to avoid ambiguity.`
+    );
+}
 
 /**
  * Encrypts a string or a plain object.
