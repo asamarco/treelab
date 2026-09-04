@@ -13,8 +13,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback, useEffect, useId } from "react";
-import { createPortal } from "react-dom";
-import { TreeNode, Template, Field, AttachmentInfo, XYChartData, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
+import { TreeNode, Template, Field, AttachmentInfo, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -86,8 +85,6 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { DataSheetGrid, textColumn, keyColumn, createContextMenuComponent, ContextMenuComponentProps } from 'react-datasheet-grid';
-import 'react-datasheet-grid/dist/style.css';
 
 
 const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: string; onRemove: () => void; onClick: () => void; }) => {
@@ -130,97 +127,6 @@ const operatorLabels: Record<ConditionalRuleOperator, string> = {
   greater_than: 'Greater Than',
   less_than: 'Less Than',
 };
-
-const PortaledContextMenu = (props: ContextMenuComponentProps) => {
-  const ContextMenu = useMemo(() => createContextMenuComponent(), []);
-
-  // We need to render the portal after the initial mount to ensure document.body is available
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div className="ds-grid-container fixed inset-0 pointer-events-none z-[99999]">
-      <ContextMenu {...props} />
-    </div>,
-    document.body
-  );
-};
-
-const XYChartSpreadsheetEditor = React.memo(({
-  points,
-  onChange,
-}: {
-  points: { x: string; y: string }[];
-  onChange: (newPoints: { x: string; y: string }[]) => void;
-}) => {
-  const columns = useMemo(() => [
-    {
-      ...keyColumn('x', textColumn),
-      title: 'X',
-    },
-    {
-      ...keyColumn('y', textColumn),
-      title: 'Y',
-    },
-  ], []);
-
-  // Ensure we always have some data to show
-  const gridData = useMemo(() => {
-    return points.length > 0 ? points : [{ x: '', y: '' }];
-  }, [points]);
-
-  return (
-    <div className="space-y-2" onKeyDown={(e) => {
-      // Broad safety net: stop anything from the form bubbling to the tree
-      // This is especially for navigation keys and node shortcuts
-      const isNavigationKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'p', 's', 'o'].includes(e.key);
-      if (isNavigationKey) {
-        e.stopPropagation();
-      }
-    }}>
-      <div
-        className="rounded-md border w-full bg-background overflow-x-auto ds-grid-container"
-        onContextMenuCapture={(e) => {
-          // Suppress browser context menu to let the library menu show
-          e.preventDefault();
-        }}
-        onKeyDown={(e) => {
-          // Intercept and stop propagation of keys that might trigger global node actions
-          // 'Delete' is critical to prevent node deletion
-          // Ctrl+C/X/V are important to prevent global clipboard actions
-          // Backspace is also common for clearing cells
-          const isCtrl = e.ctrlKey || e.metaKey;
-          if (
-            e.key === 'Delete' ||
-            e.key === 'Backspace' ||
-            (isCtrl && (e.key === 'c' || e.key === 'x' || e.key === 'v' || e.key === 'a' || e.key === 'z' || e.key === 'y'))
-          ) {
-            e.stopPropagation();
-          }
-        }}
-      >
-        <DataSheetGrid
-          value={gridData}
-          onChange={(newValue) => {
-            onChange(newValue as { x: string; y: string }[]);
-          }}
-          columns={columns}
-          autoAddRow
-          lockRows={false}
-          contextMenuComponent={PortaledContextMenu}
-        />
-      </div>
-      <p className="text-[10px] text-muted-foreground italic">
-        Tip: You can copy and paste data directly from Excel or other spreadsheets.
-      </p>
-    </div>
-  );
-});
-XYChartSpreadsheetEditor.displayName = "XYChartSpreadsheetEditor";
 
 export const NodeForm = ({
   node,
@@ -531,26 +437,6 @@ export const NodeForm = ({
         }
       });
       return newFormData;
-    });
-  };
-
-  const handleChartDataChange = (fieldId: string, index: number, key: 'x' | 'y' | 'xAxisLabel' | 'yAxisLabel' | 'showAverage' | 'showStdDev' | 'showRelativeError' | 'showLinearRegression', value: string | boolean) => {
-    setFormData(prev => {
-      const currentChartData: XYChartData = prev[fieldId] || { points: [] };
-      if (key === 'xAxisLabel' || key === 'yAxisLabel' || key === 'showAverage' || key === 'showStdDev' || key === 'showRelativeError' || key === 'showLinearRegression') {
-        return {
-          ...prev,
-          [fieldId]: { ...currentChartData, [key]: value },
-        };
-      }
-      const newPoints = [...(currentChartData.points || [])];
-      if (newPoints[index]) {
-        newPoints[index] = { ...newPoints[index], [key]: value };
-      }
-      return {
-        ...prev,
-        [fieldId]: { ...currentChartData, points: newPoints },
-      };
     });
   };
 
@@ -1195,59 +1081,5 @@ const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, val
   );
 });
 QueryBuilder.displayName = "QueryBuilder";
-
-const SpreadsheetEditorField = React.memo(({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
-  const targetRows = field.spreadsheetRowCount || 3;
-  const targetCols = field.spreadsheetColumnCount || 3;
-  const existingData: { value: string }[][] = value || [];
-
-  const currentRows = existingData.length > 0 ? existingData.length : targetRows;
-  const currentCols = existingData.length > 0 && existingData[0] ? existingData[0].length : targetCols;
-
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Spreadsheet data can be edited directly from the tree view. Here you can adjust its dimensions. Formula reference can be found <a href="https://jspreadsheet.com/docs/formulas/functions" target="_blank" rel="noopener noreferrer" className="underline">here</a>.
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Number of Rows</Label>
-          <Input
-            type="number"
-            min={1}
-            value={currentRows}
-            onChange={(e) => {
-              const newRows = parseInt(e.target.value, 10) || 1;
-              const newData = Array.from({ length: newRows }, (_, r) => {
-                return Array.from({ length: currentCols }, (_, c) => {
-                  return { value: existingData?.[r]?.[c]?.value || '' };
-                });
-              });
-              onChange(newData);
-            }}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Number of Columns</Label>
-          <Input
-            type="number"
-            min={1}
-            value={currentCols}
-            onChange={(e) => {
-              const newCols = parseInt(e.target.value, 10) || 1;
-              const newData = Array.from({ length: currentRows }, (_, r) => {
-                return Array.from({ length: newCols }, (_, c) => {
-                  return { value: existingData?.[r]?.[c]?.value || '' };
-                });
-              });
-              onChange(newData);
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-});
-SpreadsheetEditorField.displayName = "SpreadsheetEditorField";
 
 
