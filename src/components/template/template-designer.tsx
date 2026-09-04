@@ -15,6 +15,7 @@
 "use client";
 
 import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { FieldRegistry } from "@/lib/field-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Template, Field, ConditionalRuleOperator, XYChartData } from "@/lib/types";
@@ -703,24 +704,6 @@ export function TemplateDesigner({
                                             <span>Table Header</span>
                                           </div>
                                         </SelectItem>
-                                        <SelectItem value="xy-chart">
-                                          <div className="flex items-center gap-2">
-                                            <LineChart className="h-4 w-4 text-muted-foreground" />
-                                            <span>XY Chart</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="spreadsheet">
-                                          <div className="flex items-center gap-2">
-                                            <Grid3X3 className="h-4 w-4 text-muted-foreground" />
-                                            <span>Spreadsheet</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="embed">
-                                          <div className="flex items-center gap-2">
-                                            <Code2 className="h-4 w-4 text-muted-foreground" />
-                                            <span>Embed (Iframe)</span>
-                                          </div>
-                                        </SelectItem>
                                         <SelectItem value="dropdown">
                                           <div className="flex items-center gap-2">
                                             <List className="h-4 w-4 text-muted-foreground" />
@@ -733,6 +716,18 @@ export function TemplateDesigner({
                                             <span>Dynamic Dropdown</span>
                                           </div>
                                         </SelectItem>
+                                        
+                                        {FieldRegistry.getAll().map(plugin => {
+                                          const Icon = plugin.icon;
+                                          return (
+                                            <SelectItem key={plugin.type} value={plugin.type}>
+                                              <div className="flex items-center gap-2">
+                                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                                <span>{plugin.label}</span>
+                                              </div>
+                                            </SelectItem>
+                                          );
+                                        })}
                                       </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -784,14 +779,14 @@ export function TemplateDesigner({
                                 />
                               </div>
                             )}
-                            {(form.watch(`fields.${index}.type`) === 'picture' || form.watch(`fields.${index}.type`) === 'embed') && (
+                            {form.watch(`fields.${index}.type`) === 'picture' && (
                               <div className="mt-4">
                                 <FormField
                                   control={form.control}
                                   name={`fields.${index}.height`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>{form.watch(`fields.${index}.type`) === 'embed' ? 'Iframe Height (px)' : 'Image Height (px)'}</FormLabel>
+                                      <FormLabel>Image Height (px)</FormLabel>
                                       <FormControl>
                                         <Input
                                           type="number"
@@ -807,48 +802,15 @@ export function TemplateDesigner({
                                 />
                               </div>
                             )}
-                            {form.watch(`fields.${index}.type`) === 'spreadsheet' && (
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                <FormField
-                                  control={form.control}
-                                  name={`fields.${index}.spreadsheetRowCount`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Number of Rows</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="number"
-                                          placeholder="Default: 3"
-                                          {...field}
-                                          value={field.value || ""}
-                                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  control={form.control}
-                                  name={`fields.${index}.spreadsheetColumnCount`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Number of Columns</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="number"
-                                          placeholder="Default: 3"
-                                          {...field}
-                                          value={field.value || ""}
-                                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            )}
+                            {(() => {
+                              const selectedType = form.watch(`fields.${index}.type`);
+                              const plugin = FieldRegistry.get(selectedType);
+                              if (plugin?.DesignerSettings) {
+                                const Settings = plugin.DesignerSettings;
+                                return <Settings form={form} index={index} fieldId={field.id} />;
+                              }
+                              return null;
+                            })()}
                             {form.watch(`fields.${index}.type`) === "table-header" && (
                               <div className="mt-4">
                                 <FormField

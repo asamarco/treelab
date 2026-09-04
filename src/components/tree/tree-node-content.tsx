@@ -35,6 +35,7 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TreeSpreadsheetField } from "./tree-spreadsheet-field";
+import { FieldRegistry } from "@/lib/field-types";
 
 const operatorLabels: Record<string, string> = {
     equals: 'Equals',
@@ -229,6 +230,12 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                             {template.fields.map((field) => {
                                 const value = nodeData[field.id];
 
+                                const plugin = FieldRegistry.get(field.type);
+                                if (plugin?.ViewerComponent) {
+                                    const Viewer = plugin.ViewerComponent;
+                                    return <Viewer key={field.id} field={field} value={value} node={node} readOnly={readOnly} isCompactView={isCompactView} />;
+                                }
+
                                 switch (field.type) {
                                     case 'checkbox': {
                                         const isChecked = !!value;
@@ -274,153 +281,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                             </div>
                                         )
                                     }
-                                    case 'xy-chart': {
-                                        const chartData: XYChartData = value;
-                                        if (!chartData) return null;
-                                        const rawPoints = chartData.points || [];
-                                        const originalNumericData = rawPoints.map((d: any) => ({ ...d, x: Number(d.x), y: Number(d.y) })).filter((d: any) => !isNaN(d.x) && !isNaN(d.y));
 
-                                        if (chartData.showLinearRegression && rawPoints.length > 0 && originalNumericData.length < rawPoints.length) {
-                                            console.warn(`[XY-Chart] Field "${field.name}" (node "${node.name}"): ${rawPoints.length - originalNumericData.length} point(s) filtered out because they were non-numeric.`);
-                                        }
-
-                                        if (originalNumericData.length === 0) return null;
-
-                                        return (
-                                            <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                                                <p className={cn("font-medium mb-2", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-                                                <div style={{ width: '100%', height: isCompactView ? 180 : 300 }}>
-                                                    {(() => {
-                                                        const yValues = originalNumericData.map((p: any) => p.y);
-                                                        const xValues = originalNumericData.map((p: any) => p.x);
-                                                        const n = yValues.length;
-                                                        const mean = n > 0 ? yValues.reduce((a: number, b: number) => a + b, 0) / n : 0;
-                                                        const variance = n > 0 ? yValues.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / n : 0;
-                                                        const stdDev = Math.sqrt(variance);
-                                                        const relError = Math.abs(mean) > 0 ? (stdDev / Math.abs(mean)) * 100 : 0;
-
-                                                        // Linear Regression: y = mx + b
-                                                        let regressionStats = null;
-                                                        let m: number | null = null;
-                                                        let b: number | null = null;
-
-                                                        if (chartData.showLinearRegression) {
-                                                            if (n > 1) {
-                                                                const sumX = xValues.reduce((a: number, b: number) => a + b, 0);
-                                                                const sumY = yValues.reduce((a: number, b: number) => a + b, 0);
-                                                                const sumXY = originalNumericData.reduce((prev: number, curr: any) => prev + (curr.x * curr.y), 0);
-                                                                const sumX2 = xValues.reduce((prev: number, curr: number) => prev + (curr * curr), 0);
-                                                                const denominator = (n * sumX2 - sumX * sumX);
-
-                                                                if (denominator !== 0) {
-                                                                    m = (n * sumXY - sumX * sumY) / denominator;
-                                                                    b = (sumY - m * sumX) / n;
-
-                                                                    const ssRes = originalNumericData.reduce((acc: number, curr: any) => acc + Math.pow(curr.y - (m! * curr.x + b!), 2), 0);
-                                                                    const ssTot = yValues.reduce((acc: number, curr: number) => acc + Math.pow(curr - mean, 2), 0);
-                                                                    const rSquared = ssTot !== 0 ? 1 - (ssRes / ssTot) : 1;
-
-                                                                    regressionStats = {
-                                                                        equation: `y = ${m.toFixed(2)}x ${b >= 0 ? '+' : '-'} ${Math.abs(b).toFixed(2)}`,
-                                                                        rSquared: rSquared.toFixed(3)
-                                                                    };
-                                                                } else {
-                                                                    console.warn(`[XY-Chart] Field "${field.name}" (node "${node.name}"): Cannot calculate linear regression because all X values are identical (denominator is zero).`);
-                                                                }
-                                                            } else {
-                                                                console.warn(`[XY-Chart] Field "${field.name}" (node "${node.name}"): Cannot calculate linear regression with fewer than 2 numeric points (found ${n} points).`);
-                                                            }
-                                                        }
-
-                                                        // Augment data with regression values for auto-scaling
-                                                        const chartDataWithRegression = originalNumericData.map((p: any) => ({
-                                                            ...p,
-                                                            regression: (m !== null && b !== null) ? (m * p.x + b) : undefined
-                                                        }));
-
-                                                        const formatTick = (value: any) => {
-                                                            if (typeof value !== 'number') return value;
-                                                            return parseFloat(value.toFixed(2)).toString();
-                                                        };
-
-                                                        return (
-                                                            <ResponsiveContainer>
-                                                                <LineChart data={chartDataWithRegression} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
-                                                                    <CartesianGrid strokeDasharray="3 3" />
-                                                                    <XAxis dataKey="x" type="number" domain={['auto', 'auto']} tickFormatter={formatTick}>
-                                                                        <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
-                                                                    </XAxis>
-                                                                    <YAxis domain={['auto', 'auto']} interval={0} tickFormatter={formatTick}>
-                                                                        <ChartLabel value={chartData.yAxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
-                                                                    </YAxis>
-                                                                    <ChartTooltip formatter={(value: any) => formatTick(value)} />
-                                                                    <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={{ r: 2 }} isAnimationActive={false} />
-
-                                                                    {chartData.showLinearRegression && m !== null && (
-                                                                        <Line
-                                                                            type="monotone"
-                                                                            dataKey="regression"
-                                                                            stroke="hsl(var(--primary))"
-                                                                            strokeWidth={2}
-                                                                            strokeDasharray="5 5"
-                                                                            dot={false}
-                                                                            activeDot={false}
-                                                                            isAnimationActive={false}
-                                                                            label={((props: any) => {
-                                                                                const { x, y, index } = props;
-                                                                                if (index === chartDataWithRegression.length - 1 && regressionStats) {
-                                                                                    return (
-                                                                                        <text x={x} y={y} dy={-10} fill="hsl(var(--primary))" fontSize={10} textAnchor="end">
-                                                                                            {`${regressionStats.equation}, R² = ${regressionStats.rSquared}`}
-                                                                                        </text>
-                                                                                    );
-                                                                                }
-                                                                                return null;
-                                                                            }) as any}
-                                                                        />
-                                                                    )}
-
-                                                                    {chartData.showAverage && n > 0 && (
-                                                                        <ReferenceLine
-                                                                            y={mean}
-                                                                            stroke="hsl(var(--destructive))"
-                                                                            strokeDasharray="3 3"
-                                                                            label={{
-                                                                                value: `Avg: ${mean.toFixed(2)}`,
-                                                                                position: 'insideLeft',
-                                                                                fill: 'hsl(var(--destructive))',
-                                                                                fontSize: 10
-                                                                            }}
-                                                                        />
-                                                                    )}
-                                                                    {chartData.showStdDev && n > 0 && (
-                                                                        <ReferenceArea
-                                                                            y1={mean - stdDev}
-                                                                            y2={mean + stdDev}
-                                                                            fill="hsl(var(--destructive))"
-                                                                            fillOpacity={0.1}
-                                                                        />
-                                                                    )}
-                                                                    {chartData.showRelativeError && n > 0 && (
-                                                                        <ReferenceLine
-                                                                            y={mean}
-                                                                            stroke="transparent"
-                                                                            label={{
-                                                                                value: `Rel. Error: ${relError.toFixed(1)}%`,
-                                                                                position: 'insideRight',
-                                                                                fill: 'hsl(var(--muted-foreground))',
-                                                                                fontSize: 10
-                                                                            }}
-                                                                        />
-                                                                    )}
-                                                                </LineChart>
-                                                            </ResponsiveContainer>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            </div>
-                                        )
-                                    }
                                     case 'picture': {
                                         let pictures = value;
                                         if (!pictures || (Array.isArray(pictures) && pictures.length === 0)) return null;
@@ -703,56 +564,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                             </div>
                                         );
                                     }
-                                    case 'embed': {
-                                        const url = value;
-                                        if (!url || typeof url !== 'string' || !url.startsWith('http')) return null;
-                                        const height = field.height ? Number(field.height) : (isCompactView ? 200 : 400);
-                                        return (
-                                            <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <p className={cn("font-medium", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-                                                    <TooltipProvider>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-6 w-6 rounded-full"
-                                                                    onClick={() => setFullScreenEmbedUrl(url)}
-                                                                >
-                                                                    <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                </Button>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent><p>Full screen view</p></TooltipContent>
-                                                        </Tooltip>
-                                                    </TooltipProvider>
-                                                </div>
-                                                <div className="w-full rounded-md border bg-background overflow-hidden relative">
-                                                    <iframe
-                                                        src={url}
-                                                        title={field.name}
-                                                        className="w-full border-0 block"
-                                                        style={{ height: `${height}px` }}
-                                                        allowFullScreen
-                                                        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-                                                    />
-                                                </div>
-                                            </div>
-                                        );
-                                    }
-                                    case 'spreadsheet': {
-                                        return (
-                                            <TreeSpreadsheetField
-                                                key={field.id}
-                                                field={field}
-                                                value={value}
-                                                node={node}
-                                                isCompactView={isCompactView}
-                                                readOnly={readOnly}
-                                                updateNode={updateNode}
-                                            />
-                                        );
-                                    }
+
                                     default:
                                         return null;
                                 }

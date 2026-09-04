@@ -19,6 +19,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
+import { FieldRegistry } from "@/lib/field-types";
 import {
   Select,
   SelectContent,
@@ -784,241 +785,136 @@ export const NodeForm = ({
           )}
           {template.fields.map((field, fieldIndex) => {
             let renderedContent = null;
-            switch (field.type) {
-              case 'text':
-                renderedContent = <Input value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
-                break;
-              case 'textarea':
-                renderedContent = <Textarea value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
-                break;
-              case 'number':
-                renderedContent = <Input type="number" step="any" onWheel={(e) => e.currentTarget.blur()} value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
-                break;
-              case 'date': {
-                const dateString = formData[field.id];
-                let dateValue: Date | undefined;
-                if (dateString && typeof dateString === 'string') {
-                  const parsedDate = parse(dateString, 'yyyy-MM-dd', new Date());
-                  if (isValid(parsedDate)) dateValue = parsedDate;
+            const plugin = FieldRegistry.get(field.type);
+            if (plugin?.EditorComponent) {
+              const Editor = plugin.EditorComponent;
+              renderedContent = <Editor field={field} value={formData[field.id]} onChange={(v) => handleDataChange(field.id, v)} />;
+            }
+            if (!renderedContent) {
+              switch (field.type) {
+                case 'text':
+                  renderedContent = <Input value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
+                  break;
+                case 'textarea':
+                  renderedContent = <Textarea value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
+                  break;
+                case 'number':
+                  renderedContent = <Input type="number" step="any" onWheel={(e) => e.currentTarget.blur()} value={formData[field.id] || ""} onChange={(e) => handleDataChange(field.id, e.target.value)} />;
+                  break;
+                case 'date': {
+                  const dateString = formData[field.id];
+                  let dateValue: Date | undefined;
+                  if (dateString && typeof dateString === 'string') {
+                    const parsedDate = parse(dateString, 'yyyy-MM-dd', new Date());
+                    if (isValid(parsedDate)) dateValue = parsedDate;
+                  }
+                  renderedContent = <DatePicker date={dateValue} setDate={(d) => handleDataChange(field.id, d)} placeholder="Select a date" />;
+                  break;
                 }
-                renderedContent = <DatePicker date={dateValue} setDate={(d) => handleDataChange(field.id, d)} placeholder="Select a date" />;
-                break;
-              }
-              case 'dropdown':
-                renderedContent = (
-                  <Select value={formData[field.id]} onValueChange={(value) => handleDataChange(field.id, value)}>
-                    <SelectTrigger><SelectValue placeholder="Select an option" /></SelectTrigger>
-                    <SelectContent>{(field.options || []).filter(Boolean).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                  </Select>
-                );
-                break;
-              case 'dynamic-dropdown':
-                renderedContent = (
-                  <Combobox
-                    options={getDynamicOptions(field.id, template.id)}
-                    value={formData[field.id] || ""}
-                    onChange={(value) => handleDataChange(field.id, value)}
-                    placeholder={`Select ${field.name}...`}
-                    searchPlaceholder={`Search ${field.name}...`}
-                    emptyPlaceholder={`No ${field.name} found.`}
-                  />
-                );
-                break;
-              case 'link':
-                renderedContent = renderLinkField(field);
-                break;
-              case 'picture': {
-                const currentImages = formData[field.id] ? (Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]]) : [];
-                renderedContent = (
-                  <div>
-                    <DndContext id={`${dndContextId}-images`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleImageDragEnd(e, field.id)}>
-                      <SortableContext items={currentImages} strategy={rectSortingStrategy}>
-                        {currentImages.length > 0 && (
-                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
-                            {currentImages.map((imgSrc: string) => (
-                              <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onClick={() => setFullScreenImage(imgSrc)} />
-                            ))}
+                case 'dropdown':
+                  renderedContent = (
+                    <Select value={formData[field.id]} onValueChange={(value) => handleDataChange(field.id, value)}>
+                      <SelectTrigger><SelectValue placeholder="Select an option" /></SelectTrigger>
+                      <SelectContent>{(field.options || []).filter(Boolean).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                    </Select>
+                  );
+                  break;
+                case 'dynamic-dropdown':
+                  renderedContent = (
+                    <Combobox
+                      options={getDynamicOptions(field.id, template.id)}
+                      value={formData[field.id] || ""}
+                      onChange={(value) => handleDataChange(field.id, value)}
+                      placeholder={`Select ${field.name}...`}
+                      searchPlaceholder={`Search ${field.name}...`}
+                      emptyPlaceholder={`No ${field.name} found.`}
+                    />
+                  );
+                  break;
+                case 'link':
+                  renderedContent = renderLinkField(field);
+                  break;
+                case 'picture': {
+                  const currentImages = formData[field.id] ? (Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]]) : [];
+                  renderedContent = (
+                    <div>
+                      <DndContext id={`${dndContextId}-images`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleImageDragEnd(e, field.id)}>
+                        <SortableContext items={currentImages} strategy={rectSortingStrategy}>
+                          {currentImages.length > 0 && (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
+                              {currentImages.map((imgSrc: string) => (
+                                <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onClick={() => setFullScreenImage(imgSrc)} />
+                              ))}
+                            </div>
+                          )}
+                        </SortableContext>
+                      </DndContext>
+                      <div
+                        className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
+                        onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)}
+                      >
+                        {uploadingStates[field.id] ? (
+                          <div className="flex flex-col items-center justify-center gap-2 p-4">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="text-muted-foreground">Uploading...</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                            <p className="text-muted-foreground">Drag & drop images, paste an image, or enter a URL.</p>
+                            <div className="flex items-center gap-2 w-full">
+                              <Textarea id={`picture-url-${field.id}`} placeholder="Paste URL or image" value={""} onChange={(e) => { e.target.value = '' }} onPaste={(e) => handlePicturePaste(e, field.id)} rows={1} className="text-xs" />
+                              <span className="text-xs text-muted-foreground">OR</span>
+                              <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
+                            </div>
                           </div>
                         )}
-                      </SortableContext>
-                    </DndContext>
-                    <div
-                      className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
-                      onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)}
-                    >
-                      {uploadingStates[field.id] ? (
-                        <div className="flex flex-col items-center justify-center gap-2 p-4">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                          <p className="text-muted-foreground">Uploading...</p>
+                        <input type="file" accept="image/*,image/tiff,image/bmp" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
+                      </div>
+                    </div>
+                  )
+                  break;
+                }
+                case 'attachment': {
+                  const currentAttachments: AttachmentInfo[] = formData[field.id] || [];
+                  renderedContent = (
+                    <div>
+                      {currentAttachments.length > 0 && (
+                        <div className="space-y-2 mb-2">
+                          {currentAttachments.map((att: AttachmentInfo, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                                <div className="flex-1 overflow-hidden">
+                                  <p className="text-sm font-medium truncate">{att.name}</p>
+                                  <p className="text-xs text-muted-foreground">{formatBytesUtility(att.size)}</p>
+                                </div>
+                              </div>
+                              <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleRemoveAttachment(field.id, index)}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                          <p className="text-muted-foreground">Drag & drop images, paste an image, or enter a URL.</p>
-                          <div className="flex items-center gap-2 w-full">
-                            <Textarea id={`picture-url-${field.id}`} placeholder="Paste URL or image" value={""} onChange={(e) => { e.target.value = '' }} onPaste={(e) => handlePicturePaste(e, field.id)} rows={1} className="text-xs" />
-                            <span className="text-xs text-muted-foreground">OR</span>
+                      )}
+                      <div className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
+                        onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)} >
+                        {uploadingStates[field.id] ? (
+                          <div className="flex flex-col items-center justify-center gap-2 p-4"> <Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="text-muted-foreground">Uploading...</p> </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-2">
+                            <Paperclip className="h-8 w-8 text-muted-foreground" />
+                            <p className="text-muted-foreground">Drag & drop files here</p>
+                            <div className="flex items-center gap-2 w-full"> <div className="flex-grow border-b" /> <span className="text-xs text-muted-foreground">OR</span> <div className="flex-grow border-b" /> </div>
                             <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
                           </div>
-                        </div>
-                      )}
-                      <input type="file" accept="image/*,image/tiff,image/bmp" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
-                    </div>
-                  </div>
-                )
-                break;
-              }
-              case 'attachment': {
-                const currentAttachments: AttachmentInfo[] = formData[field.id] || [];
-                renderedContent = (
-                  <div>
-                    {currentAttachments.length > 0 && (
-                      <div className="space-y-2 mb-2">
-                        {currentAttachments.map((att: AttachmentInfo, index: number) => (
-                          <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
-                              <div className="flex-1 overflow-hidden">
-                                <p className="text-sm font-medium truncate">{att.name}</p>
-                                <p className="text-xs text-muted-foreground">{formatBytesUtility(att.size)}</p>
-                              </div>
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleRemoveAttachment(field.id, index)}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
-                      onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)} >
-                      {uploadingStates[field.id] ? (
-                        <div className="flex flex-col items-center justify-center gap-2 p-4"> <Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="text-muted-foreground">Uploading...</p> </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <Paperclip className="h-8 w-8 text-muted-foreground" />
-                          <p className="text-muted-foreground">Drag & drop files here</p>
-                          <div className="flex items-center gap-2 w-full"> <div className="flex-grow border-b" /> <span className="text-xs text-muted-foreground">OR</span> <div className="flex-grow border-b" /> </div>
-                          <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
-                        </div>
-                      )}
-                      <input type="file" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
-                    </div>
-                  </div>
-                );
-                break;
-              }
-              case 'xy-chart': {
-                const chartData: XYChartData = { points: [], ...formData[field.id] };
-
-                renderedContent = (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2"> <Label htmlFor={`${field.id}-x-label`} className="text-xs">X-Axis Label</Label> <Input id={`${field.id}-x-label`} placeholder="e.g., Time (s)" value={chartData.xAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'xAxisLabel', e.target.value)} /></div>
-                      <div className="space-y-2"> <Label htmlFor={`${field.id}-y-label`} className="text-xs">Y-Axis Label</Label> <Input id={`${field.id}-y-label`} placeholder="e.g., Temperature (°C)" value={chartData.yAxisLabel || ''} onChange={e => handleChartDataChange(field.id, 0, 'yAxisLabel', e.target.value)} /></div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 items-center p-2 border rounded-md bg-muted/30">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${field.id}-show-avg`}
-                          checked={!!chartData.showAverage}
-                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showAverage', !!checked)}
-                        />
-                        <Label htmlFor={`${field.id}-show-avg`} className="text-xs cursor-pointer">Show Average</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${field.id}-show-std`}
-                          checked={!!chartData.showStdDev}
-                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showStdDev', !!checked)}
-                        />
-                        <Label htmlFor={`${field.id}-show-std`} className="text-xs cursor-pointer">Show Std Dev</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${field.id}-show-rel`}
-                          checked={!!chartData.showRelativeError}
-                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showRelativeError', !!checked)}
-                        />
-                        <Label htmlFor={`${field.id}-show-rel`} className="text-xs cursor-pointer">Show Relative Error</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${field.id}-show-reg`}
-                          checked={!!chartData.showLinearRegression}
-                          onCheckedChange={(checked) => handleChartDataChange(field.id, 0, 'showLinearRegression', !!checked)}
-                        />
-                        <Label htmlFor={`${field.id}-show-reg`} className="text-xs cursor-pointer">Show Linear Regression</Label>
+                        )}
+                        <input type="file" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs">Data Points (X, Y)</Label>
-                      <p className="text-xs text-muted-foreground mb-2">Manage your data in the grid below.</p>
-                      <XYChartSpreadsheetEditor
-                        points={chartData.points}
-                        onChange={(newPoints) => {
-                          handleDataChange(field.id, {
-                            ...chartData,
-                            points: newPoints
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-                break;
-              }
-              case 'embed': {
-                const handleEmbedChange = (value: string) => {
-                  let finalUrl = value.trim();
-
-                  // Extract URL from iframe snippet if detected
-                  if (finalUrl.toLowerCase().startsWith('<iframe') && finalUrl.includes('src=')) {
-                    const srcMatch = finalUrl.match(/src=["']([^"']+)["']/i);
-                    if (srcMatch && srcMatch[1]) {
-                      finalUrl = srcMatch[1];
-                    }
-                  }
-
-                  // Auto-convert standard YouTube links to embed links to prevent 'X-Frame-Options' blocking
-                  if (finalUrl.includes('youtube.com/watch?v=')) {
-                    try {
-                      const urlObj = new URL(finalUrl);
-                      const videoId = urlObj.searchParams.get('v');
-                      if (videoId) {
-                        finalUrl = `https://www.youtube.com/embed/${videoId}`;
-                      }
-                    } catch (e) {
-                      // fallback if URL parsing fails
-                    }
-                  } else if (finalUrl.includes('youtu.be/')) {
-                    const videoId = finalUrl.split('youtu.be/')[1]?.split('?')[0];
-                    if (videoId) {
-                      finalUrl = `https://www.youtube.com/embed/${videoId}`;
-                    }
-                  }
-                  handleDataChange(field.id, finalUrl);
-                };
-
-                renderedContent = (
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Paste iframe/embed URL (e.g., https://docs.google.com/.../pubhtml?widget=true)"
-                      value={formData[field.id] || ""}
-                      onChange={(e) => handleEmbedChange(e.target.value)}
-                    />
-                    <p className="text-[10px] text-muted-foreground italic mt-1">
-                      Note: Many sites block standard URLs from being embedded. Please ensure you use the site's specifically provided "Embed" or "Publish to Web" URL. Standard YouTube links will be auto-converted.
-                    </p>
-                  </div>
-                );
-                break;
-              }
-              case 'spreadsheet': {
-                renderedContent = <SpreadsheetEditorField field={field} value={formData[field.id]} onChange={(v) => handleDataChange(field.id, v)} />;
-                break;
+                  );
+                  break;
+                }
               }
             }
 
