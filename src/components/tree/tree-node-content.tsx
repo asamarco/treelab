@@ -147,20 +147,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
     }, [template.fields, isExpanded, isCompactOverride]);
 
 
-    const handleCheckboxChange = (fieldId: string, itemId: string, checked: boolean) => {
-        if (readOnly) return;
-        const currentItems: ChecklistItem[] = node.data[fieldId] || [];
-        const newItems = currentItems.map(item =>
-            item.id === itemId ? { ...item, checked } : item
-        );
-        const newData = {
-            ...node.data,
-            [fieldId]: newItems,
-        };
-        if (updateNode) {
-            updateNode(node.id, { data: newData });
-        }
-    };
+
 
     const tableHeaderFields = useMemo(() => {
         const fields = template.fields.filter(f => f.type === 'table-header');
@@ -257,30 +244,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                             </div>
                                         );
                                     }
-                                    case 'checklist': {
-                                        const items: ChecklistItem[] = value || [];
-                                        if (items.length === 0) return null;
 
-                                        return (
-                                            <div key={field.id} className="mt-4" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                                                <p className={cn("font-medium mb-2", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-                                                <div className="space-y-2">
-                                                    {items.map(item => (
-                                                        <div key={item.id} className="flex items-center gap-2">
-                                                            <Checkbox
-                                                                checked={item.checked}
-                                                                disabled={readOnly}
-                                                                onCheckedChange={(checked) => handleCheckboxChange(field.id, item.id, !!checked)}
-                                                            />
-                                                            <span className={cn(item.checked && "text-muted-foreground", isCompactView ? "text-xs" : "text-sm")}>
-                                                                {item.text}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )
-                                    }
 
                                     case 'picture': {
                                         let pictures = value;

@@ -118,25 +118,7 @@ const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: strin
   );
 };
 
-const DraggableCheckboxItem = ({ id, children }: { id: string; children: React.ReactNode; }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 w-full">
-      <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="h-8 w-8 cursor-grab shrink-0">
-        <GripVertical className="h-4 w-4" />
-      </Button>
-      {children}
-    </div>
-  );
-};
 
 const operatorLabels: Record<ConditionalRuleOperator, string> = {
   equals: 'Equals',
@@ -928,10 +910,7 @@ export const NodeForm = ({
                 </div>
               );
             }
-            if (field.type === 'checklist') {
-              const items: ChecklistItem[] = formData[field.id] || [];
-              return <ChecklistEditorField key={field.id} field={field} items={items} onChange={(v) => handleDataChange(field.id, v)} />;
-            }
+
             if (field.type === 'query') {
               const handleQueryChange = (value: any) => handleDataChange(field.id, value);
               return <QueryBuilder key={field.id} field={field} value={formData[field.id]} onChange={handleQueryChange} />;
@@ -1278,46 +1257,4 @@ const SpreadsheetEditorField = React.memo(({ field, value, onChange }: { field: 
 });
 SpreadsheetEditorField.displayName = "SpreadsheetEditorField";
 
-const ChecklistEditorField = React.memo(({ field, items, onChange }: { field: Field, items: ChecklistItem[], onChange: (value: any) => void }) => {
-  const sensors = useSensors(useSensor(PointerSensor));
-  const dndContextId = useId();
-  return (
-    <div key={field.id} className="space-y-2">
-      <Label className="text-sm font-medium">{field.name}</Label>
-      <div className="space-y-2">
-        <DndContext id={`${dndContextId}-checklist`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => {
-          const { active, over } = event;
-          if (over && active.id !== over.id) {
-            const oldIndex = items.findIndex(item => item.id === active.id);
-            const newIndex = items.findIndex(item => item.id === over.id);
-            if (oldIndex !== -1 && newIndex !== -1) {
-              onChange(arrayMove(items, oldIndex, newIndex));
-            }
-          }
-        }}>
-          <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
-            {items.map((item, index) => (
-              <DraggableCheckboxItem key={item.id} id={item.id}>
-                <div className="flex items-center gap-2 w-full">
-                  <Checkbox checked={item.checked} onCheckedChange={(checked) => {
-                    const newItems = [...items]; newItems[index] = { ...item, checked: !!checked }; onChange(newItems);
-                  }} />
-                  <Input value={item.text} onChange={(e) => {
-                    const newItems = [...items]; newItems[index] = { ...item, text: e.target.value }; onChange(newItems);
-                  }} className="h-8" />
-                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onChange(items.filter((_, i) => i !== index))}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </DraggableCheckboxItem>
-            ))}
-          </SortableContext>
-        </DndContext>
-        <Button type="button" variant="outline" size="sm" onClick={() => onChange([...items, { id: generateClientSideId(), text: '', checked: false }])} className="mt-2">
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Item
-        </Button>
-      </div>
-    </div>
-  );
-});
-ChecklistEditorField.displayName = "ChecklistEditorField";
+

@@ -692,12 +692,6 @@ export function TemplateDesigner({
                                             <span>Checkbox</span>
                                           </div>
                                         </SelectItem>
-                                        <SelectItem value="checklist">
-                                          <div className="flex items-center gap-2">
-                                            <ListChecks className="h-4 w-4 text-muted-foreground" />
-                                            <span>Checklist</span>
-                                          </div>
-                                        </SelectItem>
                                         <SelectItem value="table-header">
                                           <div className="flex items-center gap-2">
                                             <Table className="h-4 w-4 text-muted-foreground" />
