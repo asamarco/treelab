@@ -25,6 +25,9 @@ export interface FieldTypePlugin {
         readOnly?: boolean;
         isCompactView?: boolean;
     }>;
+
+    // Optional lifecycle hook to sanitize/transform form data before saving
+    sanitizeOnSave?: (value: any) => any;
 }
 
 class Registry {

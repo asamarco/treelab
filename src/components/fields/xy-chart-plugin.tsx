@@ -322,4 +322,16 @@ export const XYChartPlugin: FieldTypePlugin = {
     icon: LineChartIcon,
     EditorComponent: XYChartEditorComponent,
     ViewerComponent: XYChartViewerComponent,
+    sanitizeOnSave: (value: any) => {
+        if (!value) return value;
+        const chartData = value as XYChartData;
+        if (!Array.isArray(chartData.points)) return value;
+        return {
+            ...chartData,
+            points: chartData.points.filter(row =>
+                (row.x?.toString().trim() ?? '') !== '' ||
+                (row.y?.toString().trim() ?? '') !== ''
+            ),
+        };
+    },
 };

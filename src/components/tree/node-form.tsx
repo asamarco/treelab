@@ -573,23 +573,21 @@ export const NodeForm = ({
               isFormValid = false;
               break;
             }
-          } else if (field.type === 'xy-chart' && value) {
-            const chartData = value as XYChartData;
-            if (Array.isArray(chartData.points)) {
-              dirtyData[field.id] = {
-                ...chartData,
-                points: chartData.points.filter(row =>
-                  (row.x?.toString().trim() ?? '') !== '' ||
-                  (row.y?.toString().trim() ?? '') !== ''
-                )
-              };
-            }
           } else {
             dirtyData[field.id] = value;
           }
         }
       }
+
       if (isFormValid) {
+        for (const field of template.fields) {
+          if (dirtyData[field.id] !== undefined) {
+            const plugin = FieldRegistry.get(field.type);
+            if (plugin?.sanitizeOnSave) {
+              dirtyData[field.id] = plugin.sanitizeOnSave(dirtyData[field.id]);
+            }
+          }
+        }
         onSave({ data: dirtyData } as TreeNode);
       }
       return;
@@ -630,24 +628,19 @@ export const NodeForm = ({
           finalFormData[field.id] = isoValues;
         }
       }
-
-      // Prune empty rows for xy-chart fields before saving
-      if (field.type === 'xy-chart' && finalFormData[field.id]) {
-        const chartData = finalFormData[field.id] as XYChartData;
-        if (Array.isArray(chartData.points)) {
-          finalFormData[field.id] = {
-            ...chartData,
-            points: chartData.points.filter(row =>
-              (row.x?.toString().trim() ?? '') !== '' ||
-              (row.y?.toString().trim() ?? '') !== ''
-            )
-          };
-        }
-      }
     }
 
     if (!isFormValid) {
       return;
+    }
+
+    for (const field of template.fields) {
+      if (finalFormData[field.id] !== undefined) {
+        const plugin = FieldRegistry.get(field.type);
+        if (plugin?.sanitizeOnSave) {
+          finalFormData[field.id] = plugin.sanitizeOnSave(finalFormData[field.id]);
+        }
+      }
     }
 
     const finalName = generateNodeName(template, finalFormData);
