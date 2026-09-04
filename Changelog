@@ -1,3 +1,9 @@
+v0.8.1
+
+Bugfix (critical): use DB_ENCRYPTION_KEY environment variable as documented
+Improvement: prompt a warning if github personal access token is expired
+
+
 v0.8.0
 
 BREAKING: deprecate config.json and configure everything through environment variables in .env, see README
