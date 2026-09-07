@@ -26,7 +26,7 @@ export const register = async (username: string, password: string): Promise<User
     const { registerUser } = await import('./auth-service');
     try {
         return await registerUser(username, password);
-    } catch(error) {
+    } catch (error) {
         console.error("Registration failed:", error);
         throw error;
     }
@@ -51,15 +51,4 @@ export const getSessionUser = async (): Promise<User | null> => {
     }
 };
 
-// Functions that still call server actions directly (admin actions, etc.)
-export { 
-    fetchAllUsers, 
-    searchUsers, 
-    addUser as addUserByAdmin,
-    updateUserAdminStatus,
-    deleteUser,
-    changeUserPassword,
-    resetUserPasswordByAdmin,
-    saveGlobalSettings,
-    updateUserSettings,
-} from './auth-service';
+export { searchUsers } from './auth-service';
