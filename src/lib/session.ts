@@ -37,7 +37,7 @@ function getSessionDurationMs(rememberMe: boolean): number {
   return (isNaN(hours) ? 12 : hours) * 60 * 60 * 1000;
 }
 
-export async function encrypt(payload: { userId: string, expires: Date, rememberMe?: boolean, sessionVersion?: number }) {
+async function encrypt(payload: { userId: string, expires: Date, rememberMe?: boolean, sessionVersion?: number }) {
   const expiryTime = payload.rememberMe 
     ? `${Math.round(getSessionDurationMs(true) / (24 * 60 * 60 * 1000))}d`
     : `${Math.round(getSessionDurationMs(false) / (60 * 60 * 1000))}h`;
@@ -49,7 +49,7 @@ export async function encrypt(payload: { userId: string, expires: Date, remember
     .sign(key);
 }
 
-export async function decrypt(input: string): Promise<any> {
+async function decrypt(input: string): Promise<any> {
   try {
     const { payload } = await jwtVerify(input, key, {
       algorithms: ['HS256'],

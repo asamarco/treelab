@@ -22,16 +22,6 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { getSession } from './session';
 import { getDataDir } from './data-dir';
 
-
-export async function hashPassword(password: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-}
-
 // --- Permission Helper ---
 // Computes the effective permissions for a user on a tree.
 // Legacy sharedWith users get read-only access. New shares entries carry granular permissions.
@@ -76,9 +66,9 @@ async function getTreePermissions(tree: Pick<TreeFile, 'userId' | 'sharedWith' |
                 { leaderIds: userId }
             ]
         }).select('_id').lean().exec();
-        
+
         const userTeamIds = userTeams.map(t => t._id.toString());
-        
+
         const relevantTeamShares = teamShares.filter(ts => userTeamIds.includes(ts.teamId));
         if (relevantTeamShares.length > 0) {
             hasAccess = true;
@@ -219,15 +209,15 @@ export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & {
         const isTemplateUpdate = updateKeys.includes('templates');
         const isTitleUpdate = updateKeys.includes('title');
         const isGitSyncUpdate = updateKeys.includes('gitSync');
-        
+
         if (isTemplateUpdate && !perms.editTemplates) {
             throw new Error("Authorization denied: You do not have permission to edit templates.");
         }
         if (isTitleUpdate && !perms.admin) {
-             throw new Error("Authorization denied: You do not have permission to edit the tree title.");
+            throw new Error("Authorization denied: You do not have permission to edit the tree title.");
         }
         if (isGitSyncUpdate && !perms.admin && !perms.editNodes && !perms.editTemplates) {
-             throw new Error("Authorization denied: You do not have permission to configure GitHub sync.");
+            throw new Error("Authorization denied: You do not have permission to configure GitHub sync.");
         }
         if (!perms.hasAccess) {
             throw new Error("Authorization denied.");
@@ -386,7 +376,7 @@ export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | nul
 
         const actualTreeId = treeFileDoc._id.toString();
         const nodes = await loadTreeNodes(actualTreeId);
-        
+
         // Sanitize the document: Only include fields safe for public exposure.
         const plainDoc: any = {
             id: actualTreeId,
@@ -534,27 +524,6 @@ export async function deleteTreeFile(treeId: string): Promise<void> {
     }
 }
 
-
-export async function deleteTreeFilesByUserId(userId: string): Promise<void> {
-    const session = await getSession();
-    if (!session?.userId || session.userId !== userId) throw new Error("Authorization denied.");
-
-    await connectToDatabase();
-    try {
-        const treesToDelete = await TreeModel.find({ userId: userId }).select('_id').lean();
-        const treeIds = treesToDelete.map((t: any) => t._id.toString());
-
-        if (treeIds.length > 0) {
-            await TreeNodeModel.deleteMany({ treeId: { $in: treeIds } });
-            await TreeModel.deleteMany({ _id: { $in: treeIds } });
-        }
-
-        console.log(`INFO: Deleted all trees and nodes for user ${userId} from DB`);
-    } catch (error) {
-        console.error("Error deleting tree files by user ID:", error);
-        throw error;
-    }
-}
 
 
 // --- TreeNode Functions ---
@@ -1432,7 +1401,7 @@ export async function loadUserTeams(): Promise<Team[]> {
 
     await connectToDatabase();
     const user = await UserModel.findById(session.userId).lean<User>();
-    
+
     let query = {};
     if (!user?.isAdmin) {
         query = {
@@ -1469,7 +1438,7 @@ export async function assignTeamLeaders(teamId: string, leaderIds: string[]): Pr
 
     await connectToDatabase();
     // Leaders are also members
-    await TeamModel.findByIdAndUpdate(teamId, { 
+    await TeamModel.findByIdAndUpdate(teamId, {
         leaderIds,
         $addToSet: { memberIds: { $each: leaderIds } }
     }).exec();

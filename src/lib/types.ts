@@ -64,7 +64,7 @@ export interface SimpleQueryRule {
     value: string;
 }
 
-export type RuleType = 'field' | 'ancestor' | 'descendant';
+type RuleType = 'field' | 'ancestor' | 'descendant';
 
 export interface QueryRule {
     id: string;
