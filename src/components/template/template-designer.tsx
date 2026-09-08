@@ -773,29 +773,7 @@ export function TemplateDesigner({
                                 />
                               </div>
                             )}
-                            {form.watch(`fields.${index}.type`) === 'picture' && (
-                              <div className="mt-4">
-                                <FormField
-                                  control={form.control}
-                                  name={`fields.${index}.height`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Image Height (px)</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          type="number"
-                                          placeholder="Default: 300"
-                                          {...field}
-                                          value={field.value || ""}
-                                          onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            )}
+
                             {(() => {
                               const selectedType = form.watch(`fields.${index}.type`);
                               const plugin = FieldRegistry.get(selectedType);

@@ -11,20 +11,17 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem, QueryRule, ConditionalRuleOperator } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { CardContent } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { RenderWithLinks } from "./render-with-links";
 import { Icon } from "../icon";
-import { Download, Grid, Rows, Crosshair, X, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Crosshair } from "lucide-react";
 import { TreeNodeComponent } from "./tree-node";
-import { formatBytes, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { useAuthContext } from "@/contexts/auth-context";
 import { TreeNodeDropZone } from "./tree-node-dropzone";
 import { WritableDraft } from "immer";
 import { Button } from "../ui/button";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label as ChartLabel, Tooltip as ChartTooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
 import { getConditionalStyle } from "./tree-node-utils";
@@ -33,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TreeSpreadsheetField } from "./tree-spreadsheet-field";
 import { FieldRegistry } from "@/lib/field-types";
 
@@ -75,76 +71,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
     const isCompactView = isCompactOverride ?? globalIsCompactView;
 
     const nodeData = node.data || {};
-    const [imageViewModes, setImageViewModes] = useState<Record<string, 'carousel' | 'grid'>>({});
-    const [containerWidths, setContainerWidths] = useState<Record<string, number>>({});
-    const containerRefs = useRef<Record<string, HTMLDivElement | null>>({});
-    const [imageDimensions, setImageDimensions] = useState<Record<string, { width: number, height: number }>>({});
-    const [fullScreenGallery, setFullScreenGallery] = useState<{ images: string[]; index: number } | null>(null);
-    const [fullScreenEmbedUrl, setFullScreenEmbedUrl] = useState<string | null>(null);
-
-    const openFullScreenGallery = useCallback((images: string[], index: number) => {
-        setFullScreenGallery({ images, index });
-    }, []);
-
-    const goToPrevImage = useCallback(() => {
-        setFullScreenGallery(prev => {
-            if (!prev || prev.images.length <= 1) return prev;
-            const newIndex = prev.index === 0 ? prev.images.length - 1 : prev.index - 1;
-            return { ...prev, index: newIndex };
-        });
-    }, []);
-
-    const goToNextImage = useCallback(() => {
-        setFullScreenGallery(prev => {
-            if (!prev || prev.images.length <= 1) return prev;
-            const newIndex = prev.index === prev.images.length - 1 ? 0 : prev.index + 1;
-            return { ...prev, index: newIndex };
-        });
-    }, []);
-
-    useEffect(() => {
-        if (!fullScreenGallery) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                goToPrevImage();
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                goToNextImage();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [fullScreenGallery, goToPrevImage, goToNextImage]);
-
     let tableRendered = false;
-
-
-    useEffect(() => {
-        if (!isExpanded || isCompactOverride) return;
-
-        const observers: Record<string, ResizeObserver> = {};
-        const currentRefs = containerRefs.current;
-
-        for (const fieldId in currentRefs) {
-            const element = containerRefs.current[fieldId];
-            if (element) {
-                const observer = new ResizeObserver((entries) => {
-                    for (const entry of entries) {
-                        setContainerWidths(prev => ({ ...prev, [fieldId]: entry.contentRect.width }));
-                    }
-                });
-                observer.observe(element);
-                observers[fieldId] = observer;
-            }
-        }
-
-        return () => {
-            for (const fieldId in observers) {
-                observers[fieldId].disconnect();
-            }
-        };
-    }, [template.fields, isExpanded, isCompactOverride]);
 
 
 
@@ -246,148 +173,6 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                     }
 
 
-                                    case 'picture': {
-                                        let pictures = value;
-                                        if (!pictures || (Array.isArray(pictures) && pictures.length === 0)) return null;
-                                        if (typeof pictures === 'string') pictures = [pictures];
-                                        if (!Array.isArray(pictures)) return null;
-
-                                        const images = pictures.filter(v => typeof v === 'string' && v.length > 0);
-                                        if (images.length === 0) return null;
-
-                                        const maxHeight = isCompactView ? Math.min(field.height || 300, 150) : (field.height || 300);
-                                        const containerWidth = containerWidths[field.id] || 0;
-
-                                        const totalImageWidth = images.reduce((acc, src) => {
-                                            const dims = imageDimensions[src];
-                                            if (!dims || dims.height === 0) {
-                                                return acc + (maxHeight * (4 / 3)) + 8;
-                                            }
-                                            const renderedWidth = (dims.width / dims.height) * maxHeight;
-                                            return acc + renderedWidth + 8;
-                                        }, 0);
-
-                                        const indentation = level * 24;
-                                        const doesOverflow = containerWidth > 0 && totalImageWidth > (containerWidth - indentation - 50);
-
-                                        const viewMode = imageViewModes[field.id] || 'carousel';
-                                        const finalViewMode = isMobile ? 'carousel' : doesOverflow ? viewMode : 'grid';
-
-                                        return (
-                                            <div
-                                                key={field.id}
-                                                className="mt-2"
-                                                onClick={(e) => e.stopPropagation()}
-                                                onDoubleClick={(e) => e.stopPropagation()}
-                                                ref={el => { containerRefs.current[field.id] = el; }}
-                                            >
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <p className={cn("font-medium", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-                                                    {doesOverflow && images.length > 1 && !isMobile && (
-                                                        <TooltipProvider>
-                                                            <div className="flex items-center gap-1 rounded-full p-1 bg-muted">
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button variant={viewMode === 'carousel' ? 'secondary' : 'ghost'} size="icon" className="h-6 w-6 rounded-full" onClick={() => setImageViewModes(prev => ({ ...prev, [field.id]: 'carousel' }))}>
-                                                                            <Rows className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent><p>Slideshow View</p></TooltipContent>
-                                                                </Tooltip>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger asChild>
-                                                                        <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="icon" className="h-6 w-6 rounded-full" onClick={() => setImageViewModes(prev => ({ ...prev, [field.id]: 'grid' }))}>
-                                                                            <Grid className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent><p>Grid View</p></TooltipContent>
-                                                                </Tooltip>
-                                                            </div>
-                                                        </TooltipProvider>
-                                                    )}
-                                                </div>
-
-                                                {finalViewMode === 'carousel' ? (
-                                                    <div className="mx-auto" style={{ maxWidth: '100%' }}>
-                                                        <Carousel className="w-full" opts={{ loop: images.length > 1, align: "start" }}>
-                                                            <CarouselContent>
-                                                                {images.map((src, index) => {
-                                                                    return (
-                                                                        <CarouselItem key={index} className={cn(!isMobile && "basis-auto", isMobile && "basis-full")}>
-                                                                            <div className="p-1 h-full flex items-center justify-center">
-                                                                                <CardContent className="flex h-full items-center justify-center p-0 overflow-hidden rounded-lg">
-                                                                                    <img
-                                                                                        src={src}
-                                                                                        alt={`${field.name} ${index + 1}`}
-                                                                                        className="object-contain w-full cursor-zoom-in"
-                                                                                        style={{ maxHeight: `${maxHeight}px` }}
-                                                                                        onClick={(e) => { e.stopPropagation(); openFullScreenGallery(images, index); }}
-                                                                                        onLoad={(e) => {
-                                                                                            const img = e.currentTarget;
-                                                                                            setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
-                                                                                        }}
-                                                                                    />
-                                                                                </CardContent>
-                                                                            </div>
-                                                                        </CarouselItem>
-                                                                    );
-                                                                })}
-                                                            </CarouselContent>
-                                                            {images.length > 1 && <>
-                                                                <CarouselPrevious />
-                                                                <CarouselNext />
-                                                            </>}
-                                                        </Carousel>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-wrap gap-2 items-center justify-center">
-                                                        {images.map((src, index) => (
-                                                            <div key={index} className="flex items-center justify-center">
-                                                                <img
-                                                                    src={src}
-                                                                    alt={`${field.name} ${index + 1}`}
-                                                                    className="object-contain max-w-full h-auto rounded-md cursor-zoom-in"
-                                                                    style={{ maxHeight: `${maxHeight}px` }}
-                                                                    onClick={(e) => { e.stopPropagation(); openFullScreenGallery(images, index); }}
-                                                                    onLoad={(e) => {
-                                                                        const img = e.currentTarget;
-                                                                        setImageDimensions(prev => ({ ...prev, [src]: { width: img.naturalWidth, height: img.naturalHeight } }));
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )
-                                    }
-                                    case 'attachment': {
-                                        const attachments: AttachmentInfo[] = value;
-                                        if (!attachments || !Array.isArray(attachments) || attachments.length === 0) return null;
-
-                                        return (
-                                            <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                                                <p className={cn("font-medium mb-1", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
-                                                <div className="space-y-2">
-                                                    {attachments.map((att, index) => {
-                                                        const fullUrl = `${att.path}?name=${encodeURIComponent(att.name)}`;
-                                                        return (
-                                                            <a key={index} href={fullUrl} download={att.name} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-2 rounded-md bg-muted/50 hover:bg-muted">
-                                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <Icon name="File" className="h-5 w-5 text-muted-foreground shrink-0" />
-                                                                    <div className="flex-1 overflow-hidden">
-                                                                        <p className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{att.name}</p>
-                                                                        <p className="text-xs text-muted-foreground">{formatBytes(att.size)}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <Download className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
-                                                            </a>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    }
                                     case 'table-header': {
                                         if (tableRendered || tableHeaderFields.length === 0) return null;
                                         tableRendered = true;
@@ -569,79 +354,6 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                     )}
                 </div>
             </div>
-
-            {/* Image Lightbox */}
-            <Dialog open={!!fullScreenGallery} onOpenChange={(open) => !open && setFullScreenGallery(null)}>
-                <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
-                    <DialogHeader className="sr-only">
-                        <DialogTitle>Full Screen Image</DialogTitle>
-                    </DialogHeader>
-                    <div className="relative w-full h-full flex items-center justify-center group/lightbox">
-                        {fullScreenGallery && (
-                            <>
-                                <img
-                                    src={fullScreenGallery.images[fullScreenGallery.index]}
-                                    alt={`Full screen view ${fullScreenGallery.index + 1} of ${fullScreenGallery.images.length}`}
-                                    className="max-w-full max-h-[90vh] object-contain"
-                                />
-                                {fullScreenGallery.images.length > 1 && (
-                                    <>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/lightbox:opacity-100 transition-opacity"
-                                            onClick={(e) => { e.stopPropagation(); goToPrevImage(); }}
-                                            aria-label="Previous image"
-                                        >
-                                            <ChevronLeft className="h-6 w-6" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 text-white hover:bg-black/70 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/lightbox:opacity-100 transition-opacity"
-                                            onClick={(e) => { e.stopPropagation(); goToNextImage(); }}
-                                            aria-label="Next image"
-                                        >
-                                            <ChevronRight className="h-6 w-6" />
-                                        </Button>
-                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
-                                            {fullScreenGallery.index + 1} / {fullScreenGallery.images.length}
-                                        </div>
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Embed Lightbox */}
-            <Dialog open={!!fullScreenEmbedUrl} onOpenChange={(open) => !open && setFullScreenEmbedUrl(null)}>
-                <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden border-none bg-background shadow-2xl">
-                    <DialogHeader className="sr-only">
-                        <DialogTitle>Full Screen Embed</DialogTitle>
-                    </DialogHeader>
-                    <div className="absolute top-2 right-2 z-[60]">
-                        <Button
-                            variant="secondary"
-                            size="icon"
-                            className="h-8 w-8 rounded-full shadow-lg bg-background/80 hover:bg-background transition-colors"
-                            onClick={() => setFullScreenEmbedUrl(null)}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    {fullScreenEmbedUrl && (
-                        <iframe
-                            src={fullScreenEmbedUrl}
-                            title="Full Screen View"
-                            className="w-full h-full border-0"
-                            allowFullScreen
-                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-presentation"
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
         </CollapsibleContent>
     );
 }

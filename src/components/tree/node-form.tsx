@@ -12,7 +12,7 @@
  */
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback, useEffect, useId } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { TreeNode, Template, Field, AttachmentInfo, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -26,32 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  rectSortingStrategy,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, Loader2, ImagePlus, X, Paperclip, File as FileIcon, Link, GripVertical, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Trash2, Link } from "lucide-react";
 import { format, parse, isValid, parseISO } from "date-fns";
 import { cn, generateClientSideId } from "@/lib/utils";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogFooter,
   DialogClose
 } from "../ui/dialog";
@@ -87,36 +67,6 @@ import {
 } from "../ui/table";
 
 
-const DraggableImage = ({ id, src, onRemove, onClick }: { id: string; src: string; onRemove: () => void; onClick: () => void; }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className="relative group aspect-square">
-      <img
-        src={src}
-        alt="explorer"
-        className="w-full h-full object-cover rounded-md cursor-pointer"
-        onClick={onClick}
-      />
-      <Button {...attributes} {...listeners} type="button" variant="ghost" size="icon" className="absolute top-1 left-1 h-66 w-6 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 hover:bg-background/80">
-        <GripVertical className="h-4 w-4" />
-      </Button>
-      <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={onRemove}>
-        <X className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-};
-
-
-
 const operatorLabels: Record<ConditionalRuleOperator, string> = {
   equals: 'Equals',
   not_equals: 'Not Equals',
@@ -145,8 +95,7 @@ export const NodeForm = ({
 }) => {
   const { tree, activeTree, findNodeAndParent, templates, updateNode } = useTreeContext();
   const { setDialogState } = useUIContext();
-
-  const dndContextId = useId();
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState<Record<string, any>>(() => {
     if (isMultiEdit) return {};
@@ -172,13 +121,7 @@ export const NodeForm = ({
     return initialData;
   });
 
-  const { toast } = useToast();
-  const { currentUser, globalSettings } = useAuthContext();
-  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const [uploadingStates, setUploadingStates] = useState<Record<string, boolean>>({});
-  const [dragOverStates, setDragOverStates] = useState<Record<string, boolean>>({});
-  const sensors = useSensors(useSensor(PointerSensor));
-  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  const { currentUser } = useAuthContext();
 
   const parentIndex = contextualParentId ? (node?.parentIds || []).indexOf(contextualParentId) : 0;
   const contextualOrder = (parentIndex !== -1 && node?.order && (node.order.length > parentIndex))
@@ -234,169 +177,6 @@ export const NodeForm = ({
       return Array.from(values).map(v => ({ value: v, label: v }));
     };
   }, [dynamicOptionsCache]);
-
-  const handleFileUpload = async (file: File, field: Field) => {
-    if (!activeTree || !currentUser) return;
-    const maxMB = globalSettings?.maxUploadSizeMB ?? 5;
-    if (file.size > maxMB * 1024 * 1024) {
-      toast({
-        variant: "destructive",
-        title: "File too large",
-        description: `Please select a file smaller than ${maxMB}MB.`,
-      });
-      return;
-    }
-
-    if (field.type === 'picture') {
-      const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/tiff', 'image/bmp'];
-      const isValidMime = validImageTypes.includes(file.type);
-      const isValidExtension = /\.(jpe?g|png|gif|svg|tif|tiff|bmp)$/i.test(file.name);
-
-      if (!isValidMime && !isValidExtension) {
-        toast({ variant: "destructive", title: "Invalid File Type", description: "Please upload a valid image file (jpg, png, gif, svg, tiff, webp, bmp)." });
-        return;
-      }
-    }
-
-    setUploadingStates(prev => ({ ...prev, [field.id]: true }));
-
-    // Generate a unique filename using ISO timestamp and a UUID v4 for maximum entropy.
-    // Replace colons in the ISO string with dashes for Windows filesystem compatibility.
-    const safeTimestamp = new Date().toISOString().replace(/:/g, '-');
-    const uniqueFileName = `${safeTimestamp}-${crypto.randomUUID()}-${file.name}`;
-
-    const formDataPayload = new FormData();
-    formDataPayload.append('file', file);
-    formDataPayload.append('uniqueFileName', uniqueFileName);
-    formDataPayload.append('fileName', file.name);
-
-    try {
-      const response = await fetch('/api/upload/attachment', {
-        method: 'POST',
-        body: formDataPayload,
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.json();
-        throw new Error(errorBody.message || 'Server error');
-      }
-
-      const { attachmentInfo } = await response.json();
-
-      if (attachmentInfo) {
-        if (field.type === 'picture') {
-          setFormData(prev => {
-            const currentImages = Array.isArray(prev[field.id]) ? prev[field.id] : (prev[field.id] ? [prev[field.id]] : []);
-            return { ...prev, [field.id]: [...currentImages, attachmentInfo.path] };
-          });
-          toast({ title: "Image Uploaded", description: "The image has been saved successfully." });
-        } else if (field.type === 'attachment') {
-          setFormData(prev => {
-            const currentAttachments = prev[field.id] || [];
-            return { ...prev, [field.id]: [...currentAttachments, attachmentInfo] };
-          });
-          toast({ title: "Attachment Uploaded", description: `File "${file.name}" has been saved.` });
-        }
-      }
-    } catch (error) {
-      toast({ variant: "destructive", title: "Upload Failed", description: (error as Error).message || "Could not save the file to the server." });
-    } finally {
-      setUploadingStates(prev => ({ ...prev, [field.id]: false }));
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, field: Field) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverStates(prev => ({ ...prev, [field.id]: false }));
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      Array.from(e.dataTransfer.files).forEach(file => handleFileUpload(file, field));
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, fieldId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverStates(prev => ({ ...prev, [fieldId]: true }));
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>, fieldId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverStates(prev => ({ ...prev, [fieldId]: false }));
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>, field: Field) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach(file => handleFileUpload(file, field));
-    }
-  };
-
-  const handlePicturePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>, fieldId: string) => {
-    const clipboardItems = e.clipboardData.items;
-    const textItem = e.clipboardData.getData('text/plain');
-
-    if (textItem && (textItem.startsWith('http') || textItem.startsWith('data:'))) {
-      e.preventDefault();
-      const currentImages = formData[fieldId] ? (Array.isArray(formData[fieldId]) ? formData[fieldId] : [formData[fieldId]]) : [];
-      setFormData({ ...formData, [fieldId]: [...currentImages, textItem] });
-      (e.target as HTMLTextAreaElement).value = '';
-      return;
-    }
-
-    const imageItem = Array.from(clipboardItems).find(item => item.type.startsWith('image/'));
-
-    if (!imageItem) return;
-    e.preventDefault();
-
-    const file = imageItem.getAsFile();
-    if (file) {
-      const field = template.fields.find(f => f.id === fieldId);
-      if (field) {
-        handleFileUpload(file, field);
-      }
-    }
-  };
-
-  const handleRemoveImage = (fieldId: string, imageIndex: number) => {
-    setFormData(prev => {
-      const currentImages = Array.isArray(prev[fieldId]) ? prev[fieldId] : (prev[fieldId] ? [prev[fieldId]] : []);
-      const newImages = currentImages.filter((_: any, index: number) => index !== imageIndex);
-      return { ...prev, [fieldId]: newImages };
-    });
-  };
-
-  const handleRemoveAttachment = (fieldId: string, attachmentIndex: number) => {
-    setFormData(prev => {
-      const currentAttachments = prev[fieldId] || [];
-      const newAttachments = currentAttachments.filter((_: any, index: number) => index !== attachmentIndex);
-      return { ...prev, [fieldId]: newAttachments };
-    });
-  };
-
-  const handleImageDragEnd = (event: DragEndEvent, fieldId: string) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setFormData(prev => {
-        const currentImages = prev[fieldId];
-        if (Array.isArray(currentImages)) {
-          const oldIndex = currentImages.indexOf(active.id as string);
-          const newIndex = currentImages.indexOf(over.id as string);
-          const newImageOrder = arrayMove(currentImages, oldIndex, newIndex);
-          return { ...prev, [fieldId]: newImageOrder };
-        }
-        return prev;
-      });
-    }
-  };
-
 
   const handleTableChange = (rowIndex: number, fieldId: string, value: string | undefined) => {
     setFormData(prev => {
@@ -570,14 +350,7 @@ export const NodeForm = ({
     }
   };
 
-  const formatBytesUtility = (bytes: number, decimals = 2) => {
-    if (!+bytes) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-  }
+
 
   const renderLinkField = (field: Field) => {
     const value = formData[field.id] || "";
@@ -695,87 +468,6 @@ export const NodeForm = ({
                 case 'link':
                   renderedContent = renderLinkField(field);
                   break;
-                case 'picture': {
-                  const currentImages = formData[field.id] ? (Array.isArray(formData[field.id]) ? formData[field.id] : [formData[field.id]]) : [];
-                  renderedContent = (
-                    <div>
-                      <DndContext id={`${dndContextId}-images`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleImageDragEnd(e, field.id)}>
-                        <SortableContext items={currentImages} strategy={rectSortingStrategy}>
-                          {currentImages.length > 0 && (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
-                              {currentImages.map((imgSrc: string) => (
-                                <DraggableImage key={imgSrc} id={imgSrc} src={imgSrc} onRemove={() => handleRemoveImage(field.id, currentImages.indexOf(imgSrc))} onClick={() => setFullScreenImage(imgSrc)} />
-                              ))}
-                            </div>
-                          )}
-                        </SortableContext>
-                      </DndContext>
-                      <div
-                        className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
-                        onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)}
-                      >
-                        {uploadingStates[field.id] ? (
-                          <div className="flex flex-col items-center justify-center gap-2 p-4">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-muted-foreground">Uploading...</p>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-2">
-                            <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                            <p className="text-muted-foreground">Drag & drop images, paste an image, or enter a URL.</p>
-                            <div className="flex items-center gap-2 w-full">
-                              <Textarea id={`picture-url-${field.id}`} placeholder="Paste URL or image" value={""} onChange={(e) => { e.target.value = '' }} onPaste={(e) => handlePicturePaste(e, field.id)} rows={1} className="text-xs" />
-                              <span className="text-xs text-muted-foreground">OR</span>
-                              <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
-                            </div>
-                          </div>
-                        )}
-                        <input type="file" accept="image/*,image/tiff,image/bmp" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
-                      </div>
-                    </div>
-                  )
-                  break;
-                }
-                case 'attachment': {
-                  const currentAttachments: AttachmentInfo[] = formData[field.id] || [];
-                  renderedContent = (
-                    <div>
-                      {currentAttachments.length > 0 && (
-                        <div className="space-y-2 mb-2">
-                          {currentAttachments.map((att: AttachmentInfo, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                              <div className="flex items-center gap-3 overflow-hidden">
-                                <FileIcon className="h-5 w-5 text-muted-foreground shrink-0" />
-                                <div className="flex-1 overflow-hidden">
-                                  <p className="text-sm font-medium truncate">{att.name}</p>
-                                  <p className="text-xs text-muted-foreground">{formatBytesUtility(att.size)}</p>
-                                </div>
-                              </div>
-                              <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-7 w-7" onClick={() => handleRemoveAttachment(field.id, index)}>
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className={cn("p-4 border-2 border-dashed rounded-lg text-center transition-colors", dragOverStates[field.id] ? "border-primary bg-accent" : "border-border", uploadingStates[field.id] && "border-solid")}
-                        onDrop={(e) => handleDrop(e, field)} onDragOver={handleDragOver} onDragEnter={(e) => handleDragEnter(e, field.id)} onDragLeave={(e) => handleDragLeave(e, field.id)} >
-                        {uploadingStates[field.id] ? (
-                          <div className="flex flex-col items-center justify-center gap-2 p-4"> <Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="text-muted-foreground">Uploading...</p> </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-2">
-                            <Paperclip className="h-8 w-8 text-muted-foreground" />
-                            <p className="text-muted-foreground">Drag & drop files here</p>
-                            <div className="flex items-center gap-2 w-full"> <div className="flex-grow border-b" /> <span className="text-xs text-muted-foreground">OR</span> <div className="flex-grow border-b" /> </div>
-                            <Button type="button" variant="outline" onClick={() => fileInputRefs.current[field.id]?.click()}> <Upload className="mr-2 h-4 w-4" /> Select Files </Button>
-                          </div>
-                        )}
-                        <input type="file" multiple ref={(el) => { fileInputRefs.current[field.id] = el; }} onChange={(e) => handleFileInputChange(e, field)} className="hidden" />
-                      </div>
-                    </div>
-                  );
-                  break;
-                }
               }
             }
 
@@ -866,24 +558,6 @@ export const NodeForm = ({
           <Button type="submit">{isMultiEdit ? `Update ${node?.id ? 1 : 'nodes'}` : 'Save'}</Button>
         </DialogFooter>
       </form>
-
-      {/* Image Lightbox */}
-      <Dialog open={!!fullScreenImage} onOpenChange={(open) => !open && setFullScreenImage(null)}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-black/90 border-none [&>button]:bg-black [&>button]:text-white [&>button]:hover:bg-black/80 [&>button]:opacity-100 [&>button]:transition-colors">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Full Screen Image</DialogTitle>
-          </DialogHeader>
-          <div className="relative w-full h-full flex items-center justify-center group/lightbox">
-            {fullScreenImage && (
-              <img
-                src={fullScreenImage}
-                alt="Full screen view"
-                className="max-w-full max-h-[90vh] object-contain"
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };
