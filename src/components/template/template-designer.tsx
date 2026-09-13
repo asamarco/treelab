@@ -674,18 +674,6 @@ export function TemplateDesigner({
                                             <span>Query</span>
                                           </div>
                                         </SelectItem>
-                                        <SelectItem value="picture">
-                                          <div className="flex items-center gap-2">
-                                            <Image className="h-4 w-4 text-muted-foreground" />
-                                            <span>Picture</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="attachment">
-                                          <div className="flex items-center gap-2">
-                                            <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                            <span>Attachment</span>
-                                          </div>
-                                        </SelectItem>
                                         <SelectItem value="checkbox">
                                           <div className="flex items-center gap-2">
                                             <CheckSquare className="h-4 w-4 text-muted-foreground" />
