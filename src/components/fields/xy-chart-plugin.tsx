@@ -322,6 +322,7 @@ export const XYChartPlugin: FieldTypePlugin = {
     icon: LineChartIcon,
     EditorComponent: XYChartEditorComponent,
     ViewerComponent: XYChartViewerComponent,
+    isEmpty: (value: any) => !value?.points || !Array.isArray(value.points) || value.points.length === 0,
     sanitizeOnSave: (value: any) => {
         if (!value) return value;
         const chartData = value as XYChartData;

@@ -23,6 +23,7 @@ export interface Field {
     postfix?: string;
     spreadsheetRowCount?: number;
     spreadsheetColumnCount?: number;
+    sameRow?: boolean;
 }
 
 export interface AttachmentInfo {

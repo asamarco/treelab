@@ -313,6 +313,14 @@ const PictureEditorComponent = React.memo(
 PictureEditorComponent.displayName = "PictureEditorComponent";
 
 const PictureViewerComponent = ({ field, value, isCompactView }: any) => {
+  let pictures = value;
+  if (typeof pictures === "string") pictures = [pictures];
+  const images: string[] = Array.isArray(pictures)
+    ? pictures.filter((v: any) => typeof v === "string" && v.length > 0)
+    : [];
+
+  if (images.length === 0) return null;
+
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -362,14 +370,6 @@ const PictureViewerComponent = ({ field, value, isCompactView }: any) => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [fullScreenGallery, goToPrevImage, goToNextImage]);
-
-  let pictures = value;
-  if (typeof pictures === "string") pictures = [pictures];
-  const images: string[] = Array.isArray(pictures)
-    ? pictures.filter((v: any) => typeof v === "string" && v.length > 0)
-    : [];
-
-  if (images.length === 0) return null;
 
   const maxHeight = isCompactView ? Math.min(field.height || 300, 150) : field.height || 300;
 

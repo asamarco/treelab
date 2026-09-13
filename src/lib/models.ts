@@ -22,6 +22,7 @@ const FieldSchema = new Schema({
   postfix: String,
   spreadsheetRowCount: Number,
   spreadsheetColumnCount: Number,
+  sameRow: Boolean,
 }, { _id: false });
 
 const ConditionalRuleSchema = new Schema({

@@ -107,6 +107,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useTreeContext } from "@/contexts/tree-context";
 import { MultiSelect } from "../ui/multi-select";
+import { Switch } from "@/components/ui/switch";
 
 
 const fieldSchema = z.object({
@@ -120,6 +121,7 @@ const fieldSchema = z.object({
   postfix: z.string().optional(),
   spreadsheetRowCount: z.number().optional(),
   spreadsheetColumnCount: z.number().optional(),
+  sameRow: z.boolean().optional(),
 });
 
 const conditionalRuleSchema = z.object({
@@ -629,7 +631,12 @@ export function TemplateDesigner({
                                   <FormItem>
                                     <FormLabel>Field Type</FormLabel>
                                     <Select
-                                      onValueChange={onChange}
+                                      onValueChange={(val) => {
+                                        onChange(val);
+                                        if (!FieldRegistry.get(val as any)) {
+                                          form.setValue(`fields.${index}.sameRow`, false);
+                                        }
+                                      }}
                                       defaultValue={value}
                                     >
                                       <FormControl>
@@ -717,6 +724,30 @@ export function TemplateDesigner({
                                 )}
                               />
                             </div>
+                            {FieldRegistry.get(form.watch(`fields.${index}.type`)) && (
+                              <div className="mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`fields.${index}.sameRow`}
+                                  render={({ field: sameRowField }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                      <div className="space-y-0.5">
+                                        <FormLabel>Same row as previous field</FormLabel>
+                                        <FormDescription>
+                                          Render side-by-side with adjacent eligible fields in the tree viewer
+                                        </FormDescription>
+                                      </div>
+                                      <FormControl>
+                                        <Switch
+                                          checked={!!sameRowField.value}
+                                          onCheckedChange={sameRowField.onChange}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            )}
                             {prefixPostfixSupportedTypes.includes(form.watch(`fields.${index}.type`)) && (
                               <div className="mt-2 flex justify-end">
                                 <Button

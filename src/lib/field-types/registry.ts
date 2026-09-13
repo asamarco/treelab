@@ -28,6 +28,16 @@ export interface FieldTypePlugin {
 
     // Optional lifecycle hook to sanitize/transform form data before saving
     sanitizeOnSave?: (value: any) => any;
+
+    // Optional check to determine if a value is empty for row group layout
+    isEmpty?: (value: any) => boolean;
+}
+
+export function isValueEmpty(value: any): boolean {
+    if (value === undefined || value === null || value === '') return true;
+    if (Array.isArray(value)) return value.length === 0;
+    if (typeof value === 'object') return Object.keys(value).length === 0;
+    return false;
 }
 
 class Registry {

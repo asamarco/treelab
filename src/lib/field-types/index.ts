@@ -14,5 +14,5 @@ FieldRegistry.register(ChecklistPlugin);
 FieldRegistry.register(PicturePlugin);
 FieldRegistry.register(AttachmentPlugin);
 
-export { FieldRegistry };
+export { FieldRegistry, isValueEmpty } from './registry';
 

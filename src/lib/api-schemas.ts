@@ -127,6 +127,7 @@ export const FieldSchema = registry.register(
       postfix: z.string().optional(),
       spreadsheetRowCount: z.number().optional(),
       spreadsheetColumnCount: z.number().optional(),
+      sameRow: z.boolean().optional(),
     })
     .openapi('Field'),
 );
