@@ -114,7 +114,7 @@ import { Switch } from "@/components/ui/switch";
 const fieldSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "Field name is required"),
-  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet", "embed"]),
+  type: z.enum(["text", "number", "date", "dropdown", "textarea", "paragraph", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet", "embed"]),
   options: z.array(z.string()).optional(),
   columnType: z.enum(["text", "number", "date"]).optional(),
   height: z.number().optional(),
