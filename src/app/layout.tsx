@@ -20,6 +20,8 @@ import { unstable_noStore as noStore } from 'next/cache';
 import fs from 'fs';
 import path from 'path';
 
+import { UnsavedChangesProvider } from "@/contexts/unsaved-changes-context";
+
 export const metadata: Metadata = {
   title: "Treelab",
   description: "Create and manage data trees with custom templates.",
@@ -75,13 +77,15 @@ export default function RootLayout({
           defaultUserId={defaultUserId}
           isApiEnabled={isApiEnabled}
         >
-          <UIProvider>
-            <TreeProvider>
-              <PWARegistry />
-              {children}
-              <Toaster />
-            </TreeProvider>
-          </UIProvider>
+          <UnsavedChangesProvider>
+            <UIProvider>
+              <TreeProvider>
+                <PWARegistry />
+                {children}
+                <Toaster />
+              </TreeProvider>
+            </UIProvider>
+          </UnsavedChangesProvider>
         </AuthProvider>
       </body>
     </html>

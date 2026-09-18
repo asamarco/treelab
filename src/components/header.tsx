@@ -26,6 +26,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useTreeContext } from "@/contexts/tree-context";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -33,6 +34,7 @@ export function AppHeader() {
   const { currentUser, logout, isAuthRequired, theme, setTheme } = useAuthContext();
   const { userTeams } = useTreeContext();
   const { toast } = useToast();
+  const { confirmIfDirty } = useUnsavedChanges();
 
   const navItems = [
     { href: "/", label: "My Tree" },
@@ -46,9 +48,18 @@ export function AppHeader() {
     return null; // Don't render header on auth pages
   }
   
+  const handleNavClick = (e: React.MouseEvent, href: string) => {
+    if (pathname === href) return;
+    if (!confirmIfDirty(() => router.push(href))) {
+      e.preventDefault();
+    }
+  };
+
   const handleLogout = () => {
-    logout();
-    router.push("/login");
+    confirmIfDirty(() => {
+      logout();
+      router.push("/login");
+    });
   };
 
   const handleThemeChange = (isDark: boolean) => {
@@ -67,6 +78,7 @@ export function AppHeader() {
         <div className="flex items-center justify-between h-16">
           <Link
             href="/"
+            onClick={(e) => handleNavClick(e, "/")}
             className="flex items-center gap-2 text-lg font-bold text-foreground"
           >
             <Logo className="w-12 h-12 text-primary" />
@@ -77,6 +89,7 @@ export function AppHeader() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
                   pathname === item.href || (item.href === "/roots" && pathname.startsWith("/manage-trees"))
@@ -124,6 +137,7 @@ export function AppHeader() {
                     <DropdownMenuItem key={item.href} asChild>
                        <Link
                         href={item.href}
+                        onClick={(e) => handleNavClick(e, item.href)}
                         className={cn(
                           "w-full",
                           pathname === item.href && "bg-accent"
@@ -136,14 +150,14 @@ export function AppHeader() {
                    <DropdownMenuSeparator />
                 </div>
                  <DropdownMenuItem asChild>
-                    <Link href="/settings">
+                    <Link href="/settings" onClick={(e) => handleNavClick(e, "/settings")}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                     </Link>
                 </DropdownMenuItem>
                 {canSeeTeams && (
                   <DropdownMenuItem asChild>
-                    <Link href="/teams">
+                    <Link href="/teams" onClick={(e) => handleNavClick(e, "/teams")}>
                       <Users className="mr-2 h-4 w-4" />
                       <span>Teams</span>
                     </Link>
@@ -151,7 +165,7 @@ export function AppHeader() {
                 )}
                 {currentUser.isAdmin && (
                    <DropdownMenuItem asChild>
-                    <Link href="/admin">
+                    <Link href="/admin" onClick={(e) => handleNavClick(e, "/admin")}>
                       <ShieldCheck className="mr-2 h-4 w-4" />
                       <span>Admin Settings</span>
                     </Link>

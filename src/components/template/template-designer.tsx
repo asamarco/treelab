@@ -72,6 +72,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import React, { useRef, useEffect, useState, useId } from "react";
 import { IconPicker } from "../icon-picker";
 import {
@@ -323,6 +324,16 @@ export function TemplateDesigner({
     }
   };
 
+  const { setDirty } = useUnsavedChanges();
+  const { isDirty } = form.formState;
+
+  useEffect(() => {
+    setDirty(isDirty);
+    return () => {
+      setDirty(false);
+    };
+  }, [isDirty, setDirty]);
+
   const initialNameTemplateRef = useRef(template.nameTemplate);
 
   useEffect(() => {
@@ -336,11 +347,38 @@ export function TemplateDesigner({
   }, [template.nameTemplate, template.id]);
 
   const onSubmit = (data: TemplateFormValues) => {
+    setDirty(false);
     toast({
       title: "Template saved!",
       description: `The "${data.name}" template has been successfully saved.`,
     });
     onSave(data as Template);
+  };
+
+  const onInvalid = (errors: Record<string, unknown>) => {
+    // Collect all leaf-level error messages from the react-hook-form error tree.
+    const messages: string[] = [];
+    const collectMessages = (obj: Record<string, unknown>, path = "") => {
+      for (const key of Object.keys(obj)) {
+        const value = obj[key] as Record<string, unknown> | undefined;
+        if (!value) continue;
+        const currentPath = path ? `${path}.${key}` : key;
+        if (typeof value.message === "string") {
+          messages.push(value.message);
+        } else {
+          collectMessages(value as Record<string, unknown>, currentPath);
+        }
+      }
+    };
+    collectMessages(errors as Record<string, unknown>);
+
+    toast({
+      variant: "destructive",
+      title: "Please fix the following errors before saving:",
+      description: messages.length
+        ? messages.join("\n")
+        : "One or more fields are invalid.",
+    });
   };
 
   const handleExport = () => {
@@ -425,7 +463,7 @@ export function TemplateDesigner({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           <Card>
             <CardHeader>
               <div className="flex justify-between items-start">

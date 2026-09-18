@@ -17,6 +17,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react"
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Template, TreeNode, Field } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
+import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
 import { TemplateDesigner } from "@/components/template/template-designer";
 import { AppHeader } from "@/components/header";
 import {
@@ -144,6 +145,7 @@ function DraggableTemplateWrapper({
 
 function TemplatesPage() {
   const router = useRouter();
+  const { confirmIfDirty } = useUnsavedChanges();
   const {
     activeTree,
     allTrees,
@@ -261,11 +263,15 @@ function TemplatesPage() {
   };
 
   const handleSelectTemplate = (template: Template) => {
-    setSelectedTemplateId(template.id);
+    confirmIfDirty(() => {
+      setSelectedTemplateId(template.id);
+    });
   }
 
   const handleCreateNew = () => {
-    setSelectedTemplateId(`new_${new Date().toISOString()}`);
+    confirmIfDirty(() => {
+      setSelectedTemplateId(`new_${new Date().toISOString()}`);
+    });
   }
 
   const handleDeleteTemplate = (templateId: string) => {
