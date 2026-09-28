@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   if (!isApiEnabled()) {
     return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
-  const specUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}/api/v1/openapi`;
+  const specUrl = '/api/v1/openapi';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
