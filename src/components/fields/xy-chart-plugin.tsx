@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { createPortal } from "react-dom";
 import { FieldTypePlugin } from '@/lib/field-types/registry';
 import { LineChart as LineChartIcon } from 'lucide-react';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Label as ChartLabel, Tooltip as ChartTooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
-import { DataSheetGrid, textColumn, keyColumn, createContextMenuComponent, ContextMenuComponentProps } from 'react-datasheet-grid';
+import { DataSheetGrid, textColumn, keyColumn, createContextMenuComponent, ContextMenuComponentProps, DataSheetGridRef } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 
 const PortaledContextMenu = (props: ContextMenuComponentProps) => {
@@ -38,6 +38,8 @@ const XYChartSpreadsheetEditor = React.memo(({
     points: { x: string; y: string }[];
     onChange: (newPoints: { x: string; y: string }[]) => void;
 }) => {
+    const gridRef = useRef<DataSheetGridRef>(null);
+
     const columns = useMemo(() => [
         {
             ...keyColumn('x', textColumn),
@@ -65,6 +67,46 @@ const XYChartSpreadsheetEditor = React.memo(({
                 onContextMenuCapture={(e) => {
                     e.preventDefault();
                 }}
+                onKeyDownCapture={(e) => {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const currentActive = gridRef.current?.activeCell;
+                        const col = currentActive?.col ?? 0;
+                        const row = currentActive?.row ?? 0;
+
+                        if (e.shiftKey) {
+                            let prevCol = col - 1;
+                            let prevRow = row;
+                            if (prevCol < 0) {
+                                prevCol = 1;
+                                prevRow = row - 1;
+                            }
+                            if (prevRow < 0) {
+                                prevRow = 0;
+                                prevCol = 0;
+                            }
+                            gridRef.current?.setActiveCell({ col: prevCol, row: prevRow });
+                        } else {
+                            let nextCol = col + 1;
+                            let nextRow = row;
+                            if (nextCol >= 2) {
+                                nextCol = 0;
+                                nextRow = row + 1;
+                            }
+                            if (nextRow >= gridData.length) {
+                                const newPoints = [...gridData, { x: '', y: '' }];
+                                onChange(newPoints);
+                                setTimeout(() => {
+                                    gridRef.current?.setActiveCell({ col: 0, row: nextRow });
+                                }, 0);
+                            } else {
+                                gridRef.current?.setActiveCell({ col: nextCol, row: nextRow });
+                            }
+                        }
+                    }
+                }}
                 onKeyDown={(e) => {
                     const isCtrl = e.ctrlKey || e.metaKey;
                     if (
@@ -77,6 +119,7 @@ const XYChartSpreadsheetEditor = React.memo(({
                 }}
             >
                 <DataSheetGrid
+                    ref={gridRef}
                     value={gridData}
                     onChange={(newValue) => {
                         onChange(newValue as { x: string; y: string }[]);
