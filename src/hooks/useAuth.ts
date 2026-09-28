@@ -134,8 +134,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
       if (userFromSession) {
         console.log(`INFO: Restored user '${userFromSession.username}'.`);
         // Asynchronously validate the stored GitHub PAT without blocking the UI.
+        // Pass the token directly from memory so the route doesn't need a DB re-lookup
+        // (avoids a race where the lean() query returns before gitSettings is hydrated).
         if (userFromSession.gitSettings?.githubPat) {
-          checkGithubToken();
+          checkGithubToken(userFromSession.gitSettings.githubPat);
         }
       }
 

@@ -328,7 +328,8 @@ export default function SettingsPage() {
   // Re-check the stored token when the settings page opens, so the badge is fresh.
   useEffect(() => {
     if (currentUser?.gitSettings?.githubPat) {
-      checkGithubToken();
+      // Pass the token directly from memory to avoid a server-side DB re-lookup race.
+      checkGithubToken(currentUser.gitSettings.githubPat);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
