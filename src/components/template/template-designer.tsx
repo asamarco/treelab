@@ -674,6 +674,9 @@ export function TemplateDesigner({
                                         if (!FieldRegistry.get(val as any)) {
                                           form.setValue(`fields.${index}.sameRow`, false);
                                         }
+                                        if (val === 'table-header' && !form.getValues(`fields.${index}.columnType`)) {
+                                          form.setValue(`fields.${index}.columnType`, 'text');
+                                        }
                                       }}
                                       defaultValue={value}
                                     >
@@ -851,7 +854,7 @@ export function TemplateDesigner({
                                       <FormControl>
                                         <RadioGroup
                                           onValueChange={field.onChange}
-                                          defaultValue={field.value}
+                                          value={field.value ?? 'text'}
                                           className="flex space-x-4"
                                         >
                                           <FormItem className="flex items-center space-x-2 space-y-0">

@@ -71,26 +71,44 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
     const isCompactView = isCompactOverride ?? globalIsCompactView;
 
     const nodeData = node.data || {};
-    let tableRendered = false;
 
+    // Groups of *contiguous* table-header fields that have at least one non-empty value.
+    // Each group renders as its own table.
+    const tableGroups = useMemo(() => {
+        const groups: { fields: (typeof template.fields[number])[]; rowCount: number }[] = [];
+        let current: (typeof template.fields[number])[] = [];
+        for (const f of template.fields) {
+            if (f.type === 'table-header') {
+                current.push(f);
+            } else {
+                if (current.length > 0) { groups.push({ fields: current, rowCount: 0 }); current = []; }
+            }
+        }
+        if (current.length > 0) groups.push({ fields: current, rowCount: 0 });
 
-
-
-    const tableHeaderFields = useMemo(() => {
-        const fields = template.fields.filter(f => f.type === 'table-header');
-        return fields.filter(field => {
-            const columnData = nodeData[field.id];
-            return Array.isArray(columnData) && columnData.some(val => !isValueEmpty(val));
-        });
+        // Resolve row count and filter to groups with actual data.
+        return groups
+            .map(grp => {
+                const visibleFields = grp.fields.filter(f => {
+                    const col = nodeData[f.id];
+                    return Array.isArray(col) && col.some(val => !isValueEmpty(val));
+                });
+                if (visibleFields.length === 0) return null;
+                const firstColumnData = nodeData[visibleFields[0].id];
+                const rowCount = Array.isArray(firstColumnData) ? firstColumnData.length : 0;
+                return { fields: visibleFields, rowCount };
+            })
+            .filter((g): g is { fields: (typeof template.fields[number])[]; rowCount: number } => g !== null && g.rowCount > 0);
     }, [template.fields, nodeData]);
 
-    const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
+    // fieldId -> group index for O(1) lookup in renderSingleField
+    const fieldToGroupIndex = useMemo(() => {
+        const map = new Map<string, number>();
+        tableGroups.forEach((grp, gi) => grp.fields.forEach(f => map.set(f.id, gi)));
+        return map;
+    }, [tableGroups]);
 
-    const tableRowCountMemo = useMemo(() => {
-        if (tableHeaderFields.length === 0) return 0;
-        const firstColumnData = nodeData[tableHeaderFields[0].id];
-        return Array.isArray(firstColumnData) ? firstColumnData.length : 0;
-    }, [tableHeaderFields, nodeData]);
+    const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
 
     const queriesAndResults = useMemo(() => {
         if (isCompactOverride) return [];
@@ -174,36 +192,39 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                         }
 
                                         case 'table-header': {
-                                            if (tableRendered || tableHeaderFields.length === 0) return null;
-                                            tableRendered = true;
-                                            if (tableRowCountMemo === 0) return null;
+                                            // Only the first field of each contiguous group renders the table;
+                                            // subsequent fields in the same group return null.
+                                            const groupIndex = fieldToGroupIndex.get(field.id);
+                                            if (groupIndex === undefined) return null;
+                                            const group = tableGroups[groupIndex];
+                                            if (group.fields[0].id !== field.id) return null;
 
                                             return (
-                                                <div key="table-block" className="mt-2 text-sm min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
+                                                <div key={`table-block-${groupIndex}`} className="mt-2 text-sm min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                                     <div className="overflow-x-auto rounded-md border min-w-0">
                                                         <Table>
                                                             <TableHeader>
                                                                 <TableRow className={cn(isCompactView && "h-8")}>
-                                                                    {tableHeaderFields.map(field => <TableHead key={field.id} className={cn(isCompactView && "h-8 px-2 text-xs")}>{field.name}</TableHead>)}
+                                                                    {group.fields.map(f => <TableHead key={f.id} className={cn(isCompactView && "h-8 px-2 text-xs")}>{f.name}</TableHead>)}
                                                                 </TableRow>
                                                             </TableHeader>
                                                             <TableBody>
-                                                                {Array.from({ length: tableRowCountMemo }).map((_, rowIndex) => (
+                                                                {Array.from({ length: group.rowCount }).map((_, rowIndex) => (
                                                                     <TableRow key={rowIndex} className={cn(isCompactView && "h-8")}>
-                                                                        {tableHeaderFields.map(field => {
-                                                                            let cellValue = nodeData[field.id]?.[rowIndex] || '';
+                                                                        {group.fields.map(f => {
+                                                                            let cellValue = nodeData[f.id]?.[rowIndex] || '';
                                                                             let displayValue = cellValue;
 
-                                                                            if (field.columnType === 'date' && cellValue) {
+                                                                            if (f.columnType === 'date' && cellValue) {
                                                                                 displayValue = formatDate(cellValue, currentUser?.dateFormat);
                                                                             }
 
                                                                             if (displayValue) {
-                                                                                displayValue = `${field.prefix || ''}${displayValue}${field.postfix || ''}`;
+                                                                                displayValue = `${f.prefix || ''}${displayValue}${f.postfix || ''}`;
                                                                             }
 
                                                                             return (
-                                                                                <TableCell key={field.id} className={cn(isCompactView && "py-1 px-2 text-xs")}>{displayValue}</TableCell>
+                                                                                <TableCell key={f.id} className={cn(isCompactView && "py-1 px-2 text-xs")}>{displayValue}</TableCell>
                                                                             )
                                                                         })}
                                                                     </TableRow>

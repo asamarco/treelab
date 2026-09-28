@@ -141,6 +141,28 @@ export const NodeForm = ({
 
   const tableHeaderFields = useMemo(() => template.fields.filter(f => f.type === 'table-header'), [template.fields]);
 
+  // Groups of *contiguous* table-header fields — each group will become its own table.
+  const tableGroups = useMemo(() => {
+    const groups: Field[][] = [];
+    let current: Field[] = [];
+    for (const f of template.fields) {
+      if (f.type === 'table-header') {
+        current.push(f);
+      } else {
+        if (current.length > 0) { groups.push(current); current = []; }
+      }
+    }
+    if (current.length > 0) groups.push(current);
+    return groups;
+  }, [template.fields]);
+
+  // fieldId -> index of the group it belongs to (for O(1) lookup in the render loop)
+  const fieldToGroupIndex = useMemo(() => {
+    const map = new Map<string, number>();
+    tableGroups.forEach((grp, gi) => grp.forEach(f => map.set(f.id, gi)));
+    return map;
+  }, [tableGroups]);
+
   const queryFields = useMemo(() => template.fields.filter(f => f.type === 'query'), [template.fields]);
 
   // Pre-compute all dynamic dropdown values in a single tree walk.
@@ -188,16 +210,16 @@ export const NodeForm = ({
     });
   };
 
-  const getTableRowCount = () => {
-    if (tableHeaderFields.length === 0) return 0;
-    const firstColumnData = formData[tableHeaderFields[0].id];
+  const getTableRowCount = (groupFields: Field[]) => {
+    if (groupFields.length === 0) return 0;
+    const firstColumnData = formData[groupFields[0].id];
     return Array.isArray(firstColumnData) ? firstColumnData.length : 0;
   };
 
-  const handleAddRow = () => {
+  const handleAddRow = (groupFields: Field[]) => {
     setFormData(prev => {
       const newFormData = { ...prev };
-      tableHeaderFields.forEach(field => {
+      groupFields.forEach(field => {
         const currentData = Array.isArray(newFormData[field.id]) ? [...newFormData[field.id]] : [];
         currentData.push('');
         newFormData[field.id] = currentData;
@@ -206,10 +228,10 @@ export const NodeForm = ({
     });
   };
 
-  const handleRemoveRow = (rowIndex: number) => {
+  const handleRemoveRow = (rowIndex: number, groupFields: Field[]) => {
     setFormData(prev => {
       const newFormData = { ...prev };
-      tableHeaderFields.forEach(field => {
+      groupFields.forEach(field => {
         if (Array.isArray(newFormData[field.id])) {
           const newColumnData = [...newFormData[field.id]];
           newColumnData.splice(rowIndex, 1);
@@ -487,17 +509,21 @@ export const NodeForm = ({
               return <QueryBuilder key={field.id} field={field} value={formData[field.id]} onChange={handleQueryChange} />;
             }
             if (field.type === 'table-header') {
-              if (fieldIndex > 0 && template.fields[fieldIndex - 1].type === 'table-header') return null;
+              // Only the first field of each contiguous group renders the table;
+              // subsequent fields in the same group return null.
+              const groupIndex = fieldToGroupIndex.get(field.id)!;
+              const groupFields = tableGroups[groupIndex];
+              if (groupFields[0].id !== field.id) return null;
 
-              const tableRowCount = getTableRowCount();
+              const tableRowCount = getTableRowCount(groupFields);
               return (
-                <div key="table-block" className="space-y-2">
+                <div key={`table-block-${groupIndex}`} className="space-y-2">
                   <Label className="text-sm font-medium">Table Data</Label>
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {tableHeaderFields.map(f => (
+                          {groupFields.map(f => (
                             <TableHead key={f.id} className="min-w-[150px]">{f.name}</TableHead>
                           ))}
                           <TableHead className="w-[50px]"></TableHead>
@@ -506,7 +532,7 @@ export const NodeForm = ({
                       <TableBody>
                         {Array.from({ length: tableRowCount }).map((_, rowIndex) => (
                           <TableRow key={rowIndex}>
-                            {tableHeaderFields.map(f => {
+                            {groupFields.map(f => {
                               const dateString = formData[f.id]?.[rowIndex]; let dateValue: Date | undefined;
                               if (dateString && typeof dateString === 'string') { const parsed = parse(dateString, 'yyyy-MM-dd', new Date()); if (isValid(parsed)) dateValue = parsed; }
                               return (
@@ -522,14 +548,14 @@ export const NodeForm = ({
                             <TableCell className="p-2">
                               <AlertDialog><AlertDialogTrigger asChild>
                                 <Button type="button" variant="ghost" size="icon" className="text-destructive hover:text-destructive h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
-                              </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                              </AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will delete the entire row.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveRow(rowIndex, groupFields)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                  <Button type="button" variant="outline" size="sm" onClick={handleAddRow} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Row</Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleAddRow(groupFields)} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Row</Button>
                 </div>
               );
             }
