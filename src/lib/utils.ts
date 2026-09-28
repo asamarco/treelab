@@ -228,6 +228,10 @@ export function extractOriginalName(fileName: string): string {
   return fileName;
 }
 
+export function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Helper to convert a Mongoose doc or object to a plain object, ensuring it's serializable.
  */

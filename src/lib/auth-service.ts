@@ -13,7 +13,7 @@ import { encrypt, decrypt } from './encryption';
 import { createSessionInServerAction, getSession } from './session';
 import crypto from 'crypto';
 import { unstable_noStore as noStore } from 'next/cache';
-import { toPlainObject } from './utils';
+import { toPlainObject, escapeRegExp } from './utils';
 
 // --- Password Hashing (Server-Side only) ---
 const hashPassword = (password: string, salt: string): Promise<string> => {
@@ -68,8 +68,9 @@ export async function searchUsers(query: string): Promise<Pick<User, 'id' | 'use
     if (!query || query.length < 2) return [];
 
     await connectToDatabase();
+    const sanitizedQuery = escapeRegExp(query);
     const users = await UserModel.find({
-        username: { $regex: query, $options: 'i' }
+        username: { $regex: sanitizedQuery, $options: 'i' }
     })
         .limit(10)
         .select('username _id')
