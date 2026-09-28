@@ -148,6 +148,12 @@ function TreeNodeComponentInner({
   );
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    // Text selected: let the native browser context menu appear (Copy, etc.)
+    // instead of the node's custom menu.
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      return;
+    }
     if ((e.target as HTMLElement).closest('.read-only-view') || readOnly) return;
 
     if ((e.target as HTMLElement).tagName === 'IMG') {

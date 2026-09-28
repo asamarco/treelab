@@ -229,6 +229,12 @@ export function TreeSelectionBar() {
             )) {
                 return;
             }
+            // If the user has text selected, let the browser handle Ctrl+C natively
+            // instead of hijacking it for node-copy.
+            const selection = window.getSelection();
+            if (event.key === 'c' && (event.ctrlKey || event.metaKey) && selection && selection.toString().length > 0) {
+                return;
+            }
 
             if (isAnyModalOpen) {
                 return;
