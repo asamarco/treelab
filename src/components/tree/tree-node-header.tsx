@@ -43,6 +43,7 @@ import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { WritableDraft } from "immer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FieldRegistry, isValueEmpty } from "@/lib/field-types";
 
 interface TreeNodeHeaderProps {
   node: TreeNode;
@@ -126,14 +127,15 @@ export function TreeNodeHeader({
     (node.children && node.children.length > 0) ||
     (!isCompactOverride && (
       nodeHasAttachments ||
-      template.fields.some(f => f.type === 'picture' && node.data[f.id] && node.data[f.id].length > 0) ||
       template.fields.some(f => f.type === 'table-header') ||
-      template.fields.some(f => f.type === 'xy-chart') ||
-      template.fields.some(f => f.type === 'query') ||
       template.fields.some(f => f.type === 'checkbox') ||
-      template.fields.some(f => f.type === 'checklist') ||
-      template.fields.some(f => f.type === 'spreadsheet') ||
-      template.fields.some(f => f.type === 'embed' && node.data[f.id]) ||
+      template.fields.some(f => f.type === 'query') ||
+      template.fields.some(f => {
+        const plugin = FieldRegistry.get(f.type);
+        if (!plugin) return false;
+        const value = node.data[f.id];
+        return plugin.isEmpty ? !plugin.isEmpty(value) : !isValueEmpty(value);
+      }) ||
       (template.bodyTemplate && template.bodyTemplate.trim() !== '')
     ));
 

@@ -108,9 +108,10 @@ export const CreateTokenResponseSchema = registry.register(
 // Field schema (building block for Template)
 // ---------------------------------------------------------------------------
 export const FieldTypeEnum = z.enum([
-  'text', 'number', 'date', 'dropdown', 'textarea', 'link',
+  'text', 'number', 'date', 'dropdown', 'textarea', 'paragraph', 'link',
   'picture', 'table-header', 'dynamic-dropdown', 'attachment',
   'xy-chart', 'query', 'checklist', 'checkbox', 'spreadsheet', 'embed',
+  'markdown',
 ]);
 
 export const FieldSchema = registry.register(
