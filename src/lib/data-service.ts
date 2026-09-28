@@ -352,25 +352,19 @@ export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | nul
     noStore();
     try {
         await connectToDatabase();
-        console.log(`DEBUG: [loadPublicTreeFile] Identifier: ${treeId}`);
 
         // Try finding by publicId first
         let treeFileDoc = await TreeModel.findOne({ publicId: treeId }).lean<Omit<TreeFile, 'tree'>>().exec();
 
         if (treeFileDoc) {
-            console.log(`DEBUG: [loadPublicTreeFile] Found by publicId. isPublic: ${treeFileDoc.isPublic}`);
             if (!treeFileDoc.isPublic) {
-                console.warn(`DEBUG: [loadPublicTreeFile] 404: Tree exists but isPublic=false`);
                 return null;
             }
         } else if (mongoose.Types.ObjectId.isValid(treeId)) {
-            console.log(`DEBUG: [loadPublicTreeFile] UUID match failed, trying _id: ${treeId}`);
             treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
-            if (treeFileDoc) console.log(`DEBUG: [loadPublicTreeFile] Found by old _id.`);
         }
 
         if (!treeFileDoc) {
-            console.warn(`DEBUG: [loadPublicTreeFile] 404: No document found for ${treeId}`);
             return null;
         }
 
@@ -464,7 +458,6 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
         // Ensure publicId exists
         if (!doc.publicId) {
             const publicId = crypto.randomUUID();
-            console.log(`DEBUG: [loadAllTreeFiles] Generating missing publicId for ${treeId}: ${publicId}`);
             await TreeModel.findByIdAndUpdate(treeId, { publicId }).exec();
             doc.publicId = publicId;
         }
@@ -1368,12 +1361,9 @@ export async function setTreePublicStatus(treeId: string, isPublic: boolean): Pr
     const updatePayload: Record<string, any> = { isPublic };
     if (!tree.publicId) {
         updatePayload.publicId = crypto.randomUUID();
-        console.log(`DEBUG: [setTreePublicStatus] Generating new publicId: ${updatePayload.publicId}`);
     }
 
-    console.log(`DEBUG: [setTreePublicStatus] Calling findByIdAndUpdate with:`, updatePayload);
     const updated = await TreeModel.findByIdAndUpdate(treeId, updatePayload, { new: true }).lean<Omit<TreeFile, 'tree'>>();
-    console.log(`DEBUG: [setTreePublicStatus] Result publicId: ${updated?.publicId}`);
     return updated?.publicId;
 }
 
