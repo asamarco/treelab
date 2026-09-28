@@ -62,7 +62,7 @@ export const formatDate = (dateValue: string | Date, formatString: string = 'dd/
   } else {
     date = dateValue;
   }
-  
+
   if (isValid(date)) {
     try {
       // Use PPP for Month Day, Year format
@@ -76,7 +76,7 @@ export const formatDate = (dateValue: string | Date, formatString: string = 'dd/
       return format(date, 'dd/MM/yyyy');
     }
   }
-  
+
   // Return the original string if all parsing fails
   return String(dateValue);
 };
@@ -91,7 +91,7 @@ export const generateNodeName = (template: Template, data: Record<string, any>, 
   const name = templateString.replace(/\{([^}]+)\}/g, (match, fieldName) => {
     const field = template.fields.find(f => f.name === fieldName.trim());
     if (!field) {
-      return match; 
+      return match;
     }
 
     let value = data[field.id];
@@ -99,18 +99,18 @@ export const generateNodeName = (template: Template, data: Record<string, any>, 
     if (value === undefined || value === null || value === "") {
       return "";
     }
-    
+
     let formattedValue = String(value);
 
     if (field.type === "date" && typeof value === 'string') {
-        // Since this utility doesn't have access to the user context for the format string,
-        // we'll use a standard, unambiguous format here.
-        // The more complex formatting is handled in the display components.
-        formattedValue = formatDate(value, 'PPP');
+      // Since this utility doesn't have access to the user context for the format string,
+      // we'll use a standard, unambiguous format here.
+      // The more complex formatting is handled in the display components.
+      formattedValue = formatDate(value, 'PPP');
     }
-    
+
     if (formattedValue) {
-        return `${field.prefix || ''}${formattedValue}${field.postfix || ''}`;
+      return `${field.prefix || ''}${formattedValue}${field.postfix || ''}`;
     }
 
     return formattedValue;
@@ -138,40 +138,40 @@ export const generateJsonForExport = (
   nodesToExport: TreeNode[],
   allTemplates: Template[]
 ): Partial<TreeFile> => {
-    const flattenedNodes: Omit<TreeNode, 'children' | '_id'>[] = [];
-    const visitedNodeIds = new Set<string>();
+  const flattenedNodes: Omit<TreeNode, 'children' | '_id'>[] = [];
+  const visitedNodeIds = new Set<string>();
 
-    const getDescendantsAndSelf = (nodes: TreeNode[]) => {
-        for(const node of nodes) {
-            if(!visitedNodeIds.has(node.id)) {
-                // FIX: Perform a deep clone to prevent read-only errors on import/duplication.
-                const deepClonedNode = JSON.parse(JSON.stringify(node));
-                const { children, _id, ...nodeToKeep } = deepClonedNode;
-                flattenedNodes.push(nodeToKeep);
-                visitedNodeIds.add(node.id);
-            }
-            if (node.children) {
-                getDescendantsAndSelf(node.children);
-            }
-        }
-    };
-    getDescendantsAndSelf(nodesToExport);
+  const getDescendantsAndSelf = (nodes: TreeNode[]) => {
+    for (const node of nodes) {
+      if (!visitedNodeIds.has(node.id)) {
+        // FIX: Perform a deep clone to prevent read-only errors on import/duplication.
+        const deepClonedNode = JSON.parse(JSON.stringify(node));
+        const { children, _id, ...nodeToKeep } = deepClonedNode;
+        flattenedNodes.push(nodeToKeep);
+        visitedNodeIds.add(node.id);
+      }
+      if (node.children) {
+        getDescendantsAndSelf(node.children);
+      }
+    }
+  };
+  getDescendantsAndSelf(nodesToExport);
 
-    return {
-        title: title,
-        nodes: flattenedNodes,
-        templates: allTemplates,
-        rootNodeIds: nodesToExport.map(n => n.id)
-    };
+  return {
+    title: title,
+    nodes: flattenedNodes,
+    templates: allTemplates,
+    rootNodeIds: nodesToExport.map(n => n.id)
+  };
 };
 
 export const getContextualOrder = (node: TreeNode, siblings: readonly TreeNode[], contextualParentId: string | null): number => {
   const pIndex = contextualParentId ? (node.parentIds || []).indexOf(contextualParentId) : (node.parentIds || []).indexOf('root');
-  
+
   const siblingArray = Array.isArray(siblings) ? siblings : [];
   const fallbackOrder = siblingArray.findIndex((s: any) => s.id === node.id);
   // Ensure we don't get -1 if the parentId is not found (which can happen during some state transitions)
-  const finalPIndex = pIndex === -1 ? 0 : pIndex; 
+  const finalPIndex = pIndex === -1 ? 0 : pIndex;
   return (finalPIndex !== -1 && node.order && node.order.length > finalPIndex) ? node.order[finalPIndex] : (fallbackOrder !== -1 ? fallbackOrder : 0);
 }
 
@@ -219,7 +219,7 @@ export function extractOriginalName(fileName: string): string {
   if (fileName.length > 62 && fileName[24] === '-' && fileName[61] === '-') {
     return fileName.substring(62);
   }
-  
+
   // Legacy pattern: ISO (24) + Dash (1) + 9-random (9) + Dash (1) = 35 chars of security prefix
   if (fileName.length > 35 && fileName[24] === '-' && fileName[34] === '-') {
     return fileName.substring(35);
@@ -236,15 +236,54 @@ export function escapeRegExp(string: string): string {
  * Helper to convert a Mongoose doc or object to a plain object, ensuring it's serializable.
  */
 export function toPlainObject<T = any>(doc: any): T {
-    if (!doc) return null as unknown as T;
-    const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
+  if (!doc) return null as unknown as T;
+  const obj = doc.toObject ? doc.toObject({ getters: true, virtuals: true }) : doc;
 
-    const plain: any = { id: obj._id ? obj._id.toString() : obj.id };
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
-            plain[key] = obj[key];
-        }
+  const plain: any = { id: obj._id ? obj._id.toString() : obj.id };
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key) && key !== '_id' && key !== '__v') {
+      plain[key] = obj[key];
     }
-    return plain as T;
+  }
+  return plain as T;
 }
 
+
+/**
+ * Copies text to the clipboard, working in both secure contexts (HTTPS or
+ * localhost) and insecure ones (plain HTTP on a LAN, a bare IP, etc.).
+ *
+ * `navigator.clipboard` only exists in secure contexts, so on a plain-HTTP
+ * origin that isn't localhost it's undefined — calling it directly throws
+ * synchronously. We fall back to the legacy `execCommand('copy')` trick via
+ * a hidden textarea, which still works everywhere modern browsers run.
+ *
+ * Returns true/false so callers can show an accurate toast instead of
+ * assuming success.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fall through to legacy method below
+    }
+  }
+
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return successful;
+  } catch {
+    return false;
+  }
+}

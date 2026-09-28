@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { copyToClipboard } from '@/lib/utils';
 
 const DATE_FORMATS = [
   { value: "dd/MM/yyyy", label: "DD/MM/YYYY" },
@@ -168,9 +169,11 @@ function PersonalAccessTokensCard() {
               <AlertDialogFooter>
                 <AlertDialogAction
                   id="copy-pat-token-btn"
-                  onClick={() => {
-                    navigator.clipboard.writeText(revealedToken);
-                    toast({ title: "Copied to clipboard." });
+                  onClick={async () => {
+                    const ok = await copyToClipboard(revealedToken);
+                    toast(ok
+                      ? { title: "Copied to clipboard." }
+                      : { variant: "destructive", title: "Copy failed", description: "Couldn't access the clipboard. Select the token above and copy it manually." });
                   }}
                 >
                   Copy &amp; Close

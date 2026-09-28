@@ -66,7 +66,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { generateJsonForExport } from "@/lib/utils";
@@ -265,9 +265,9 @@ function ManageRootsPage() {
 
   const viewingTrees = useMemo(() => {
     const treeSettings = currentUser?.treeSettings || [];
-    
+
     let result = filteredTrees;
-    
+
     if (activeGroupFilter !== "All Roots") {
       result = filteredTrees.filter(tree => {
         const setting = treeSettings.find(s => s.treeId === tree.id);
@@ -277,9 +277,9 @@ function ManageRootsPage() {
     }
 
     result.sort((a, b) => {
-        const orderA = treeSettings.find(s => s.treeId === a.id)?.order ?? (a as any).order ?? 0;
-        const orderB = treeSettings.find(s => s.treeId === b.id)?.order ?? (b as any).order ?? 0;
-        return orderA - orderB;
+      const orderA = treeSettings.find(s => s.treeId === a.id)?.order ?? (a as any).order ?? 0;
+      const orderB = treeSettings.find(s => s.treeId === b.id)?.order ?? (b as any).order ?? 0;
+      return orderA - orderB;
     });
 
     return result;
@@ -308,17 +308,17 @@ function ManageRootsPage() {
     if (overId.startsWith("group-pill-")) {
       const targetGroupName = overId.replace("group-pill-", "");
       if (activeTreeGroup === targetGroupName) return; // already in this group
-      
+
       if (!treeSetting) {
-          treeSetting = { treeId: activeId, groupName: targetGroupName, order: 0 };
-          currentSettings.push(treeSetting);
+        treeSetting = { treeId: activeId, groupName: targetGroupName, order: 0 };
+        currentSettings.push(treeSetting);
       } else {
-          treeSetting.groupName = targetGroupName;
+        treeSetting.groupName = targetGroupName;
       }
 
       if (setTreeSettings) {
-          setTreeSettings(currentSettings);
-          toast({ title: "Moved", description: `Root moved to ${targetGroupName}` });
+        setTreeSettings(currentSettings);
+        toast({ title: "Moved", description: `Root moved to ${targetGroupName}` });
       }
       return;
     }
@@ -331,16 +331,16 @@ function ManageRootsPage() {
     if (oldIndex !== -1 && newIndex !== -1) {
       const newArray = arrayMove(viewingTrees, oldIndex, newIndex);
       newArray.forEach((t, i) => {
-          let s = currentSettings.find(cs => cs.treeId === t.id);
-          if (!s) {
-              s = { treeId: t.id, groupName: activeTreeGroup, order: i };
-              currentSettings.push(s);
-          } else {
-              s.order = i;
-          }
+        let s = currentSettings.find(cs => cs.treeId === t.id);
+        if (!s) {
+          s = { treeId: t.id, groupName: activeTreeGroup, order: i };
+          currentSettings.push(s);
+        } else {
+          s.order = i;
+        }
       });
       if (setTreeSettings) {
-          setTreeSettings(currentSettings);
+        setTreeSettings(currentSettings);
       }
     }
   };
@@ -361,17 +361,17 @@ function ManageRootsPage() {
     if (newTreeTitle.trim()) {
       const treeId = await createNewTree(newTreeTitle.trim());
       if (treeId) {
-          const currentSettings = [...(currentUser?.treeSettings || [])];
-          let treeSetting = currentSettings.find(s => s.treeId === treeId);
-          if (!treeSetting) {
-              treeSetting = { treeId, groupName: newTreeGroup, order: currentSettings.length };
-              currentSettings.push(treeSetting);
-          } else {
-              treeSetting.groupName = newTreeGroup;
-          }
-          if (setTreeSettings) {
-              setTreeSettings(currentSettings);
-          }
+        const currentSettings = [...(currentUser?.treeSettings || [])];
+        let treeSetting = currentSettings.find(s => s.treeId === treeId);
+        if (!treeSetting) {
+          treeSetting = { treeId, groupName: newTreeGroup, order: currentSettings.length };
+          currentSettings.push(treeSetting);
+        } else {
+          treeSetting.groupName = newTreeGroup;
+        }
+        if (setTreeSettings) {
+          setTreeSettings(currentSettings);
+        }
       }
       setNewTreeTitle("");
       setNewTreeGroup("Ungrouped");
@@ -581,12 +581,14 @@ function ManageRootsPage() {
     return url;
   }
 
-  const handleCopyPublicLink = (treeId: string) => {
+  const handleCopyPublicLink = async (treeId: string) => {
     const tree = allTrees.find(t => t.id === treeId);
     if (!tree) return;
     const url = getPublicUrl(tree);
-    navigator.clipboard.writeText(url);
-    toast({ title: "Link Copied", description: "Public link copied to clipboard." });
+    const ok = await copyToClipboard(url);
+    toast(ok
+      ? { title: "Link Copied", description: "Public link copied to clipboard." }
+      : { variant: "destructive", title: "Copy failed", description: "Couldn't access the clipboard. Select and copy the link manually." });
   };
 
   const handleRenameTree = (e: React.FormEvent) => {
@@ -603,13 +605,13 @@ function ManageRootsPage() {
       const currentSettings = [...(currentUser?.treeSettings || [])];
       let treeSetting = currentSettings.find(s => s.treeId === treeToRename.id);
       if (!treeSetting) {
-          treeSetting = { treeId: treeToRename.id, groupName: editedGroup, order: 0 };
-          currentSettings.push(treeSetting);
+        treeSetting = { treeId: treeToRename.id, groupName: editedGroup, order: 0 };
+        currentSettings.push(treeSetting);
       } else {
-          treeSetting.groupName = editedGroup;
+        treeSetting.groupName = editedGroup;
       }
       if (setTreeSettings) {
-          setTreeSettings(currentSettings);
+        setTreeSettings(currentSettings);
       }
 
       toast({ title: "Updated", description: `Tree settings saved.` });
@@ -622,24 +624,24 @@ function ManageRootsPage() {
 
   const handleDeleteGroup = (groupName: string) => {
     if (groupName === "Ungrouped") return;
-    
+
     // 1. Remove from customGroups
     const newCustomGroups = (currentUser?.customGroups || []).filter(g => g !== groupName);
     if (setCustomGroups) setCustomGroups(newCustomGroups);
-    
+
     // 2. Move trees to Ungrouped in settings
     const currentSettings = [...(currentUser?.treeSettings || [])];
-    const newSettings = currentSettings.map(s => 
+    const newSettings = currentSettings.map(s =>
       s.groupName === groupName ? { ...s, groupName: "Ungrouped" } : s
     );
     if (setTreeSettings) setTreeSettings(newSettings);
-    
+
     // 3. Reset local state
     setEditedGroup("Ungrouped");
     if (activeGroupFilter === groupName) {
       setActiveGroupFilter("All Roots");
     }
-    
+
     toast({ title: "Group Removed", description: `The group "${groupName}" was deleted and its roots moved to Ungrouped.` });
   };
 
@@ -648,18 +650,18 @@ function ManageRootsPage() {
       setEditingGroupName(null);
       return;
     }
-    
+
     // 1. Update customGroups
     const newCustomGroups = (currentUser?.customGroups || []).map(g => g === oldName ? newName.trim() : g);
     if (setCustomGroups) setCustomGroups(newCustomGroups);
-    
+
     // 2. Update all treeSettings using this group
     const currentSettings = [...(currentUser?.treeSettings || [])];
-    const newSettings = currentSettings.map(s => 
+    const newSettings = currentSettings.map(s =>
       s.groupName === oldName ? { ...s, groupName: newName.trim() } : s
     );
     if (setTreeSettings) setTreeSettings(newSettings);
-    
+
     // 3. Update active filter if needed
     if (activeGroupFilter === oldName) {
       setActiveGroupFilter(newName.trim());
@@ -715,22 +717,22 @@ function ManageRootsPage() {
     if (activeGroupFilter === "Ungrouped" && ungroupedTreesCount === 0 && filteredTrees.length > 0) {
       setActiveGroupFilter("All Roots");
     }
-    
+
     return (
       <DndContext id={dndContextId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <div className="flex w-full overflow-x-auto pb-4 gap-2 mb-4 scrollbar-hide">
-          <DroppableFilterPill 
-            id="group-pill-All Roots" 
-            isActive={activeGroupFilter === "All Roots"} 
-            onClick={() => setActiveGroupFilter("All Roots")} 
+          <DroppableFilterPill
+            id="group-pill-All Roots"
+            isActive={activeGroupFilter === "All Roots"}
+            onClick={() => setActiveGroupFilter("All Roots")}
             title="All Roots"
             isGroupingPill={false}
           />
           {ungroupedTreesCount > 0 && (
-            <DroppableFilterPill 
-              id="group-pill-Ungrouped" 
-              isActive={activeGroupFilter === "Ungrouped"} 
-              onClick={() => setActiveGroupFilter("Ungrouped")} 
+            <DroppableFilterPill
+              id="group-pill-Ungrouped"
+              isActive={activeGroupFilter === "Ungrouped"}
+              onClick={() => setActiveGroupFilter("Ungrouped")}
               title="Ungrouped"
               isGroupingPill={true}
             />
@@ -740,13 +742,13 @@ function ManageRootsPage() {
               const s = treeSettings.find(st => st.treeId === tree.id);
               return s?.groupName === g;
             }).length;
-            
+
             return (
-              <DroppableFilterPill 
+              <DroppableFilterPill
                 key={`group-pill-${g}`}
                 id={`group-pill-${g}`}
-                isActive={activeGroupFilter === g} 
-                onClick={() => setActiveGroupFilter(g)} 
+                isActive={activeGroupFilter === g}
+                onClick={() => setActiveGroupFilter(g)}
                 title={`${g}${groupCount > 0 ? ` (${groupCount})` : ''}`}
                 isGroupingPill={true}
               />
@@ -957,10 +959,10 @@ function ManageRootsPage() {
           </div>
         </SortableContext>
         {viewingTrees.length === 0 && (
-           <div className="mt-8 col-span-full min-h-[150px] flex flex-col items-center justify-center text-muted-foreground/50 border-2 border-dashed border-muted-foreground/20 rounded-xl w-full">
-              <p className="text-lg">No roots here</p>
-              <p className="text-sm">Drag roots onto the filter buttons above to assign them</p>
-           </div>
+          <div className="mt-8 col-span-full min-h-[150px] flex flex-col items-center justify-center text-muted-foreground/50 border-2 border-dashed border-muted-foreground/20 rounded-xl w-full">
+            <p className="text-lg">No roots here</p>
+            <p className="text-sm">Drag roots onto the filter buttons above to assign them</p>
+          </div>
         )}
       </DndContext>
     );
@@ -1060,11 +1062,11 @@ function ManageRootsPage() {
                   <DialogTitle>Manage Groups</DialogTitle>
                   <DialogDescription>Create, rename, or delete your custom root categories.</DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="space-y-4 py-4">
                   <div className="flex gap-2">
-                    <Input 
-                      placeholder="New group name..." 
+                    <Input
+                      placeholder="New group name..."
                       value={newGroupName}
                       onChange={(e) => setNewGroupName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddGroup(e)}
@@ -1082,7 +1084,7 @@ function ManageRootsPage() {
                       <div key={group} className="p-3 flex items-center justify-between group">
                         {editingGroupName === group ? (
                           <div className="flex flex-1 gap-2 mr-2">
-                            <Input 
+                            <Input
                               autoFocus
                               value={editingGroupValue}
                               onChange={(e) => setEditingGroupValue(e.target.value)}
@@ -1095,9 +1097,9 @@ function ManageRootsPage() {
                           <>
                             <span className="font-medium">{group}</span>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8"
                                 onClick={() => {
                                   setEditingGroupName(group);
@@ -1106,9 +1108,9 @@ function ManageRootsPage() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-destructive hover:text-destructive"
                                 onClick={() => handleDeleteGroup(group)}
                               >
@@ -1280,7 +1282,7 @@ function ManageRootsPage() {
                   <TabsTrigger value="people">People</TabsTrigger>
                   <TabsTrigger value="teams">Teams</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="people" className="space-y-6 mt-4">
                   <div className="space-y-4">
                     <p className="text-sm text-muted-foreground">Grant access to specific users.</p>
@@ -1299,7 +1301,7 @@ function ManageRootsPage() {
                           </div>
                         )}
                       </div>
-                      
+
                       {userSearchResults.length > 0 && (
                         <div className="border rounded-md shadow-sm bg-popover max-h-48 overflow-y-auto">
                           {userSearchResults.map(user => (
@@ -1328,9 +1330,9 @@ function ManageRootsPage() {
                         </div>
                       )}
 
-                      <Button 
-                        className="w-full mt-2" 
-                        onClick={handleShare} 
+                      <Button
+                        className="w-full mt-2"
+                        onClick={handleShare}
                         disabled={!selectedUserToShare}
                       >
                         Share Access
@@ -1398,15 +1400,15 @@ function ManageRootsPage() {
                               if (permissions.editTemplates) permLabels.push('Edit Templates');
                             }
                             const label = permLabels.length > 0 ? permLabels.join(', ') : 'Read-Only';
-                            
+
                             if (editingShareUserId === userId) {
                               return (
                                 <div key={userId} className="space-y-3 p-3 border rounded-md bg-muted/30 w-full mt-2">
                                   <div className="flex items-center justify-between">
                                     <span className="font-medium text-sm">{user.username} - Edit Permissions</span>
                                     <div className="flex gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => setEditingShareUserId(null)}>Cancel</Button>
-                                        <Button size="sm" onClick={saveEditingShare}>Save</Button>
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingShareUserId(null)}>Cancel</Button>
+                                      <Button size="sm" onClick={saveEditingShare}>Save</Button>
                                     </div>
                                   </div>
                                   <div className="flex items-center space-x-2">
@@ -1479,7 +1481,7 @@ function ManageRootsPage() {
                           <SelectValue placeholder="Select a team..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {userTeams.filter(t => 
+                          {userTeams.filter(t =>
                             !(selectedTreeToShare?.teamShares || []).some(ts => ts.teamId === t.id)
                           ).map(team => (
                             <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
@@ -1540,7 +1542,7 @@ function ManageRootsPage() {
                               if (permissions.editTemplates) permLabels.push('Edit Templates');
                             }
                             const label = permLabels.length > 0 ? permLabels.join(', ') : 'Read-Only';
-                            
+
                             return (
                               <div key={teamId} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
                                 <div>
@@ -1573,41 +1575,41 @@ function ManageRootsPage() {
                     onCheckedChange={(checked) => handlePublicToggle(selectedTreeToShare!.id, checked)}
                   />
                 </div>
-                  {selectedTreeToShare?.isPublic && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Initial View Mode</Label>
-                        <Select value={selectedViewMode} onValueChange={setSelectedViewMode}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="standard">Standard View</SelectItem>
-                            <SelectItem value="compact">Compact View</SelectItem>
-                            <SelectItem value="two-panel">Two-Panel View</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border p-3 mt-2">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="explorer-switch">Enable Explorer View</Label>
-                          <p className="text-xs text-muted-foreground">Allows viewers to drill down into specific nodes.</p>
-                        </div>
-                        <Switch
-                          id="explorer-switch"
-                          checked={selectedExplorerMode}
-                          onCheckedChange={setSelectedExplorerMode}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Input readOnly value={getPublicUrl(selectedTreeToShare)} />
-                        <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare.id)}>
-                          <Copy className="mr-2 h-4 w-4" /> Copy Link
-                        </Button>
-                      </div>
+                {selectedTreeToShare?.isPublic && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Initial View Mode</Label>
+                      <Select value={selectedViewMode} onValueChange={setSelectedViewMode}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard View</SelectItem>
+                          <SelectItem value="compact">Compact View</SelectItem>
+                          <SelectItem value="two-panel">Two-Panel View</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center justify-between rounded-lg border p-3 mt-2">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="explorer-switch">Enable Explorer View</Label>
+                        <p className="text-xs text-muted-foreground">Allows viewers to drill down into specific nodes.</p>
+                      </div>
+                      <Switch
+                        id="explorer-switch"
+                        checked={selectedExplorerMode}
+                        onCheckedChange={setSelectedExplorerMode}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Input readOnly value={getPublicUrl(selectedTreeToShare)} />
+                      <Button variant="outline" onClick={() => handleCopyPublicLink(selectedTreeToShare.id)}>
+                        <Copy className="mr-2 h-4 w-4" /> Copy Link
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Done</Button></DialogClose>
               </DialogFooter>

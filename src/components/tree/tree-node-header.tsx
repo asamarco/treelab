@@ -20,7 +20,7 @@ import {
   CornerDownRight
 } from "lucide-react";
 import { RenderWithLinks } from "./render-with-links";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { CollapsibleTrigger } from "../ui/collapsible";
 import { Icon } from "../icon";
@@ -204,10 +204,12 @@ export function TreeNodeHeader({
     toast({ title: 'Cut', description: '1 node instance cut to clipboard.' });
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     const link = `node://${node.id}`;
-    navigator.clipboard.writeText(link);
-    toast({ title: 'Link Copied', description: 'Node link copied to clipboard.' });
+    const ok = await copyToClipboard(link);
+    toast(ok
+      ? { title: 'Link Copied', description: 'Node link copied to clipboard.' }
+      : { variant: 'destructive', title: 'Copy failed', description: "Couldn't access the clipboard." });
   };
 
   const handlePaste = async (as: 'child' | 'sibling') => {
@@ -489,9 +491,9 @@ export function TreeNodeHeader({
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      selectAndCenterNode({ 
-                                        instanceId: segment.instanceId, 
-                                        ancestorInstanceIds: segment.ancestorInstanceIds 
+                                      selectAndCenterNode({
+                                        instanceId: segment.instanceId,
+                                        ancestorInstanceIds: segment.ancestorInstanceIds
                                       });
                                     }}
                                   >
