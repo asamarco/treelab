@@ -1,6 +1,6 @@
 {
   "name": "treelab",
-  "version": "0.8.0",
+  "version": "0.8.2",
   "private": true,
   "scripts": {
     "dev": "next dev --turbo -p 9002",
@@ -67,6 +67,7 @@
     "sharp": "^0.35.3",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "unist-util-visit": "^5.1.0",
     "use-debounce": "^10.0.1",
     "use-immer": "^0.11.0",
     "zod": "^4.1.3"

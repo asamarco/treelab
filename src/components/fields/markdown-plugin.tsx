@@ -3,10 +3,11 @@
 import React, { useContext } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { remarkNodeLinks } from '@/lib/remark-node-links';
 import { FileText } from 'lucide-react';
 import { FieldTypePlugin } from '@/lib/field-types/registry';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Field, TreeNode } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { TreeContext } from '@/contexts/tree-context';
@@ -102,7 +103,7 @@ const MarkdownViewerComponent = ({
         )}
       >
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkNodeLinks]}
           urlTransform={(url) => url.startsWith('node://') ? url : defaultUrlTransform(url)}
           components={{
             h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-1">{children}</h1>,
@@ -113,18 +114,38 @@ const MarkdownViewerComponent = ({
             a: ({ href, children }) => {
               if (href?.startsWith('node://')) {
                 const nodeId = href.substring(7);
+                // If children is the raw URI (auto-linked bare node:// URI), swap in the
+                // resolved node name so the user sees something meaningful.
+                const isRawUri =
+                  typeof children === 'string'
+                    ? children === href
+                    : Array.isArray(children) &&
+                      children.length === 1 &&
+                      typeof children[0] === 'string' &&
+                      children[0] === href;
+                const resolvedName = isRawUri
+                  ? treeContext?.findNodeAndParent?.(nodeId)?.node.name
+                  : undefined;
                 return (
-                  <Button
-                    variant="link"
-                    className="p-0 h-auto"
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={cn(buttonVariants({ variant: 'link' }), 'p-0 h-auto cursor-pointer')}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       treeContext?.selectAndCenterNode({ nodeId });
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        treeContext?.selectAndCenterNode({ nodeId });
+                      }
+                    }}
                   >
-                    {children}
-                  </Button>
+                    {resolvedName ?? children}
+                  </span>
                 );
               }
               return (
