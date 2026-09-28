@@ -32,6 +32,9 @@ import parseHtml, { domToReact, attributesToProps, DOMNode } from 'html-react-pa
 import { AuthContext } from '@/contexts/auth-context';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { resolveTemplateText } from '@/lib/template-text';
+
+export { resolveTemplateText };
 
 
 interface RenderWithLinksProps {
@@ -221,7 +224,6 @@ export function RenderWithLinks({ node, template, text, ancestorChain = [] }: Re
   const treeContext = useContext(TreeContext);
   const authContext = useContext(AuthContext);
   const currentUser = authContext?.currentUser;
-  const { toast } = useToast();
 
   if (!text) return null;
 
@@ -231,144 +233,26 @@ export function RenderWithLinks({ node, template, text, ancestorChain = [] }: Re
     treeContext?.selectAndCenterNode({ nodeId });
   };
 
-  // All templates — needed for cross-template field resolution in parent / ancestor / child.
   const allTemplates = treeContext?.templates ?? [template];
   const dateFormat = currentUser?.dateFormat;
 
-  const nodeData = node.data || {};
+  const resolvedLines = resolveTemplateText(
+    text,
+    node,
+    template,
+    allTemplates,
+    ancestorChain,
+    dateFormat
+  );
 
-  const lines = text.split('\n');
-  const processedLines = lines.map((line, lineIndex) => {
-    const placeholders = Array.from(line.matchAll(PLACEHOLDER_REGEX));
-
-    if (placeholders.length === 0) {
-      // Fast path: no placeholders — just handle URLs.
-      const parts = line.split(URL_REGEX).filter(Boolean);
-      return (
-        <React.Fragment key={lineIndex}>
-          {renderParts(parts, uiContext, treeContext, handleJumpToNode)}
-        </React.Fragment>
-      );
-    }
-
-    // -------------------------------------------------------------------------
-    // Classify each match.
-    // -------------------------------------------------------------------------
-
-    type MatchKind = 'count' | 'parent' | 'ancestor' | 'child' | 'current' | 'current-keepalive';
-
-    interface MatchInfo {
-      match: RegExpMatchArray;
-      kind: MatchKind;
-      fieldName?: string;
-      depth?: number;
-    }
-
-    const matchInfos: MatchInfo[] = placeholders.map(match => {
-      if (match[0].startsWith('{count')) {
-        const depth = match[1] !== undefined ? parseInt(match[1], 10) : 1;
-        return { match, kind: 'count' as MatchKind, depth };
-      }
-      if (match[2] !== undefined) return { match, kind: 'parent'   as MatchKind, fieldName: match[2].trim() };
-      if (match[3] !== undefined) return { match, kind: 'ancestor' as MatchKind, fieldName: match[3].trim(), depth: parseInt(match[4], 10) };
-      if (match[5] !== undefined) return { match, kind: 'child'    as MatchKind, fieldName: match[5].trim() };
-      if (match[6] !== undefined) return { match, kind: 'current'  as MatchKind, fieldName: match[6].trim() };
-      return                             { match, kind: 'current-keepalive' as MatchKind, fieldName: match[7].trim() };
-    });
-
-    const resolveMatch = (info: MatchInfo): string | undefined => {
-      switch (info.kind) {
-        case 'count':
-          return String(countDescendantsAtDepth(node, info.depth ?? 1));
-        case 'parent':
-          return resolveParentValue(ancestorChain, info.fieldName!, allTemplates, dateFormat);
-        case 'ancestor':
-          return resolveAncestorValue(ancestorChain, info.fieldName!, info.depth!, allTemplates, dateFormat);
-        case 'child':
-          return resolveChildValue(node, info.fieldName!, allTemplates, dateFormat);
-        case 'current':
-        case 'current-keepalive': {
-          const field = template.fields.find(f => f.name === info.fieldName);
-          if (!field || field.type === 'picture' || field.type === 'table-header' || field.type === 'attachment') {
-            return undefined;
-          }
-          const raw = nodeData[field.id];
-          const isEmpty =
-            raw === undefined ||
-            raw === null ||
-            (typeof raw === 'string' && raw.trim() === '') ||
-            (Array.isArray(raw) && raw.length === 0);
-          if (isEmpty) return undefined;
-          let formatted = String(raw);
-          if (field.type === 'date' && typeof raw === 'string') {
-            formatted = formatDate(raw, dateFormat);
-          }
-          if (formatted) {
-            formatted = `${field.prefix || ''}${formatted}${field.postfix || ''}`;
-          }
-          return formatted || undefined;
-        }
-      }
-    };
-
-    // -------------------------------------------------------------------------
-    // Line suppression
-    //
-    // Suppress the line when:
-    //   - All placeholders resolve to undefined
-    //   - No placeholder is keep-alive (?{Field})
-    //
-    // Special cases that always block suppression:
-    //   - {count}  — always resolves (to "0" or more)
-    //   - {Field} where no matching field exists — legacy: keep as-is, count as content
-    // -------------------------------------------------------------------------
-    const hasAnyKeepAlive = matchInfos.some(i => i.kind === 'current-keepalive');
-
-    const hasAnyValue = matchInfos.some(i => {
-      if (i.kind === 'count') return true;
-      // Legacy: unrecognised field name on current node keeps the line (matches old behaviour).
-      if (i.kind === 'current' || i.kind === 'current-keepalive') {
-        const field = template.fields.find(f => f.name === i.fieldName);
-        if (!field) return true;
-      }
-      return resolveMatch(i) !== undefined;
-    });
-
-    if (!hasAnyValue && !hasAnyKeepAlive) return null;
-
-    // -------------------------------------------------------------------------
-    // Build the substituted string.
-    // -------------------------------------------------------------------------
-    let lastIndex = 0;
-    const segments: string[] = [];
-
-    for (const info of matchInfos) {
-      const textBefore = line.substring(lastIndex, info.match.index);
-      if (textBefore) segments.push(textBefore);
-      lastIndex = (info.match.index ?? 0) + info.match[0].length;
-
-      // Legacy behaviour: unrecognised {Field} on current node → preserve the raw token.
-      if ((info.kind === 'current' || info.kind === 'current-keepalive') && !template.fields.find(f => f.name === info.fieldName)) {
-        segments.push(info.match[0]);
-        continue;
-      }
-
-      const resolved = resolveMatch(info);
-      if (resolved !== undefined) segments.push(resolved);
-      // Unresolved new-syntax placeholders are silently dropped (emit nothing).
-    }
-
-    const textAfter = line.substring(lastIndex);
-    if (textAfter) segments.push(textAfter);
-
-    const renderedLine = segments.join('');
-    const parts = renderedLine.split(URL_REGEX).filter(Boolean);
+  const processedLines = resolvedLines.map((line, lineIndex) => {
+    const parts = line.split(URL_REGEX).filter(Boolean);
     return (
       <React.Fragment key={lineIndex}>
         {renderParts(parts, uiContext, treeContext, handleJumpToNode)}
       </React.Fragment>
     );
-  }).filter(Boolean);
+  });
 
   return (
     <span className="inline">

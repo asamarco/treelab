@@ -1,13 +1,17 @@
 "use client";
 
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useContext } from 'react';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { FileText } from 'lucide-react';
 import { FieldTypePlugin } from '@/lib/field-types/registry';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Field, TreeNode } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { TreeContext } from '@/contexts/tree-context';
+import { AuthContext } from '@/contexts/auth-context';
+import { resolveTemplateText } from '@/lib/template-text';
 
 // ---------------------------------------------------------------------------
 // Editor
@@ -46,16 +50,43 @@ MarkdownEditorComponent.displayName = 'MarkdownEditorComponent';
 const MarkdownViewerComponent = ({
   field,
   value,
+  node,
   isCompactView,
+  ancestorChain = [],
 }: {
   field: Field;
   value: any;
   node?: TreeNode;
   readOnly?: boolean;
   isCompactView?: boolean;
+  ancestorChain?: TreeNode[];
 }) => {
+  const treeContext = useContext(TreeContext);
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+
   if (!value || (typeof value === 'string' && !value.trim())) {
     return null;
+  }
+
+  const template = node ? treeContext?.templates.find(t => t.id === node.templateId) : undefined;
+  const allTemplates = treeContext?.templates ?? [];
+  const dateFormat = currentUser?.dateFormat;
+
+  let resolvedText = String(value);
+  if (node && template) {
+    resolvedText = resolveTemplateText(
+      String(value),
+      node,
+      template,
+      allTemplates,
+      ancestorChain,
+      dateFormat,
+      {
+        escapeForMarkdown: true,
+        findNodeAndParent: treeContext?.findNodeAndParent,
+      }
+    ).join('\n');
   }
 
   return (
@@ -72,23 +103,42 @@ const MarkdownViewerComponent = ({
       >
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
+          urlTransform={(url) => url.startsWith('node://') ? url : defaultUrlTransform(url)}
           components={{
             h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-1">{children}</h1>,
             h2: ({ children }) => <h2 className="text-base font-semibold mt-2 mb-1">{children}</h2>,
             h3: ({ children }) => <h3 className="text-sm font-semibold mt-1.5 mb-0.5">{children}</h3>,
             h4: ({ children }) => <h4 className="text-sm font-medium mt-1 mb-0.5">{children}</h4>,
             p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline hover:text-primary/80 break-words"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {children}
-              </a>
-            ),
+            a: ({ href, children }) => {
+              if (href?.startsWith('node://')) {
+                const nodeId = href.substring(7);
+                return (
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      treeContext?.selectAndCenterNode({ nodeId });
+                    }}
+                  >
+                    {children}
+                  </Button>
+                );
+              }
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline hover:text-primary/80 break-words"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {children}
+                </a>
+              );
+            },
             ul: ({ children }) => <ul className="list-disc pl-5 mb-1.5 space-y-0.5">{children}</ul>,
             ol: ({ children }) => <ol className="list-decimal pl-5 mb-1.5 space-y-0.5">{children}</ol>,
             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
@@ -127,7 +177,7 @@ const MarkdownViewerComponent = ({
             hr: () => <hr className="my-2 border-border" />,
           }}
         >
-          {String(value)}
+          {resolvedText}
         </ReactMarkdown>
       </div>
     </div>
