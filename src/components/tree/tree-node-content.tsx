@@ -58,10 +58,16 @@ interface TreeNodeContentProps {
     readOnly?: boolean;
     disableSelection?: boolean;
     onNodeClick?: (nodeId: string) => void;
+    /**
+     * Ancestry chain for this rendering instance (root → immediate parent of
+     * `node`). Forwarded to RenderWithLinks and extended before being passed to
+     * child TreeNodeComponents.
+     */
+    ancestorChain?: TreeNode[];
 }
 
 
-function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false, onNodeClick }: TreeNodeContentProps) {
+function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, contextualParentId, overrideExpandedIds, onExpandedChange, isCompactOverride, isExplorer, readOnly = false, disableSelection = false, onNodeClick, ancestorChain = [] }: TreeNodeContentProps) {
     const { currentUser } = useAuthContext();
     const { findNodesByQuery, getTemplateById, setSelectedNodeIds, findNodeAndParent, expandToNode, updateNode, selectAndCenterNode } = useTreeContext();
     const { setDialogState, isCompactView: globalIsCompactView } = useUIContext();
@@ -155,7 +161,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                         <div className={cn("pl-3 pb-1 pr-1 min-w-0 flex flex-col")}>
                             {template.bodyTemplate && (
                                 <div className={cn("text-foreground/90 whitespace-pre-wrap pt-2", isCompactView ? "text-xs" : "text-sm")} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
-                                    <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
+                                <RenderWithLinks node={node} template={template} text={template.bodyTemplate} ancestorChain={ancestorChain} />
                                 </div>
                             )}
 
@@ -166,7 +172,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                     const plugin = FieldRegistry.get(field.type);
                                     if (plugin?.ViewerComponent) {
                                         const Viewer = plugin.ViewerComponent;
-                                        return <Viewer key={field.id} field={field} value={value} node={node} readOnly={readOnly} isCompactView={isCompactView} />;
+                                        return <Viewer key={field.id} field={field} value={value} node={node} readOnly={readOnly} isCompactView={isCompactView} ancestorChain={ancestorChain} />;
                                     }
 
                                     switch (field.type) {
@@ -418,6 +424,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                         readOnly={readOnly}
                                         disableSelection={disableSelection}
                                         onNodeClick={onNodeClick}
+                                        ancestorChain={[...ancestorChain, node]}
                                     />
                                     {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />}
                                 </div>

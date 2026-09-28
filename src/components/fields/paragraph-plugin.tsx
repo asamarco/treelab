@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * @fileoverview
@@ -54,12 +54,14 @@ const ParagraphViewerComponent = ({
   value,
   node,
   isCompactView,
+  ancestorChain,
 }: {
   field: Field;
   value: any;
   node?: TreeNode;
   readOnly?: boolean;
   isCompactView?: boolean;
+  ancestorChain?: TreeNode[];
 }) => {
   const treeContext = useContext(TreeContext);
 
@@ -84,7 +86,7 @@ const ParagraphViewerComponent = ({
           isCompactView ? 'text-xs' : 'text-sm'
         )}
       >
-        <RenderWithLinks node={node} template={template} text={String(value)} />
+        <RenderWithLinks node={node} template={template} text={String(value)} ancestorChain={ancestorChain} />
       </div>
     </div>
   );

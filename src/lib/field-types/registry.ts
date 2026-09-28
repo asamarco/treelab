@@ -24,6 +24,8 @@ export interface FieldTypePlugin {
         node?: TreeNode;
         readOnly?: boolean;
         isCompactView?: boolean;
+        /** Ancestry chain threaded from the tree root down to the node's parent. */
+        ancestorChain?: TreeNode[];
     }>;
 
     // Optional lifecycle hook to sanitize/transform form data before saving

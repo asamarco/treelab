@@ -68,7 +68,9 @@ import {
   CheckSquare,
   Grid3X3,
   Code2,
+  HelpCircle,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -525,7 +527,30 @@ export function TemplateDesigner({
                   name="nameTemplate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Node Name Template</FormLabel>
+                      <div className="flex items-center gap-1.5">
+                        <FormLabel>Node Name Template</FormLabel>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button type="button" variant="ghost" size="icon" className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground">
+                                <HelpCircle className="h-3.5 w-3.5" />
+                                <span className="sr-only">Template Syntax Help</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs text-xs space-y-1.5 p-3">
+                              <p className="font-semibold text-xs border-b pb-1">Template Syntax Possibilities</p>
+                              <ul className="space-y-1">
+                                <li><code className="bg-muted px-1 rounded">{'{FieldName}'}</code> — Current node field value</li>
+                                <li><code className="bg-muted px-1 rounded">{'?{FieldName}'}</code> — Keep line even if field empty</li>
+                                <li><code className="bg-muted px-1 rounded">{'{parent:FieldName}'}</code> — Immediate parent field value</li>
+                                <li><code className="bg-muted px-1 rounded">{'{ancestor:FieldName:N}'}</code> — N levels up (e.g., 1=parent, 2=grandparent)</li>
+                                <li><code className="bg-muted px-1 rounded">{'{child:FieldName}'}</code> — First child with value</li>
+                                <li><code className="bg-muted px-1 rounded">{'{count}'}</code> / <code className="bg-muted px-1 rounded">{'{count:N}'}</code> — Count descendants at depth N (default N=1)</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <FormControl>
                         <TemplateNameInput
                           value={field.value}
@@ -546,7 +571,30 @@ export function TemplateDesigner({
                   name="bodyTemplate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Body Template</FormLabel>
+                      <div className="flex items-center gap-1.5">
+                        <FormLabel>Body Template</FormLabel>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button type="button" variant="ghost" size="icon" className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground">
+                                <HelpCircle className="h-3.5 w-3.5" />
+                                <span className="sr-only">Template Syntax Help</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs text-xs space-y-1.5 p-3">
+                              <p className="font-semibold text-xs border-b pb-1">Template Syntax Possibilities</p>
+                              <ul className="space-y-1">
+                                <li><code className="bg-muted px-1 rounded">{'{FieldName}'}</code> — Current node field value</li>
+                                <li><code className="bg-muted px-1 rounded">{'?{FieldName}'}</code> — Keep line even if field empty</li>
+                                <li><code className="bg-muted px-1 rounded">{'{parent:FieldName}'}</code> — Immediate parent field value</li>
+                                <li><code className="bg-muted px-1 rounded">{'{ancestor:FieldName:N}'}</code> — N levels up (e.g., 1=parent, 2=grandparent)</li>
+                                <li><code className="bg-muted px-1 rounded">{'{child:FieldName}'}</code> — First child with value</li>
+                                <li><code className="bg-muted px-1 rounded">{'{count}'}</code> / <code className="bg-muted px-1 rounded">{'{count:N}'}</code> — Count descendants at depth N (default N=1)</li>
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                       <FormControl>
                         <TemplateTextarea
                           value={field.value ?? ""}

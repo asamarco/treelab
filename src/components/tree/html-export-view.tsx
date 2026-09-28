@@ -27,9 +27,10 @@ interface HtmlNodeProps {
   imageMap: Map<string, string>;
   attachmentsMap: Map<string, string>;
   currentUser: User | null;
+  ancestorChain?: TreeNode[];
 }
 
-const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, imageMap, attachmentsMap, currentUser }) => {
+const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, imageMap, attachmentsMap, currentUser, ancestorChain = [] }) => {
   const template = getTemplateById(node.templateId);
   if (!template) {
     return <div style={{ paddingLeft: `${level * 24}px` }}>Template not found for this node.</div>;
@@ -118,18 +119,22 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
 
       {template.bodyTemplate && (
         <div style={{ whiteSpace: 'pre-wrap', marginTop: '8px' }}>
-          <RenderWithLinks node={node} template={template} text={template.bodyTemplate} />
+          <RenderWithLinks node={node} template={template} text={template.bodyTemplate} ancestorChain={ancestorChain} />
         </div>
       )}
 
       {hasChildren && (
         <div className="children-container" style={{ marginTop: '8px' }}>
           {node.children!.map(child => (
-            <HtmlNode key={child.id} node={child} level={level + 1} getTemplateById={getTemplateById} imageMap={imageMap} attachmentsMap={attachmentsMap} currentUser={currentUser} />
+            <HtmlNode key={child.id} node={child} level={level + 1} getTemplateById={getTemplateById} imageMap={imageMap} attachmentsMap={attachmentsMap} currentUser={currentUser} ancestorChain={[...ancestorChain, node]} />
           ))}
         </div>
       )}
     </div>
+  );
+
+  const renderedName = (
+    <RenderWithLinks node={node} template={template} text={template.nameTemplate || node.name} ancestorChain={ancestorChain} />
   );
 
   if (hasChildren) {
@@ -138,7 +143,7 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
         <details className="tree-node-details">
           <summary className="tree-node-summary" style={{ borderLeft: `3px solid ${color || '#ccc'}` }}>
             <h3 style={{ color: color || 'inherit', margin: 0, display: 'inline', fontSize: `${Math.max(1.5 - level * 0.1, 0.8)}rem` }}>
-              {node.name}
+              {renderedName}
             </h3>
           </summary>
           <div className="tree-node-card" style={{ borderLeft: `3px solid ${color || '#ccc'}` }}>
@@ -153,7 +158,7 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
     <div className="tree-node-card" style={{ marginLeft: `${level * 24}px`, borderLeft: `3px solid ${color || '#ccc'}` }}>
       <div className="tree-node-header">
         <h3 style={{ color: color || 'inherit', margin: 0, fontSize: `${Math.max(1.5 - level * 0.1, 0.8)}rem` }}>
-          {node.name}
+          {renderedName}
         </h3>
       </div>
       {renderContent()}

@@ -53,6 +53,13 @@ interface TreeNodeProps {
   readOnly?: boolean;
   disableSelection?: boolean;
   onNodeClick?: (nodeId: string) => void;
+  /**
+   * The ancestry chain for this rendering instance, ordered root→parent.
+   * Passed down and extended at each recursive step so that
+   * {parent:…} / {ancestor:…:N} placeholders resolve against the correct chain.
+   * Defaults to [] for root-level nodes.
+   */
+  ancestorChain?: TreeNode[];
 }
 
 function TreeNodeComponentInner({
@@ -68,6 +75,7 @@ function TreeNodeComponentInner({
   readOnly = false,
   disableSelection = false,
   onNodeClick,
+  ancestorChain = [],
 }: TreeNodeProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -322,6 +330,7 @@ function TreeNodeComponentInner({
               readOnly={readOnly}
               disableSelection={disableSelection}
               onNodeClick={onNodeClick}
+              ancestorChain={ancestorChain}
             />
             <TreeNodeContent
               node={node}
@@ -337,6 +346,7 @@ function TreeNodeComponentInner({
               readOnly={readOnly}
               disableSelection={disableSelection}
               onNodeClick={onNodeClick}
+              ancestorChain={ancestorChain}
             />
           </Collapsible>
         </CardContent>
@@ -365,6 +375,7 @@ function TreeNodeComponentInner({
                 readOnly={readOnly}
                 disableSelection={disableSelection}
                 onNodeClick={onNodeClick}
+                ancestorChain={[...ancestorChain, node]}
               />
               {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />}
             </div>
@@ -394,5 +405,15 @@ export const TreeNodeComponent = React.memo(TreeNodeComponentInner, (prevProps, 
   if (prevProps.onSelect !== nextProps.onSelect) return false;
   if (prevProps.onExpandedChange !== nextProps.onExpandedChange) return false;
   if (prevProps.onNodeClick !== nextProps.onNodeClick) return false;
+  // ancestorChain: compare by length and each element's reference so that a
+  // parent data-change (new immer reference) triggers a re-render in children.
+  if (prevProps.ancestorChain !== nextProps.ancestorChain) {
+    const prev = prevProps.ancestorChain ?? [];
+    const next = nextProps.ancestorChain ?? [];
+    if (prev.length !== next.length) return false;
+    for (let i = 0; i < prev.length; i++) {
+      if (prev[i] !== next[i]) return false;
+    }
+  }
   return true;
 });
