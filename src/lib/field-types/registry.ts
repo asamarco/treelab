@@ -32,10 +32,10 @@ export interface FieldTypePlugin {
     sanitizeOnSave?: (value: any) => any;
 
     // Optional check to determine if a value is empty for row group layout
-    isEmpty?: (value: any) => boolean;
+    isEmpty?: (value: any, field: Field) => boolean;
 }
 
-export function isValueEmpty(value: any): boolean {
+export function isValueEmpty(value: any, field?: Field): boolean {
     if (value === undefined || value === null || value === '') return true;
     if (Array.isArray(value)) return value.length === 0;
     if (typeof value === 'object') return Object.keys(value).length === 0;

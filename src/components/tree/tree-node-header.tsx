@@ -137,7 +137,7 @@ export function TreeNodeHeader({
         const plugin = FieldRegistry.get(f.type);
         if (!plugin) return false;
         const value = node.data[f.id];
-        return plugin.isEmpty ? !plugin.isEmpty(value) : !isValueEmpty(value);
+        return plugin.isEmpty ? !plugin.isEmpty(value, f) : !isValueEmpty(value, f);
       }) ||
       (template.bodyTemplate && template.bodyTemplate.trim() !== '')
     ));

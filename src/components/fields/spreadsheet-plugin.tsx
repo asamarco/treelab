@@ -179,4 +179,10 @@ export const SpreadsheetPlugin: FieldTypePlugin = {
     DesignerSettings: SpreadsheetDesignerSettings,
     EditorComponent: SpreadsheetEditorComponent,
     ViewerComponent: SpreadsheetViewerComponent,
+    isEmpty: (value: any, field: Field) => {
+        const rows = field.spreadsheetRowCount ?? 3;
+        const cols = field.spreadsheetColumnCount ?? 3;
+        return rows === 0 || cols === 0;
+    }
 };
+

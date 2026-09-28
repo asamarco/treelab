@@ -158,5 +158,5 @@ export const EmbedPlugin: FieldTypePlugin = {
     DesignerSettings: EmbedDesignerSettings,
     EditorComponent: EmbedEditorComponent,
     ViewerComponent: EmbedViewerComponent,
-    isEmpty: (value: any) => !value || typeof value !== 'string' || !value.startsWith('http'),
+    isEmpty: (value: any, field?: Field) => !value || typeof value !== 'string' || !value.startsWith('http'),
 };

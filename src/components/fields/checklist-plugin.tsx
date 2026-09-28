@@ -134,5 +134,5 @@ export const ChecklistPlugin: FieldTypePlugin = {
   icon: ListChecks,
   EditorComponent: ChecklistEditorComponent,
   ViewerComponent: ChecklistViewerComponent,
-  isEmpty: (value: any) => !Array.isArray(value) || value.length === 0,
+  isEmpty: (value: any, field?: Field) => !Array.isArray(value) || value.length === 0,
 };

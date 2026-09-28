@@ -371,7 +371,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                         const nonEmptyFields = group.fields.filter(field => {
                                             const plugin = FieldRegistry.get(field.type);
                                             const value = nodeData[field.id];
-                                            const empty = plugin?.isEmpty ? plugin.isEmpty(value) : isValueEmpty(value);
+                                            const empty = plugin?.isEmpty ? plugin.isEmpty(value, field) : isValueEmpty(value, field);
                                             return !empty;
                                         });
 

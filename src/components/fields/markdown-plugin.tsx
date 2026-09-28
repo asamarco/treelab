@@ -194,7 +194,7 @@ export const MarkdownPlugin: FieldTypePlugin = {
   icon: FileText,
   EditorComponent: MarkdownEditorComponent,
   ViewerComponent: MarkdownViewerComponent,
-  isEmpty: (value: any) =>
+  isEmpty: (value: any, field?: Field) =>
     value === undefined ||
     value === null ||
     (typeof value === 'string' && value.trim() === ''),
