@@ -506,7 +506,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
                   });
                 };
 
-                if ((field.type === "link" || field.type === "textarea") && typeof node.data![field.id] === 'string') {
+                if ((field.type === "link" || field.type === "textarea" || field.type === "markdown") && typeof node.data![field.id] === 'string') {
                   node.data![field.id] = processValue(node.data![field.id]);
                 }
                 // Only rewrite attachment paths if explicitly told to (i.e., for ZIP imports)
