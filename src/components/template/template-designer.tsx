@@ -116,7 +116,7 @@ import { Switch } from "@/components/ui/switch";
 const fieldSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1, "Field name is required"),
-  type: z.enum(["text", "number", "date", "dropdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet", "embed", "markdown"]),
+  type: z.enum(["text", "number", "date", "dropdown", "markdown", "textarea", "link", "picture", "table-header", "dynamic-dropdown", "attachment", "xy-chart", "query", "checklist", "checkbox", "spreadsheet", "embed"]),
   options: z.array(z.string()).optional(),
   columnType: z.enum(["text", "number", "date"]).optional(),
   height: z.number().optional(),
@@ -253,6 +253,26 @@ const operatorLabels: Record<ConditionalRuleOperator, string> = {
 };
 
 const prefixPostfixSupportedTypes: Field['type'][] = ["text", "number", "date", "dropdown", "dynamic-dropdown", "table-header"];
+
+const orderedFieldTypes: { type: Field['type']; label?: string; icon?: React.ElementType }[] = [
+  { type: "text", label: "Text", icon: Type },
+  { type: "number", label: "Number", icon: Hash },
+  { type: "date", label: "Date", icon: Calendar },
+  { type: "dropdown", label: "Dropdown", icon: List },
+  { type: "markdown" },
+  { type: "textarea", label: "Text Area", icon: AlignLeft },
+  { type: "link", label: "Link", icon: Link2 },
+  { type: "picture" },
+  { type: "table-header", label: "Table Header", icon: Table },
+  { type: "dynamic-dropdown", label: "Dynamic Dropdown", icon: Database },
+  { type: "attachment" },
+  { type: "xy-chart" },
+  { type: "query", label: "Query", icon: Search },
+  { type: "checklist" },
+  { type: "checkbox", label: "Checkbox", icon: CheckSquare },
+  { type: "spreadsheet" },
+  { type: "embed" },
+];
 
 export function TemplateDesigner({
   template,
@@ -734,78 +754,33 @@ export function TemplateDesigner({
                                         </SelectTrigger>
                                       </FormControl>
                                       <SelectContent>
-                                        <SelectItem value="text">
-                                          <div className="flex items-center gap-2">
-                                            <Type className="h-4 w-4 text-muted-foreground" />
-                                            <span>Text</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="textarea">
-                                          <div className="flex items-center gap-2">
-                                            <AlignLeft className="h-4 w-4 text-muted-foreground" />
-                                            <span>Text Area</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="number">
-                                          <div className="flex items-center gap-2">
-                                            <Hash className="h-4 w-4 text-muted-foreground" />
-                                            <span>Number</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="date">
-                                          <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            <span>Date</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="link">
-                                          <div className="flex items-center gap-2">
-                                            <Link2 className="h-4 w-4 text-muted-foreground" />
-                                            <span>Link</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="query">
-                                          <div className="flex items-center gap-2">
-                                            <Search className="h-4 w-4 text-muted-foreground" />
-                                            <span>Query</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="checkbox">
-                                          <div className="flex items-center gap-2">
-                                            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-                                            <span>Checkbox</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="table-header">
-                                          <div className="flex items-center gap-2">
-                                            <Table className="h-4 w-4 text-muted-foreground" />
-                                            <span>Table Header</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="dropdown">
-                                          <div className="flex items-center gap-2">
-                                            <List className="h-4 w-4 text-muted-foreground" />
-                                            <span>Dropdown</span>
-                                          </div>
-                                        </SelectItem>
-                                        <SelectItem value="dynamic-dropdown">
-                                          <div className="flex items-center gap-2">
-                                            <Database className="h-4 w-4 text-muted-foreground" />
-                                            <span>Dynamic Dropdown</span>
-                                          </div>
-                                        </SelectItem>
-                                        
-                                        {FieldRegistry.getAll().map(plugin => {
-                                          const Icon = plugin.icon;
+                                        {orderedFieldTypes.map((item) => {
+                                          const plugin = FieldRegistry.get(item.type);
+                                          const Icon = item.icon || plugin?.icon;
+                                          const label = item.label || plugin?.label;
+                                          if (!Icon || !label) return null;
                                           return (
-                                            <SelectItem key={plugin.type} value={plugin.type}>
+                                            <SelectItem key={item.type} value={item.type}>
                                               <div className="flex items-center gap-2">
                                                 <Icon className="h-4 w-4 text-muted-foreground" />
-                                                <span>{plugin.label}</span>
+                                                <span>{label}</span>
                                               </div>
                                             </SelectItem>
                                           );
                                         })}
+                                        {FieldRegistry.getAll()
+                                          .filter((p) => !orderedFieldTypes.some((o) => o.type === p.type))
+                                          .map((plugin) => {
+                                            const Icon = plugin.icon;
+                                            return (
+                                              <SelectItem key={plugin.type} value={plugin.type}>
+                                                <div className="flex items-center gap-2">
+                                                  <Icon className="h-4 w-4 text-muted-foreground" />
+                                                  <span>{plugin.label}</span>
+                                                </div>
+                                              </SelectItem>
+                                            );
+                                          })}
                                       </SelectContent>
                                     </Select>
                                     <FormMessage />
