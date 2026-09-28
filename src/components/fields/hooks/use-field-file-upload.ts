@@ -12,6 +12,17 @@ interface UseFieldFileUploadOptions {
   onUploaded: (attachmentInfo: AttachmentInfo) => void;
 }
 
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function useFieldFileUpload({
   field,
   validator,
@@ -43,7 +54,7 @@ export function useFieldFileUpload({
     setUploading(true);
 
     const safeTimestamp = new Date().toISOString().replace(/:/g, "-");
-    const uniqueFileName = `${safeTimestamp}-${crypto.randomUUID()}-${file.name}`;
+    const uniqueFileName = `${safeTimestamp}-${generateUUID()}-${file.name}`;
 
     const formDataPayload = new FormData();
     formDataPayload.append("file", file);
