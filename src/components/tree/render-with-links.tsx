@@ -371,10 +371,13 @@ export function RenderWithLinks({ node, template, text, ancestorChain = [] }: Re
   }).filter(Boolean);
 
   return (
-    <div>
+    <span className="inline">
       {processedLines.map((line, index) => (
-        <div key={index}>{line}</div>
+        <React.Fragment key={index}>
+          {index > 0 && <br />}
+          {line}
+        </React.Fragment>
       ))}
-    </div>
+    </span>
   );
 }

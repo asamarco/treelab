@@ -444,7 +444,7 @@ export function TreeNodeHeader({
               style={{ color: color || "hsl(var(--primary))" }}
             />
             <div className={cn("flex-grow flex gap-1 min-w-0 py-1.5 md:py-1", (isExplorer || isCompactView) ? "items-center py-0" : "items-start")}>
-              <p className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", !isCompactView && "mt-1", isMobile && "text-base mt-1.5", isExplorer && "text-sm")}>
+              <div className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", !isCompactView && "mt-1", isMobile && "text-base mt-1.5", isExplorer && "text-sm")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
                 {(() => {
                   const nameText = template.nameTemplate ? template.nameTemplate : node.name;
@@ -458,7 +458,7 @@ export function TreeNodeHeader({
                         e.stopPropagation();
                         onNodeClick(node.id);
                       }}
-                      className="text-left hover:text-primary hover:underline transition-colors"
+                      className="text-left hover:text-primary hover:underline transition-colors inline"
                     >
                       {renderedName}
                     </button>
@@ -466,7 +466,7 @@ export function TreeNodeHeader({
                     renderedName
                   );
                 })()}
-              </p>
+              </div>
               {isExplorer && node.isStarred && (
                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-500 ml-1 mt-1 shrink-0" />
               )}
