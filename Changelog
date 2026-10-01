@@ -1,3 +1,20 @@
+v0.8.2
+
+Refactor: Introduce a scalable Field Type registry and convert Spreadsheet, XY-chart, Embed, Checklist, Picture, and Attachment to plugins
+Feature: add additional placeholder tags for text replacement inside templates.
+Feature: add Markdown field type as plugin with placeholders and internal link support
+Improvement: plugin-type fields can now be arranged horizontally in the node with a setting in the template editor
+Improvement: track unsaved changes in template editor and warn the user if leaving the form without saving
+Improvement/Bugfix: Fixed non-contigous table-headers in template editor resulting in multiple duplicated tables. Now a split in table-headers will create separate tables within the same node.
+Improvement/Bugfix: allow to copy selected text from nodes with Ctrl+C or context menu without triggering node copy action.
+Bugfix: render correcly image URLs pasted in picture fields
+Bugfix: properly report errors if some required input is missing when saving a template
+Bugfix: fixed tab navigation in XY-chart node form
+Bugfix: fallback UUID creation for file uploads over unsecure http connections
+Bugfix: fallback clipboard management for clients over unsecure http connections
+
+
+
 v0.8.1
 
 Bugfix (critical): use DB_ENCRYPTION_KEY environment variable as documented
