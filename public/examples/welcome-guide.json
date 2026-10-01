@@ -2,45 +2,45 @@
   "title": "🌟Welcome to Treelab!",
   "nodes": [
     {
-      "id": "ml46t5g8-v0p91sce1",
+      "id": "mui504ak-l5chf2q08",
       "name": "Welcome to Treelab!",
       "templateId": "SectionTemplate",
       "data": {
         "2025-08-19T08:57:55.257Zi4vl4q4": "Welcome to Treelab!",
-        "2025-08-19T08:57:55.257Z0wu6pdt": "This is your first tree, a brief guide to help you get started. You can edit, add to, or delete this entire tree at any time from the <b>Roots</b> page."
+        "2025-08-19T08:57:55.257Z0wu6pdt": "This is your first tree, a brief guide to help you get started. You can edit, add to, or delete this entire tree at any time from the **Roots** page."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [],
       "order": [
         0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-3rz9f4n1y",
+      "id": "mui504ak-niqwljr7h",
       "name": "Getting Started",
       "templateId": "SectionTemplate",
       "data": {
         "2025-08-19T08:57:55.257Zi4vl4q4": "Getting Started",
-        "2025-08-19T08:57:55.257Z0wu6pdt": "Here's a quick overview of the basic workflow:\n\n<b>1. Create Templates:</b> Go to the <i>Templates</i> page to define the structure of your data.\n\n<b>2. Build Your Tree:</b> Come back here to add nodes using the templates you created.\n\n<b>3. Organize:</b> Add new nodes as sibling or children, reorder them freely and create nested hierarchies.\n "
+        "2025-08-19T08:57:55.257Z0wu6pdt": "Here's a quick overview of the basic workflow:\n\n**1. Create Templates:** Go to the *Templates* page to define the structure of your data.\n\n**2. Build Your Tree:** Come back here to add nodes using the templates you created.\n\n**3. Organize:** Add new nodes as sibling or children, reorder them freely and create nested hierarchies.\n "
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-v0p91sce1"
+        "mui504ak-l5chf2q08"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-qunwp8wj0",
+      "id": "mui504ak-zrljivi6j",
       "name": "Core Features",
       "templateId": "SectionTemplate",
       "data": {
@@ -48,40 +48,40 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": "Treelab is built around a few key concepts. Here are some of the features you can explore."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-v0p91sce1"
+        "mui504ak-l5chf2q08"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-v0xpm55j9",
+      "id": "mui504ak-wu5hy6vit",
       "name": "Templates",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Templates",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Templates are the blueprint for your data. You can combine various field types like:\n<li>Text & Text Areas (with HTML support!)</li><li>Numbers & Dates</li><li>Dropdowns (static or dynamic)</li><li>Pictures & Attachments</li><li>Tables</li><li>Checboxes and checklists</li><li>XY plots</li>\nGo to the templates to create new templates and modify the existing ones",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Templates are the blueprint for your data. You can combine various field types like:\n\n- Text & Text Areas (with HTML support!)\n- Numbers & Dates\n- Dropdowns (static or dynamic)\n- Pictures & Attachments\n- Tables\n- Checkboxes and checklists\n- XY plots\n- Markdown\n\nGo to the templates to create new templates and modify the existing ones",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-qunwp8wj0"
+        "mui504ak-zrljivi6j"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:26:02.275Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-qommpayrc",
+      "id": "mui504ak-vv6f9bt74",
       "name": "Hierarchical Nodes",
       "templateId": "FeatureTemplate",
       "data": {
@@ -90,84 +90,147 @@
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-qunwp8wj0"
+        "mui504ak-zrljivi6j"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-408b9tcai",
+      "id": "mui504ak-stq4xp2nn",
       "name": "Node actions",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Node actions",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
-        "2025-08-19T08:57:55.257Z1ddpobd": "\nThe main actions are available directly on the node, just to the right of its name. Hovering every icon with the mouse will reveal its function.\n\n<li>Preview: open a viewer focused on the specific node</li><li>Edit: Allows to change the node fields</li><li>Expand/Collapse all: expand and collapses the node and all its descendants</li><li>Move up and Move down: move the node with respect to its siblings</li><li>Add child and Add sibling: create a new node as child of the node or sibling</li>\nUse the <b>more options</b> icon (the three dots) or right click on any node to see all the other actions you can perform, like changing the node type, cut/copy/paste, and delete the node.\n"
+        "2025-08-19T08:57:55.257Z1ddpobd": "\nThe main actions are available directly on the node, just to the right of its name. Hovering every icon with the mouse will reveal its function.\n\n- Preview: open a viewer focused on the specific node\n- Edit: Allows to change the node fields\n- Expand/Collapse all: expand and collapses the node and all its descendants\n- Move up and Move down: move the node with respect to its siblings\n- Add child and Add sibling: create a new node as child of the node or sibling\n\nUse the **more options** icon (the three dots) or right click on any node to see all the other actions you can perform, like changing the node type, cut/copy/paste, and delete the node.\n"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-qommpayrc"
+        "mui504ak-vv6f9bt74"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:24:25.804Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-hs6tt2z6v",
+      "id": "mui504ak-w1ec27ynh",
       "name": "Clones",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-19T08:57:55.257Z0m2c3ze": "Clones",
-        "2025-08-19T08:57:55.257Z1ddpobd": "If you copy a node and paste as clone you will have an exact replica of the original node. Changes on one of the two will immediately be reflected on the other. <small>(Technically, it is the exact same node, but with multiple parents)</small>\n\nA Cloned node is identified by an icon next to his name. Hovering the mouse pointer on this icon will make appear a list of all the clones locations.",
+        "2025-08-19T08:57:55.257Z1ddpobd": "If you copy a node and paste as clone you will have an exact replica of the original node. Changes on one of the two will immediately be reflected on the other. (Technically, it is the exact same node, but with multiple parents).\n\nA Cloned node is identified by an icon next to his name. Hovering the mouse pointer on this icon will make appear a list of all the clones locations.",
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-qommpayrc",
-        "ml46t5g8-ep2sdkccw"
+        "mui504ak-vv6f9bt74",
+        "mui504ak-46zg7eta4"
       ],
       "order": [
         1,
-        2
+        4
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-z9vbhf09u",
+      "id": "mui504ak-0z1fytxaw",
       "name": "Export",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
         "2025-08-19T08:57:55.257Z0m2c3ze": "Export",
-        "2025-08-19T08:57:55.257Z1ddpobd": "The entire or any subset of its nodes can be exported as json file, zip archive (with attachments and pictures), or html page.\nThe node preview allows also to print to pdf."
+        "2025-08-19T08:57:55.257Z1ddpobd": "The entire or any subset of its nodes can be exported as json file, zip archive (with attachments and pictures), or html page.\nThe node preview window allows also to print nicely a pdf file."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-qunwp8wj0"
+        "mui504ak-zrljivi6j"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-ep2sdkccw",
+      "id": "mui504ak-o19inan7i",
+      "name": "Collaboration and sharing",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Collaboration and sharing",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Share trees with collaborators with different permission levels or make them publicly available (read-only)"
+      },
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
+      "parentIds": [
+        "mui504ak-zrljivi6j"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
+    },
+    {
+      "id": "mui504ak-vmm2ilpg5",
+      "name": "Teams",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Teams",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Administrators can create teams, assign leaders, and organize users into functional groups (such as departments or regions). Once a team is established, trees can be shared with the entire group at once, automatically granting all members specific permissions.\n",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Experimental"
+      },
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
+      "parentIds": [
+        "mui504ak-o19inan7i"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
+    },
+    {
+      "id": "mui504ak-mp07qxzpc",
+      "name": "Customizable layout",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Customizable layout",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Choose between single and two-panel view, normal or compact layout, and light or dark theme to adjust to your preferences. On top of existing layouts, the \"Explorer view\" allows to drill down into the tree to focus on what really matters and navigate complex structures with ease.\nAll these different modes can be toggled from the top menu bar.",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
+      },
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
+      "parentIds": [
+        "mui504ak-zrljivi6j"
+      ],
+      "order": [
+        4
+      ],
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
+    },
+    {
+      "id": "mui504ak-46zg7eta4",
       "name": "Advanced functions",
       "templateId": "SectionTemplate",
       "data": {
@@ -175,145 +238,332 @@
         "2025-08-19T08:57:55.257Z0wu6pdt": ""
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-v0p91sce1"
+        "mui504ak-l5chf2q08"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-0e4pz62bm",
-      "name": "HTML formatting 💡",
+      "id": "mui504ak-y3f9dty1w",
+      "name": "Text formatting 💡",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal",
-        "2025-08-19T08:57:55.257Z0m2c3ze": "HTML formatting 💡",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Common HTML tags can be used for formatting in text and text area fields:\n\n<b>Bold</b>, <strong>Strong</strong>, <i>Italic</i>, <em>Emphasized</em>,<mark>Marked</mark>, <small>Smaller</small>, <del>Deleted</del>, <ins>Inserted</ins>, <sub>Subscript</sub>, <sup>Superscript</sup>\n<code>\ncode block\n</code>\n<li>Bullet point</li>\nEmojis are supported 😁"
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Text formatting 💡",
+        "2025-08-19T08:57:55.257Z1ddpobd": "# Markdown Basic Syntax\n---\nText formatting: **Bold**, *Italic*, ***Bold&Italic***, ~~Deleted~~, \n```\ncode block\n```\n\n> Quote\n>\n>> Nested quote\n\n- Bullet point\n\n1. Ordered\n2. Lists\n   1. with indent\n   4. capabilites\n3. Emojis are supported 😁"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-ep2sdkccw"
+        "mui504ak-46zg7eta4"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:27:06.626Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-8gc9jfocl",
+      "id": "mui504ak-dg7lt1ox8",
       "name": "Tables",
       "templateId": "FeatureTemplate",
       "data": {
-        "2025-08-19T08:57:55.257Z1ddpobd": "While tables can be used in templates combining multiple <i>Table header</i> field types, It is also possible to include simple tables directly in text like this:\n\n<table>\n<tr>\n<th>  Format  </th>\n<th>HTML</th>\n</tr>\n<tr>\n<th>Bold</th>\n<th>&ltb&gt...&lt/b&gt</th>\n<th></th>\n</tr>\n<tr>\n<th>Italic</th>\n<th>&lti&gt...&lt/i&gt</th>\n<th></th>\n</tr>\n\n</table>",
+        "2025-08-19T08:57:55.257Z1ddpobd": "While tables can be used in templates combining multiple *Table header* field types, It is also possible to include simple tables directly in markdown fields like this:\n\n| Name | Role | Location |\n| --- | --- | --- |\n| Alice | Engineer | Milan |\n| Bob | Designer | Rome |\n| Carla | Manager | Turin |",
         "2025-08-19T08:57:55.257Z0m2c3ze": "Tables"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-0e4pz62bm"
+        "mui504ak-y3f9dty1w"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-np9jjz6eb",
+      "id": "mui504ak-jo25trbhs",
       "name": "Conditional formatting",
       "templateId": "FeatureTemplate",
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Special",
         "2025-08-19T08:57:55.257Z0m2c3ze": "Conditional formatting",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be customized depending on the value of a certain field by writing conditional formatting rules in the template editor"
+        "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be changed dinamically based on the value of certain fields by defining conditional formatting rules in the template editor."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-ep2sdkccw"
+        "mui504ak-46zg7eta4"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-2586lgvbe",
-      "name": "Internal links",
+      "id": "mui504ak-0za0196pi",
+      "name": "Special field types",
       "templateId": "FeatureTemplate",
       "data": {
-        "2025-08-19T08:57:55.257Z0m2c3ze": "Internal links",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the node://ml46t5g8-ep2sdkccw\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
-        "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Special field types"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-ep2sdkccw"
+        "mui504ak-46zg7eta4"
       ],
       "order": [
-        3
+        2
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     },
     {
-      "id": "ml46t5g8-xup7wk6rh",
-      "name": "Git Sync",
-      "templateId": "FeatureTemplate",
+      "id": "mui504al-xlcwipkra",
+      "name": "Spreadsheet and chart",
+      "templateId": "muh053d6-vpvzqvew1",
       "data": {
-        "2025-08-19T08:57:55.257Z0m2c3ze": "Git Sync",
-        "2025-08-19T08:57:55.257Z1ddpobd": "You can link a tree to a GitHub repository to version control your data, view commit history, and restore to previous versions. You'll need to register a valid github access token with editing and, optionally, creation of repositories permissions in your user settings page.\n\nhttps://www.github.com",
-        "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
+        "muh02spk-gj9j7g1e4": "Spreadsheet and chart",
+        "muh04rio-n4i8mz7zj": {
+          "points": [
+            {
+              "x": "0",
+              "y": "299"
+            },
+            {
+              "x": "2",
+              "y": "293"
+            },
+            {
+              "x": "4",
+              "y": "298"
+            },
+            {
+              "x": "6",
+              "y": "297"
+            },
+            {
+              "x": "8",
+              "y": "287"
+            },
+            {
+              "x": "10",
+              "y": "287"
+            }
+          ],
+          "showAverage": true,
+          "showLinearRegression": false,
+          "showStdDev": true,
+          "xAxisLabel": "Position (cm)",
+          "yAxisLabel": "Thickness (nm)",
+          "showRelativeError": false
+        },
+        "muh0391t-9tietnsho": [
+          [
+            {
+              "value": "Point"
+            },
+            {
+              "value": "Length (mm)"
+            },
+            {
+              "value": "Width (mm)"
+            },
+            {
+              "value": "Volume (cm^3)"
+            }
+          ],
+          [
+            {
+              "value": "0"
+            },
+            {
+              "value": "164"
+            },
+            {
+              "value": "299"
+            },
+            {
+              "value": "=B2*C2/1000"
+            }
+          ],
+          [
+            {
+              "value": "1"
+            },
+            {
+              "value": "162"
+            },
+            {
+              "value": "293"
+            },
+            {
+              "value": "=B3*C3/1000"
+            }
+          ],
+          [
+            {
+              "value": "2"
+            },
+            {
+              "value": "159"
+            },
+            {
+              "value": "298"
+            },
+            {
+              "value": "=B4*C4/1000"
+            }
+          ],
+          [
+            {
+              "value": "3"
+            },
+            {
+              "value": "160"
+            },
+            {
+              "value": "297"
+            },
+            {
+              "value": "=B5*C5/1000"
+            }
+          ],
+          [
+            {
+              "value": "4"
+            },
+            {
+              "value": "162"
+            },
+            {
+              "value": "287"
+            },
+            {
+              "value": "=B6*C6/1000"
+            }
+          ],
+          [
+            {
+              "value": "5"
+            },
+            {
+              "value": "161"
+            },
+            {
+              "value": "287"
+            },
+            {
+              "value": "=B7*C7/1000"
+            }
+          ],
+          [
+            {
+              "value": ""
+            },
+            {
+              "value": ""
+            },
+            {
+              "value": ""
+            },
+            {
+              "value": ""
+            }
+          ],
+          [
+            {
+              "value": "Average"
+            },
+            {
+              "value": "=AVERAGE(B2:B6)"
+            },
+            {
+              "value": "=AVERAGE(C2:C6)"
+            },
+            {
+              "value": "=AVERAGE(D2:D6)"
+            }
+          ],
+          [
+            {
+              "value": "SD"
+            },
+            {
+              "value": "=STDEV(B1:B6)"
+            },
+            {
+              "value": "=STDEV(C1:C6)"
+            },
+            {
+              "value": "=STDEV(D1:D6)"
+            }
+          ],
+          [
+            {
+              "value": "relative error (%)"
+            },
+            {
+              "value": "=ROUND(B10/B9*100,2)"
+            },
+            {
+              "value": "=ROUND(C10/C9*100,2)"
+            },
+            {
+              "value": "=ROUND(D10/D9*100,2)"
+            }
+          ]
+        ],
+        "muh0307t-kenj9nq8d": "# Spreadsheet and chart example\n---\n\nThe spreadsheet field type allows to include tables within the node with mathematical capabilities with an excel-like formulas described\n[here](https://jspreadsheet.com/docs/formulas/functions)\n\nXY-charts represent graphically X-Y pairs. Optionally average, standard deviation and error, and linear regression can be calculated and overlayed."
       },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "isStarred": true,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-ep2sdkccw"
+        "mui504ak-0za0196pi"
       ],
       "order": [
-        4
+        0
       ],
-      "createdAt": "2026-02-01T20:22:20.498Z",
-      "updatedAt": "2026-02-01T20:22:20.498Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T10:25:32.904Z"
     },
     {
-      "id": "ml4717pi-qgx82gbjy",
+      "id": "mui504al-ilg0zq9sj",
+      "name": "Embed",
+      "templateId": "mt4ommh4-3c2hoo8wi",
+      "data": {
+        "2026-08-22T18:11:49.549Z0.24625868937536888": "Embed",
+        "2026-08-22T17:57:38.358Z0.19383672784849804": "https://www.openstreetmap.org/export/embed?bbox=139.7502136230469%2C35.670754740577046%2C139.77029800415042%2C35.6826772087659&amp;layer=mapnik",
+        "mugzhuz5-k45woa2kl": "# Embed example\n---\n\nSites that support embedding can be included in a node with the embed field type. This allows to add videos from online platforms, documents from online office suites, and many other possibilities.\n\nMany sites block standard URLs from being embedded. Please ensure you use the site's specifically provided \"Embed\" or \"Publish to Web\" URL.\n\nYouTube links can be pasted directly and will be auto-converted in the proper format."
+      },
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
+      "parentIds": [
+        "mui504ak-0za0196pi"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T10:25:32.904Z"
+    },
+    {
+      "id": "mui504al-askdjs5cc",
       "name": "Queries",
-      "templateId": "FeatureTemplate",
-      "data": {
-        "2025-08-19T08:57:55.257Z0m2c3ze": "Queries",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Custom queries on the tree can be defined in \"Filters\". The query field type allows to dynamically list nodes which satisfy specific criteria directly in the tree.",
-        "2025-08-24T06:58:51.175Z0.27552086254079367": "Experimental"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
-      "parentIds": [
-        "ml46t5g8-ep2sdkccw"
-      ],
-      "order": [
-        5
-      ],
-      "createdAt": "2026-02-01T20:28:37.830Z",
-      "updatedAt": "2026-02-01T20:37:44.747Z"
-    },
-    {
-      "id": "ml474ffg-czm94pf3b",
-      "name": "Nodes containing the word \"edit\"",
       "templateId": "ml473unk-wjfq2u7k4",
       "data": {
         "2026-02-01T20:29:34.017Z0.45140218790145914": [
@@ -344,37 +594,83 @@
             ]
           }
         ],
-        "2026-02-01T20:29:01.258Z0.9695978368244654": "Nodes containing the word \"edit\""
+        "2026-02-01T20:29:01.258Z0.9695978368244654": "Queries",
+        "muir8pce-6f4akgdkc": "Queries allow to collect all nodes matching a set of user defined conditions. Like the filter function but built in within a node."
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml4717pi-qgx82gbjy"
+        "mui504ak-0za0196pi"
       ],
       "order": [
-        0
+        2
       ],
-      "createdAt": "2026-02-01T20:31:07.804Z",
-      "updatedAt": "2026-02-01T20:33:48.467Z"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T10:25:32.904Z"
     },
     {
-      "name": "Spreadsheets",
+      "id": "mui504al-rsiiz0twx",
+      "name": "Internal links",
       "templateId": "FeatureTemplate",
       "data": {
-        "2025-08-19T08:57:55.257Z0m2c3ze": "Spreadsheets",
-        "2025-08-24T06:58:51.175Z0.27552086254079367": "Experimental",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Small spreadsheets can be included as field types within nodes. Excel-like formulas can be used as documented at the page https://jspreadsheet.com/docs/formulas/functions"
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Internal links",
+        "2025-08-19T08:57:55.257Z1ddpobd": "Internal links to nodes defined elsewhere in the tree is one of the [Advanced functions](node://mui504ak-46zg7eta4)\n\nTo achieve that just use the Copy Link function in the node menu and use the link in a text or link field",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
       },
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "697fb5fc07cd590a3bcc6fdc",
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
       "parentIds": [
-        "ml46t5g8-ep2sdkccw"
+        "mui504ak-46zg7eta4"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
+    },
+    {
+      "id": "mui504al-l1e5zhlbt",
+      "name": "Git Sync",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z0m2c3ze": "Git Sync",
+        "2025-08-19T08:57:55.257Z1ddpobd": "You can link a tree to a GitHub repository to version control your data, view commit history, and restore to previous versions. You'll need to register a valid github access token with editing and, optionally, creation of repositories permissions in your user settings page.\n\nhttps://www.github.com",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Normal"
+      },
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
+      "parentIds": [
+        "mui504ak-46zg7eta4"
+      ],
+      "order": [
+        5
+      ],
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
+    },
+    {
+      "id": "mui504al-9xn4516qz",
+      "name": "APIs",
+      "templateId": "FeatureTemplate",
+      "data": {
+        "2025-08-19T08:57:55.257Z0m2c3ze": "APIs",
+        "2025-08-24T06:58:51.175Z0.27552086254079367": "Experimental",
+        "2025-08-19T08:57:55.257Z1ddpobd": "If APIs are enabled on the server side, users can generate API keys to manage Treelab content via HTTP requests."
+      },
+      "isStarred": false,
+      "userId": "6a85c5d18bfa09e9a430bb24",
+      "treeId": "6ab78463ce927feec12b5f6b",
+      "parentIds": [
+        "mui504ak-46zg7eta4"
       ],
       "order": [
         6
       ],
-      "id": "mn5wkr5b-xbgvvearg"
+      "createdAt": "2026-09-26T08:37:55.728Z",
+      "updatedAt": "2026-09-26T08:37:55.728Z"
     }
   ],
   "templates": [
@@ -393,12 +689,12 @@
         {
           "id": "2025-08-19T08:57:55.257Z0wu6pdt",
           "name": "Content",
-          "type": "textarea",
+          "type": "markdown",
           "options": []
         }
       ],
       "nameTemplate": "{Title}",
-      "bodyTemplate": "{Content}",
+      "bodyTemplate": "",
       "conditionalRules": [],
       "preferredChildTemplates": []
     },
@@ -417,7 +713,7 @@
         {
           "id": "2025-08-19T08:57:55.257Z1ddpobd",
           "name": "Description",
-          "type": "textarea",
+          "type": "markdown",
           "options": []
         },
         {
@@ -438,7 +734,7 @@
         }
       ],
       "nameTemplate": "{Feature Name}",
-      "bodyTemplate": "{Description}",
+      "bodyTemplate": "",
       "conditionalRules": [
         {
           "id": "2025-08-24T07:00:17.895Z0.2151269530537746",
@@ -464,6 +760,8 @@
       "name": "Query",
       "icon": "Search",
       "color": "#a7e13d",
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
       "fields": [
         {
           "id": "2026-02-01T20:29:01.258Z0.9695978368244654",
@@ -472,10 +770,86 @@
           "options": []
         },
         {
+          "id": "muir8pce-6f4akgdkc",
+          "name": "Description",
+          "type": "markdown"
+        },
+        {
           "id": "2026-02-01T20:29:34.017Z0.45140218790145914",
           "name": "Query",
           "type": "query",
           "options": []
+        }
+      ],
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "mt4ommh4-3c2hoo8wi",
+      "name": "Embed",
+      "icon": "ExternalLink",
+      "color": "#f8219c",
+      "fields": [
+        {
+          "id": "2026-08-22T18:11:49.549Z0.24625868937536888",
+          "name": "Title",
+          "type": "text",
+          "options": []
+        },
+        {
+          "id": "2026-08-22T17:57:38.358Z0.19383672784849804",
+          "name": "Link",
+          "type": "embed",
+          "options": [],
+          "sameRow": true
+        },
+        {
+          "id": "mugzhuz5-k45woa2kl",
+          "name": "Markdown",
+          "type": "markdown",
+          "options": [],
+          "sameRow": true
+        }
+      ],
+      "nameTemplate": "{Title}",
+      "bodyTemplate": "",
+      "conditionalRules": [],
+      "preferredChildTemplates": []
+    },
+    {
+      "id": "muh053d6-vpvzqvew1",
+      "name": "Spreadsheet and charts",
+      "icon": "ChartNoAxesCombined",
+      "color": "#00b9ff",
+      "fields": [
+        {
+          "id": "muh02spk-gj9j7g1e4",
+          "name": "Name",
+          "type": "text",
+          "options": []
+        },
+        {
+          "id": "muh0307t-kenj9nq8d",
+          "name": "text",
+          "type": "markdown",
+          "options": [],
+          "sameRow": true
+        },
+        {
+          "id": "muh0391t-9tietnsho",
+          "name": "Spreadsheet",
+          "type": "spreadsheet",
+          "options": [],
+          "spreadsheetRowCount": 5,
+          "spreadsheetColumnCount": 5,
+          "sameRow": true
+        },
+        {
+          "id": "muh04rio-n4i8mz7zj",
+          "name": "Graph",
+          "type": "xy-chart",
+          "options": [],
+          "sameRow": true
         }
       ],
       "nameTemplate": "{Name}",
@@ -485,6 +859,6 @@
     }
   ],
   "rootNodeIds": [
-    "ml46t5g8-v0p91sce1"
+    "mui504ak-l5chf2q08"
   ]
 }

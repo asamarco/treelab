@@ -3,6 +3,8 @@
   "name": "Folder",
   "icon": "Folder",
   "color": "#fbd539",
+  "nameTemplate": "{Name} ({count})",
+  "bodyTemplate": "",
   "fields": [
     {
       "id": "name",
@@ -11,7 +13,6 @@
       "options": []
     }
   ],
-  "nameTemplate": "{Name} ",
-  "bodyTemplate": "",
-  "conditionalRules": []
+  "conditionalRules": [],
+  "preferredChildTemplates": []
 }

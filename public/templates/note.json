@@ -4,18 +4,12 @@
   "icon": "NotebookPen",
   "color": "#2FBF9A",
   "nameTemplate": "{Note}",
-  "bodyTemplate": "{Long text}",
+  "bodyTemplate": "",
   "fields": [
     {
       "id": "name",
       "name": "Note",
       "type": "text",
-      "options": []
-    },
-    {
-      "id": "content",
-      "name": "Long text",
-      "type": "textarea",
       "options": []
     },
     {
@@ -31,9 +25,18 @@
       ]
     },
     {
+      "id": "content",
+      "name": "Long text",
+      "type": "markdown",
+      "options": [],
+      "sameRow": true
+    },
+    {
       "id": "tasks",
       "name": "Tasks",
-      "type": "checklist"
+      "type": "checklist",
+      "options": [],
+      "sameRow": true
     },
     {
       "id": "gallery",
