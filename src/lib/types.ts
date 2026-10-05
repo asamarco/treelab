@@ -100,14 +100,25 @@ export interface Template {
     preferredChildTemplates?: string[];
 }
 
-export interface XYChartData {
-    points: { x: string; y: string }[];
-    xAxisLabel?: string;
-    yAxisLabel?: string;
-    showAverage?: boolean;
+export interface XYChartColumn {
+    id: string;                      // stable id (uuid), used as the recharts dataKey
+    name: string;                    // header / series label shown in the editor and legend
+    role: 'x' | 'y1' | 'y2';         // x = shared independent axis; y1 = primary Y axis;
+                                      // y2 = secondary Y axis. Multiple y1/y2 columns allowed,
+                                      // exactly one x column required.
+    color?: string;                  // per-series line color; auto-assign from a palette if unset
+    showAverage?: boolean;           // now per-column, not per-field
     showStdDev?: boolean;
     showRelativeError?: boolean;
     showLinearRegression?: boolean;
+}
+
+export interface XYChartData {
+    columns: XYChartColumn[];
+    rows: Record<string, string>[]; // each row: { [columnId]: stringValue }
+    xAxisLabel?: string;
+    y1AxisLabel?: string;
+    y2AxisLabel?: string;
 }
 
 export interface TreeNode {

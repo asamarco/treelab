@@ -9,7 +9,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { TreeNode, Template, AttachmentInfo, XYChartData, QueryDefinition, ChecklistItem, QueryRule, ConditionalRuleOperator } from "@/lib/types";
+import { TreeNode, Template, AttachmentInfo, QueryDefinition, ChecklistItem, QueryRule, ConditionalRuleOperator } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { RenderWithLinks } from "./render-with-links";

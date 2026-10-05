@@ -18,7 +18,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { FieldRegistry } from "@/lib/field-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Template, Field, ConditionalRuleOperator, XYChartData } from "@/lib/types";
+import { Template, Field, ConditionalRuleOperator } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
