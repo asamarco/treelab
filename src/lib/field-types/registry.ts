@@ -24,6 +24,7 @@ export interface FieldTypePlugin {
         node?: TreeNode;
         readOnly?: boolean;
         isCompactView?: boolean;
+        isStatic?: boolean;
         /** Ancestry chain threaded from the tree root down to the node's parent. */
         ancestorChain?: TreeNode[];
     }>;

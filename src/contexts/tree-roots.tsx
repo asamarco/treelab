@@ -1374,19 +1374,39 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     let cssText = '';
     try {
-      const cssResponse = await fetch("/globals.css");
-      if (cssResponse.ok) {
-        const contentType = cssResponse.headers.get("content-type");
-        if (contentType && contentType.includes("text/css")) {
-          cssText = await cssResponse.text();
-        } else {
-          console.warn("HTML Export: /globals.css returned non-CSS content. Skipping global styles.");
-        }
-      } else {
-        console.warn(`HTML Export: Failed to fetch /globals.css (Status: ${cssResponse.status}). Skipping global styles.`);
-      }
+      const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .map(link => (link as HTMLLinkElement).href)
+        .filter(href => {
+          try {
+            const url = new URL(href, window.location.href);
+            return url.origin === window.location.origin;
+          } catch {
+            return false;
+          }
+        });
+      const cssTexts = await Promise.all(
+        styleLinks.map(async (href) => {
+          try {
+            const res = await fetch(href);
+            if (!res.ok) {
+              console.warn(`HTML Export: Failed to fetch stylesheet ${href} (Status: ${res.status}).`);
+              return '';
+            }
+            const contentType = res.headers.get("content-type") || '';
+            if (!contentType.includes("css")) {
+              console.warn(`HTML Export: Stylesheet ${href} returned non-CSS content. Skipping.`);
+              return '';
+            }
+            return await res.text();
+          } catch (err) {
+            console.warn(`HTML Export: Network error fetching stylesheet ${href}`, err);
+            return '';
+          }
+        })
+      );
+      cssText = cssTexts.filter(Boolean).join('\n');
     } catch (err) {
-      console.warn("HTML Export: Network error fetching /globals.css", err);
+      console.warn("HTML Export: Error retrieving document stylesheets", err);
     }
 
     const imagePromises: Promise<{ path: string; dataUri: string }>[] = [];

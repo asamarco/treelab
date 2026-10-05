@@ -9,7 +9,7 @@ import React from 'react';
 import { TreeNode, Template, AttachmentInfo, User } from '@/lib/types';
 import { RenderWithLinks } from './render-with-links';
 import { getConditionalStyle } from './tree-node-utils';
-import { formatBytes } from '@/lib/utils';
+import { FieldRegistry, isValueEmpty } from '@/lib/field-types';
 
 interface HtmlExportViewProps {
   nodes: TreeNode[];
@@ -38,8 +38,6 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
 
   const { color } = getConditionalStyle(node, template);
 
-  const pictureFields = template.fields.filter(f => f.type === 'picture');
-  const attachmentFields = template.fields.filter(f => f.type === 'attachment');
   const tableHeaderFields = template.fields.filter(f => f.type === 'table-header').filter(field => {
     const columnData = (node.data || {})[field.id];
     return Array.isArray(columnData) && columnData.some(val => val !== null && val !== undefined && val !== '');
@@ -56,38 +54,80 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
 
   const renderContent = () => (
     <div className="tree-node-content">
-      {pictureFields.map(field => {
-        let value = (node.data || {})[field.id];
-        if (!value) return null;
-        const images = (Array.isArray(value) ? value : [value]).filter(Boolean);
-        if (images.length === 0) return null;
+      {template.fields.filter(f => f.type !== 'table-header').map(field => {
+        const value = (node.data || {})[field.id];
+        const plugin = FieldRegistry.get(field.type);
 
-        return (
-          <div key={field.id} style={{ marginTop: '8px' }}>
-            <p style={{ fontWeight: 500, marginBottom: '4px' }}>{field.name}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {images.map((src, index) => {
-                const dataUri = imageMap.get(src);
-                return dataUri ? <img key={index} src={dataUri} alt={field.name} style={{ maxWidth: '200px', height: 'auto', borderRadius: '4px' }} /> : null;
-              })}
+        const empty = plugin?.isEmpty ? plugin.isEmpty(value, field) : isValueEmpty(value, field);
+        if (empty) return null;
+
+        // Dedicated static fallback for spreadsheet:
+        // jspreadsheet-ce (used by live SpreadsheetViewerComponent) relies on imperative client-side
+        // DOM initialization in useEffect, rendering an empty container during static SSR markup generation.
+        if (field.type === 'spreadsheet') {
+          const gridData: any[][] = Array.isArray(value) ? value : [];
+          return (
+            <div key={field.id} style={{ marginTop: '8px', overflowX: 'auto' }}>
+              <p style={{ fontWeight: 500, marginBottom: '4px' }}>{field.name}</p>
+              <table style={{ borderCollapse: 'collapse', width: '100%', border: '1px solid #ddd' }}>
+                <tbody>
+                  {gridData.map((row, rIdx) => (
+                    <tr key={rIdx} style={{ borderBottom: '1px solid #ddd' }}>
+                      {(Array.isArray(row) ? row : []).map((cell: any, cIdx: number) => {
+                        const cellVal = cell?.value !== undefined ? cell.value : (typeof cell === 'string' ? cell : '');
+                        return (
+                          <td key={cIdx} style={{ border: '1px solid #ddd', padding: '8px' }}>
+                            {cellVal}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )
-      })}
+          );
+        }
 
-      {attachmentFields.map(field => {
-        const attachments: AttachmentInfo[] = (node.data || {})[field.id];
-        if (!attachments || attachments.length === 0) return null;
-        return (
-          <div key={field.id} style={{ marginTop: '8px' }}>
-            <p style={{ fontWeight: 500, marginBottom: '4px' }}>{field.name}</p>
-            {attachments.map((att, index) => (
-              <div key={index} className="attachment-link">
-                {att.name} ({formatBytes(att.size)})
+        // Dedicated static fallback for picture:
+        // Live PictureViewerComponent uses client-side ResizeObserver, Embla carousel JS, and raw server URLs (/attachments/...).
+        // For standalone static HTML export, we use pre-converted Base64 data URIs from imageMap and render clean static <img> tags.
+        if (field.type === 'picture') {
+          const images = (Array.isArray(value) ? value : [value]).filter(Boolean);
+          if (images.length === 0) return null;
+          return (
+            <div key={field.id} style={{ marginTop: '8px' }}>
+              <p style={{ fontWeight: 500, marginBottom: '4px' }}>{field.name}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {images.map((src, index) => {
+                  const dataUri = imageMap.get(src) || src;
+                  return <img key={index} src={dataUri} alt={field.name} style={{ maxWidth: '200px', height: 'auto', borderRadius: '4px' }} />;
+                })}
               </div>
-            ))}
-          </div>
-        )
+            </div>
+          );
+        }
+
+        // Default: Reuse live ViewerComponent from FieldRegistry for all other field types
+        // (markdown, checklist, embed, xy-chart, attachment, and future field plugins).
+        if (plugin?.ViewerComponent) {
+          const ViewerComponent = plugin.ViewerComponent;
+          return (
+            <div key={field.id}>
+              <ViewerComponent
+                field={field}
+                value={value}
+                node={node}
+                readOnly={true}
+                isCompactView={false}
+                isStatic={true}
+                ancestorChain={ancestorChain}
+              />
+            </div>
+          );
+        }
+
+        return null;
       })}
 
       {tableHeaderFields.length > 0 && tableRowCount > 0 && (

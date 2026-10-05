@@ -482,7 +482,7 @@ interface SeriesStats {
     validCount: number;
 }
 
-const XYChartViewerComponent = ({ field, value, node, isCompactView }: any) => {
+const XYChartViewerComponent = ({ field, value, node, isCompactView, isStatic }: any) => {
     const chartData = useMemo(() => (value ? normalizeXYChartData(value) : null), [value]);
 
     if (!chartData || !chartData.rows || chartData.rows.length === 0) return null;
@@ -619,129 +619,142 @@ const XYChartViewerComponent = ({ field, value, node, isCompactView }: any) => {
         return parseFloat(tickVal.toFixed(2)).toString();
     };
 
+    const lineChartElement = (
+        <LineChart
+            width={isStatic ? 600 : undefined}
+            height={isStatic ? 300 : undefined}
+            data={chartDataWithRegression}
+            margin={{ top: 10, right: 30, left: 20, bottom: 25 }}
+        >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="x" type="number" domain={xDomain as any} tickFormatter={formatTick}>
+                <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
+            </XAxis>
+            <YAxis yAxisId="y1" orientation="left" domain={['auto', 'auto']} interval={0} tickFormatter={formatTick}>
+                <ChartLabel value={chartData.y1AxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
+            </YAxis>
+            {hasY2 && (
+                <YAxis yAxisId="y2" orientation="right" domain={['auto', 'auto']} interval={0} tickFormatter={formatTick}>
+                    <ChartLabel value={chartData.y2AxisLabel} angle={90} position="insideRight" style={{ textAnchor: 'middle' }} />
+                </YAxis>
+            )}
+            <ChartTooltip formatter={(val: any) => formatTick(val)} />
+            <Legend align="right" verticalAlign="bottom" wrapperStyle={{ paddingTop: '8px' }} />
+
+            {seriesStatsList.map((stats) => (
+                <Line
+                    key={stats.col.id}
+                    yAxisId={stats.col.role}
+                    type="monotone"
+                    dataKey={stats.col.id}
+                    name={stats.col.name}
+                    stroke={stats.color}
+                    dot={{ r: 2 }}
+                    isAnimationActive={false}
+                />
+            ))}
+
+            {seriesStatsList.map((stats, colIdx) => {
+                if (!stats.col.showLinearRegression || stats.m === null || !stats.regressionStats) return null;
+                return (
+                    <Line
+                        key={`reg-${stats.col.id}`}
+                        yAxisId={stats.col.role}
+                        type="monotone"
+                        dataKey={`regression_${stats.col.id}`}
+                        name={`${stats.col.name} (Reg)`}
+                        stroke={stats.color}
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        activeDot={false}
+                        isAnimationActive={false}
+                        label={((props: any) => {
+                            const { x, y, index } = props;
+                            if (index === chartDataWithRegression.length - 1 && stats.regressionStats) {
+                                return (
+                                    <text
+                                        x={x}
+                                        y={y}
+                                        dy={-10 - colIdx * 12}
+                                        fill={stats.color}
+                                        fontSize={10}
+                                        textAnchor="end"
+                                    >
+                                        {`${stats.col.name}: ${stats.regressionStats.equation}, R² = ${stats.regressionStats.rSquared}`}
+                                    </text>
+                                );
+                            }
+                            return null;
+                        }) as any}
+                    />
+                );
+            })}
+
+            {seriesStatsList.map((stats) => {
+                if (!stats.col.showAverage || stats.validCount === 0) return null;
+                return (
+                    <ReferenceLine
+                        key={`avg-${stats.col.id}`}
+                        yAxisId={stats.col.role}
+                        y={stats.mean}
+                        stroke={stats.color}
+                        strokeDasharray="3 3"
+                        label={{
+                            value: `${stats.col.name} Avg: ${stats.mean.toFixed(2)}`,
+                            position: 'insideLeft',
+                            fill: stats.color,
+                            fontSize: 10,
+                        }}
+                    />
+                );
+            })}
+
+            {seriesStatsList.map((stats) => {
+                if (!stats.col.showStdDev || stats.validCount === 0) return null;
+                return (
+                    <ReferenceArea
+                        key={`std-${stats.col.id}`}
+                        yAxisId={stats.col.role}
+                        y1={stats.mean - stats.stdDev}
+                        y2={stats.mean + stats.stdDev}
+                        fill={stats.color}
+                        fillOpacity={0.1}
+                        strokeOpacity={0}
+                    />
+                );
+            })}
+
+            {seriesStatsList.map((stats, colIdx) => {
+                if (!stats.col.showRelativeError || stats.validCount === 0) return null;
+                return (
+                    <text
+                        key={`rel-${stats.col.id}`}
+                        x="95%"
+                        y={20 + colIdx * 14}
+                        textAnchor="end"
+                        fill={stats.color}
+                        fontSize={10}
+                        fontWeight="500"
+                    >
+                        {`${stats.col.name} Rel Err: ${stats.relError.toFixed(2)}%`}
+                    </text>
+                );
+            })}
+        </LineChart>
+    );
+
     return (
         <div key={field.id} className="mt-2" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
             <p className={cn("font-medium mb-2", isCompactView ? "text-xs" : "text-sm")}>{field.name}</p>
             <div style={{ width: '100%', height: isCompactView ? 180 : 300 }}>
-                <ResponsiveContainer>
-                    <LineChart data={chartDataWithRegression} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="x" type="number" domain={xDomain as any} tickFormatter={formatTick}>
-                            <ChartLabel value={chartData.xAxisLabel} offset={-15} position="insideBottom" />
-                        </XAxis>
-                        <YAxis yAxisId="y1" orientation="left" domain={['auto', 'auto']} interval={0} tickFormatter={formatTick}>
-                            <ChartLabel value={chartData.y1AxisLabel} angle={-90} position="insideLeft" style={{ textAnchor: 'middle' }} />
-                        </YAxis>
-                        {hasY2 && (
-                            <YAxis yAxisId="y2" orientation="right" domain={['auto', 'auto']} interval={0} tickFormatter={formatTick}>
-                                <ChartLabel value={chartData.y2AxisLabel} angle={90} position="insideRight" style={{ textAnchor: 'middle' }} />
-                            </YAxis>
-                        )}
-                        <ChartTooltip formatter={(val: any) => formatTick(val)} />
-                        <Legend align="right" verticalAlign="bottom" wrapperStyle={{ paddingTop: '8px' }} />
-
-                        {seriesStatsList.map((stats) => (
-                            <Line
-                                key={stats.col.id}
-                                yAxisId={stats.col.role}
-                                type="monotone"
-                                dataKey={stats.col.id}
-                                name={stats.col.name}
-                                stroke={stats.color}
-                                dot={{ r: 2 }}
-                                isAnimationActive={false}
-                            />
-                        ))}
-
-                        {seriesStatsList.map((stats, colIdx) => {
-                            if (!stats.col.showLinearRegression || stats.m === null || !stats.regressionStats) return null;
-                            return (
-                                <Line
-                                    key={`reg-${stats.col.id}`}
-                                    yAxisId={stats.col.role}
-                                    type="monotone"
-                                    dataKey={`regression_${stats.col.id}`}
-                                    name={`${stats.col.name} (Reg)`}
-                                    stroke={stats.color}
-                                    strokeWidth={2}
-                                    strokeDasharray="5 5"
-                                    dot={false}
-                                    activeDot={false}
-                                    isAnimationActive={false}
-                                    label={((props: any) => {
-                                        const { x, y, index } = props;
-                                        if (index === chartDataWithRegression.length - 1 && stats.regressionStats) {
-                                            return (
-                                                <text
-                                                    x={x}
-                                                    y={y}
-                                                    dy={-10 - colIdx * 12}
-                                                    fill={stats.color}
-                                                    fontSize={10}
-                                                    textAnchor="end"
-                                                >
-                                                    {`${stats.col.name}: ${stats.regressionStats.equation}, R² = ${stats.regressionStats.rSquared}`}
-                                                </text>
-                                            );
-                                        }
-                                        return null;
-                                    }) as any}
-                                />
-                            );
-                        })}
-
-                        {seriesStatsList.map((stats) => {
-                            if (!stats.col.showAverage || stats.validCount === 0) return null;
-                            return (
-                                <ReferenceLine
-                                    key={`avg-${stats.col.id}`}
-                                    yAxisId={stats.col.role}
-                                    y={stats.mean}
-                                    stroke={stats.color}
-                                    strokeDasharray="3 3"
-                                    label={{
-                                        value: `${stats.col.name} Avg: ${stats.mean.toFixed(2)}`,
-                                        position: 'insideLeft',
-                                        fill: stats.color,
-                                        fontSize: 10,
-                                    }}
-                                />
-                            );
-                        })}
-
-                        {seriesStatsList.map((stats) => {
-                            if (!stats.col.showStdDev || stats.validCount === 0) return null;
-                            return (
-                                <ReferenceArea
-                                    key={`std-${stats.col.id}`}
-                                    yAxisId={stats.col.role}
-                                    y1={stats.mean - stats.stdDev}
-                                    y2={stats.mean + stats.stdDev}
-                                    fill={stats.color}
-                                    fillOpacity={0.1}
-                                    strokeOpacity={0}
-                                />
-                            );
-                        })}
-
-                        {seriesStatsList.map((stats, colIdx) => {
-                            if (!stats.col.showRelativeError || stats.validCount === 0) return null;
-                            return (
-                                <text
-                                    key={`rel-${stats.col.id}`}
-                                    x="95%"
-                                    y={20 + colIdx * 14}
-                                    textAnchor="end"
-                                    fill={stats.color}
-                                    fontSize={10}
-                                    fontWeight="500"
-                                >
-                                    {`${stats.col.name} Rel Err: ${stats.relError.toFixed(2)}%`}
-                                </text>
-                            );
-                        })}
-                    </LineChart>
-                </ResponsiveContainer>
+                {isStatic ? (
+                    lineChartElement
+                ) : (
+                    <ResponsiveContainer>
+                        {lineChartElement}
+                    </ResponsiveContainer>
+                )}
             </div>
         </div>
     );

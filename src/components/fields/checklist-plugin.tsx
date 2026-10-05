@@ -23,7 +23,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useTreeContext } from "@/contexts/tree-context";
+import { TreeContext } from "@/contexts/tree-context";
 
 const DraggableCheckboxItem = ({ id, children }: { id: string; children: React.ReactNode; }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -90,7 +90,8 @@ ChecklistEditorComponent.displayName = "ChecklistEditorComponent";
 
 const ChecklistViewerComponent = ({ field, value, node, readOnly, isCompactView }: any) => {
   const items: ChecklistItem[] = value || [];
-  const { updateNode } = useTreeContext();
+  const treeContext = React.useContext(TreeContext);
+  const updateNode = treeContext?.updateNode;
 
   if (items.length === 0) return null;
 

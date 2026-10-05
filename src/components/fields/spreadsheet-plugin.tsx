@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Spreadsheet } from '@/components/ui/spreadsheet';
 import { cn } from '@/lib/utils';
 import { TreeNode, Field } from '@/lib/types';
-import { useTreeContext } from '@/contexts/tree-context';
+import { TreeContext } from '@/contexts/tree-context';
 
 const SpreadsheetDesignerSettings = ({ form, index }: { form: any, index: number }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -109,7 +109,8 @@ const SpreadsheetEditorComponent = React.memo(({ field, value, onChange }: { fie
 SpreadsheetEditorComponent.displayName = "SpreadsheetEditorComponent";
 
 const SpreadsheetViewerComponent = ({ field, value, node, readOnly, isCompactView }: any) => {
-    const { updateNode } = useTreeContext();
+    const treeContext = React.useContext(TreeContext);
+    const updateNode = treeContext?.updateNode;
 
     const initialData = useMemo(() => {
         const data: { value: string }[][] = value || [[{ value: '' }]];
