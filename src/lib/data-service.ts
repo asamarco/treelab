@@ -17,7 +17,7 @@ import { UserModel, TreeModel, TreeNodeModel, TeamModel } from './models';
 import { encrypt, decrypt } from './encryption';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
-import { generateJsonForExport, generateNodeName, getContextualOrder, toPlainObject } from './utils';
+import { generateJsonForExport, generateNodeName, getContextualOrder, toPlainObject, assertId } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSession } from './session';
 import { getDataDir } from './data-dir';
@@ -60,12 +60,12 @@ async function getTreePermissions(tree: Pick<TreeFile, 'userId' | 'sharedWith' |
     if (teamShares.length > 0) {
         await connectToDatabase();
         // Find teams where user is a member or leader
-        const userTeams = await TeamModel.find({
+        const userTeams = await TeamModel.find(mongoose.trusted({
             $or: [
                 { memberIds: userId },
                 { leaderIds: userId }
             ]
-        }).select('_id').lean().exec();
+        })).select('_id').lean().exec();
 
         const userTeamIds = userTeams.map(t => t._id.toString());
 
@@ -93,6 +93,7 @@ async function authorizeTreeAccess(
     treeId: string,
     requiredPermission?: 'owner' | 'admin' | 'editNodes' | 'editTemplates' | 'hasAccess'
 ) {
+    assertId(treeId, 'treeId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -123,6 +124,7 @@ async function authorizeTreeAccess(
 }
 
 export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
+    assertId(nodeId, 'nodeId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -152,7 +154,7 @@ async function fetchUserProfilesInternal(userIds: string[]): Promise<Record<stri
     if (!userIds || userIds.length === 0) return {};
     await connectToDatabase();
     const uniqueIds = Array.from(new Set(userIds.filter(id => !!id)));
-    const users = await UserModel.find({ _id: { $in: uniqueIds } }).select('username _id').lean().exec();
+    const users = await UserModel.find({ _id: mongoose.trusted({ $in: uniqueIds }) }).select('username _id').lean().exec();
     const profiles: Record<string, { id: string, username: string }> = {};
     users.forEach((u: any) => {
         const id = u._id.toString();
@@ -174,20 +176,22 @@ export async function createTreeFile(treeFile: Omit<TreeFile, 'tree' | 'id'>, in
         const dataWithCleanedExpandedIds = { ...rest, expandedNodeIds: [] };
         const newTreeFile = new TreeModel(dataWithCleanedExpandedIds);
         const savedTreeFile = await newTreeFile.save();
+        const canonicalTreeId = String(savedTreeFile._id);
 
         if (initialNodes && initialNodes.length > 0) {
             const nodesToCreate = await Promise.all(initialNodes.map(async (node: Omit<TreeNode, 'id' | 'children' | '_id'>) => ({
                 ...node,
                 name: await encrypt(node.name), // Encrypt name
                 data: await encrypt(node.data), // Encrypt data
-                treeId: savedTreeFile.id,
+                treeId: canonicalTreeId,
+                userId: session.userId,
             })));
             await TreeNodeModel.insertMany(nodesToCreate);
         }
 
-        console.log(`INFO: Created tree '${savedTreeFile.title}' (ID: ${savedTreeFile.id}) and initial nodes in DB`);
+        console.log(`INFO: Created tree '${savedTreeFile.title}' (ID: ${canonicalTreeId}) and initial nodes in DB`);
 
-        const treeNodes = await loadTreeNodes(savedTreeFile.id);
+        const treeNodes = await loadTreeNodes(canonicalTreeId);
 
         const plainTreeFile = toPlainObject(savedTreeFile);
         const profiles = await fetchUserProfilesInternal([plainTreeFile.userId]);
@@ -202,10 +206,20 @@ export async function createTreeFile(treeFile: Omit<TreeFile, 'tree' | 'id'>, in
 }
 
 export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & { id: string }, timestamp?: string): Promise<string> {
-    const { perms } = await authorizeTreeAccess(treeFile.id);
+    assertId(treeFile?.id, 'treeId');
+    const { perms, tree } = await authorizeTreeAccess(treeFile.id);
+    const canonicalTreeId = String(tree._id);
+
+    const allowedKeys: Array<keyof TreeFile> = ['title', 'templates', 'gitSync', 'order', 'expandedNodeIds', 'lastDrilledNodeId'];
+    const cleanTreeData: Record<string, any> = {};
+    for (const key of allowedKeys) {
+        if (key in treeFile) {
+            cleanTreeData[key] = (treeFile as any)[key];
+        }
+    }
 
     if (!perms.isOwner) {
-        const updateKeys = Object.keys(treeFile).filter(k => k !== 'id');
+        const updateKeys = Object.keys(cleanTreeData);
         const isTemplateUpdate = updateKeys.includes('templates');
         const isTitleUpdate = updateKeys.includes('title');
         const isGitSyncUpdate = updateKeys.includes('gitSync');
@@ -224,31 +238,28 @@ export async function saveTreeFile(treeFile: Partial<Omit<TreeFile, 'tree'>> & {
         }
     }
 
-    const { id, ...treeData } = treeFile;
     const newTimestamp = timestamp || new Date().toISOString();
+    const updateKeys = Object.keys(cleanTreeData);
+    const isOnlyViewChange = updateKeys.length > 0 && updateKeys.every(k => k === 'expandedNodeIds' || k === 'lastDrilledNodeId');
 
-    // Check if the update is only for view state (expandedNodeIds, lastDrilledNodeId)
-    const updateKeys = Object.keys(treeData);
-    const isOnlyViewChange = updateKeys.every(k => k === 'expandedNodeIds' || k === 'lastDrilledNodeId');
-
-    const updatePayload: any = { $set: { ...treeData } };
+    const updatePayload: any = { $set: { ...cleanTreeData } };
 
     // Only update the 'updatedAt' timestamp if it's not just a view change
     if (!isOnlyViewChange) {
         updatePayload.$set.updatedAt = newTimestamp;
     }
 
-    // If gitSync is explicitly not present in the update data, it means we are unlinking.
-    if (!('gitSync' in treeData) && updateKeys.length > 1) { // Ensure it's not part of a larger update that includes gitSync
+    // If gitSync is explicitly not present in cleanTreeData, it means we are unlinking.
+    if (!('gitSync' in cleanTreeData) && Object.keys(treeFile).length > 2) {
         updatePayload.$unset = { gitSync: 1 };
     }
 
-    await TreeModel.findByIdAndUpdate(id, updatePayload).exec();
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, updatePayload).exec();
 
     if (!isOnlyViewChange) {
-        console.log(`INFO: Saved tree meta '${treeFile.title}' (ID: ${treeFile.id}) to DB with new timestamp.`);
+        console.log(`INFO: Saved tree meta '${treeFile.title || tree.title}' (ID: ${canonicalTreeId}) to DB with new timestamp.`);
     } else {
-        console.log(`INFO: Saved expanded nodes for tree (ID: ${treeFile.id}) without updating timestamp.`);
+        console.log(`INFO: Saved expanded nodes for tree (ID: ${canonicalTreeId}) without updating timestamp.`);
     }
 
     return newTimestamp;
@@ -263,12 +274,14 @@ export async function updateTreeOrder(updates: { id: string; order: number }[]) 
         return { success: false, modifiedCount: 0 };
     }
 
+    updates.forEach(u => assertId(u?.id, 'treeId'));
+
     console.log(`INFO: Updating order for ${updates.length} trees in DB.`);
     await connectToDatabase();
 
     try {
         const treeIds = updates.map(u => new mongoose.Types.ObjectId(u.id));
-        const treesToUpdate = await TreeModel.find({ _id: { $in: treeIds } });
+        const treesToUpdate = await TreeModel.find({ _id: mongoose.trusted({ $in: treeIds }) });
 
         if (treesToUpdate.some(t => t.userId.toString() !== session.userId)) {
             throw new Error("Authorization denied: Cannot reorder trees you do not own.");
@@ -291,6 +304,7 @@ export async function updateTreeOrder(updates: { id: string; order: number }[]) 
 }
 
 export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
+    assertId(treeId, 'treeId');
     noStore();
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
@@ -299,17 +313,18 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
     const treeFileDoc = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>().exec();
     if (!treeFileDoc) return null;
 
+    const canonicalTreeId = String(treeFileDoc._id);
     const loadPerms = await getTreePermissions(treeFileDoc, session.userId);
     if (!loadPerms.hasAccess) {
         throw new Error("Authorization denied.");
     }
 
-    const nodes = await loadTreeNodes(treeId);
+    const nodes = await loadTreeNodes(canonicalTreeId);
 
     // Ensure publicId exists (for existing trees)
     if (!treeFileDoc.publicId) {
         const publicId = crypto.randomUUID();
-        await TreeModel.findByIdAndUpdate(treeId, { publicId }).exec();
+        await TreeModel.findByIdAndUpdate(canonicalTreeId, { publicId }).exec();
         treeFileDoc.publicId = publicId;
     }
 
@@ -318,7 +333,7 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
     const userProfiles = await fetchUserProfilesInternal(userIdsToFetch);
 
     const plainDoc: TreeFile = {
-        id: treeFileDoc._id.toString(),
+        id: canonicalTreeId,
         userId: treeFileDoc.userId,
         owner: userProfiles[treeFileDoc.userId],
         sharedWith: treeFileDoc.sharedWith,
@@ -349,21 +364,21 @@ export async function loadTreeFile(treeId: string): Promise<TreeFile | null> {
 }
 
 export async function loadPublicTreeFile(treeId: string): Promise<TreeFile | null> {
+    const safeTreeId = assertId(treeId, 'treeId');
     noStore();
     try {
         await connectToDatabase();
 
         // Try finding by publicId first
-        let treeFileDoc = await TreeModel.findOne({ publicId: treeId }).lean<Omit<TreeFile, 'tree'>>().exec();
+        let treeFileDoc = await TreeModel.findOne({ publicId: safeTreeId }).lean<Omit<TreeFile, 'tree'>>().exec();
 
         if (treeFileDoc) {
             if (!treeFileDoc.isPublic) {
                 return null;
             }
-        } else if (mongoose.Types.ObjectId.isValid(treeId)) {
-            treeFileDoc = await TreeModel.findOne({ _id: treeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
+        } else if (mongoose.Types.ObjectId.isValid(safeTreeId)) {
+            treeFileDoc = await TreeModel.findOne({ _id: safeTreeId, isPublic: true }).lean<Omit<TreeFile, 'tree'>>().exec();
         }
-
         if (!treeFileDoc) {
             return null;
         }
@@ -404,28 +419,28 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
     await connectToDatabase();
 
     // Find teams the user belongs to
-    const userTeams = await TeamModel.find({
+    const userTeams = await TeamModel.find(mongoose.trusted({
         $or: [
-            { memberIds: session.userId },
-            { leaderIds: session.userId }
+            mongoose.trusted({ memberIds: session.userId }),
+            mongoose.trusted({ leaderIds: session.userId })
         ]
-    }).select('_id').lean().exec();
+    })).select('_id').lean().exec();
     const userTeamIds = userTeams.map(t => t._id.toString());
 
-    const query = {
+    const query = mongoose.trusted({
         $or: [
-            { userId: session.userId },
-            { sharedWith: { $in: [session.userId] } },
-            { 'shares.userId': session.userId },
-            { 'teamShares.teamId': { $in: userTeamIds } }
+            mongoose.trusted({ userId: session.userId }),
+            mongoose.trusted({ sharedWith: mongoose.trusted({ $in: [session.userId] }) }),
+            mongoose.trusted({ 'shares.userId': session.userId }),
+            mongoose.trusted({ 'teamShares.teamId': mongoose.trusted({ $in: userTeamIds }) })
         ]
-    };
+    });
 
     const treeFileDocs = await TreeModel.find(query).lean<Omit<TreeFile, 'tree'>[]>().exec();
 
     const treeIds = treeFileDocs.map((t: any) => t._id.toString());
     // Fetch all nodes for the user in one go
-    const allNodesForUser = await TreeNodeModel.find({ treeId: { $in: treeIds } }).lean<TreeNode[]>().exec();
+    const allNodesForUser = await TreeNodeModel.find({ treeId: mongoose.trusted({ $in: treeIds }) }).lean<TreeNode[]>().exec();
 
     // Group nodes by treeId
     const nodesByTreeId = new Map<string, TreeNode[]>();
@@ -494,6 +509,7 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
 }
 
 export async function deleteTreeFile(treeId: string): Promise<void> {
+    assertId(treeId, 'treeId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -506,11 +522,12 @@ export async function deleteTreeFile(treeId: string): Promise<void> {
     }
 
     try {
+        const canonicalTreeId = String(treeToDelete._id);
         // Perform deletions sequentially
-        await TreeNodeModel.deleteMany({ treeId });
-        await TreeModel.findByIdAndDelete(treeId);
+        await TreeNodeModel.deleteMany({ treeId: canonicalTreeId });
+        await TreeModel.findByIdAndDelete(canonicalTreeId);
 
-        console.log(`INFO: Deleted tree (ID: ${treeId}) and all associated nodes from DB`);
+        console.log(`INFO: Deleted tree (ID: ${canonicalTreeId}) and all associated nodes from DB`);
     } catch (error) {
         console.error("Error deleting tree file:", error);
         throw error;
@@ -570,6 +587,7 @@ const buildTreeHierarchy = (nodes: TreeNode[]): TreeNode[] => {
 };
 
 export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
+    assertId(treeId, 'treeId');
     await connectToDatabase();
 
     const treeFileDoc = await TreeModel.findById(treeId).lean<Omit<TreeFile, 'tree'>>();
@@ -577,6 +595,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
         throw new Error("Tree not found when trying to load its nodes.");
     }
 
+    const canonicalTreeId = String(treeFileDoc._id);
     const isPublic = treeFileDoc.isPublic === true;
 
     if (!isPublic) {
@@ -591,7 +610,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
         }
     }
 
-    const nodes = await TreeNodeModel.find({ treeId }).lean<TreeNode[]>().exec();
+    const nodes = await TreeNodeModel.find({ treeId: canonicalTreeId }).lean<TreeNode[]>().exec();
 
     await Promise.all(nodes.map(async (node) => {
         node.name = await decrypt(node.name);
@@ -602,23 +621,34 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
 }
 
 export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & { _id?: string, id?: string }): Promise<TreeNode> {
-    const { session } = await authorizeTreeAccess(nodeData.treeId, 'editNodes');
+    assertId(nodeData?.treeId, 'treeId');
+    const { session, tree } = await authorizeTreeAccess(nodeData.treeId, 'editNodes');
+    const canonicalTreeId = String(tree._id);
 
-    const { id, name, data, ...rest } = nodeData as any;
+    const { id, _id, name, data, templateId, isStarred, parentIds, order } = nodeData as any;
 
-    const dataToSave = {
-        ...rest,
+    if (id) assertId(id, 'id');
+    if (_id) assertId(_id, '_id');
+
+    const dataToSave: Record<string, any> = {
         name: await encrypt(name),
         data: await encrypt(data || {}),
         userId: session.userId,
+        treeId: canonicalTreeId,
+        templateId,
+        isStarred: !!isStarred,
+        parentIds: Array.isArray(parentIds) ? parentIds : ['root'],
+        order: Array.isArray(order) ? order : [0],
     };
 
-    const documentToSave = id ? { ...dataToSave, _id: id } : dataToSave;
+    const targetId = id || _id;
+    const documentToSave = targetId ? { ...dataToSave, _id: targetId } : dataToSave;
 
     const newNode = new TreeNodeModel(documentToSave);
     await newNode.save();
 
-    await TreeModel.findByIdAndUpdate(newNode.treeId, { updatedAt: new Date().toISOString() });
+    const canonicalNodeId = String(newNode._id);
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: new Date().toISOString() });
 
     const plainNode = toPlainObject(newNode);
 
@@ -626,25 +656,34 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
     plainNode.name = await decrypt(plainNode.name);
     plainNode.data = await decrypt(plainNode.data);
 
-    return { ...plainNode, children: [] };
+    return { ...plainNode, id: canonicalNodeId, children: [] };
 }
 
 export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode, 'id' | 'children'>>, timestamp?: string): Promise<string> {
+    assertId(nodeId, 'nodeId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
     await connectToDatabase();
 
-    const node = await TreeNodeModel.findById(nodeId).select('treeId userId').lean<TreeNode>();
+    const node = await TreeNodeModel.findById(nodeId).select('treeId userId _id').lean<TreeNode>();
     if (!node) {
         throw new Error("Node not found for update.");
     }
 
-    await authorizeTreeAccess(node.treeId, 'editNodes');
+    const canonicalNodeId = String((node as any)._id || nodeId);
+    const canonicalTreeId = String(node.treeId);
 
-    const { name, data, ...restOfUpdates } = updates;
+    await authorizeTreeAccess(canonicalTreeId, 'editNodes');
+
+    const { name, data, templateId, isStarred, parentIds, order } = updates as any;
     const newTimestamp = timestamp || new Date().toISOString();
-    const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: newTimestamp };
+
+    const encryptedUpdates: Record<string, any> = { updatedAt: newTimestamp };
+    if (templateId !== undefined) encryptedUpdates.templateId = templateId;
+    if (isStarred !== undefined) encryptedUpdates.isStarred = isStarred;
+    if (parentIds !== undefined) encryptedUpdates.parentIds = parentIds;
+    if (order !== undefined) encryptedUpdates.order = order;
 
     if (name) {
         encryptedUpdates.name = await encrypt(name);
@@ -653,16 +692,19 @@ export async function updateNode(nodeId: string, updates: Partial<Omit<TreeNode,
         encryptedUpdates.data = await encrypt(data as any);
     }
 
-    await TreeNodeModel.findByIdAndUpdate(nodeId, { $set: encryptedUpdates }).exec();
-    await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: newTimestamp });
+    await TreeNodeModel.findByIdAndUpdate(canonicalNodeId, { $set: encryptedUpdates }).exec();
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
     return newTimestamp;
 }
 
 export const resequenceSiblings = async (parentId: string | null, treeId: string): Promise<void> => {
-    await authorizeTreeAccess(treeId, 'editNodes');
+    assertId(treeId, 'treeId');
+    if (parentId) assertId(parentId, 'parentId');
+    const { tree } = await authorizeTreeAccess(treeId, 'editNodes');
+    const canonicalTreeId = String(tree._id);
 
-    const parentQuery = parentId ? { parentIds: parentId } : { $or: [{ parentIds: { $size: 0 } }, { parentIds: ['root'] }] };
-    const siblings = await TreeNodeModel.find({ treeId, ...parentQuery }).exec();
+    const parentQuery = parentId ? { parentIds: parentId } : mongoose.trusted({ $or: [mongoose.trusted({ parentIds: mongoose.trusted({ $size: 0 }) }), mongoose.trusted({ parentIds: ['root'] })] });
+    const siblings = await TreeNodeModel.find(mongoose.trusted({ treeId: canonicalTreeId, ...parentQuery })).exec();
 
     if (siblings.length === 0) return;
 
@@ -699,6 +741,8 @@ export const resequenceSiblings = async (parentId: string | null, treeId: string
 };
 
 export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: string | null, timestamp?: string): Promise<{ deletedIds: string[], newTimestamp: string }> {
+    assertId(nodeId, 'nodeId');
+    if (parentIdToUnlink) assertId(parentIdToUnlink, 'parentIdToUnlink');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -707,9 +751,11 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     const node = await TreeNodeModel.findById(nodeId).exec();
     if (!node) return { deletedIds: [], newTimestamp: new Date().toISOString() };
 
-    await authorizeTreeAccess(node.treeId.toString(), 'editNodes');
+    const canonicalNodeId = String(node._id);
+    const canonicalTreeId = String(node.treeId);
 
-    const treeId = node.treeId.toString();
+    await authorizeTreeAccess(canonicalTreeId, 'editNodes');
+
     const parentId = parentIdToUnlink ?? 'root';
     const newTimestamp = timestamp || new Date().toISOString();
 
@@ -718,13 +764,13 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
     if (node.parentIds.length > 1) {
         const parentIndex = node.parentIds.indexOf(parentId);
         if (parentIndex > -1) {
-            console.log(`INFO: Unlinking clone instance of node ${nodeId} from parent ${parentId}`);
+            console.log(`INFO: Unlinking clone instance of node ${canonicalNodeId} from parent ${parentId}`);
             node.parentIds.splice(parentIndex, 1);
             node.order.splice(parentIndex, 1);
             await node.save();
-            await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
+            await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
             // After unlinking, re-sequence the remaining siblings in the old parent context.
-            await resequenceSiblings(parentId === 'root' ? null : parentId, treeId);
+            await resequenceSiblings(parentId === 'root' ? null : parentId, canonicalTreeId);
         }
         return { deletedIds: [], newTimestamp }; // Return empty array as no nodes were permanently deleted
     }
@@ -754,17 +800,17 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
         }
     };
 
-    deletedIds.push(nodeId);
-    await findChildrenAndUnlinkOrDelete(nodeId);
+    deletedIds.push(canonicalNodeId);
+    await findChildrenAndUnlinkOrDelete(canonicalNodeId);
 
     if (deletedIds.length > 0) {
-        await TreeNodeModel.deleteMany({ _id: { $in: deletedIds } }).exec();
+        await TreeNodeModel.deleteMany({ _id: mongoose.trusted({ $in: deletedIds }) }).exec();
     }
 
-    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
 
     // Resequence siblings in all original parent contexts
-    const resequencePromises = Array.from(parentsToResequence).map(pid => resequenceSiblings(pid === 'root' ? null : pid, treeId));
+    const resequencePromises = Array.from(parentsToResequence).map(pid => resequenceSiblings(pid === 'root' ? null : pid, canonicalTreeId));
     await Promise.all(resequencePromises);
 
     console.log(`INFO: Permanently deleted ${deletedIds.length} nodes from DB.`);
@@ -772,7 +818,12 @@ export async function deleteNodeWithChildren(nodeId: string, parentIdToUnlink: s
 }
 
 export async function batchDeleteNodes(deletions: { nodeId: string; parentIdToUnlink: string | null }[], timestamp?: string): Promise<{ deletedIds: string[], newTimestamp: string }> {
-    if (deletions.length === 0) return { deletedIds: [], newTimestamp: new Date().toISOString() };
+    if (!Array.isArray(deletions) || deletions.length === 0) return { deletedIds: [], newTimestamp: timestamp || new Date().toISOString() };
+
+    deletions.forEach(d => {
+        assertId(d?.nodeId, 'nodeId');
+        if (d?.parentIdToUnlink) assertId(d.parentIdToUnlink, 'parentIdToUnlink');
+    });
 
     let allDeletedIds: string[] = [];
     const newTimestamp = timestamp || new Date().toISOString();
@@ -789,13 +840,16 @@ export async function batchDeleteNodes(deletions: { nodeId: string; parentIdToUn
 
 
 export async function reorderSiblingsForAdd(treeId: string, parentId: string | null, order: number, timestamp?: string) {
-    await authorizeTreeAccess(treeId, 'editNodes');
+    assertId(treeId, 'treeId');
+    if (parentId) assertId(parentId, 'parentId');
+    const { tree } = await authorizeTreeAccess(treeId, 'editNodes');
+    const canonicalTreeId = String(tree._id);
 
     const parentIdToUpdate = parentId || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
 
     // Get all siblings in this context
-    const siblings = await TreeNodeModel.find({ treeId, parentIds: parentIdToUpdate }).exec();
+    const siblings = await TreeNodeModel.find({ treeId: canonicalTreeId, parentIds: parentIdToUpdate }).exec();
 
     // Perform bulk update to increment order
     const bulkOps = siblings
@@ -818,36 +872,57 @@ export async function reorderSiblingsForAdd(treeId: string, parentId: string | n
     if (bulkOps.length > 0) {
         await TreeNodeModel.bulkWrite(bulkOps);
     }
-    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
 }
 
 
 export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'children' | '_id'>>[], timestamp?: string): Promise<{ createdNodes: TreeNode[], newTimestamp: string }> {
-    if (nodes.length === 0) return { createdNodes: [], newTimestamp: timestamp || new Date().toISOString() };
+    if (!Array.isArray(nodes) || nodes.length === 0) return { createdNodes: [], newTimestamp: timestamp || new Date().toISOString() };
 
-    const treeId = nodes[0]?.treeId; // Assume all nodes are for the same tree
+    const treeId = nodes[0]?.treeId;
     if (!treeId) throw new Error("Batch create requires nodes to have a treeId.");
+    assertId(treeId, 'treeId');
 
-    const { session } = await authorizeTreeAccess(treeId, 'editNodes');
+    // Reject batch if any node does not match the first node's treeId
+    for (const n of nodes) {
+        if (!n || n.treeId !== treeId) {
+            throw new Error("Batch create nodes must all share the same authorized treeId.");
+        }
+    }
+
+    const { session, tree } = await authorizeTreeAccess(treeId, 'editNodes');
+    const canonicalTreeId = String(tree._id);
 
     const newTimestamp = timestamp || new Date().toISOString();
 
     const nodesToInsert = await Promise.all(nodes.map(async (n) => {
-        const { id, _id, name, data, ...rest } = n as any;
-        return {
-            ...rest,
+        const { id, _id, name, data, templateId, isStarred, parentIds, order } = n as any;
+
+        const docId = id || _id;
+        if (docId) assertId(docId, 'nodeId');
+
+        const docToInsert: Record<string, any> = {
             name: await encrypt(name),
-            data: await encrypt(data),
-            _id: _id || id,
+            data: await encrypt(data || {}),
             userId: session.userId,
+            treeId: canonicalTreeId,
+            templateId,
+            isStarred: !!isStarred,
+            parentIds: Array.isArray(parentIds) ? parentIds : ['root'],
+            order: Array.isArray(order) ? order : [0],
             createdAt: newTimestamp,
             updatedAt: newTimestamp,
         };
+
+        if (docId) {
+            docToInsert._id = docId;
+        }
+        return docToInsert;
     }));
 
     const createdDocs = await TreeNodeModel.insertMany(nodesToInsert);
 
-    await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
 
     const decryptedDocs = await Promise.all(createdDocs.map(async (doc) => {
         const plainDoc = toPlainObject(doc);
@@ -860,7 +935,9 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
 
 
 export async function batchUpdateNodes(updates: { id: string; updates: Partial<TreeNode> }[], timestamp?: string): Promise<string> {
-    if (updates.length === 0) return timestamp || new Date().toISOString();
+    if (!Array.isArray(updates) || updates.length === 0) return timestamp || new Date().toISOString();
+
+    updates.forEach(u => assertId(u?.id, 'nodeId'));
 
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
@@ -868,25 +945,32 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
     await connectToDatabase();
 
     const nodeIds = updates.map(u => u.id);
-    const nodesToUpdate = await TreeNodeModel.find({ _id: { $in: nodeIds } }).select('treeId').lean<TreeNode[]>();
+    const nodesToUpdate = await TreeNodeModel.find({ _id: mongoose.trusted({ $in: nodeIds }) }).select('treeId').lean<TreeNode[]>();
 
     const firstTreeId = nodesToUpdate[0]?.treeId;
     if (!firstTreeId) {
         throw new Error("Could not determine tree for update operation.");
     }
 
-    const allNodesInSameTree = nodesToUpdate.every(node => node.treeId.toString() === firstTreeId.toString());
+    const firstTreeIdStr = firstTreeId.toString();
+    const allNodesInSameTree = nodesToUpdate.every(node => node.treeId.toString() === firstTreeIdStr);
     if (!allNodesInSameTree) {
         throw new Error("Batch updates can only target nodes within the same tree.");
     }
 
-    await authorizeTreeAccess(firstTreeId.toString(), 'editNodes');
+    const { tree } = await authorizeTreeAccess(firstTreeIdStr, 'editNodes');
+    const canonicalTreeId = String(tree._id);
 
     const newTimestamp = timestamp || new Date().toISOString();
 
-    const bulkOps = await Promise.all(updates.map(async ({ id, updates }) => {
-        const { name, data, ...restOfUpdates } = updates;
-        const encryptedUpdates: { [key: string]: any } = { ...restOfUpdates, updatedAt: newTimestamp };
+    const bulkOps = await Promise.all(updates.map(async ({ id, updates: nodeUpdates }) => {
+        const { name, data, templateId, isStarred, parentIds, order } = (nodeUpdates || {}) as any;
+        const encryptedUpdates: Record<string, any> = { updatedAt: newTimestamp };
+        if (templateId !== undefined) encryptedUpdates.templateId = templateId;
+        if (isStarred !== undefined) encryptedUpdates.isStarred = isStarred;
+        if (parentIds !== undefined) encryptedUpdates.parentIds = parentIds;
+        if (order !== undefined) encryptedUpdates.order = order;
+
         if (name) {
             encryptedUpdates.name = await encrypt(name);
         }
@@ -896,18 +980,22 @@ export async function batchUpdateNodes(updates: { id: string; updates: Partial<T
 
         return {
             updateOne: {
-                filter: { _id: id, treeId: firstTreeId },
+                filter: { _id: id, treeId: canonicalTreeId },
                 update: { $set: encryptedUpdates },
             },
         };
     }));
+
     await TreeNodeModel.bulkWrite(bulkOps);
-    await TreeModel.findByIdAndUpdate(firstTreeId, { updatedAt: newTimestamp });
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
     console.log(`INFO: Batch updated ${updates.length} nodes in DB.`);
     return newTimestamp;
 }
 
 export async function addParentToNode(nodeId: string, newParentId: string | null, newOrder: number, timestamp?: string): Promise<string> {
+    assertId(nodeId, 'nodeId');
+    if (newParentId) assertId(newParentId, 'newParentId');
+
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -917,7 +1005,10 @@ export async function addParentToNode(nodeId: string, newParentId: string | null
         throw new Error("Node to clone not found");
     }
 
-    await authorizeTreeAccess(node.treeId.toString(), 'editNodes');
+    const canonicalNodeId = String(node._id);
+    const canonicalTreeId = String(node.treeId);
+
+    await authorizeTreeAccess(canonicalTreeId, 'editNodes');
 
     const parentIdToAdd = newParentId || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
@@ -926,21 +1017,24 @@ export async function addParentToNode(nodeId: string, newParentId: string | null
         node.parentIds.push(parentIdToAdd);
         node.order.push(newOrder);
         await node.save();
-        await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: newTimestamp });
-        console.log(`INFO: Cloned node ${nodeId} under new parent ${parentIdToAdd}`);
+        await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
+        console.log(`INFO: Cloned node ${canonicalNodeId} under new parent ${parentIdToAdd}`);
     } else {
         const parentIndex = node.parentIds.indexOf(parentIdToAdd);
         if (parentIndex !== -1) {
             node.order[parentIndex] = newOrder;
             await node.save();
-            await TreeModel.findByIdAndUpdate(node.treeId, { updatedAt: newTimestamp });
-            console.log(`INFO: Updated order for existing clone ${nodeId} under parent ${parentIdToAdd}`);
+            await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
+            console.log(`INFO: Updated order for existing clone ${canonicalNodeId} under parent ${parentIdToAdd}`);
         }
     }
     return newTimestamp;
 }
 
 export async function removeParentFromNode(nodeId: string, parentIdToRemove: string, timestamp?: string): Promise<string> {
+    assertId(nodeId, 'nodeId');
+    assertId(parentIdToRemove, 'parentIdToRemove');
+
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -950,9 +1044,11 @@ export async function removeParentFromNode(nodeId: string, parentIdToRemove: str
         throw new Error("Node not found for unlinking.");
     }
 
-    await authorizeTreeAccess(node.treeId.toString(), 'editNodes');
+    const canonicalNodeId = String(node._id);
+    const canonicalTreeId = String(node.treeId);
 
-    const treeId = node.treeId.toString();
+    await authorizeTreeAccess(canonicalTreeId, 'editNodes');
+
     const parentIdString = parentIdToRemove || 'root';
     const newTimestamp = timestamp || new Date().toISOString();
     const parentIndex = node.parentIds.indexOf(parentIdString);
@@ -961,9 +1057,9 @@ export async function removeParentFromNode(nodeId: string, parentIdToRemove: str
         node.parentIds.splice(parentIndex, 1);
         node.order.splice(parentIndex, 1);
         await node.save();
-        await TreeModel.findByIdAndUpdate(treeId, { updatedAt: newTimestamp });
-        await resequenceSiblings(parentIdString === 'root' ? null : parentIdString, treeId);
-        console.log(`INFO: Unlinked node ${nodeId} from parent ${parentIdString} and resequenced siblings.`);
+        await TreeModel.findByIdAndUpdate(canonicalTreeId, { updatedAt: newTimestamp });
+        await resequenceSiblings(parentIdString === 'root' ? null : parentIdString, canonicalTreeId);
+        console.log(`INFO: Unlinked node ${canonicalNodeId} from parent ${parentIdString} and resequenced siblings.`);
     }
 
     return newTimestamp;
@@ -973,6 +1069,7 @@ export async function removeParentFromNode(nodeId: string, parentIdToRemove: str
 // --- Attachment Function (Filesystem-based) ---
 
 export async function saveAttachment(userId: string, relativePath: string, dataUri: string, originalFileName: string): Promise<AttachmentInfo> {
+    assertId(userId, 'userId');
     const session = await getSession();
     if (!session?.userId || session.userId !== userId) throw new Error("Authentication required.");
 
@@ -1045,14 +1142,31 @@ export async function listExamples(): Promise<ExampleInfo[]> {
         return [];
     }
 }
-
 export async function loadExampleFromFile(fileName: string): Promise<Partial<TreeFile> | null> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
+    // Reject anything that isn't a bare filename — no path separators, no traversal.
+    if (
+        typeof fileName !== 'string' ||
+        fileName.length === 0 ||
+        fileName.length > 255 ||
+        fileName !== path.basename(fileName) ||
+        !fileName.endsWith('.json')
+    ) {
+        throw new Error("Invalid example file name.");
+    }
+
     await connectToDatabase();
     const EXAMPLES_DIR = path.join(process.cwd(), 'public', 'examples');
     const filePath = path.join(EXAMPLES_DIR, fileName);
+
+    // Defense in depth: even after the basename check above, confirm the
+    // resolved path still lives inside EXAMPLES_DIR.
+    if (!filePath.startsWith(EXAMPLES_DIR + path.sep)) {
+        throw new Error("Access denied.");
+    }
+
     try {
         const data = await fs.readFile(filePath, 'utf-8');
         return JSON.parse(data);
@@ -1160,6 +1274,7 @@ export async function commitTreeFileToRepo(
     message: string,
     treeFileToCommit?: TreeFile
 ): Promise<{ success: boolean; error?: string; commitSha?: string }> {
+    assertId(treeId, 'treeId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -1325,7 +1440,10 @@ export async function getTreeFromGit(token: string, owner: string, repo: string,
 }
 
 export async function shareTreeWithUser(treeId: string, userId: string, permissions?: Partial<TreePermissions>): Promise<void> {
-    await authorizeTreeAccess(treeId, 'admin');
+    assertId(treeId, 'treeId');
+    assertId(userId, 'userId');
+    const { tree } = await authorizeTreeAccess(treeId, 'admin');
+    const canonicalTreeId = String(tree._id);
 
     const resolvedPermissions: TreePermissions = {
         editNodes: permissions?.editNodes ?? false,
@@ -1334,42 +1452,50 @@ export async function shareTreeWithUser(treeId: string, userId: string, permissi
     };
 
     // Remove from legacy sharedWith if present
-    await TreeModel.findByIdAndUpdate(treeId, { $pull: { sharedWith: userId } }).exec();
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { $pull: { sharedWith: userId } }).exec();
 
     // Remove existing share entry for this user (if any) before adding
-    await TreeModel.findByIdAndUpdate(treeId, { $pull: { shares: { userId } } }).exec();
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { $pull: { shares: { userId } } }).exec();
 
     // Add the new share entry
-    await TreeModel.findByIdAndUpdate(treeId, {
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, {
         $addToSet: { shares: { userId, permissions: resolvedPermissions } }
     }).exec();
 }
 
 export async function revokeShareFromUser(treeId: string, userId: string): Promise<void> {
-    await authorizeTreeAccess(treeId, 'admin');
+    assertId(treeId, 'treeId');
+    assertId(userId, 'userId');
+    const { tree } = await authorizeTreeAccess(treeId, 'admin');
+    const canonicalTreeId = String(tree._id);
 
     // Remove from both legacy sharedWith and new shares
-    await TreeModel.findByIdAndUpdate(treeId, {
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, {
         $pull: { sharedWith: userId, shares: { userId } }
     }).exec();
 }
 
 export async function setTreePublicStatus(treeId: string, isPublic: boolean): Promise<string | undefined> {
+    assertId(treeId, 'treeId');
     const { tree } = await authorizeTreeAccess(treeId, 'admin');
+    const canonicalTreeId = String(tree._id);
 
     // Generate a publicId if the tree doesn't have one yet (Mongoose defaults don't run on findByIdAndUpdate)
-    const updatePayload: Record<string, any> = { isPublic };
+    const updatePayload: Record<string, any> = { isPublic: !!isPublic };
     if (!tree.publicId) {
         updatePayload.publicId = crypto.randomUUID();
     }
 
-    const updated = await TreeModel.findByIdAndUpdate(treeId, updatePayload, { new: true }).lean<Omit<TreeFile, 'tree'>>();
+    const updated = await TreeModel.findByIdAndUpdate(canonicalTreeId, updatePayload, { new: true }).lean<Omit<TreeFile, 'tree'>>();
     return updated?.publicId;
 }
 
 // --- Team Management Functions ---
 
 export async function createTeam(name: string, leaderIds: string[]): Promise<Team> {
+    if (Array.isArray(leaderIds)) {
+        leaderIds.forEach(id => assertId(id, 'leaderId'));
+    }
     const session = await getSession();
     const user = await UserModel.findById(session?.userId).lean<User>();
     if (!user?.isAdmin) throw new Error("Authorization denied: Only admins can create teams.");
@@ -1394,12 +1520,12 @@ export async function loadUserTeams(): Promise<Team[]> {
 
     let query = {};
     if (!user?.isAdmin) {
-        query = {
+        query = mongoose.trusted({
             $or: [
                 { memberIds: session.userId },
                 { leaderIds: session.userId }
             ]
-        };
+        });
     }
 
     const teams = await TeamModel.find(query).lean<Team[]>().exec();
@@ -1407,6 +1533,11 @@ export async function loadUserTeams(): Promise<Team[]> {
 }
 
 export async function updateTeamMembers(teamId: string, memberIds: string[]): Promise<void> {
+    assertId(teamId, 'teamId');
+    if (Array.isArray(memberIds)) {
+        memberIds.forEach(id => assertId(id, 'memberId'));
+    }
+
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -1414,38 +1545,54 @@ export async function updateTeamMembers(teamId: string, memberIds: string[]): Pr
     const team = await TeamModel.findById(teamId).lean<Team>();
     if (!team) throw new Error("Team not found.");
 
+    const canonicalTeamId = String((team as any)._id || teamId);
     const user = await UserModel.findById(session.userId).lean<User>();
     const isLeader = team.leaderIds.includes(session.userId);
     if (!user?.isAdmin && !isLeader) throw new Error("Authorization denied: Only admins or team leaders can manage members.");
 
-    await TeamModel.findByIdAndUpdate(teamId, { memberIds: Array.from(new Set([...memberIds, ...team.leaderIds])) }).exec();
+    await TeamModel.findByIdAndUpdate(canonicalTeamId, { memberIds: Array.from(new Set([...memberIds, ...team.leaderIds])) }).exec();
 }
 
 export async function assignTeamLeaders(teamId: string, leaderIds: string[]): Promise<void> {
+    assertId(teamId, 'teamId');
+    if (Array.isArray(leaderIds)) {
+        leaderIds.forEach(id => assertId(id, 'leaderId'));
+    }
+
     const session = await getSession();
     const user = await UserModel.findById(session?.userId).lean<User>();
     if (!user?.isAdmin) throw new Error("Authorization denied: Only admins can assign team leaders.");
 
     await connectToDatabase();
+    const team = await TeamModel.findById(teamId).lean<Team>();
+    if (!team) throw new Error("Team not found.");
+
+    const canonicalTeamId = String((team as any)._id || teamId);
     // Leaders are also members
-    await TeamModel.findByIdAndUpdate(teamId, {
+    await TeamModel.findByIdAndUpdate(canonicalTeamId, {
         leaderIds,
         $addToSet: { memberIds: { $each: leaderIds } }
     }).exec();
 }
 
 export async function deleteTeam(teamId: string): Promise<void> {
+    assertId(teamId, 'teamId');
     const session = await getSession();
     const user = await UserModel.findById(session?.userId).lean<User>();
     if (!user?.isAdmin) throw new Error("Authorization denied: Only admins can delete teams.");
 
     await connectToDatabase();
-    await TeamModel.findByIdAndDelete(teamId).exec();
+    const teamToDelete = await TeamModel.findById(teamId);
+    if (!teamToDelete) return;
+
+    const canonicalTeamId = String(teamToDelete._id);
+    await TeamModel.findByIdAndDelete(canonicalTeamId).exec();
     // Also cleanup teamShares in trees
-    await TreeModel.updateMany({}, { $pull: { teamShares: { teamId } } }).exec();
+    await TreeModel.updateMany({}, { $pull: { teamShares: { teamId: canonicalTeamId } } }).exec();
 }
 
 export async function renameTeam(teamId: string, newName: string): Promise<void> {
+    assertId(teamId, 'teamId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -1464,11 +1611,16 @@ export async function renameTeam(teamId: string, newName: string): Promise<void>
 }
 
 export async function shareTreeWithTeam(treeId: string, teamId: string, permissions?: Partial<TreePermissions>): Promise<void> {
-    const { session, perms } = await authorizeTreeAccess(treeId, 'admin');
+    assertId(treeId, 'treeId');
+    assertId(teamId, 'teamId');
+    const { session, perms, tree } = await authorizeTreeAccess(treeId, 'admin');
+    const canonicalTreeId = String(tree._id);
 
     // Check if the user belongs to the team they are sharing with
     const team = await TeamModel.findById(teamId).lean<Team>();
     if (!team) throw new Error("Team not found.");
+
+    const canonicalTeamId = String((team as any)._id || teamId);
     const isMember = team.memberIds.includes(session.userId) || team.leaderIds.includes(session.userId);
     if (!isMember && !perms.isOwner) throw new Error("Authorization denied: You can only share trees with teams you belong to.");
 
@@ -1478,16 +1630,19 @@ export async function shareTreeWithTeam(treeId: string, teamId: string, permissi
         admin: permissions?.admin ?? false,
     };
 
-    await TreeModel.findByIdAndUpdate(treeId, { $pull: { teamShares: { teamId } } }).exec();
-    await TreeModel.findByIdAndUpdate(treeId, {
-        $addToSet: { teamShares: { teamId, permissions: resolvedPermissions } }
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, { $pull: { teamShares: { teamId: canonicalTeamId } } }).exec();
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, {
+        $addToSet: { teamShares: { teamId: canonicalTeamId, permissions: resolvedPermissions } }
     }).exec();
 }
 
 export async function revokeShareFromTeam(treeId: string, teamId: string): Promise<void> {
-    await authorizeTreeAccess(treeId, 'admin');
+    assertId(treeId, 'treeId');
+    assertId(teamId, 'teamId');
+    const { tree } = await authorizeTreeAccess(treeId, 'admin');
+    const canonicalTreeId = String(tree._id);
 
-    await TreeModel.findByIdAndUpdate(treeId, {
+    await TreeModel.findByIdAndUpdate(canonicalTreeId, {
         $pull: { teamShares: { teamId } }
     }).exec();
 }

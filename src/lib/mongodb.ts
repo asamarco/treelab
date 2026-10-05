@@ -14,6 +14,8 @@ if (!MONGODB_URI) {
   );
 }
 
+mongoose.set('sanitizeFilter', true);
+
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections from growing exponentially

@@ -6,6 +6,7 @@
  */
 'use server';
 
+import mongoose from 'mongoose';
 import { connectToDatabase } from './mongodb';
 import { UserModel, GlobalSettingsModel, TreeModel, TreeNodeModel } from './models';
 import { User, GlobalSettings } from './types';
@@ -13,7 +14,7 @@ import { encrypt, decrypt } from './encryption';
 import { createSessionInServerAction, getSession } from './session';
 import crypto from 'crypto';
 import { unstable_noStore as noStore } from 'next/cache';
-import { toPlainObject, escapeRegExp } from './utils';
+import { toPlainObject, escapeRegExp, assertId } from './utils';
 
 // --- Password Hashing (Server-Side only) ---
 const hashPassword = (password: string, salt: string): Promise<string> => {
@@ -69,9 +70,9 @@ export async function searchUsers(query: string): Promise<Pick<User, 'id' | 'use
 
     await connectToDatabase();
     const sanitizedQuery = escapeRegExp(query);
-    const users = await UserModel.find({
+    const users = await UserModel.find(mongoose.trusted({
         username: { $regex: sanitizedQuery, $options: 'i' }
-    })
+    }))
         .limit(10)
         .select('username _id')
         .lean()
@@ -164,6 +165,7 @@ export async function addUser(userData: Omit<User, 'id' | 'passwordHash' | 'salt
 }
 
 export async function updateUserAdminStatus(userId: string, isAdmin: boolean): Promise<void> {
+    assertId(userId, 'userId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -172,10 +174,13 @@ export async function updateUserAdminStatus(userId: string, isAdmin: boolean): P
     if (session.userId === userId) throw new Error("Admins cannot change their own status.");
 
     await connectToDatabase();
-    await UserModel.findByIdAndUpdate(userId, { isAdmin }).exec();
+    const targetUser = await UserModel.findById(userId);
+    if (!targetUser) throw new Error("User not found.");
+    await UserModel.findByIdAndUpdate(String(targetUser._id), { isAdmin: !!isAdmin }).exec();
 }
 
 export async function deleteUser(userId: string): Promise<void> {
+    assertId(userId, 'userId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -187,10 +192,11 @@ export async function deleteUser(userId: string): Promise<void> {
     const userToDelete = await UserModel.findById(userId);
     if (!userToDelete) return;
 
-    await TreeModel.deleteMany({ userId: userId });
-    await TreeNodeModel.deleteMany({ userId: userId });
-    await UserModel.findByIdAndDelete(userId);
-    console.log(`INFO: Deleted user ${userId} and all associated data.`);
+    const canonicalUserId = String(userToDelete._id);
+    await TreeModel.deleteMany({ userId: canonicalUserId });
+    await TreeNodeModel.deleteMany({ userId: canonicalUserId });
+    await UserModel.findByIdAndDelete(canonicalUserId);
+    console.log(`INFO: Deleted user ${canonicalUserId} and all associated data.`);
 }
 
 export async function changeUserPassword(currentPassword: string, newPassword: string): Promise<boolean> {
@@ -229,6 +235,7 @@ export async function revokeAllSessions(): Promise<void> {
 }
 
 export async function resetUserPasswordByAdmin(userId: string, newPassword: string): Promise<void> {
+    assertId(userId, 'userId');
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -237,9 +244,13 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
 
     await connectToDatabase();
 
+    const targetUser = await UserModel.findById(userId);
+    if (!targetUser) throw new Error("User not found.");
+
+    const canonicalUserId = String(targetUser._id);
     const newSalt = crypto.randomBytes(16).toString('hex');
     const newPasswordHash = await hashPassword(newPassword, newSalt);
-    await UserModel.findByIdAndUpdate(userId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
+    await UserModel.findByIdAndUpdate(canonicalUserId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
 }
 
 export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes' | 'showChildrenInEditForm' | 'twoPanelExpansionDepth' | 'treeSettings' | 'customGroups'>>): Promise<void> {
@@ -248,7 +259,24 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
 
     await connectToDatabase();
 
-    const settingsToSave = { ...settings };
+    const allowedKeys: Array<keyof User> = [
+        'theme', 'lastActiveTreeId', 'gitSettings', 'dateFormat',
+        'inactivityTimeoutMinutes', 'showChildrenInEditForm',
+        'twoPanelExpansionDepth', 'treeSettings', 'customGroups'
+    ];
+
+    const settingsToSave: Record<string, any> = {};
+    if (settings && typeof settings === 'object') {
+        for (const key of allowedKeys) {
+            if (key in settings) {
+                settingsToSave[key] = (settings as any)[key];
+            }
+        }
+    }
+
+    if (settingsToSave.lastActiveTreeId) {
+        assertId(settingsToSave.lastActiveTreeId, 'lastActiveTreeId');
+    }
 
     // Check if gitSettings are being updated and if the PAT is present
     if (settingsToSave.gitSettings?.githubPat) {
@@ -281,8 +309,19 @@ export async function saveGlobalSettings(settings: Partial<GlobalSettings>): Pro
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
 
     await connectToDatabase();
+
+    const allowedKeys: Array<keyof GlobalSettings> = ['allowPublicRegistration', 'customLogoPath', 'maxUploadSizeMB'];
+    const cleanSettings: Record<string, any> = {};
+    if (settings && typeof settings === 'object') {
+        for (const key of allowedKeys) {
+            if (key in settings) {
+                cleanSettings[key] = settings[key];
+            }
+        }
+    }
+
     // Ensure that customLogoPath is not set to an empty string, but rather removed if empty
-    const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...settings, updatedAt: new Date().toISOString() };
+    const updateData: Partial<GlobalSettings> & { updatedAt?: string } = { ...cleanSettings, updatedAt: new Date().toISOString() };
     if ('customLogoPath' in updateData && !updateData.customLogoPath) {
         delete updateData.customLogoPath;
         await GlobalSettingsModel.updateOne({}, { $set: updateData, $unset: { customLogoPath: 1 } }, { upsert: true }).exec();

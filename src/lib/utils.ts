@@ -24,6 +24,13 @@ export function generateClientSideId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
+export function assertId(value: unknown, label = 'id'): string {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 128) {
+    throw new Error(`Invalid ${label}.`);
+  }
+  return value;
+}
+
 export function deepCloneNode(node: TreeNode): TreeNode {
   const newId = generateClientSideId();
   const clonedNode: TreeNode = {
