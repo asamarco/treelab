@@ -9,7 +9,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { TreeNode, Template, AttachmentInfo, QueryDefinition, ChecklistItem, QueryRule, ConditionalRuleOperator } from "@/lib/types";
+import { TreeNode, Template, AttachmentInfo, QueryDefinition, ChecklistItem, QueryRule, ConditionalRuleOperator, QueryFieldValue, normalizeQueryFieldValue } from "@/lib/types";
 import { CollapsibleContent } from "@/components/ui/collapsible";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { RenderWithLinks } from "./render-with-links";
@@ -44,6 +44,15 @@ const operatorLabels: Record<string, string> = {
     less_than: 'Less Than',
 };
 
+/** Field types eligible as query result table columns. */
+const QUERY_COLUMN_FIELD_TYPES: import("@/lib/types").Field['type'][] = [
+    'text', 'number', 'date', 'dropdown', 'textarea', 'link', 'dynamic-dropdown', 'checkbox',
+    'table-header',
+];
+
+const QUERY_PAGE_SIZE = 25;
+
+
 interface TreeNodeContentProps {
     node: TreeNode;
     template: Template;
@@ -77,6 +86,19 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
     const isCompactView = isCompactOverride ?? globalIsCompactView;
 
     const nodeData = node.data || {};
+
+    // Pagination: fieldId -> templateId -> page index (0-based)
+    const [queryPageStates, setQueryPageStates] = useState<Record<string, Record<string, number>>>({});
+
+    const getQueryPage = (fieldId: string, templateId: string) =>
+        queryPageStates[fieldId]?.[templateId] ?? 0;
+
+    const setQueryPage = (fieldId: string, templateId: string, page: number) => {
+        setQueryPageStates(prev => ({
+            ...prev,
+            [fieldId]: { ...(prev[fieldId] ?? {}), [templateId]: page },
+        }));
+    };
 
     // Groups of *contiguous* table-header fields that have at least one non-empty value.
     // Each group renders as its own table.
@@ -119,9 +141,11 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
     const queriesAndResults = useMemo(() => {
         if (isCompactOverride) return [];
         return queryFields.map(field => {
-            const queryDefinitions = nodeData[field.id];
-            if (!Array.isArray(queryDefinitions) || queryDefinitions.length === 0) {
-                return { field, results: null };
+            const rawValue = nodeData[field.id];
+            const { queries: queryDefinitions, displayColumns } = normalizeQueryFieldValue(rawValue);
+
+            if (queryDefinitions.length === 0) {
+                return { field, displayColumns, resultsByTemplate: new Map<string, TreeNode[]>(), queryDefinitions };
             }
 
             const combinedResults = new Map<string, TreeNode>();
@@ -133,11 +157,18 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                 }
             });
 
-            const sortedResults = Array.from(combinedResults.values()).sort((a, b) =>
-                (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: 'base' })
-            );
+            // Group results by templateId; sort each group by name.
+            const resultsByTemplate = new Map<string, TreeNode[]>();
+            combinedResults.forEach(resultNode => {
+                const tid = resultNode.templateId;
+                if (!resultsByTemplate.has(tid)) resultsByTemplate.set(tid, []);
+                resultsByTemplate.get(tid)!.push(resultNode);
+            });
+            resultsByTemplate.forEach((nodes) => {
+                nodes.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+            });
 
-            return { field, results: sortedResults };
+            return { field, displayColumns, resultsByTemplate, queryDefinitions };
         });
     }, [queryFields, nodeData, findNodesByQuery, isCompactOverride]);
 
@@ -243,9 +274,8 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                         }
                                         case 'query': {
                                             const queryResult = queriesAndResults.find(q => q.field.id === field.id);
-                                            if (!queryResult || !queryResult.results) return null;
-                                            const { results } = queryResult;
-                                            const queryDefinitions: QueryDefinition[] = Array.isArray(value) ? value : [];
+                                            if (!queryResult) return null;
+                                            const { resultsByTemplate, displayColumns, queryDefinitions } = queryResult;
 
                                             const finalQueryStr = queryDefinitions.map(queryDef => {
                                                 const targetTemplate = getTemplateById(queryDef.targetTemplateId || '');
@@ -281,6 +311,74 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                             }).join(' OR ');
 
                                             const displayQuery = finalQueryStr || 'No query defined';
+                                            const totalResults = Array.from(resultsByTemplate.values()).reduce((sum, nodes) => sum + nodes.length, 0);
+
+                                            /** Format a cell value for a given field of a result node. */
+                                            const formatCellValue = (resultNode: TreeNode, colField: (typeof template.fields)[number]): string => {
+                                                const cellRaw = resultNode.data?.[colField.id];
+                                                if (colField.type === 'checkbox') {
+                                                    return cellRaw ? '✓' : '';
+                                                }
+                                                if (colField.type === 'date') {
+                                                    return cellRaw ? formatDate(cellRaw, currentUser?.dateFormat) : '';
+                                                }
+                                                if (colField.type === 'table-header') {
+                                                    // table-header stores an array; format each entry with prefix/postfix and date formatting
+                                                    if (!Array.isArray(cellRaw)) return '';
+                                                    return cellRaw.map((entry: string) => {
+                                                        let v = entry || '';
+                                                        if (colField.columnType === 'date' && v) {
+                                                            v = formatDate(v, currentUser?.dateFormat);
+                                                        }
+                                                        if (v) v = `${colField.prefix || ''}${v}${colField.postfix || ''}`;
+                                                        return v;
+                                                    }).filter(Boolean).join(', ');
+                                                }
+                                                // text, number, textarea, link, dropdown, dynamic-dropdown: raw string
+                                                return cellRaw != null ? String(cellRaw) : '';
+                                            };
+
+                                            /** Reusable click-to-jump row item (matches existing list behavior). */
+                                            const renderListItem = (resultNode: TreeNode) => {
+                                                const resultTemplate = getTemplateById(resultNode.templateId);
+                                                const { icon: resultIcon, color: resultColor } = getConditionalStyle(resultNode, resultTemplate);
+                                                return (
+                                                    <div key={resultNode.id} className="flex items-center justify-between gap-2 p-1.5 -ml-1.5 rounded-md hover:bg-accent group/queryresult">
+                                                        <div className="flex items-center gap-2 overflow-hidden flex-grow">
+                                                            <div
+                                                                className="flex items-center gap-2 cursor-pointer"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
+                                                                }}
+                                                            >
+                                                                <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
+                                                                <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
+                                                            </div>
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            className="h-6 w-6 shrink-0 opacity-0 group-hover/queryresult:opacity-100"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                selectAndCenterNode({ nodeId: resultNode.id });
+                                                                            }}
+                                                                        >
+                                                                            <Crosshair className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>Locate node in tree</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            };
 
                                             return (
                                                 <div key={field.id} className="mt-4 pt-2 border-t border-border/40 min-w-0">
@@ -290,53 +388,139 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                         </p>
                                                     </div>
 
-                                                    {/* Results List */}
-                                                    <div className="space-y-1 mt-1 pl-1">
-                                                        {results.length > 0 ? (
-                                                            results.map(resultNode => {
-                                                                const resultTemplate = getTemplateById(resultNode.templateId);
-                                                                const { icon: resultIcon, color: resultColor } = getConditionalStyle(resultNode, resultTemplate);
+                                                    {totalResults === 0 ? (
+                                                        <p className="text-sm text-muted-foreground italic px-2 py-1">Query returned no results.</p>
+                                                    ) : (
+                                                        <div className="space-y-4 mt-1">
+                                                            {Array.from(resultsByTemplate.entries()).map(([templateId, templateNodes]) => {
+                                                                const targetTemplate = getTemplateById(templateId);
+
+                                                                // Resolve display columns: filter to valid QUERY_COLUMN_FIELD_TYPES and existing fields
+                                                                const rawCols = displayColumns[templateId] ?? [];
+                                                                const colFields = rawCols
+                                                                    .map(colId => targetTemplate?.fields.find(f => f.id === colId))
+                                                                    .filter((f): f is NonNullable<typeof f> =>
+                                                                        f != null && QUERY_COLUMN_FIELD_TYPES.includes(f.type)
+                                                                    );
+
+                                                                const page = getQueryPage(field.id, templateId);
+                                                                const pageStart = page * QUERY_PAGE_SIZE;
+                                                                const pageEnd = pageStart + QUERY_PAGE_SIZE;
+                                                                const pageNodes = templateNodes.slice(pageStart, pageEnd);
+                                                                const totalPages = Math.ceil(templateNodes.length / QUERY_PAGE_SIZE);
+
+                                                                const templateLabel = targetTemplate?.name ?? templateId;
+
                                                                 return (
-                                                                    <div key={resultNode.id} className="flex items-center justify-between gap-2 p-1.5 -ml-1.5 rounded-md hover:bg-accent group/queryresult">
-                                                                        <div className="flex items-center gap-2 overflow-hidden flex-grow">
-                                                                            <div
-                                                                                className="flex items-center gap-2 cursor-pointer"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
-                                                                                }}
-                                                                            >
-                                                                                <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
-                                                                                <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
+                                                                    <div key={templateId} className="space-y-1">
+                                                                        {resultsByTemplate.size > 1 && (
+                                                                            <p className={cn("text-xs font-semibold text-muted-foreground uppercase tracking-wide", isCompactView && "text-[10px]")}>
+                                                                                {templateLabel} ({templateNodes.length})
+                                                                            </p>
+                                                                        )}
+
+                                                                        {colFields.length === 0 ? (
+                                                                            // Fallback: plain list (no columns selected yet)
+                                                                            <div className="space-y-1 pl-1">
+                                                                                {pageNodes.map(renderListItem)}
                                                                             </div>
-                                                                            <TooltipProvider>
-                                                                                <Tooltip>
-                                                                                    <TooltipTrigger asChild>
-                                                                                        <Button
-                                                                                            variant="ghost"
-                                                                                            size="icon"
-                                                                                            className="h-6 w-6 shrink-0 opacity-0 group-hover/queryresult:opacity-100"
-                                                                                            onClick={(e) => {
-                                                                                                e.stopPropagation();
-                                                                                                selectAndCenterNode({ nodeId: resultNode.id });
-                                                                                            }}
-                                                                                        >
-                                                                                            <Crosshair className="h-4 w-4" />
-                                                                                        </Button>
-                                                                                    </TooltipTrigger>
-                                                                                    <TooltipContent>
-                                                                                        <p>Locate node in tree</p>
-                                                                                    </TooltipContent>
-                                                                                </Tooltip>
-                                                                            </TooltipProvider>
-                                                                        </div>
+                                                                        ) : (
+                                                                            // Table view
+                                                                            <div className="overflow-x-auto rounded-md border min-w-0" onClick={(e) => e.stopPropagation()}>
+                                                                                <Table>
+                                                                                    <TableHeader>
+                                                                                        <TableRow className={cn(isCompactView && "h-8")}>
+                                                                                            <TableHead className={cn("w-[180px]", isCompactView && "h-8 px-2 text-xs")}>Name</TableHead>
+                                                                                            {colFields.map(f => (
+                                                                                                <TableHead key={f.id} className={cn(isCompactView && "h-8 px-2 text-xs")}>{f.name}</TableHead>
+                                                                                            ))}
+                                                                                        </TableRow>
+                                                                                    </TableHeader>
+                                                                                    <TableBody>
+                                                                                        {pageNodes.map(resultNode => {
+                                                                                            const rTpl = getTemplateById(resultNode.templateId);
+                                                                                            const { icon: rIcon, color: rColor } = getConditionalStyle(resultNode, rTpl);
+                                                                                            return (
+                                                                                                <TableRow
+                                                                                                    key={resultNode.id}
+                                                                                                    className={cn("cursor-pointer group/qrow", isCompactView && "h-8")}
+                                                                                                    onClick={(e) => {
+                                                                                                        e.stopPropagation();
+                                                                                                        setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
+                                                                                                    }}
+                                                                                                >
+                                                                                                    <TableCell className={cn("font-medium", isCompactView && "py-1 px-2 text-xs")}>
+                                                                                                        <div className="flex items-center gap-1.5">
+                                                                                                            <Icon name={rIcon as any} className="h-3.5 w-3.5 shrink-0" style={{ color: rColor }} />
+                                                                                                            <span className="truncate">{resultNode.name}</span>
+                                                                                                            <TooltipProvider>
+                                                                                                                <Tooltip>
+                                                                                                                    <TooltipTrigger asChild>
+                                                                                                                        <Button
+                                                                                                                            variant="ghost"
+                                                                                                                            size="icon"
+                                                                                                                            className="h-6 w-6 shrink-0 opacity-0 group-hover/qrow:opacity-100"
+                                                                                                                            onClick={(e) => {
+                                                                                                                                e.stopPropagation();
+                                                                                                                                selectAndCenterNode({ nodeId: resultNode.id });
+                                                                                                                            }}
+                                                                                                                        >
+                                                                                                                            <Crosshair className="h-3.5 w-3.5" />
+                                                                                                                        </Button>
+                                                                                                                    </TooltipTrigger>
+                                                                                                                    <TooltipContent><p>Locate node in tree</p></TooltipContent>
+                                                                                                                </Tooltip>
+                                                                                                            </TooltipProvider>
+                                                                                                        </div>
+                                                                                                    </TableCell>
+                                                                                                    {colFields.map(colField => (
+                                                                                                        <TableCell key={colField.id} className={cn(isCompactView && "py-1 px-2 text-xs")}>
+                                                                                                            {formatCellValue(resultNode, colField)}
+                                                                                                        </TableCell>
+                                                                                                    ))}
+                                                                                                </TableRow>
+                                                                                            );
+                                                                                        })}
+                                                                                    </TableBody>
+                                                                                </Table>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Pagination */}
+                                                                        {totalPages > 1 && (
+                                                                            <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                                                                                <span className={cn("text-xs text-muted-foreground", isCompactView && "text-[10px]")}>
+                                                                                    {pageStart + 1}–{Math.min(pageEnd, templateNodes.length)} of {templateNodes.length}
+                                                                                </span>
+                                                                                <div className="flex gap-1">
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-6 px-2 text-xs"
+                                                                                        disabled={page === 0}
+                                                                                        onClick={(e) => { e.stopPropagation(); setQueryPage(field.id, templateId, page - 1); }}
+                                                                                    >
+                                                                                        ‹
+                                                                                    </Button>
+                                                                                    <Button
+                                                                                        type="button"
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-6 px-2 text-xs"
+                                                                                        disabled={page >= totalPages - 1}
+                                                                                        onClick={(e) => { e.stopPropagation(); setQueryPage(field.id, templateId, page + 1); }}
+                                                                                    >
+                                                                                        ›
+                                                                                    </Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 );
-                                                            })
-                                                        ) : (
-                                                            <p className="text-sm text-muted-foreground italic px-2 py-1">Query returned no results.</p>
-                                                        )}
-                                                    </div>
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         }

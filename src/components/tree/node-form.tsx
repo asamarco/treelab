@@ -13,7 +13,7 @@
 "use client";
 
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { TreeNode, Template, Field, AttachmentInfo, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule } from "@/lib/types";
+import { TreeNode, Template, Field, AttachmentInfo, QueryDefinition, QueryRule, ConditionalRuleOperator, ChecklistItem, SimpleQueryRule, QueryFieldValue, normalizeQueryFieldValue } from "@/lib/types";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
@@ -589,26 +589,41 @@ export const NodeForm = ({
 };
 
 
+/** Field types eligible to be chosen as query result table columns. */
+const QUERY_COLUMN_FIELD_TYPES: Field['type'][] = [
+  'text', 'number', 'date', 'dropdown', 'textarea', 'link', 'dynamic-dropdown', 'checkbox',
+  'table-header',
+];
+
 const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
   const { getTemplateById, templates } = useTreeContext();
-  const queryDefs: QueryDefinition[] = Array.isArray(value) ? value : [];
 
-  const handleQueryChange = (newDefs: QueryDefinition[]) => {
-    onChange(newDefs);
+  // Normalize once on render so both old (bare array) and new shapes work.
+  const fieldValue: QueryFieldValue = normalizeQueryFieldValue(value);
+  const queryDefs = fieldValue.queries;
+  const displayColumns = fieldValue.displayColumns;
+
+  /** Push a full QueryFieldValue update to the parent. */
+  const emitChange = (newDefs: QueryDefinition[], newColumns: Record<string, string[]>) => {
+    onChange({ queries: newDefs, displayColumns: newColumns });
   };
 
-  const handleQueryGroupChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, value: any) => {
+  const handleQueryChange = (newDefs: QueryDefinition[]) => {
+    emitChange(newDefs, displayColumns);
+  };
+
+  const handleQueryGroupChange = (queryIndex: number, key: keyof Omit<QueryDefinition, 'id'>, val: any) => {
     const newQueryDefs = [...queryDefs];
-    newQueryDefs[queryIndex] = { ...newQueryDefs[queryIndex], [key]: value };
+    newQueryDefs[queryIndex] = { ...newQueryDefs[queryIndex], [key]: val };
     handleQueryChange(newQueryDefs);
   };
 
-  const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, value: any) => {
+  const handleRuleChange = (queryIndex: number, ruleIndex: number, key: keyof QueryRule, val: any) => {
     const newQueryDefs = [...queryDefs];
     const newRules = [...newQueryDefs[queryIndex].rules];
-    newRules[ruleIndex] = { ...newRules[ruleIndex], [key]: value };
+    newRules[ruleIndex] = { ...newRules[ruleIndex], [key]: val };
     if (key === 'type') {
-      if (value === 'field') {
+      if (val === 'field') {
         delete newRules[ruleIndex].relationTemplateId;
         delete newRules[ruleIndex].relationRules;
       } else {
@@ -638,11 +653,11 @@ const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, val
     handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
-  const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relationRuleIndex: number, key: keyof SimpleQueryRule, value: any) => {
+  const handleRelationRuleChange = (queryIndex: number, ruleIndex: number, relationRuleIndex: number, key: keyof SimpleQueryRule, val: any) => {
     const newQueryDefs = [...queryDefs];
     const newRules = [...newQueryDefs[queryIndex].rules];
     const newRelationRules = [...(newRules[ruleIndex].relationRules || [])];
-    newRelationRules[relationRuleIndex] = { ...newRelationRules[relationRuleIndex], [key]: value };
+    newRelationRules[relationRuleIndex] = { ...newRelationRules[relationRuleIndex], [key]: val };
     newRules[ruleIndex] = { ...newRules[ruleIndex], relationRules: newRelationRules };
     handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
@@ -663,12 +678,29 @@ const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, val
     handleQueryGroupChange(queryIndex, 'rules', newRules);
   };
 
+  /**
+   * Toggle a column field id in displayColumns[templateId].
+   * Multiple query groups that share the same targetTemplateId share one entry.
+   */
+  const handleColumnToggle = (templateId: string, fieldId: string) => {
+    const current = displayColumns[templateId] || [];
+    const next = current.includes(fieldId)
+      ? current.filter(id => id !== fieldId)
+      : [...current, fieldId];
+    emitChange(queryDefs, { ...displayColumns, [templateId]: next });
+  };
+
   return (
     <div key={field.id} className="space-y-2">
       <Label className="text-sm font-medium">{field.name}</Label>
       <div className="space-y-4">
         {queryDefs.map((queryDef, queryIndex) => {
           const targetTemplate = templates.find(t => t.id === queryDef.targetTemplateId);
+          const nativeFields = targetTemplate
+            ? targetTemplate.fields.filter(f => QUERY_COLUMN_FIELD_TYPES.includes(f.type))
+            : [];
+          const selectedCols = queryDef.targetTemplateId ? (displayColumns[queryDef.targetTemplateId] || []) : [];
+
           return (
             <Card key={queryDef.id || queryIndex} className="bg-muted/50 p-4 space-y-4">
               <div className="flex justify-between items-center">
@@ -770,6 +802,44 @@ const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, val
                   <PlusCircle className="mr-2 h-4 w-4" /> Add AND Condition
                 </Button>
               </div>
+
+              {/* Column picker — only shown when a specific template is selected */}
+              {queryDef.targetTemplateId && targetTemplate && (
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  <Label className="text-xs font-medium text-muted-foreground">Display columns for {targetTemplate.name} results:</Label>
+                  {nativeFields.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      This template has no supported column types.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {nativeFields.map(f => {
+                        const isSelected = selectedCols.includes(f.id);
+                        return (
+                          <button
+                            key={f.id}
+                            type="button"
+                            onClick={() => handleColumnToggle(queryDef.targetTemplateId!, f.id)}
+                            className={cn(
+                              'text-xs px-2 py-1 rounded border transition-colors',
+                              isSelected
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-background text-foreground border-border hover:bg-accent'
+                            )}
+                          >
+                            {f.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {selectedCols.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Column order: {selectedCols.map(id => nativeFields.find(f => f.id === id)?.name ?? id).join(' → ')}
+                    </p>
+                  )}
+                </div>
+              )}
             </Card>
           )
         })}
@@ -781,5 +851,6 @@ const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, val
   );
 });
 QueryBuilder.displayName = "QueryBuilder";
+
 
 

@@ -87,6 +87,33 @@ export interface QueryDefinition {
     rules: QueryRule[];
 }
 
+/**
+ * The stored value for a 'query' field type.
+ * displayColumns is keyed by templateId -> ordered list of field ids to show as columns.
+ */
+export interface QueryFieldValue {
+    queries: QueryDefinition[];
+    displayColumns: Record<string, string[]>; // templateId -> ordered list of field ids
+}
+
+/**
+ * Read-time migration: normalizes the old bare-array shape (QueryDefinition[]) to the
+ * new QueryFieldValue object shape. Safe to call on already-migrated values.
+ */
+export function normalizeQueryFieldValue(value: unknown): QueryFieldValue {
+    if (Array.isArray(value)) {
+        return { queries: value as QueryDefinition[], displayColumns: {} };
+    }
+    if (value && typeof value === 'object' && !Array.isArray(value) && 'queries' in value) {
+        const v = value as QueryFieldValue;
+        return {
+            queries: Array.isArray(v.queries) ? v.queries : [],
+            displayColumns: (v.displayColumns && typeof v.displayColumns === 'object') ? v.displayColumns : {},
+        };
+    }
+    return { queries: [], displayColumns: {} };
+}
+
 
 export interface Template {
     id: string;
