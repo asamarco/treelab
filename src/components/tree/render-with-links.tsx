@@ -1,6 +1,11 @@
 
 
 /**
+ * NOTE: Literal HTML tags in node names and body-templates are no longer interpreted
+ * as markup as of this change — use Markdown syntax instead (**bold**, _italic_, `code`, etc.).
+ */
+
+/**
  * @fileoverview
  * This component, `RenderWithLinks`, is a utility for rendering text content
  * that may contain URLs. It parses the input text, identifies URLs that correspond
@@ -28,7 +33,8 @@ import { Link as LinkIcon } from 'lucide-react';
 import { TreeContext } from '@/contexts/tree-context';
 import { UIContext } from '@/contexts/ui-context';
 import { Button } from '../ui/button';
-import parseHtml, { domToReact, attributesToProps, DOMNode } from 'html-react-parser';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { AuthContext } from '@/contexts/auth-context';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -191,27 +197,11 @@ function renderParts(
     if (part.match(/https?:\/\//)) {
       return <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="underline">{part}</a>;
     }
-    return parseHtml(part, {
-      replace: (domNode) => {
-        if ('attribs' in domNode) {
-          const props = attributesToProps(domNode.attribs);
-          // Remove any on* event handlers
-          for (const prop in props) {
-            if (prop.toLowerCase().startsWith('on')) {
-              delete (props as any)[prop];
-            }
-          }
-          // Sanitize href attributes
-          if (domNode.name === 'a' && props.href) {
-            const href = props.href as string;
-            if (!href.startsWith('http') && !href.startsWith('https') && !href.startsWith('mailto:') && !href.startsWith('node://')) {
-              delete props.href;
-            }
-          }
-          return React.createElement(domNode.name, props, domToReact((domNode as any).children));
-        }
-      }
-    });
+    return (
+      <ReactMarkdown key={index} remarkPlugins={[remarkGfm]} components={{ p: ({ children }) => <>{children}</> }}>
+        {part}
+      </ReactMarkdown>
+    );
   });
 }
 

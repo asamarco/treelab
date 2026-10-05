@@ -60,7 +60,17 @@ const getCursorPosition = (textarea: HTMLTextAreaElement) => {
 
 
   // Use a non-breaking space to ensure the div has height even for empty lines
-  mirror.innerHTML = textUpToCursor.replace(/\n/g, "<br/>") + "<span>&nbsp;</span>";
+  mirror.textContent = "";
+  const lines = textUpToCursor.split("\n");
+  lines.forEach((line, index) => {
+    if (index > 0) {
+      mirror.appendChild(document.createElement("br"));
+    }
+    mirror.appendChild(document.createTextNode(line));
+  });
+  const span = document.createElement("span");
+  span.appendChild(document.createTextNode("\u00A0"));
+  mirror.appendChild(span);
   document.body.appendChild(mirror);
   
   const cursorSpan = mirror.querySelector("span");
