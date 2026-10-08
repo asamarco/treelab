@@ -137,6 +137,9 @@ body {
   .printable-area .group\/treenode {
     border: none !important;
     box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    /* legacy property — some print engines still only honor this one */
   }
 }
 
