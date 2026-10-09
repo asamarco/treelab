@@ -1,3 +1,7 @@
+v0.8.3
+
+
+
 v0.8.2
 
 Refactor: Introduce a scalable Field Type registry and convert Spreadsheet, XY-chart, Embed, Checklist, Picture, and Attachment to plugins

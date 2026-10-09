@@ -94,24 +94,26 @@ export interface QueryDefinition {
 export interface QueryFieldValue {
     queries: QueryDefinition[];
     displayColumns: Record<string, string[]>; // templateId -> ordered list of field ids
+    sortConfig?: Record<string, { columnId: string; direction: 'asc' | 'desc' } | null>; // templateId -> active sort configuration
 }
 
 /**
  * Read-time migration: normalizes the old bare-array shape (QueryDefinition[]) to the
  * new QueryFieldValue object shape. Safe to call on already-migrated values.
  */
-export function normalizeQueryFieldValue(value: unknown): QueryFieldValue {
+export function normalizeQueryFieldValue(value: unknown): Required<QueryFieldValue> {
     if (Array.isArray(value)) {
-        return { queries: value as QueryDefinition[], displayColumns: {} };
+        return { queries: value as QueryDefinition[], displayColumns: {}, sortConfig: {} };
     }
     if (value && typeof value === 'object' && !Array.isArray(value) && 'queries' in value) {
         const v = value as QueryFieldValue;
         return {
             queries: Array.isArray(v.queries) ? v.queries : [],
             displayColumns: (v.displayColumns && typeof v.displayColumns === 'object') ? v.displayColumns : {},
+            sortConfig: (v.sortConfig && typeof v.sortConfig === 'object') ? v.sortConfig : {},
         };
     }
-    return { queries: [], displayColumns: {} };
+    return { queries: [], displayColumns: {}, sortConfig: {} };
 }
 
 

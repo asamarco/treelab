@@ -589,11 +589,10 @@ export const NodeForm = ({
 };
 
 
+import { QUERY_COLUMN_FIELD_TYPES as QUERY_COL_TYPES, VIRTUAL_QUERY_COLUMNS } from "./query-field/constants";
+
 /** Field types eligible to be chosen as query result table columns. */
-const QUERY_COLUMN_FIELD_TYPES: Field['type'][] = [
-  'text', 'number', 'date', 'dropdown', 'textarea', 'link', 'dynamic-dropdown', 'checkbox',
-  'table-header',
-];
+const QUERY_COLUMN_FIELD_TYPES = QUERY_COL_TYPES;
 
 const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, value: any, onChange: (value: any) => void }) => {
   const { getTemplateById, templates } = useTreeContext();
@@ -807,35 +806,47 @@ const QueryBuilder = React.memo(({ field, value, onChange }: { field: Field, val
               {queryDef.targetTemplateId && targetTemplate && (
                 <div className="space-y-2 pt-2 border-t border-border/40">
                   <Label className="text-xs font-medium text-muted-foreground">Display columns for {targetTemplate.name} results:</Label>
-                  {nativeFields.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">
-                      This template has no supported column types.
-                    </p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {nativeFields.map(f => {
-                        const isSelected = selectedCols.includes(f.id);
-                        return (
-                          <button
-                            key={f.id}
-                            type="button"
-                            onClick={() => handleColumnToggle(queryDef.targetTemplateId!, f.id)}
-                            className={cn(
-                              'text-xs px-2 py-1 rounded border transition-colors',
-                              isSelected
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-background text-foreground border-border hover:bg-accent'
-                            )}
-                          >
-                            {f.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {VIRTUAL_QUERY_COLUMNS.map(vCol => {
+                      const isSelected = selectedCols.includes(vCol.id);
+                      return (
+                        <button
+                          key={vCol.id}
+                          type="button"
+                          onClick={() => handleColumnToggle(queryDef.targetTemplateId!, vCol.id)}
+                          className={cn(
+                            'text-xs px-2 py-1 rounded border transition-colors',
+                            isSelected
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background text-foreground border-border hover:bg-accent'
+                          )}
+                        >
+                          {vCol.name}
+                        </button>
+                      );
+                    })}
+                    {nativeFields.map(f => {
+                      const isSelected = selectedCols.includes(f.id);
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => handleColumnToggle(queryDef.targetTemplateId!, f.id)}
+                          className={cn(
+                            'text-xs px-2 py-1 rounded border transition-colors',
+                            isSelected
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-background text-foreground border-border hover:bg-accent'
+                          )}
+                        >
+                          {f.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                   {selectedCols.length > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Column order: {selectedCols.map(id => nativeFields.find(f => f.id === id)?.name ?? id).join(' → ')}
+                      Column order: {selectedCols.map(id => VIRTUAL_QUERY_COLUMNS.find(v => v.id === id)?.name ?? nativeFields.find(f => f.id === id)?.name ?? id).join(' → ')}
                     </p>
                   )}
                 </div>
