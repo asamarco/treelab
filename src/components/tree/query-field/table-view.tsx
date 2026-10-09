@@ -120,6 +120,7 @@ export function QueryResultTable({
                     <div
                         className="flex items-center gap-2 cursor-pointer"
                         onClick={(e) => handleRowClick(e, resultNode)}
+                        onDoubleClick={(e) => e.stopPropagation()}
                     >
                         <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
                         <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
@@ -150,7 +151,7 @@ export function QueryResultTable({
     };
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-1" onDoubleClick={(e) => e.stopPropagation()}>
             {/* Template label — only for single-template groups when there are multiple groups */}
             {singleTemplateLabel != null && (
                 <p className={cn("text-xs font-semibold text-muted-foreground uppercase tracking-wide", isCompactView && "text-[10px]")}>
@@ -172,7 +173,7 @@ export function QueryResultTable({
                 </div>
             ) : (
                 // Table view
-                <div className="overflow-x-auto rounded-md border min-w-0" onClick={(e) => e.stopPropagation()}>
+                <div className="overflow-x-auto rounded-md border min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                     <Table>
                         <TableHeader>
                             <TableRow className={cn(isCompactView && "h-8")}>
@@ -211,6 +212,7 @@ export function QueryResultTable({
                                         key={resultNode.id}
                                         className={cn("cursor-pointer group/qrow", isCompactView && "h-8")}
                                         onClick={(e) => handleRowClick(e, resultNode)}
+                                        onDoubleClick={(e) => e.stopPropagation()}
                                     >
                                         <TableCell className={cn("font-medium", isCompactView && "py-1 px-2 text-xs")}>
                                             <div className="flex items-center gap-1.5">

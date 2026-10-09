@@ -177,7 +177,7 @@ export function QueryFieldView({ field, node, isCompactView }: QueryFieldViewPro
     const groups = buildMergedTableGroups(resultsByTemplate, displayColumns, getTemplateById);
 
     return (
-        <div className="mt-4 pt-2 border-t border-border/40 min-w-0">
+        <div className="mt-4 pt-2 border-t border-border/40 min-w-0" onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col gap-1 mb-2">
                 <p className={cn("text-xs text-muted-foreground/80 bg-muted/40 p-2 rounded border border-border/50 break-words", isCompactView ? "text-[11px]" : "text-xs")}>
                     {displayQuery}
