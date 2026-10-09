@@ -1,5 +1,10 @@
 v0.8.3
 
+BREAKING: drop support for raw html rendering in favor of markdown (safer and with easier markup) in text fields and body template.
+Improvement: XY charts now suppport multiple data series and double axes.
+Improvement: it is now possible to choose fields for a customizable data table. Query tables merge related templates by field name and can be sorted bby field value.
+Improvement: updated HMTL export rendering.
+Fix: purely numeric node names prevented the export of zip archives.
 
 
 v0.8.2
