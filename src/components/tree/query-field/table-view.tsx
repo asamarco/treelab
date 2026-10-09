@@ -36,8 +36,47 @@ export function QueryResultTable({
     sortConfig,
     onSortChange,
 }: QueryResultTableProps) {
-    const { getTemplateById, selectAndCenterNode } = useTreeContext();
-    const { setDialogState } = useUIContext();
+    const { getTemplateById, selectAndCenterNode, findNodeAndParent } = useTreeContext();
+    const { setDialogState, dialogState } = useUIContext();
+
+    const clickTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const lastClickedIdRef = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        return () => {
+            if (clickTimerRef.current) {
+                clearTimeout(clickTimerRef.current);
+            }
+        };
+    }, []);
+
+    const handleRowClick = (e: React.MouseEvent, resultNode: TreeNode) => {
+        e.stopPropagation();
+
+        if (clickTimerRef.current && lastClickedIdRef.current === resultNode.id) {
+            clearTimeout(clickTimerRef.current);
+            clickTimerRef.current = null;
+            lastClickedIdRef.current = null;
+
+            const parentInfo = findNodeAndParent ? findNodeAndParent(resultNode.id) : null;
+            const instanceId = `${resultNode.id}_${parentInfo?.parent?.id || 'root'}`;
+            const currentIds = dialogState.openNodeEditInstanceIds || [];
+            if (!currentIds.includes(instanceId)) {
+                setDialogState({ openNodeEditInstanceIds: [...currentIds, instanceId] });
+            }
+        } else {
+            if (clickTimerRef.current) {
+                clearTimeout(clickTimerRef.current);
+                clickTimerRef.current = null;
+            }
+            lastClickedIdRef.current = resultNode.id;
+            clickTimerRef.current = setTimeout(() => {
+                setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
+                clickTimerRef.current = null;
+                lastClickedIdRef.current = null;
+            }, 250);
+        }
+    };
 
     const isMultiTemplate = group.templateIds.length > 1;
 
@@ -80,10 +119,7 @@ export function QueryResultTable({
                 <div className="flex items-center gap-2 overflow-hidden flex-grow">
                     <div
                         className="flex items-center gap-2 cursor-pointer"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
-                        }}
+                        onClick={(e) => handleRowClick(e, resultNode)}
                     >
                         <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
                         <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
@@ -174,10 +210,7 @@ export function QueryResultTable({
                                     <TableRow
                                         key={resultNode.id}
                                         className={cn("cursor-pointer group/qrow", isCompactView && "h-8")}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [resultNode.id] });
-                                        }}
+                                        onClick={(e) => handleRowClick(e, resultNode)}
                                     >
                                         <TableCell className={cn("font-medium", isCompactView && "py-1 px-2 text-xs")}>
                                             <div className="flex items-center gap-1.5">
