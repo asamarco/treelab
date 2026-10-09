@@ -120,7 +120,7 @@
         0
       ],
       "createdAt": "2026-09-26T08:37:55.728Z",
-      "updatedAt": "2026-09-26T08:37:55.728Z"
+      "updatedAt": "2026-10-07T14:34:01.808Z"
     },
     {
       "id": "mui504ak-w1ec27ynh",
@@ -143,7 +143,7 @@
         4
       ],
       "createdAt": "2026-09-26T08:37:55.728Z",
-      "updatedAt": "2026-09-26T08:37:55.728Z"
+      "updatedAt": "2026-09-26T19:04:09.566Z"
     },
     {
       "id": "mui504ak-0z1fytxaw",
@@ -297,7 +297,7 @@
       "data": {
         "2025-08-24T06:58:51.175Z0.27552086254079367": "Special",
         "2025-08-19T08:57:55.257Z0m2c3ze": "Conditional formatting",
-        "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be changed dinamically based on the value of certain fields by defining conditional formatting rules in the template editor."
+        "2025-08-19T08:57:55.257Z1ddpobd": "Node appearance can be changed dinamically based on the value of certain fields by defining conditional formatting rules in the template editor.h"
       },
       "isStarred": false,
       "userId": "6a85c5d18bfa09e9a430bb24",
@@ -309,7 +309,7 @@
         1
       ],
       "createdAt": "2026-09-26T08:37:55.728Z",
-      "updatedAt": "2026-09-26T08:37:55.728Z"
+      "updatedAt": "2026-10-07T14:33:24.917Z"
     },
     {
       "id": "mui504ak-0za0196pi",
@@ -337,43 +337,75 @@
       "data": {
         "muh02spk-gj9j7g1e4": "Spreadsheet and chart",
         "muh04rio-n4i8mz7zj": {
-          "points": [
+          "columns": [
+            {
+              "id": "x",
+              "name": "X",
+              "role": "x",
+              "showAverage": false,
+              "showStdDev": false,
+              "showRelativeError": false,
+              "showLinearRegression": false
+            },
+            {
+              "id": "y",
+              "name": "Width",
+              "role": "y1",
+              "showAverage": false,
+              "showStdDev": true,
+              "showRelativeError": false,
+              "showLinearRegression": false
+            },
+            {
+              "id": "col_1791536352210_cd2r",
+              "name": "Length",
+              "role": "y1",
+              "color": "#1496C9",
+              "showAverage": false,
+              "showStdDev": true,
+              "showRelativeError": false,
+              "showLinearRegression": false
+            }
+          ],
+          "rows": [
             {
               "x": "0",
-              "y": "299"
+              "y": "299",
+              "col_1791536352210_cd2r": "164"
+            },
+            {
+              "x": "1",
+              "y": "293",
+              "col_1791536352210_cd2r": "162"
             },
             {
               "x": "2",
-              "y": "293"
+              "y": "298",
+              "col_1791536352210_cd2r": "159"
+            },
+            {
+              "x": "3",
+              "y": "297",
+              "col_1791536352210_cd2r": "160"
             },
             {
               "x": "4",
-              "y": "298"
+              "y": "287",
+              "col_1791536352210_cd2r": "162"
             },
             {
-              "x": "6",
-              "y": "297"
-            },
-            {
-              "x": "8",
-              "y": "287"
-            },
-            {
-              "x": "10",
-              "y": "287"
+              "x": "5",
+              "y": "287",
+              "col_1791536352210_cd2r": "161"
             }
           ],
-          "showAverage": true,
-          "showLinearRegression": false,
-          "showStdDev": true,
-          "xAxisLabel": "Position (cm)",
-          "yAxisLabel": "Thickness (nm)",
-          "showRelativeError": false
+          "xAxisLabel": "Sample",
+          "y1AxisLabel": "Dimension (mm)"
         },
         "muh0391t-9tietnsho": [
           [
             {
-              "value": "Point"
+              "value": "Sample"
             },
             {
               "value": "Length (mm)"
@@ -538,7 +570,7 @@
         0
       ],
       "createdAt": "2026-09-26T08:37:55.728Z",
-      "updatedAt": "2026-09-26T10:25:32.904Z"
+      "updatedAt": "2026-10-09T09:03:03.728Z"
     },
     {
       "id": "mui504al-ilg0zq9sj",
@@ -566,36 +598,57 @@
       "name": "Queries",
       "templateId": "ml473unk-wjfq2u7k4",
       "data": {
-        "2026-02-01T20:29:34.017Z0.45140218790145914": [
-          {
-            "id": "ml4745gx-ok5g7fwbz",
-            "targetTemplateId": "FeatureTemplate",
-            "rules": [
-              {
-                "id": "ml4747ht-1jk3e5g2d",
-                "type": "field",
-                "fieldId": "2025-08-19T08:57:55.257Z1ddpobd",
-                "operator": "contains",
-                "value": "edit"
-              }
+        "2026-02-01T20:29:34.017Z0.45140218790145914": {
+          "queries": [
+            {
+              "id": "ml4745gx-ok5g7fwbz",
+              "targetTemplateId": "FeatureTemplate",
+              "rules": [
+                {
+                  "id": "ml4747ht-1jk3e5g2d",
+                  "type": "field",
+                  "fieldId": "2025-08-19T08:57:55.257Z1ddpobd",
+                  "operator": "contains",
+                  "value": "edit"
+                }
+              ]
+            },
+            {
+              "id": "ml476e5t-gnqfl8blm",
+              "targetTemplateId": "SectionTemplate",
+              "rules": [
+                {
+                  "id": "ml476jk9-6l6v7qoyk",
+                  "type": "field",
+                  "fieldId": "2025-08-19T08:57:55.257Z0wu6pdt",
+                  "operator": "contains",
+                  "value": "edit"
+                }
+              ]
+            }
+          ],
+          "displayColumns": {
+            "SectionTemplate": [
+              "__updatedAt"
+            ],
+            "FeatureTemplate": [
+              "2025-08-24T06:58:51.175Z0.27552086254079367",
+              "__updatedAt"
             ]
           },
-          {
-            "id": "ml476e5t-gnqfl8blm",
-            "targetTemplateId": "SectionTemplate",
-            "rules": [
-              {
-                "id": "ml476jk9-6l6v7qoyk",
-                "type": "field",
-                "fieldId": "2025-08-19T08:57:55.257Z0wu6pdt",
-                "operator": "contains",
-                "value": "edit"
-              }
-            ]
+          "sortConfig": {
+            "FeatureTemplate": {
+              "columnId": "Last Edited",
+              "direction": "asc"
+            },
+            "SectionTemplate": {
+              "columnId": "Last Edited",
+              "direction": "asc"
+            }
           }
-        ],
+        },
         "2026-02-01T20:29:01.258Z0.9695978368244654": "Queries",
-        "muir8pce-6f4akgdkc": "Queries allow to collect all nodes matching a set of user defined conditions. Like the filter function but built in within a node."
+        "muir8pce-6f4akgdkc": "Queries allow to collect all nodes matching a set of user defined conditions like the filter function but built within a node. Additional columns with other field values can be shown in a customizable data table."
       },
       "isStarred": false,
       "userId": "6a85c5d18bfa09e9a430bb24",
@@ -607,7 +660,7 @@
         2
       ],
       "createdAt": "2026-09-26T08:37:55.728Z",
-      "updatedAt": "2026-09-26T10:25:32.904Z"
+      "updatedAt": "2026-10-09T09:04:09.790Z"
     },
     {
       "id": "mui504al-rsiiz0twx",
@@ -649,7 +702,7 @@
         5
       ],
       "createdAt": "2026-09-26T08:37:55.728Z",
-      "updatedAt": "2026-09-26T08:37:55.728Z"
+      "updatedAt": "2026-10-07T14:33:47.424Z"
     },
     {
       "id": "mui504al-9xn4516qz",
@@ -760,8 +813,6 @@
       "name": "Query",
       "icon": "Search",
       "color": "#a7e13d",
-      "nameTemplate": "{Name}",
-      "bodyTemplate": "",
       "fields": [
         {
           "id": "2026-02-01T20:29:01.258Z0.9695978368244654",
@@ -772,7 +823,8 @@
         {
           "id": "muir8pce-6f4akgdkc",
           "name": "Description",
-          "type": "markdown"
+          "type": "markdown",
+          "options": []
         },
         {
           "id": "2026-02-01T20:29:34.017Z0.45140218790145914",
@@ -781,6 +833,8 @@
           "options": []
         }
       ],
+      "nameTemplate": "{Name}",
+      "bodyTemplate": "",
       "conditionalRules": [],
       "preferredChildTemplates": []
     },
