@@ -14,7 +14,7 @@ import { lookup } from 'mime-types';
 import { Octokit } from 'octokit';
 import { connectToDatabase } from './mongodb';
 import { UserModel, TreeModel, TreeNodeModel, TeamModel } from './models';
-import { encrypt, decrypt } from './encryption';
+import { encrypt, decrypt, decryptText } from './encryption';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
 import { generateJsonForExport, generateNodeName, getContextualOrder, toPlainObject, assertId } from './utils';
@@ -142,7 +142,7 @@ export async function findNodeById(nodeId: string): Promise<TreeNode | null> {
     }
 
     // Decrypt sensitive fields after loading
-    node.name = await decrypt(node.name);
+    node.name = await decryptText(node.name);
     node.data = await decrypt(node.data);
 
     return toPlainObject(node);
@@ -446,7 +446,7 @@ export async function loadAllTreeFiles(): Promise<TreeFile[]> {
     const nodesByTreeId = new Map<string, TreeNode[]>();
     for (const node of allNodesForUser) {
         // Decrypt sensitive fields
-        node.name = await decrypt(node.name);
+        node.name = await decryptText(node.name);
         node.data = await decrypt(node.data);
 
         const treeId = node.treeId.toString();
@@ -613,7 +613,7 @@ export async function loadTreeNodes(treeId: string): Promise<TreeNode[]> {
     const nodes = await TreeNodeModel.find({ treeId: canonicalTreeId }).lean<TreeNode[]>().exec();
 
     await Promise.all(nodes.map(async (node) => {
-        node.name = await decrypt(node.name);
+        node.name = await decryptText(node.name);
         node.data = await decrypt(node.data);
     }));
 
@@ -653,7 +653,7 @@ export async function createNode(nodeData: Omit<TreeNode, 'id' | 'children'> & {
     const plainNode = toPlainObject(newNode);
 
     // Decrypt for returning to the client
-    plainNode.name = await decrypt(plainNode.name);
+    plainNode.name = await decryptText(plainNode.name);
     plainNode.data = await decrypt(plainNode.data);
 
     return { ...plainNode, id: canonicalNodeId, children: [] };
@@ -926,7 +926,7 @@ export async function batchCreateNodes(nodes: Partial<Omit<TreeNode, 'id' | 'chi
 
     const decryptedDocs = await Promise.all(createdDocs.map(async (doc) => {
         const plainDoc = toPlainObject(doc);
-        plainDoc.name = await decrypt(plainDoc.name);
+        plainDoc.name = await decryptText(plainDoc.name);
         plainDoc.data = await decrypt(plainDoc.data);
         return plainDoc;
     }));

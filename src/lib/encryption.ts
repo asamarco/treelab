@@ -50,7 +50,32 @@ export async function encrypt(data: string | object | number): Promise<string> {
 }
 
 /**
+ * Runs the AES-256-GCM decryption and returns the raw UTF-8 text without any
+ * JSON.parse step. On failure (wrong key, not encrypted, corrupted) the
+ * original input string is returned unchanged — preserving the existing
+ * legacy-unencrypted-data behaviour.
+ */
+function rawDecrypt(encryptedData: string): string {
+    try {
+        const buffer = Buffer.from(encryptedData, 'base64');
+        const iv = buffer.slice(0, IV_LENGTH);
+        const authTag = buffer.slice(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+        const encrypted = buffer.slice(IV_LENGTH + AUTH_TAG_LENGTH);
+
+        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+        decipher.setAuthTag(authTag);
+
+        return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+    } catch {
+        // Decryption failed — return the original string (legacy / unencrypted data).
+        return encryptedData;
+    }
+}
+
+/**
  * Decrypts a Base64 string back into its original form (string or object).
+ * Non-string inputs are returned as-is. After decryption JSON.parse is
+ * attempted so objects/arrays/numbers stored via encrypt() are restored.
  * @param encryptedData The Base64 encrypted string.
  * @returns The decrypted data. Returns the original string if decryption fails.
  */
@@ -59,28 +84,33 @@ export async function decrypt(encryptedData: string | object): Promise<any> {
     if (typeof encryptedData !== 'string') {
         return encryptedData;
     }
-    
+
+    const decrypted = rawDecrypt(encryptedData);
+
     try {
-        const buffer = Buffer.from(encryptedData, 'base64');
-        const iv = buffer.slice(0, IV_LENGTH);
-        const authTag = buffer.slice(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
-        const encrypted = buffer.slice(IV_LENGTH + AUTH_TAG_LENGTH);
-        
-        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-        decipher.setAuthTag(authTag);
-        
-        const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
-        
-        try {
-            // Attempt to parse as JSON, if it fails, return as plain text
-            return JSON.parse(decrypted);
-        } catch {
-            return decrypted;
-        }
-    } catch (error) {
-        // If decryption fails (e.g., not encrypted, wrong key, corrupted),
-        // return the original string. This handles legacy unencrypted data.
-        // console.warn('Decryption failed for a value, returning original. This may be expected for legacy data.');
-        return encryptedData;
+        // Attempt to parse as JSON, if it fails, return as plain text
+        return JSON.parse(decrypted);
+    } catch {
+        return decrypted;
     }
 }
+
+/**
+ * Decrypts a Base64 string and returns the result as a plain string with NO
+ * JSON.parse step. This is safe for node names: a name stored as "1234" stays
+ * the string "1234" rather than becoming the number 1234.
+ *
+ * For non-string inputs (e.g. already-decrypted values that slipped through)
+ * String(value ?? '') is returned so callers always get a string.
+ *
+ * @param encryptedData The Base64 encrypted string (or a non-string value).
+ * @returns The decrypted text as a string.
+ */
+export async function decryptText(encryptedData: string | unknown): Promise<string> {
+    if (typeof encryptedData !== 'string') {
+        return String((encryptedData as any) ?? '');
+    }
+
+    return rawDecrypt(encryptedData);
+}
+

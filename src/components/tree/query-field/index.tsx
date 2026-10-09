@@ -82,7 +82,7 @@ export function QueryFieldView({ field, node, isCompactView }: QueryFieldViewPro
         return [...group.nodes].sort((a, b) => {
             // ── Name column ──────────────────────────────────────────────────
             if (columnId === '__name') {
-                return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }) * dirMult;
+                return String(a.name ?? '').localeCompare(String(b.name ?? ''), undefined, { sensitivity: 'base' }) * dirMult;
             }
             if (columnId === '__createdAt') {
                 const dateA = a.createdAt ? new Date(a.createdAt).getTime() : NaN;

@@ -35,7 +35,7 @@ export function useQueryResults(field: Field, nodeData: Record<string, any>) {
             resultsByTemplate.get(tid)!.push(resultNode);
         });
         resultsByTemplate.forEach((nodes) => {
-            nodes.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+            nodes.sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? ''), undefined, { sensitivity: 'base' }));
         });
 
         return {

@@ -22,13 +22,13 @@ function getNodePathString(
   node: TreeNode,
   allNodesMap: Map<string, TreeNode>
 ): string {
-  const pathParts: string[] = [node.name.replace(/[\\?%*:|"<>]/g, '_')];
+  const pathParts: string[] = [String(node.name ?? '').replace(/[\\?%*:|"<>]/g, '_')];
   let currentParentId = node.parentIds?.[0]; // Use first parent for path calculation
 
   while (currentParentId) {
     const parentNode = allNodesMap.get(currentParentId);
     if (parentNode) {
-      pathParts.unshift(parentNode.name.replace(/[\\?%*:|"<>]/g, '_'));
+      pathParts.unshift(String(parentNode.name ?? '').replace(/[\\?%*:|"<>]/g, '_'));
       currentParentId = parentNode.parentIds?.[0];
     } else {
       break;
