@@ -69,10 +69,12 @@ export async function searchUsers(query: string): Promise<Pick<User, 'id' | 'use
     if (!query || query.length < 2) return [];
 
     await connectToDatabase();
-    const sanitizedQuery = escapeRegExp(query);
-    const users = await UserModel.find(mongoose.trusted({
-        username: { $regex: sanitizedQuery, $options: 'i' }
-    }))
+    const sanitizedQuery = escapeRegExp(query.trim());
+    if (!sanitizedQuery) return [];
+
+    const users = await UserModel.find({
+        username: new RegExp(sanitizedQuery, 'i'),
+    })
         .limit(10)
         .select('username _id')
         .lean()
