@@ -1,3 +1,7 @@
+v0.8.4 
+
+Fix regression preventing search of users by name for document sharing.
+
 v0.8.3
 
 BREAKING: drop support for raw html rendering in favor of markdown (safer and with easier markup) in text fields and body template.
