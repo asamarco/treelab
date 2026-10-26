@@ -1,18 +1,100 @@
 /**
  * This is the global stylesheet for the application.
- * It uses Tailwind CSS directives to import base styles, components, and utilities.
+ * It uses Tailwind CSS v4 CSS-first configuration.
  *
- * It defines CSS variables for the application's color palette and theme,
- * including light and dark mode variants. These variables are used by Tailwind
- * and shadcn/ui components to ensure a consistent look and feel.
+ * The @import "tailwindcss" directive replaces the legacy
+ * @tailwind base/components/utilities directives.
+ *
+ * All design tokens previously in tailwind.config.ts are now
+ * defined in the @theme block below, following Tailwind v4's
+ * CSS-first approach.
  */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * Tailwind v4: enable dark mode via the .dark class strategy,
+ * mirroring the v3 darkMode: ['class'] config option.
+ */
+@variant dark (&:where(.dark, .dark *));
+
+/*
+ * @theme defines all custom design tokens.
+ * Colors reference the CSS custom properties (HSL channels)
+ * defined in @layer base :root / .dark below.
+ */
+@theme {
+  /* ── Font families ── */
+  --font-family-body: Inter, sans-serif;
+  --font-family-headline: Inter, sans-serif;
+  --font-family-code: monospace;
+
+  /* ── Colors — Shadcn/UI semantic palette ── */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  /* ring-offset-background utility maps to --color-ring-offset in v4 */
+  --color-ring-offset: hsl(var(--background));
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  /* Sidebar tokens */
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  /* ── Border radii ── */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* ── Keyframe animations (from tailwindcss-animate & tailwind.config.ts) ── */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
 }
+
+@keyframes accordion-down {
+  from { height: 0; }
+  to   { height: var(--radix-accordion-content-height); }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to   { height: 0; }
+}
+
 
 @layer base {
   :root {
@@ -100,6 +182,7 @@ body {
 
   body {
     @apply bg-background text-foreground;
+    font-family: Arial, Helvetica, sans-serif;
   }
 }
 

@@ -65,7 +65,6 @@
     "server-only": "^0.0.1",
     "sharp": "^0.35.3",
     "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7",
     "unist-util-visit": "^5.1.0",
     "use-debounce": "^10.0.1",
     "use-immer": "^0.11.0",
@@ -82,7 +81,15 @@
     "patch-package": "^8.0.0",
     "postcss": "^8",
     "postcss-load-config": "^6.0.1",
-    "tailwindcss": "^3.4.1",
+    "@tailwindcss/postcss": "^4.1.0",
+    "tailwindcss": "^4.1.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "braces": "^3.0.3",
+    "postcss-selector-parser": "^6.1.2",
+    "cross-spawn": "^7.0.5",
+    "tmp": "^0.2.3",
+    "got": "^11.8.6"
   }
 }
