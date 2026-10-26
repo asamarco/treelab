@@ -56,11 +56,13 @@ import {
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
-  Users
+  Users,
+  HardDrive,
 } from "lucide-react";
 import { User, Team } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -555,9 +557,16 @@ export default function AdminSettingsPage() {
                             <p className="text-sm text-muted-foreground text-center max-w-sm">
                                 Analysis will scan all user directories and cross-reference them with all database nodes. This may be computationally intensive.
                             </p>
-                            <Button onClick={fetchStorageInfo} variant="outline">
-                                <DatabaseZap className="mr-2 h-4 w-4" /> Run Storage Analysis
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <Button onClick={fetchStorageInfo} variant="outline">
+                                    <DatabaseZap className="mr-2 h-4 w-4" /> Run Storage Analysis
+                                </Button>
+                                <Button variant="secondary" asChild>
+                                    <Link href="/admin/storage">
+                                        <HardDrive className="mr-2 h-4 w-4" /> View usage per user
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
                     ) : isAnalyzing ? (
                         <div className="flex flex-col items-center justify-center py-12 space-y-4">
@@ -577,10 +586,17 @@ export default function AdminSettingsPage() {
                                     <p className="text-muted-foreground mt-1 italic">All files are currently referenced. No purgeable data found.</p>
                                 )}
                             </div>
-                            <div className="flex justify-between">
-                                <Button variant="ghost" onClick={fetchStorageInfo} size="sm">
-                                    <Loader2 className={`mr-2 h-4 w-4 ${isAnalyzing ? 'animate-spin' : ''}`} /> Recalculate
-                                </Button>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Button variant="ghost" onClick={fetchStorageInfo} size="sm">
+                                        <Loader2 className={`mr-2 h-4 w-4 ${isAnalyzing ? 'animate-spin' : ''}`} /> Recalculate
+                                    </Button>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href="/admin/storage">
+                                            <HardDrive className="mr-2 h-4 w-4" /> View usage per user
+                                        </Link>
+                                    </Button>
+                                </div>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="destructive" disabled={storageInfo.purgeableCount === 0}>

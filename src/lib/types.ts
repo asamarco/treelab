@@ -314,6 +314,26 @@ export interface PurgeResult {
     purgedCount: number;
 }
 
+export interface UserStorageRow {
+    userId: string;
+    username: string | null;
+    fileCount: number;
+    totalSize: number;
+    largestFileSize: number;
+    lastModified: string | null;
+    shareOfTotal: number;
+    purgeableSize?: number;
+    purgeableCount?: number;
+}
+
+export interface UserStorageReport {
+    users: UserStorageRow[];
+    grandTotalSize: number;
+    grandTotalCount: number;
+    grandPurgeableSize?: number;
+    grandPurgeableCount?: number;
+}
+
 // --- Command Pattern Types ---
 interface BaseCommand {
     type: string;
