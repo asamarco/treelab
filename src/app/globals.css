@@ -230,6 +230,16 @@
   display: none !important;
 }
 
+@media (hover: hover) {
+  body:not(.read-only-view) .tree-node-card:hover {
+    background-color: hsl(var(--accent) / 0.3);
+  }
+
+  body:not(.read-only-view) .tree-node-card:has(.tree-node-card:hover) {
+    background-color: hsl(var(--card) / 0.6);
+  }
+}
+
 /* Jspreadsheet CE Theme Overrides */
 .jexcel {
   border-color: hsl(var(--border)) !important;
