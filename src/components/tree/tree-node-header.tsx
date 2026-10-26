@@ -39,7 +39,8 @@ import {
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { getConditionalStyle, getCompactChevronWidthPx, hasAttachments } from "./tree-node-utils";
+import { getConditionalStyle, hasAttachments } from "./tree-node-utils";
+import { COMPACT_ICON_CLASS, getCompactChevronWidthPx } from "./compact-layout";
 import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { WritableDraft } from "immer";
@@ -98,7 +99,6 @@ export function TreeNodeHeader({
   const isMobile = useIsMobile();
 
   const isCompactView = isCompactOverride ?? globalIsCompactView;
-  const isCompactChevron = isCompactView && !isExplorer;
 
   const {
     clipboard, setClipboard, findNodeAndParent, setExpandedNodeIds, expandAllFromNode,
@@ -303,7 +303,7 @@ export function TreeNodeHeader({
     updateNode(node.id, { isStarred: !node.isStarred });
   };
 
-  const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer || isCompactView;
+  const isHandleHidden = isMobile || readOnly || disableSelection || isCompactView;
 
   return (
     <>
@@ -393,7 +393,7 @@ export function TreeNodeHeader({
       )}
 
       <div className="flex items-start gap-0.5 group/treenode">
-        {!(isExplorer || isCompactView) && (
+        {!isCompactView && (
           <Button
             variant="ghost"
             size="icon"
@@ -412,7 +412,7 @@ export function TreeNodeHeader({
           </Button>
         )}
         <div className="flex-1 min-w-0">
-          <div className={cn("flex gap-1", isCompactChevron && "gap-0.5", (isExplorer || isCompactView) ? "items-center" : "items-start", isMobile && "py-2 min-h-[3.5rem]", isExplorer && "py-0 min-h-0")}>
+          <div className={cn("flex gap-1", isCompactView ? "gap-0.5 items-center" : "items-start", isMobile && "py-2 min-h-[3.5rem]")}>
             <CollapsibleTrigger asChild>
               <button
                 onClick={(e) => {
@@ -427,28 +427,28 @@ export function TreeNodeHeader({
                 className={cn(
                   "flex items-center justify-center rounded-md hover:bg-accent no-print shrink-0",
                   isCompactView ? 'h-7 w-7' : 'h-8 w-8 mt-1',
-                  (!hasContentToToggle && !(isExplorer || isCompactView)) && "invisible",
+                  (!hasContentToToggle && !isCompactView) && "invisible",
                   isMobile && "h-10 w-10",
-                  (isExplorer || isCompactView) && "cursor-grab h-7 w-7 mt-0 mb-0"
+                  isCompactView && "cursor-grab h-7 w-7 mt-0 mb-0"
                 )}
-                style={isCompactChevron ? { width: getCompactChevronWidthPx(isMobile) } : undefined}
-                {...((isExplorer || isCompactView) ? dndAttributes : {})}
-                {...((isExplorer || isCompactView) ? dndListeners : {})}
+                style={isCompactView ? { width: getCompactChevronWidthPx(isMobile) } : undefined}
+                {...(isCompactView ? dndAttributes : {})}
+                {...(isCompactView ? dndListeners : {})}
               >
                 {hasContentToToggle ? (
                   <ChevronRight className={cn("h-4 w-4 transition-transform duration-200 no-print", isCompactView && 'h-3.5 w-3.5', isExpanded && "rotate-90", isMobile && "h-5 w-5")} />
-                ) : (isExplorer || isCompactView) ? (
+                ) : isCompactView ? (
                   <GripVertical className={cn("text-muted-foreground opacity-0 group-hover/treenode:opacity-100 transition-opacity", isCompactView ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
                 ) : null}
               </button>
             </CollapsibleTrigger>
             <Icon
               name={(icon as keyof typeof icons) || "FileText"}
-              className={cn("mr-2 h-5 w-5 shrink-0", isCompactView ? "h-4 w-4 ml-3" : "h-5 w-5 mt-2.5", isExplorer && "h-4 w-4", isCompactChevron && "ml-0 mr-1")}
+              className={cn("mr-2 h-5 w-5 shrink-0", isCompactView ? COMPACT_ICON_CLASS : "h-5 w-5 mt-2.5")}
               style={{ color: color || "hsl(var(--primary))" }}
             />
-            <div className={cn("flex-grow flex gap-1 min-w-0 py-1.5 md:py-1", (isExplorer || isCompactView) ? "items-center py-0" : "items-start")}>
-              <div className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", !isCompactView && "mt-1", isMobile && "text-base mt-1.5", isExplorer && "text-sm")}>
+            <div className={cn("flex-grow flex gap-1 min-w-0 py-1.5 md:py-1", isCompactView ? "items-center py-0" : "items-start")}>
+              <div className={cn("font-semibold break-words whitespace-normal leading-tight", isCompactView && "text-sm", !isCompactView && "mt-1", isMobile && "text-base mt-1.5")}>
                 {showNodeOrder && <span className="text-muted-foreground font-normal text-xs mr-1">{contextualOrder + 1}.</span>}
                 {(() => {
                   const nameText = template.nameTemplate ? template.nameTemplate : node.name;

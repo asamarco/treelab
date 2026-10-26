@@ -22,7 +22,6 @@ import { Card, CardContent } from "../ui/card";
 import { TreeNodeHeader } from "./tree-node-header";
 import { TreeNodeContent } from "./tree-node-content";
 import { TreeNodeModals } from "./tree-node-modals";
-import { TreeNodeDropZone } from "./tree-node-dropzone";
 import type { WritableDraft } from "immer";
 import { AlertTriangle, Trash2, RefreshCcw } from "lucide-react";
 import { Button } from "../ui/button";
@@ -38,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { COMPACT_ROW_CLASS } from "./compact-layout";
 
 
 interface TreeNodeProps {
@@ -265,7 +265,7 @@ function TreeNodeComponentInner({
     <div
       className={cn(
         "relative transition-opacity min-w-0",
-        isExplorer ? "pl-0 pr-0 py-0 my-0 leading-none" : (isCompactView ? "pl-0 pr-0" : "pl-0 pr-0"),
+        "pl-0 pr-0",
         isCut && "opacity-50"
       )}
       style={{ zIndex: isDragging ? 100 : "auto" }}
@@ -277,8 +277,8 @@ function TreeNodeComponentInner({
         style={style}
         className={cn(
           "bg-card/60 transition-all rounded-md overflow-hidden min-w-0",
-          isCompactView ? "my-0.5 border-0 shadow-none" : (isExplorer ? "my-0 border-0 shadow-none hover:bg-accent/50 rounded-none" : "my-1"),
-          (!isExplorer && !readOnly) && "tree-node-card",
+          isCompactView ? COMPACT_ROW_CLASS : "my-1",
+          !readOnly && "tree-node-card",
           (!readOnly && !disableSelection) && "cursor-pointer",
           isSelected && "border-primary ring-2 ring-primary ring-offset-2 z-10",
           isDragging && "shadow-xl opacity-80",
@@ -363,31 +363,6 @@ function TreeNodeComponentInner({
           node={node}
           template={template}
         />
-      )}
-      {isExplorer && node.children && node.children.length > 0 && isExpanded && (
-        <div className="pl-3 ml-[7px] border-l border-border/50">
-          {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_start_${node.id}`} />}
-          {node.children.map((childNode) => (
-            <div key={`${childNode.id}_${node.id}`}>
-              <TreeNodeComponent
-                node={childNode}
-                level={level + 1}
-                siblings={node.children}
-                onSelect={onSelect}
-                contextualParentId={node.id}
-                overrideExpandedIds={overrideExpandedIds}
-                onExpandedChange={onExpandedChange}
-                isCompactOverride={isCompactOverride}
-                isExplorer={isExplorer}
-                readOnly={readOnly}
-                disableSelection={disableSelection}
-                onNodeClick={onNodeClick}
-                ancestorChain={[...ancestorChain, node]}
-              />
-              {!readOnly && !disableSelection && <TreeNodeDropZone id={`gap_${childNode.id}_${node.id}`} />}
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );
