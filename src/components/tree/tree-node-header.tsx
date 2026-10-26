@@ -605,7 +605,14 @@ export function TreeNodeHeader({
                 return (
                   <div key={`${child.id}-${index}`} className="flex items-center gap-1 shrink-0">
                     <Icon name={childIcon as keyof typeof icons || 'FileText'} className="h-3 w-3" style={{ color: childColor || 'hsl(var(--foreground))' }} />
-                    <span>{child.name}</span>
+                    <span>
+                      <RenderWithLinks
+                        node={child}
+                        template={childTemplate}
+                        text={childTemplate.nameTemplate || child.name}
+                        ancestorChain={[...ancestorChain, node]}
+                      />
+                    </span>
                   </div>
                 );
               })}
