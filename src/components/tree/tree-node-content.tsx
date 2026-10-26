@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This component renders the collapsible content area of a tree node.
@@ -24,7 +23,7 @@ import { Button } from "../ui/button";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
-import { getConditionalStyle } from "./tree-node-utils";
+import { getConditionalStyle, getCompactChevronWidthPx, getGuideMarginPx } from "./tree-node-utils";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -108,20 +107,16 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
         return null;
     }
 
-    const isHandleHidden = isMobile || readOnly || disableSelection || isExplorer || isCompactView;
     const showVerticalLines = isCompactView || isExplorer;
     const verticalLineClass = showVerticalLines ? "border-l border-border/50" : "";
-
-    const leftMargin = showVerticalLines
-        ? (isHandleHidden ? "ml-[13.5px]" : "ml-[43.5px]")
-        : "ml-0";
+    const guideMarginPx = getGuideMarginPx(isExplorer ? 28 : getCompactChevronWidthPx(isMobile));
 
     return (
         <CollapsibleContent className="min-w-0 w-full overflow-hidden">
             <div className={cn("min-w-0 pt-2", isCompactView && "pt-0", isExplorer && "pt-0")} onClick={(e) => e.stopPropagation()}>
-                <div className={cn("min-w-0 transition-all pb-1", verticalLineClass, leftMargin, isExplorer && "pb-0 pr-0", !isExplorer && "pr-0")}>
+                <div className={cn("min-w-0 transition-all pb-1", verticalLineClass, !showVerticalLines && "ml-0", isExplorer && "pb-0 pr-0", !isExplorer && "pr-0")} style={showVerticalLines ? { marginLeft: guideMarginPx } : undefined}>
                     {!isCompactOverride && (
-                        <div className={cn("pl-3 pb-1 pr-1 min-w-0 flex flex-col")}>
+                        <div className={cn(isCompactView ? "pl-2 pb-1 pr-1 min-w-0 flex flex-col" : "pl-3 pb-1 pr-1 min-w-0 flex flex-col")}>
                             {template.bodyTemplate && (
                                 <div className={cn("text-foreground/90 whitespace-pre-wrap pt-2", isCompactView ? "text-xs" : "text-sm")} onClick={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                                 <RenderWithLinks node={node} template={template} text={template.bodyTemplate} ancestorChain={ancestorChain} />
@@ -271,7 +266,7 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                         <div
                             className={cn(
                                 "children-container transition-all pr-0 pb-1",
-                                "pl-3 space-y-0 pb-1 pr-0"
+                                isCompactView ? "space-y-0 pb-1 pr-0" : "pl-3 space-y-0 pb-1 pr-0"
                             )}
                             onClick={(e) => e.stopPropagation()}
                         >

@@ -277,7 +277,8 @@ function TreeNodeComponentInner({
         style={style}
         className={cn(
           "bg-card/60 transition-all rounded-md overflow-hidden min-w-0",
-          isCompactView ? "my-0.5 border-0 shadow-none hover:bg-accent/30" : (isExplorer ? "my-0 border-0 shadow-none hover:bg-accent/50 rounded-none" : "my-1"),
+          isCompactView ? "my-0.5 border-0 shadow-none" : (isExplorer ? "my-0 border-0 shadow-none hover:bg-accent/50 rounded-none" : "my-1"),
+          (!isExplorer && !readOnly) && "tree-node-card",
           (!readOnly && !disableSelection) && "cursor-pointer",
           isSelected && "border-primary ring-2 ring-primary ring-offset-2 z-10",
           isDragging && "shadow-xl opacity-80",

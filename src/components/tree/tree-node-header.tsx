@@ -39,7 +39,7 @@ import {
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../ui/alert-dialog";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { getConditionalStyle, hasAttachments } from "./tree-node-utils";
+import { getConditionalStyle, getCompactChevronWidthPx, hasAttachments } from "./tree-node-utils";
 import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
 import { WritableDraft } from "immer";
@@ -98,6 +98,7 @@ export function TreeNodeHeader({
   const isMobile = useIsMobile();
 
   const isCompactView = isCompactOverride ?? globalIsCompactView;
+  const isCompactChevron = isCompactView && !isExplorer;
 
   const {
     clipboard, setClipboard, findNodeAndParent, setExpandedNodeIds, expandAllFromNode,
@@ -411,7 +412,7 @@ export function TreeNodeHeader({
           </Button>
         )}
         <div className="flex-1 min-w-0">
-          <div className={cn("flex gap-1", (isExplorer || isCompactView) ? "items-center" : "items-start", isMobile && "py-2 min-h-[3.5rem]", isExplorer && "py-0 min-h-0")}>
+          <div className={cn("flex gap-1", isCompactChevron && "gap-0.5", (isExplorer || isCompactView) ? "items-center" : "items-start", isMobile && "py-2 min-h-[3.5rem]", isExplorer && "py-0 min-h-0")}>
             <CollapsibleTrigger asChild>
               <button
                 onClick={(e) => {
@@ -430,6 +431,7 @@ export function TreeNodeHeader({
                   isMobile && "h-10 w-10",
                   (isExplorer || isCompactView) && "cursor-grab h-7 w-7 mt-0 mb-0"
                 )}
+                style={isCompactChevron ? { width: getCompactChevronWidthPx(isMobile) } : undefined}
                 {...((isExplorer || isCompactView) ? dndAttributes : {})}
                 {...((isExplorer || isCompactView) ? dndListeners : {})}
               >
@@ -442,7 +444,7 @@ export function TreeNodeHeader({
             </CollapsibleTrigger>
             <Icon
               name={(icon as keyof typeof icons) || "FileText"}
-              className={cn("mr-2 h-5 w-5 shrink-0", isCompactView ? "h-4 w-4 ml-3" : "h-5 w-5 mt-2.5", isExplorer && "h-4 w-4")}
+              className={cn("mr-2 h-5 w-5 shrink-0", isCompactView ? "h-4 w-4 ml-3" : "h-5 w-5 mt-2.5", isExplorer && "h-4 w-4", isCompactChevron && "ml-0 mr-1")}
               style={{ color: color || "hsl(var(--primary))" }}
             />
             <div className={cn("flex-grow flex gap-1 min-w-0 py-1.5 md:py-1", (isExplorer || isCompactView) ? "items-center py-0" : "items-start")}>

@@ -23,6 +23,11 @@ export const getConditionalStyle = (targetNode: TreeNode, targetTemplate: Templa
   return { icon: targetTemplate.icon, color: targetTemplate.color };
 };
 
+export const getCompactChevronWidthPx = (isMobile: boolean) => (isMobile ? 40 : 20);
+
+// Centers the 1px guide border (border-l) under the chevron's center.
+export const getGuideMarginPx = (chevronWidthPx: number) => chevronWidthPx / 2 - 0.5;
+
 export const hasAttachments = (node: TreeNode, template: Template): boolean => {
   if (!template) return false;
   const nodeData = node.data || {};
