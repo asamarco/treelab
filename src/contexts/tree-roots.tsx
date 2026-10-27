@@ -791,12 +791,16 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   }, [initialTree, currentUser, reloadActiveTree]);
 
 
+  const initializedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     // If there's no initialTree (standard authenticated flow), load user data.
     if (!initialTree && currentUser && !isDataLoaded) {
+      if (initializedUserIdRef.current === currentUser.id) return;
+      initializedUserIdRef.current = currentUser.id;
       loadUserSpecificData(currentUser);
     } else if (!initialTree && !currentUser && isDataLoaded) {
       // If the user logs out, reset the state.
+      initializedUserIdRef.current = null;
       setAllTrees(() => []);
       setActiveTreeId(null);
       setCommandHistory(() => []);
