@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUIContext } from "@/contexts/ui-context";
-import { TreeFile } from "@/lib/types";
+import { ARCHIVE_GROUP_NAME, TreeFile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -119,6 +118,15 @@ export function TreePageHeader({
     };
 
     const areFiltersActive = activeFilterCount > 0;
+
+    const treeSettings = currentUser?.treeSettings || [];
+    const getTreeGroup = (treeId: string | null) => treeSettings.find(s => s.treeId === treeId)?.groupName || "Ungrouped";
+    const currentTreeGroup = getTreeGroup(activeTreeId);
+    const selectableTrees = allTrees.filter(t => getTreeGroup(t.id) !== ARCHIVE_GROUP_NAME);
+    const switcherTrees = [
+        ...selectableTrees.filter(t => getTreeGroup(t.id) === currentTreeGroup),
+        ...selectableTrees.filter(t => getTreeGroup(t.id) !== currentTreeGroup),
+    ];
     
     return (
         <div className="flex items-center gap-2 md:gap-4 flex-wrap md:flex-nowrap">
@@ -140,7 +148,7 @@ export function TreePageHeader({
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
-                        {allTrees.map(t => (
+                        {switcherTrees.map(t => (
                             <DropdownMenuItem key={t.id} onSelect={() => setActiveTreeId(t.id)}>
                                 <Check className={cn("mr-2 h-4 w-4", activeTreeId === t.id ? 'opacity-100' : 'opacity-0')} />
                                 {t.title}

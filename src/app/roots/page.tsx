@@ -57,7 +57,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { PlusCircle, FileText, Trash2, Sparkles, Loader2, ChevronDown, Upload, Archive, Github, Link as LinkIcon, X, Plus, FileJson, Share2, Users, Search, Edit, GripVertical, Copy, Globe, CopyPlus, ShieldCheck, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ExampleInfo, TreeFile, TreePermissions, TreeShare, User } from "@/lib/types";
+import { ARCHIVE_GROUP_NAME, ExampleInfo, TreeFile, TreePermissions, TreeShare, User } from "@/lib/types";
 import { searchUsers } from "@/lib/auth-client";
 import { Octokit } from "octokit";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -266,15 +266,12 @@ function ManageRootsPage() {
   const viewingTrees = useMemo(() => {
     const treeSettings = currentUser?.treeSettings || [];
 
-    let result = filteredTrees;
-
-    if (activeGroupFilter !== "All Roots") {
-      result = filteredTrees.filter(tree => {
-        const setting = treeSettings.find(s => s.treeId === tree.id);
-        const groupName = setting?.groupName || "Ungrouped";
-        return groupName === activeGroupFilter;
-      });
-    }
+    const result = filteredTrees.filter(tree => {
+      const setting = treeSettings.find(s => s.treeId === tree.id);
+      const groupName = setting?.groupName || "Ungrouped";
+      if (activeGroupFilter === "All Roots") return groupName !== ARCHIVE_GROUP_NAME;
+      return groupName === activeGroupFilter;
+    });
 
     result.sort((a, b) => {
       const orderA = treeSettings.find(s => s.treeId === a.id)?.order ?? (a as any).order ?? 0;
@@ -349,8 +346,9 @@ function ManageRootsPage() {
   const handleAddGroup = (e: React.FormEvent) => {
     e.preventDefault();
     const currentGroups = currentUser?.customGroups || [];
-    if (setCustomGroups && newGroupName.trim() && !currentGroups.includes(newGroupName.trim())) {
-      setCustomGroups([...currentGroups, newGroupName.trim()]);
+    const candidate = newGroupName.trim();
+    if (setCustomGroups && candidate && candidate !== ARCHIVE_GROUP_NAME && !currentGroups.includes(candidate)) {
+      setCustomGroups([...currentGroups, candidate]);
     }
     setNewGroupName("");
   };
@@ -383,6 +381,18 @@ function ManageRootsPage() {
     await deleteTree(treeId);
     if (activeTreeId === treeId) {
       router.push('/roots');
+    }
+  };
+
+  const handleMoveTreeToArchive = (treeId: string) => {
+    const currentSettings = currentUser?.treeSettings || [];
+    const hasSetting = currentSettings.some(s => s.treeId === treeId);
+    const newSettings = hasSetting
+      ? currentSettings.map(s => s.treeId === treeId ? { ...s, groupName: ARCHIVE_GROUP_NAME } : s)
+      : [...currentSettings, { treeId, groupName: ARCHIVE_GROUP_NAME, order: currentSettings.length }];
+    if (setTreeSettings) {
+      setTreeSettings(newSettings);
+      toast({ title: "Moved", description: `Root moved to ${ARCHIVE_GROUP_NAME}` });
     }
   };
 
@@ -754,6 +764,22 @@ function ManageRootsPage() {
               />
             );
           })}
+          {(() => {
+            const archiveCount = filteredTrees.filter(tree => {
+              const s = treeSettings.find(st => st.treeId === tree.id);
+              return s?.groupName === ARCHIVE_GROUP_NAME;
+            }).length;
+
+            return (
+              <DroppableFilterPill
+                id={`group-pill-${ARCHIVE_GROUP_NAME}`}
+                isActive={activeGroupFilter === ARCHIVE_GROUP_NAME}
+                onClick={() => setActiveGroupFilter(ARCHIVE_GROUP_NAME)}
+                title={`${ARCHIVE_GROUP_NAME}${archiveCount > 0 ? ` (${archiveCount})` : ''}`}
+                isGroupingPill={true}
+              />
+            );
+          })()}
         </div>
 
         <SortableContext items={viewingTrees.map(t => t.id)} strategy={verticalListSortingStrategy}>
@@ -763,6 +789,7 @@ function ManageRootsPage() {
               const isOwner = currentUser?.id === tree.userId;
               const isAdmin = tree.shares?.some(s => s.userId === currentUser?.id && s.permissions.admin) ?? false;
               const canManageTree = isOwner || isAdmin;
+              const treeGroup = currentUser?.treeSettings?.find(s => s.treeId === tree.id)?.groupName || "Ungrouped";
               const hasWritePerms = isOwner || isAdmin || (tree.shares?.some(s => s.userId === currentUser?.id && (s.permissions.editNodes || s.permissions.editTemplates)) ?? false);
 
               const sharedWithUsers = (tree.sharedWith || [])
@@ -810,6 +837,12 @@ function ManageRootsPage() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                {treeGroup !== ARCHIVE_GROUP_NAME && (
+                                  <AlertDialogAction onClick={() => handleMoveTreeToArchive(tree.id)} className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                                    <Archive className="mr-2 h-4 w-4" />
+                                    Move to Archive
+                                  </AlertDialogAction>
+                                )}
                                 <AlertDialogAction onClick={() => handleDeleteTree(tree.id)} className="bg-destructive hover:bg-destructive/90">
                                   {isOwner ? 'Delete' : 'Remove'}
                                 </AlertDialogAction>
@@ -1091,7 +1124,13 @@ function ManageRootsPage() {
                               onKeyDown={(e) => e.key === 'Enter' && handleRenameGroup(group, editingGroupValue)}
                               onBlur={() => setEditingGroupName(null)}
                             />
-                            <Button size="sm" onClick={() => handleRenameGroup(group, editingGroupValue)}>Save</Button>
+                            <Button
+                              size="sm"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => handleRenameGroup(group, editingGroupValue)}
+                            >
+                              Save
+                            </Button>
                           </div>
                         ) : (
                           <>
@@ -1167,6 +1206,7 @@ function ManageRootsPage() {
                           {(currentUser?.customGroups || []).map(g => (
                             <SelectItem key={g} value={g}>{g}</SelectItem>
                           ))}
+                          <SelectItem value={ARCHIVE_GROUP_NAME}>{ARCHIVE_GROUP_NAME}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1647,6 +1687,7 @@ function ManageRootsPage() {
                         {(currentUser?.customGroups || []).map(g => (
                           <SelectItem key={g} value={g}>{g}</SelectItem>
                         ))}
+                        <SelectItem value={ARCHIVE_GROUP_NAME}>{ARCHIVE_GROUP_NAME}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

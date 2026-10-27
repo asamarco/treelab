@@ -121,8 +121,10 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
         isAdmin: true,
         dateFormat: 'dd/MM/yyyy',
       };
-      setCurrentUser(dummyUser);
-      setUsers([dummyUser]);
+      const storedUser = await getSessionUser();
+      const defaultUser = storedUser ? { ...dummyUser, ...storedUser } : dummyUser;
+      setCurrentUser(defaultUser);
+      setUsers([defaultUser]);
       setIsAuthLoading(false);
       return;
     }
@@ -277,14 +279,20 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setCurrentUser(prev => prev ? { ...prev, twoPanelExpansionDepth: depth } : null);
   };
 
+  const persistGroupSettings = (settings: Pick<User, 'treeSettings' | 'customGroups'>) => {
+    updateUserSettings(settings).catch(error => console.error("ERROR: Failed to save group settings:", error));
+  };
+
   const setTreeSettings = (settings: User['treeSettings']) => {
-    if (!isAuthRequired || !currentUser) return;
+    if (!currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, treeSettings: settings } : null);
+    if (!isAuthRequired) persistGroupSettings({ treeSettings: settings });
   };
 
   const setCustomGroups = (groups: string[]) => {
-    if (!isAuthRequired || !currentUser) return;
+    if (!currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, customGroups: groups } : null);
+    if (!isAuthRequired) persistGroupSettings({ customGroups: groups });
   };
 
   const setGlobalSettingsState = async (settings: GlobalSettings) => {

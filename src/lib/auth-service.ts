@@ -285,6 +285,14 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
         settingsToSave.gitSettings.githubPat = await encrypt(settingsToSave.gitSettings.githubPat);
     }
 
+    if (process.env.REQUIRE_AUTHENTICATION === 'false') {
+        await UserModel.updateOne(
+            { _id: session.userId },
+            { $setOnInsert: { username: session.userId, passwordHash: '', salt: '', isAdmin: true } },
+            { upsert: true }
+        ).exec();
+    }
+
     await UserModel.findByIdAndUpdate(session.userId, { $set: settingsToSave }).exec();
 }
 

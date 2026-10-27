@@ -269,6 +269,8 @@ export interface TreeSetting {
     order?: number;
 }
 
+export const ARCHIVE_GROUP_NAME = "Archive";
+
 export interface User {
     id: string;
     _id?: any; // Mongoose internal
