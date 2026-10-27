@@ -106,11 +106,18 @@ export async function validateLogin(identifier: string, password: string): Promi
     const passwordHash = await hashPassword(safePassword, user.salt);
 
     if (passwordHash === user.passwordHash) {
+        const lastLoginAt = new Date().toISOString();
+        try {
+            await UserModel.updateOne({ _id: user.id }, { $set: { lastLoginAt } }).exec();
+        } catch (error) {
+            console.warn(`WARN: Failed to record last login for '${safeIdentifier}'`, error);
+        }
+
         const { passwordHash: _ph, salt: _s, ...userToReturn } = toPlainObject(user);
         if (userToReturn.gitSettings?.githubPat) {
             userToReturn.gitSettings.githubPat = await decrypt(userToReturn.gitSettings.githubPat);
         }
-        return userToReturn;
+        return { ...userToReturn, lastLoginAt };
     }
 
     return null;
@@ -137,6 +144,7 @@ export async function registerUser(username: string, password: string): Promise<
         passwordHash,
         salt,
         isAdmin: isFirstUser,
+        lastLoginAt: new Date().toISOString(),
     };
 
     const createdUser = await new UserModel(newUserDoc).save();
@@ -154,7 +162,7 @@ export async function addUser(userData: Omit<User, 'id' | 'passwordHash' | 'salt
     if (!adminUser || !adminUser.isAdmin) throw new Error("Admin privileges required.");
 
     await connectToDatabase();
-    const { password, ...rest } = userData;
+    const { password, lastLoginAt: _lastLoginAt, ...rest } = userData;
     if (!password) throw new Error("Password is required for new user");
 
     const salt = crypto.randomBytes(16).toString('hex');

@@ -287,6 +287,7 @@ export interface User {
     twoPanelExpansionDepth?: number;
     rememberMe?: boolean;
     sessionVersion?: number;
+    lastLoginAt?: string;
     treeSettings?: TreeSetting[];
     customGroups?: string[];
 }

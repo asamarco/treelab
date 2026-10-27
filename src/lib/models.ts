@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the Mongoose schemas and models for the application's data structures.
@@ -156,6 +154,7 @@ const UserSchema = new Schema<User>({
   twoPanelExpansionDepth: { type: Number, default: 1 },
   gitSettings: GitSettingsSchema,
   sessionVersion: { type: Number, default: 0 },
+  lastLoginAt: { type: String },
   treeSettings: [TreeSettingSchema],
   customGroups: [String],
 });

@@ -56,13 +56,19 @@ import {
   Image as ImageIcon,
   ChevronLeft,
   ChevronRight,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   Users,
   HardDrive,
 } from "lucide-react";
 import { User, Team } from "@/lib/types";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, formatDate } from "@/lib/utils";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+type UserSortKey = "username" | "isAdmin" | "teams" | "lastLoginAt";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -92,6 +98,8 @@ export default function AdminSettingsPage() {
   const [passwordForReset, setPasswordForReset] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<UserSortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(globalSettings?.customLogoPath || null);
@@ -235,13 +243,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(users.length / pageSize);
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return users.slice(start, start + pageSize);
-  }, [users, currentPage, pageSize]);
-
   const userToTeamsMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     users.forEach(u => map[u.id] = []);
@@ -252,6 +253,63 @@ export default function AdminSettingsPage() {
     });
     return map;
   }, [users, userTeams]);
+
+  const sortedUsers = useMemo(() => {
+    if (!sortKey) return users;
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...users].sort((a, b) => {
+      switch (sortKey) {
+        case "username":
+          return dir * a.username.localeCompare(b.username);
+        case "isAdmin":
+          return dir * (Number(a.isAdmin) - Number(b.isAdmin));
+        case "teams":
+          return dir * userToTeamsMap[a.id].join(", ").localeCompare(userToTeamsMap[b.id].join(", "));
+        case "lastLoginAt":
+          if (!a.lastLoginAt && !b.lastLoginAt) return 0;
+          if (!a.lastLoginAt) return 1;
+          if (!b.lastLoginAt) return -1;
+          return dir * a.lastLoginAt.localeCompare(b.lastLoginAt);
+      }
+    });
+  }, [users, sortKey, sortDir, userToTeamsMap]);
+
+  const handleSort = (key: UserSortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const renderSortableHeader = (key: UserSortKey, label: string, className: string) => {
+    const isActive = sortKey === key;
+    const Icon = !isActive ? ArrowUpDown : sortDir === "asc" ? ArrowUp : ArrowDown;
+    return (
+      <th
+        className={`${className} font-medium`}
+        aria-sort={isActive ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        <button
+          type="button"
+          onClick={() => handleSort(key)}
+          className="inline-flex items-center gap-1 hover:text-foreground text-muted-foreground data-[active=true]:text-foreground"
+          data-active={isActive}
+        >
+          {label}
+          <Icon className="h-3 w-3" />
+        </button>
+      </th>
+    );
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedUsers.length / pageSize);
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedUsers.slice(start, start + pageSize);
+  }, [sortedUsers, currentPage, pageSize]);
 
   if (!currentUser?.isAdmin) return null;
 
@@ -398,9 +456,10 @@ export default function AdminSettingsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-muted/50 border-b">
-                        <th className="px-4 py-3 text-left font-medium">User</th>
-                        <th className="px-4 py-3 text-left font-medium">Admin</th>
-                        <th className="px-4 py-3 text-left font-medium">Team(s)</th>
+                        {renderSortableHeader("username", "User", "px-4 py-3 text-left")}
+                        {renderSortableHeader("isAdmin", "Admin", "px-4 py-3 text-left")}
+                        {renderSortableHeader("teams", "Team(s)", "px-4 py-3 text-left")}
+                        {renderSortableHeader("lastLoginAt", "Last login", "hidden md:table-cell px-4 py-3 text-left")}
                         <th className="px-4 py-3 text-right font-medium">Actions</th>
                       </tr>
                     </thead>
@@ -432,6 +491,15 @@ export default function AdminSettingsPage() {
                                 <span className="text-muted-foreground italic text-xs">None</span>
                               )}
                             </div>
+                          </td>
+                          <td className="hidden md:table-cell px-4 py-3">
+                            {user.lastLoginAt ? (
+                              <span title={formatDistanceToNow(parseISO(user.lastLoginAt), { addSuffix: true })}>
+                                {formatDate(user.lastLoginAt, `${currentUser.dateFormat || 'dd/MM/yyyy'} p`)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground" title="Not recorded yet">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
