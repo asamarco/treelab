@@ -145,6 +145,35 @@ interface UseTreeRootsProps {
   initialTree?: TreeFile;
 }
 
+const EXPANDED_SAVE_DEBOUNCE_MS = 500;
+const MAX_EXPANDED_NODE_IDS = 5000;
+
+function sanitizeExpandedNodeIds(ids: string[], tree: TreeNode[]): string[] {
+  const topLevelIds = new Set(tree.map((node) => node.id));
+  const allNodeIds = new Set<string>();
+  const collectNodeIds = (nodes: TreeNode[]) => {
+    for (const node of nodes) {
+      allNodeIds.add(node.id);
+      if (node.children) collectNodeIds(node.children);
+    }
+  };
+  collectNodeIds(tree);
+
+  const isValidInstanceId = (instanceId: string) => {
+    for (let i = instanceId.indexOf('_'); i !== -1; i = instanceId.indexOf('_', i + 1)) {
+      const nodeId = instanceId.slice(0, i);
+      const parentId = instanceId.slice(i + 1);
+      const isValid = parentId === 'root'
+        ? topLevelIds.has(nodeId)
+        : allNodeIds.has(nodeId) && allNodeIds.has(parentId);
+      if (isValid) return true;
+    }
+    return false;
+  };
+
+  return Array.from(new Set(ids.filter(isValidInstanceId))).slice(-MAX_EXPANDED_NODE_IDS);
+}
+
 export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRootsResult {
   const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser } = useAuthContext();
   const [isDataLoaded, setIsDataLoaded] = useState(!!initialTree);
@@ -1126,6 +1155,29 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     });
   }, [setTemplates]);
 
+  const pendingExpandedSaveRef = useRef<{ treeId: string; expandedNodeIds: string[] } | null>(null);
+  const expandedSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushExpandedNodeIdsSave = useCallback(() => {
+    if (expandedSaveTimerRef.current) {
+      clearTimeout(expandedSaveTimerRef.current);
+      expandedSaveTimerRef.current = null;
+    }
+    const pending = pendingExpandedSaveRef.current;
+    if (!pending) return;
+    pendingExpandedSaveRef.current = null;
+    saveTreeFile({ id: pending.treeId, expandedNodeIds: pending.expandedNodeIds });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('beforeunload', flushExpandedNodeIdsSave);
+    return () => {
+      window.removeEventListener('beforeunload', flushExpandedNodeIdsSave);
+      flushExpandedNodeIdsSave();
+    };
+  }, [activeTreeId, flushExpandedNodeIdsSave]);
+
+  // Expansion is stored per tree and shared by everyone who opens a shared tree (existing behavior).
   const setExpandedNodeIds = useCallback((updater: (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>, isUndoable = true) => {
     if (!activeTreeId) return;
 
@@ -1140,10 +1192,14 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
     // Only save to DB if a user is logged in
     if (currentUser) {
-      // No debouncing, save immediately.
-      saveTreeFile({ id: activeTreeId, expandedNodeIds: newExpandedIds });
+      pendingExpandedSaveRef.current = {
+        treeId: activeTreeId,
+        expandedNodeIds: sanitizeExpandedNodeIds(newExpandedIds, activeTree?.tree ?? []),
+      };
+      if (expandedSaveTimerRef.current) clearTimeout(expandedSaveTimerRef.current);
+      expandedSaveTimerRef.current = setTimeout(flushExpandedNodeIdsSave, EXPANDED_SAVE_DEBOUNCE_MS);
     }
-  }, [activeTreeId, activeTree?.expandedNodeIds, setAllTrees, currentUser]);
+  }, [activeTreeId, activeTree?.expandedNodeIds, activeTree?.tree, setAllTrees, currentUser, flushExpandedNodeIdsSave]);
 
   const setLastDrilledNodeId = useCallback((nodeId: string | null) => {
     if (!activeTreeId) return;

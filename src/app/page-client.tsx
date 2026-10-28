@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This is the main client component of the application, responsible for displaying and
@@ -6,7 +5,8 @@
  */
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue, SetStateAction } from "react";
+import { produce, WritableDraft } from "immer";
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { TreeView } from "@/components/tree/tree-view";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -258,6 +258,7 @@ export function TreePage() {
     exportNodesAsHtml,
     exportNodesAsJson,
     expandedNodeIds: globalExpandedNodeIds,
+    setExpandedNodeIds: setGlobalExpandedNodeIds,
     lastDrilledNodeId,
     setLastDrilledNodeId,
   } = useTreeContext();
@@ -288,7 +289,7 @@ export function TreePage() {
   const [queryFilter, setQueryFilter] = useState<QueryDefinition[]>([]);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [explorerNodeId, setExplorerNodeId] = useState<string | null>(null);
-  const [explorerExpandedNodeIds, setExplorerExpandedNodeIds] = useState<string[]>([]);
+  const [collapsedDrillNodeId, setCollapsedDrillNodeId] = useState<string | null>(null);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -541,27 +542,29 @@ export function TreePage() {
     }
   }, [activeTree?.id, activeTree?.lastDrilledNodeId, tree, findNodeAndParent, isExplorerMode, isTwoPanelMode, setSelectedNodeIds]);
 
-  // Seed the explorer expansion state from the global tree whenever explorer mode is enabled
-  // or when the active tree changes (e.g. on page reload while already in explorer mode).
-  useEffect(() => {
-    if (isExplorerMode) {
-      setExplorerExpandedNodeIds(globalExpandedNodeIds);
+  // The drilled node is re-rooted, so its instance id ends in `_root` and is not a real tree position.
+  // It is shown expanded on drill without being persisted; a user collapse suppresses it until the next drill.
+  const explorerTopInstanceId = isExplorerMode && explorerNodeId ? `${explorerNodeId}_root` : null;
+  const isExplorerTopAutoExpanded = !!explorerTopInstanceId && collapsedDrillNodeId !== explorerNodeId;
+  const explorerExpandedNodeIds = useMemo(() => {
+    if (!isExplorerTopAutoExpanded || !explorerTopInstanceId || globalExpandedNodeIds.includes(explorerTopInstanceId)) {
+      return globalExpandedNodeIds;
     }
-  }, [isExplorerMode, activeTree?.id]);
+    return [...globalExpandedNodeIds, explorerTopInstanceId];
+  }, [globalExpandedNodeIds, isExplorerTopAutoExpanded, explorerTopInstanceId]);
 
-  // When drilling into a node, also ensure that node is marked as expanded.
-  useEffect(() => {
-    if (!isExplorerMode || !explorerNodeId || explorerNodes.length === 0) {
-      return;
+  const handleExplorerExpandedChange = useCallback((updater: SetStateAction<string[]>) => {
+    const nextExpandedIds = produce(explorerExpandedNodeIds, updater as (draft: WritableDraft<string[]>) => void | WritableDraft<string[]>);
+    if (explorerNodeId && explorerTopInstanceId) {
+      const isTopExpanded = nextExpandedIds.includes(explorerTopInstanceId);
+      if (isExplorerTopAutoExpanded && !isTopExpanded) setCollapsedDrillNodeId(explorerNodeId);
+      if (!isExplorerTopAutoExpanded && isTopExpanded) setCollapsedDrillNodeId(null);
     }
-    setExplorerExpandedNodeIds(prev => {
-      const next = new Set(prev);
-      for (const node of explorerNodes) {
-        next.add(`${node.id}_root`);
-      }
-      return Array.from(next);
-    });
-  }, [isExplorerMode, explorerNodeId, explorerNodes]);
+    const persistedExpandedIds = explorerTopInstanceId && !globalExpandedNodeIds.includes(explorerTopInstanceId)
+      ? nextExpandedIds.filter(id => id !== explorerTopInstanceId)
+      : nextExpandedIds;
+    setGlobalExpandedNodeIds(() => persistedExpandedIds);
+  }, [explorerExpandedNodeIds, explorerNodeId, explorerTopInstanceId, isExplorerTopAutoExpanded, globalExpandedNodeIds, setGlobalExpandedNodeIds]);
 
   const resetFilters = () => {
     setTemplateFilter(null);
@@ -693,7 +696,7 @@ export function TreePage() {
                     <TreeView 
                       nodes={isExplorerMode ? explorerNodes : filteredTree} 
                       overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
-                      onExpandedChange={isExplorerMode ? (updater) => setExplorerExpandedNodeIds(updater as any) : undefined}
+                      onExpandedChange={isExplorerMode ? handleExplorerExpandedChange : undefined}
                       isCompactOverride={true} 
                       isExplorer={true} 
                       onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
@@ -778,7 +781,7 @@ export function TreePage() {
             <TreeView 
               nodes={isExplorerMode ? explorerNodes : filteredTree} 
               overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
-              onExpandedChange={isExplorerMode ? (updater) => setExplorerExpandedNodeIds(updater as any) : undefined}
+              onExpandedChange={isExplorerMode ? handleExplorerExpandedChange : undefined}
               onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
             />
           </div>
@@ -820,7 +823,7 @@ export function TreePage() {
         <TreeView 
           nodes={isExplorerMode ? explorerNodes : filteredTree}
           overrideExpandedIds={isExplorerMode ? explorerExpandedNodeIds : undefined}
-          onExpandedChange={isExplorerMode ? (updater) => setExplorerExpandedNodeIds(updater as any) : undefined}
+          onExpandedChange={isExplorerMode ? handleExplorerExpandedChange : undefined}
           onNodeClick={isExplorerMode ? handleExplorerNodeClick : undefined}
         />
       </div>
