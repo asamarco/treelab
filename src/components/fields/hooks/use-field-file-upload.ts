@@ -5,6 +5,7 @@ import { Field, AttachmentInfo } from "@/lib/types";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useTreeContext } from "@/contexts/tree-context";
+import { sanitizeStoredFileName } from "@/lib/utils";
 
 interface UseFieldFileUploadOptions {
   field: Field;
@@ -54,7 +55,7 @@ export function useFieldFileUpload({
     setUploading(true);
 
     const safeTimestamp = new Date().toISOString().replace(/:/g, "-");
-    const uniqueFileName = `${safeTimestamp}-${generateUUID()}-${file.name}`;
+    const uniqueFileName = `${safeTimestamp}-${generateUUID()}-${sanitizeStoredFileName(file.name)}`;
 
     const formDataPayload = new FormData();
     formDataPayload.append("file", file);

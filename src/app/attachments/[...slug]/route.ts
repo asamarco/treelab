@@ -12,6 +12,16 @@ import fs from 'fs/promises';
 import { lookup } from 'mime-types';
 import { getDataDir } from '@/lib/data-dir';
 
+function contentDisposition(disposition: string, fileName: string): string {
+  const safeName = fileName.replace(/[\x00-\x1F\x7F]/g, '');
+  const asciiName = safeName.replace(/[^\x20-\x7E]|["\\]/g, '_');
+  const encodedName = encodeURIComponent(safeName).replace(
+    /['()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `${disposition}; filename="${asciiName}"; filename*=UTF-8''${encodedName}`;
+}
+
 export async function GET(request: NextRequest, { params }: any) {
   const { slug } = await params;
 
@@ -52,17 +62,8 @@ export async function GET(request: NextRequest, { params }: any) {
     headers.set('Content-Type', contentType);
 
     // If it's an image, display it inline. Otherwise, prompt for download.
-    if (contentType.startsWith('image/')) {
-      headers.set(
-        'Content-Disposition',
-        `inline; filename="${originalFileName}"`
-      );
-    } else {
-      headers.set(
-        'Content-Disposition',
-        `attachment; filename="${originalFileName}"`
-      );
-    }
+    const disposition = contentType.startsWith('image/') ? 'inline' : 'attachment';
+    headers.set('Content-Disposition', contentDisposition(disposition, originalFileName));
 
     headers.set('Cache-Control', 'private, max-age=31536000, immutable');
 

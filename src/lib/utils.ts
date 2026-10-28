@@ -211,6 +211,10 @@ export const evaluateCondition = (
   }
 };
 
+export function sanitizeStoredFileName(fileName: string): string {
+  return fileName.replace(/[^A-Za-z0-9._-]/g, "_");
+}
+
 /**
  * Extracts the original human-readable filename from a unique security-prefixed filename.
  * Supports both modern UUID-based prefixes and legacy random string prefixes.

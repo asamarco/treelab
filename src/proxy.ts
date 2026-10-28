@@ -15,10 +15,36 @@ import type { NextRequest } from 'next/server'
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. URL Path Validation
-  const maliciousCharsRegex = /[<>"';()]/;
+  // Session cookies are SameSite=None, so block cross-origin mutations on API routes.
+  if (pathname.startsWith('/api') && !['GET', 'HEAD'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+    if (origin) {
+      let originHost: string | null = null;
+      try {
+        originHost = new URL(origin).host;
+      } catch {
+        originHost = null;
+      }
+      if (!host || originHost !== host) {
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      }
+    }
+  }
 
-  if (maliciousCharsRegex.test(decodeURIComponent(pathname))) {
+  // 1. URL Path Validation
+  let decodedPathname: string;
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    decodedPathname = pathname;
+  }
+
+  // File-serving routes only read from disk, so quotes and parentheses in names are safe there.
+  const isFileRoute = pathname.startsWith('/attachments/');
+  const maliciousCharsRegex = isFileRoute ? /[<>]/ : /[<>"';()]/;
+
+  if (maliciousCharsRegex.test(decodedPathname)) {
     console.warn(`WARN: Blocked potentially malicious request to path: ${pathname}`);
     const url = request.nextUrl.clone();
     url.pathname = '/';
@@ -65,6 +91,6 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Apply middleware to all paths except for static files and API routes
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ]
 }

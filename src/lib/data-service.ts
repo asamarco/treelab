@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * This service handles all data persistence for the application by interacting
@@ -17,7 +16,7 @@ import { UserModel, TreeModel, TreeNodeModel, TeamModel } from './models';
 import { encrypt, decrypt, decryptText } from './encryption';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
-import { generateJsonForExport, generateNodeName, getContextualOrder, toPlainObject, assertId } from './utils';
+import { generateJsonForExport, generateNodeName, getContextualOrder, toPlainObject, assertId, sanitizeStoredFileName } from './utils';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getSession } from './session';
 import { getDataDir } from './data-dir';
@@ -1076,7 +1075,11 @@ export async function saveAttachment(userId: string, relativePath: string, dataU
     const DATA_DIR = getDataDir();
     const USERS_DIR = path.join(DATA_DIR, 'users');
 
-    const cleanRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
+    const normalizedRelativePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
+    const cleanRelativePath = path.join(
+        path.dirname(normalizedRelativePath),
+        sanitizeStoredFileName(path.basename(normalizedRelativePath))
+    );
     const fullPath = path.join(USERS_DIR, userId, 'attachments', cleanRelativePath);
 
     if (!fullPath.startsWith(path.join(USERS_DIR, userId, 'attachments'))) {
