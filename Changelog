@@ -1,3 +1,14 @@
+v0.8.5
+
+Feature: per-user storage usage reporting in Admin panel
+Feature: track last login activity in Admin panel
+Feature: add Archive group to remove trees from Roots without deleting them
+Improvement: restyle compact view to use less horizontal space
+Improvement: persist expanded/collapsed state when leaving the explorer view
+Bugfix: Render placeholder in child previews
+Bugfix: avoid duplicated welcome guide for new user signing update
+Bugfix: Sanitize and handle special characters of attachments
+
 v0.8.4 
 
 Fix regression preventing search of users by name for document sharing.
