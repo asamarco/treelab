@@ -142,8 +142,9 @@ function filterTree(
 
     let dataMatches = false;
     if (node.data) {
-      dataMatches = Object.values(node.data).some(value =>
-        String(value).toLowerCase().includes(lowercasedTerm)
+      const kanbanFieldIds = new Set(getTemplateById(node.templateId)?.fields.filter(f => f.type === 'kanban').map(f => f.id));
+      dataMatches = Object.entries(node.data).some(([fieldId, value]) =>
+        !kanbanFieldIds.has(fieldId) && String(value).toLowerCase().includes(lowercasedTerm)
       );
     }
     const isSearchMatch = !searchTerm.trim() || nameMatches || dataMatches;

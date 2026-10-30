@@ -110,7 +110,7 @@ export const CreateTokenResponseSchema = registry.register(
 export const FieldTypeEnum = z.enum([
   'text', 'number', 'date', 'dropdown', 'textarea', 'link',
   'picture', 'table-header', 'dynamic-dropdown', 'attachment',
-  'xy-chart', 'query', 'checklist', 'checkbox', 'spreadsheet', 'embed',
+  'xy-chart', 'query', 'kanban', 'checklist', 'checkbox', 'spreadsheet', 'embed',
   'markdown',
 ]);
 

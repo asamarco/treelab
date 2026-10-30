@@ -7,6 +7,7 @@ import { PicturePlugin } from '@/components/fields/picture-plugin';
 import { AttachmentPlugin } from '@/components/fields/attachment-plugin';
 import { MarkdownPlugin } from '@/components/fields/markdown-plugin';
 import { QueryPlugin } from '@/components/fields/query-plugin';
+import { KanbanPlugin } from '@/components/fields/kanban-plugin';
 
 // Register plugins
 FieldRegistry.register(SpreadsheetPlugin);
@@ -17,5 +18,6 @@ FieldRegistry.register(PicturePlugin);
 FieldRegistry.register(AttachmentPlugin);
 FieldRegistry.register(MarkdownPlugin);
 FieldRegistry.register(QueryPlugin);
+FieldRegistry.register(KanbanPlugin);
 
 export { FieldRegistry, isValueEmpty } from './registry';

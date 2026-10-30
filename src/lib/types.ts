@@ -9,7 +9,7 @@ import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "checklist" | "checkbox" | "spreadsheet" | "embed" | "markdown";
+export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "kanban" | "checklist" | "checkbox" | "spreadsheet" | "embed" | "markdown";
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
@@ -114,6 +114,41 @@ export function normalizeQueryFieldValue(value: unknown): Required<QueryFieldVal
         };
     }
     return { queries: [], displayColumns: {}, sortConfig: {} };
+}
+
+/**
+ * The stored value for a 'kanban' field type.
+ * Columns are the values of the dropdown field named groupByFieldName on the nodes matched by queries.
+ */
+export interface KanbanFieldValue {
+    schemaVersion: 1;
+    queries: QueryDefinition[];
+    groupByFieldName: string;
+    cardFieldNames: string[];
+}
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function normalizeKanbanFieldValue(value: unknown): KanbanFieldValue {
+    const raw = isPlainObject(value) ? value : {};
+    const queries = Array.isArray(raw.queries)
+        ? raw.queries.filter(isPlainObject).map(q => ({
+            id: typeof q.id === 'string' ? q.id : '',
+            targetTemplateId: typeof q.targetTemplateId === 'string' ? q.targetTemplateId : null,
+            rules: (Array.isArray(q.rules) ? q.rules.filter(isPlainObject) : []) as QueryRule[],
+        }))
+        : [];
+    const cardFieldNames = Array.isArray(raw.cardFieldNames)
+        ? Array.from(new Set(raw.cardFieldNames.filter((name): name is string => typeof name === 'string' && name !== '')))
+        : [];
+    return {
+        schemaVersion: 1,
+        queries,
+        groupByFieldName: typeof raw.groupByFieldName === 'string' ? raw.groupByFieldName : '',
+        cardFieldNames,
+    };
 }
 
 
