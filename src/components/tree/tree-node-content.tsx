@@ -32,7 +32,6 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { TreeSpreadsheetField } from "./tree-spreadsheet-field";
 import { FieldRegistry, isValueEmpty } from "@/lib/field-types";
-import { QueryFieldView } from "./query-field";
 
 interface TreeNodeContentProps {
     node: TreeNode;
@@ -199,10 +198,6 @@ function TreeNodeContentInner({ node, template, isExpanded, level, onSelect, con
                                                 </div>
                                             )
                                         }
-                                        case 'query': {
-                                            return <QueryFieldView key={field.id} field={field} node={node} template={template} isCompactView={isCompactView} />;
-                                        }
-
                                         default:
                                             return null;
                                     }

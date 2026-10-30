@@ -34,6 +34,9 @@ export interface FieldTypePlugin {
 
     // Optional check to determine if a value is empty for row group layout
     isEmpty?: (value: any, field: Field) => boolean;
+
+    // Omits the field from static HTML export
+    excludeFromStaticExport?: boolean;
 }
 
 export function isValueEmpty(value: any, field?: Field): boolean {
@@ -57,6 +60,7 @@ class Registry {
     getAll(): FieldTypePlugin[] {
         return Array.from(this.plugins.values());
     }
+
 }
 
 export const FieldRegistry = new Registry();

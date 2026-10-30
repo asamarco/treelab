@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Field, TreeNode, Template, normalizeQueryFieldValue } from "@/lib/types";
+import { Field, TreeNode, normalizeQueryFieldValue } from "@/lib/types";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useAuthContext } from "@/contexts/auth-context";
 import { useQueryResults } from "./use-query-results";
@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 export interface QueryFieldViewProps {
     field: Field;
     node: TreeNode;
-    template: Template;
     isCompactView: boolean;
 }
 

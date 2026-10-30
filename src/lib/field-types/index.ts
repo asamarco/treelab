@@ -6,6 +6,7 @@ import { ChecklistPlugin } from '@/components/fields/checklist-plugin';
 import { PicturePlugin } from '@/components/fields/picture-plugin';
 import { AttachmentPlugin } from '@/components/fields/attachment-plugin';
 import { MarkdownPlugin } from '@/components/fields/markdown-plugin';
+import { QueryPlugin } from '@/components/fields/query-plugin';
 
 // Register plugins
 FieldRegistry.register(SpreadsheetPlugin);
@@ -15,6 +16,6 @@ FieldRegistry.register(ChecklistPlugin);
 FieldRegistry.register(PicturePlugin);
 FieldRegistry.register(AttachmentPlugin);
 FieldRegistry.register(MarkdownPlugin);
+FieldRegistry.register(QueryPlugin);
 
 export { FieldRegistry, isValueEmpty } from './registry';
-

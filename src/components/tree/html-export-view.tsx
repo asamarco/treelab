@@ -110,7 +110,7 @@ const HtmlNode: React.FC<HtmlNodeProps> = ({ node, level, getTemplateById, image
 
         // Default: Reuse live ViewerComponent from FieldRegistry for all other field types
         // (markdown, checklist, embed, xy-chart, attachment, and future field plugins).
-        if (plugin?.ViewerComponent) {
+        if (plugin?.ViewerComponent && !plugin.excludeFromStaticExport) {
           const ViewerComponent = plugin.ViewerComponent;
           return (
             <div key={field.id}>

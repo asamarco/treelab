@@ -133,7 +133,6 @@ export function TreeNodeHeader({
       nodeHasAttachments ||
       template.fields.some(f => f.type === 'table-header') ||
       template.fields.some(f => f.type === 'checkbox') ||
-      template.fields.some(f => f.type === 'query') ||
       template.fields.some(f => {
         const plugin = FieldRegistry.get(f.type);
         if (!plugin) return false;

@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This component, `TemplateDesigner`, is the core UI for creating and editing templates.
@@ -63,7 +61,6 @@ import {
   Database,
   Paperclip,
   LineChart,
-  Search,
   ListChecks,
   CheckSquare,
   Grid3X3,
@@ -267,7 +264,7 @@ const orderedFieldTypes: { type: Field['type']; label?: string; icon?: React.Ele
   { type: "dynamic-dropdown", label: "Dynamic Dropdown", icon: Database },
   { type: "attachment" },
   { type: "xy-chart" },
-  { type: "query", label: "Query", icon: Search },
+  { type: "query" },
   { type: "checklist" },
   { type: "checkbox", label: "Checkbox", icon: CheckSquare },
   { type: "spreadsheet" },
