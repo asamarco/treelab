@@ -4,15 +4,14 @@ import React, { useMemo } from "react";
 import { KanbanSquare } from "lucide-react";
 import { FieldTypePlugin } from "@/lib/field-types/registry";
 import { Field, KanbanFieldValue, Template, normalizeKanbanFieldValue } from "@/lib/types";
-import { generateNodeName } from "@/lib/utils";
-import { useTreeContext } from "@/contexts/tree-context";
 import { useAuthContext } from "@/contexts/auth-context";
-import { useUIContext } from "@/contexts/ui-context";
+import { useTreeContext } from "@/contexts/tree-context";
 import { useQueryNodes } from "@/components/tree/query-field/use-query-results";
 import { QueryRulesEditor } from "@/components/tree/query-field/query-builder";
 import { QUERY_COLUMN_FIELD_TYPES } from "@/components/tree/query-field/constants";
-import { getColumnMergeKey } from "@/components/tree/query-field/merge-templates";
 import { KanbanBoard } from "@/components/visualizations/kanban-board";
+import { useBoardNodeActions } from "@/components/visualizations/shared/use-board-node-actions";
+import { uniqueFieldOptions } from "@/components/visualizations/shared/field-options";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,15 +21,6 @@ type KanbanViewerProps = React.ComponentProps<NonNullable<FieldTypePlugin["Viewe
 const isKanbanUnconfigured = (value: unknown): boolean => {
   const config = normalizeKanbanFieldValue(value);
   return config.queries.length === 0 || !config.groupByFieldName;
-};
-
-const uniqueFieldOptions = (fields: Field[]) => {
-  const seen = new Map<string, { value: string; label: string }>();
-  for (const f of fields) {
-    const key = getColumnMergeKey(f.name, f.type);
-    if (!seen.has(key)) seen.set(key, { value: f.name, label: f.name });
-  }
-  return Array.from(seen.values());
 };
 
 const KanbanEditorComponent = ({ value, onChange }: { field: Field; value: unknown; onChange: (value: KanbanFieldValue) => void }) => {
@@ -82,32 +72,11 @@ const KanbanEditorComponent = ({ value, onChange }: { field: Field; value: unkno
 const KanbanViewerComponent = ({ value, node, readOnly, isCompactView }: KanbanViewerProps) => {
   const config = useMemo(() => normalizeKanbanFieldValue(value), [value]);
   const nodes = useQueryNodes(config.queries);
-  const { templates, getTemplateById, updateNode, findNodeAndParent } = useTreeContext();
-  const { setDialogState, dialogState } = useUIContext();
+  const { templates } = useTreeContext();
   const { currentUser } = useAuthContext();
+  const { moveNode, openNode, editNode } = useBoardNodeActions(nodes);
 
   if (!node || isKanbanUnconfigured(value)) return null;
-
-  const handleMoveNode = (nodeId: string, patch: Record<string, string>) => {
-    const target = nodes.find(n => n.id === nodeId);
-    const template = target ? getTemplateById(target.templateId) : undefined;
-    if (!target || !template) return;
-    const data = { ...(target.data || {}), ...patch };
-    updateNode(target.id, { data, name: generateNodeName(template, data) });
-  };
-
-  const handleOpenNode = (nodeId: string) => {
-    setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: [nodeId] });
-  };
-
-  const handleEditNode = (nodeId: string) => {
-    const parentInfo = findNodeAndParent ? findNodeAndParent(nodeId) : null;
-    const instanceId = `${nodeId}_${parentInfo?.parent?.id || "root"}`;
-    const currentIds = dialogState.openNodeEditInstanceIds || [];
-    if (!currentIds.includes(instanceId)) {
-      setDialogState({ openNodeEditInstanceIds: [...currentIds, instanceId] });
-    }
-  };
 
   return (
     <KanbanBoard
@@ -117,9 +86,9 @@ const KanbanViewerComponent = ({ value, node, readOnly, isCompactView }: KanbanV
       readOnly={!!readOnly}
       isCompact={!!isCompactView}
       dateFormat={currentUser?.dateFormat}
-      onMoveNode={handleMoveNode}
-      onOpenNode={handleOpenNode}
-      onEditNode={handleEditNode}
+      onMoveNode={moveNode}
+      onOpenNode={openNode}
+      onEditNode={editNode}
     />
   );
 };

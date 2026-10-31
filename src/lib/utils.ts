@@ -103,7 +103,7 @@ export const generateNodeName = (template: Template, data: Record<string, any>, 
 
     let value = data[field.id];
 
-    if (value === undefined || value === null || value === "" || field.type === "kanban") {
+    if (value === undefined || value === null || value === "" || field.type === "kanban" || field.type === "calendar") {
       return "";
     }
 

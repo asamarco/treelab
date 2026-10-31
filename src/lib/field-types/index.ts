@@ -8,6 +8,7 @@ import { AttachmentPlugin } from '@/components/fields/attachment-plugin';
 import { MarkdownPlugin } from '@/components/fields/markdown-plugin';
 import { QueryPlugin } from '@/components/fields/query-plugin';
 import { KanbanPlugin } from '@/components/fields/kanban-plugin';
+import { CalendarPlugin } from '@/components/fields/calendar-plugin';
 
 // Register plugins
 FieldRegistry.register(SpreadsheetPlugin);
@@ -19,5 +20,6 @@ FieldRegistry.register(AttachmentPlugin);
 FieldRegistry.register(MarkdownPlugin);
 FieldRegistry.register(QueryPlugin);
 FieldRegistry.register(KanbanPlugin);
+FieldRegistry.register(CalendarPlugin);
 
 export { FieldRegistry, isValueEmpty } from './registry';

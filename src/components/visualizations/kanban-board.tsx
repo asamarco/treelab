@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -16,12 +16,15 @@ import {
 } from "@dnd-kit/core";
 import { GripVertical, MoreHorizontal } from "lucide-react";
 import { Template, TreeNode } from "@/lib/types";
-import { Icon } from "@/components/icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { getConditionalStyle } from "@/components/tree/tree-node-utils";
-import { formatCellValue } from "@/components/tree/query-field/format-cell-value";
+import {
+  NodeCardFieldLines,
+  NodeTitle,
+  getNodeCardFields,
+  useNodeOpenHandlers,
+} from "@/components/visualizations/shared/node-card";
 import {
   KanbanBoardConfig,
   KanbanColumn,
@@ -34,7 +37,6 @@ import {
 import { cn } from "@/lib/utils";
 
 const CARDS_PER_COLUMN_STEP = 50;
-const OPEN_CLICK_DELAY_MS = 250;
 
 export interface KanbanBoardProps {
   onEditNode?: (nodeId: string) => void;
@@ -345,25 +347,12 @@ function KanbanCardBody({
   handle,
   menu,
 }: KanbanCardBodyProps) {
-  const { icon, color } = getConditionalStyle(node, template);
-  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (openTimerRef.current) clearTimeout(openTimerRef.current);
-  }, []);
-  const fields = getKanbanCardFields(template, config).flatMap(field => {
-    const value = formatCellValue(node, field, dateFormat);
-    return value ? [{ id: field.id, name: field.name, value }] : [];
-  });
+  const open = useNodeOpenHandlers(node.id, { onOpen: onOpenNode, onEdit: onEditNode });
+  const fields = getNodeCardFields(node, getKanbanCardFields(template, config), dateFormat);
 
   return (
     <div
-      onDoubleClick={() => {
-        if (openTimerRef.current) {
-          clearTimeout(openTimerRef.current);
-          openTimerRef.current = null;
-        }
-        onEditNode?.(node.id);
-      }}
+      onDoubleClick={open.onDoubleClick}
       className={cn(
         "rounded-md border bg-card text-card-foreground shadow-sm p-2 space-y-1.5",
         widthClass,
@@ -371,27 +360,10 @@ function KanbanCardBody({
     >
       <div className="flex items-center gap-1">
         {handle}
-        <Icon name={icon as any} className="h-4 w-4 shrink-0" style={{ color }} />
-        <button
-          type="button"
-          className={cn("text-left font-medium truncate flex-1 min-w-0 hover:underline", isCompact ? "text-xs" : "text-sm")}
-          onClick={() => {
-            if (openTimerRef.current) clearTimeout(openTimerRef.current);
-            openTimerRef.current = setTimeout(() => {
-              openTimerRef.current = null;
-              onOpenNode?.(node.id);
-            }, OPEN_CLICK_DELAY_MS);
-          }}
-        >
-          {node.name}
-        </button>
+        <NodeTitle node={node} template={template} isCompact={isCompact} onClick={open.onTitleClick} />
         {menu}
       </div>
-      {fields.map(field => (
-        <div key={field.id} className={cn("text-muted-foreground truncate", isCompact ? "text-[10px]" : "text-xs")}>
-          <span className="font-medium">{field.name}:</span> {field.value}
-        </div>
-      ))}
+      <NodeCardFieldLines fields={fields} isCompact={isCompact} />
     </div>
   );
 }

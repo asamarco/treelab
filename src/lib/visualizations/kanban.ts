@@ -1,6 +1,5 @@
 import { Field, KanbanFieldValue, Template, TreeNode } from "@/lib/types";
-import { QUERY_COLUMN_FIELD_TYPES } from "@/components/tree/query-field/constants";
-import { getColumnMergeKey } from "@/components/tree/query-field/merge-templates";
+import { findFieldByName, getCardFields } from "@/lib/visualizations/shared";
 
 export type KanbanBoardConfig = Pick<KanbanFieldValue, "groupByFieldName" | "cardFieldNames">;
 
@@ -25,9 +24,7 @@ export interface KanbanColumnsResult {
 const valueColumnKey = (value: string) => `v:${value}`;
 
 export function findGroupByField(template: Template | undefined, groupByFieldName: string): Field | undefined {
-    if (!template || !groupByFieldName) return undefined;
-    const targetKey = getColumnMergeKey(groupByFieldName, "dropdown");
-    return template.fields.find(f => f.type === "dropdown" && getColumnMergeKey(f.name, f.type) === targetKey);
+    return findFieldByName(template, groupByFieldName, "dropdown");
 }
 
 function readGroupValue(node: TreeNode, field: Field): string | null {
@@ -97,18 +94,8 @@ export function getKanbanCardFields(
     template: Template | undefined,
     config: KanbanBoardConfig,
 ): Field[] {
-    if (!template || config.cardFieldNames.length === 0) return [];
     const groupByField = findGroupByField(template, config.groupByFieldName);
-    const result: Field[] = [];
-    for (const name of config.cardFieldNames) {
-        const field = template.fields.find(f =>
-            f.id !== groupByField?.id &&
-            QUERY_COLUMN_FIELD_TYPES.includes(f.type) &&
-            getColumnMergeKey(f.name, f.type) === getColumnMergeKey(name, f.type),
-        );
-        if (field && !result.includes(field)) result.push(field);
-    }
-    return result;
+    return getCardFields(template, config.cardFieldNames, groupByField ? [groupByField.id] : []);
 }
 
 /**

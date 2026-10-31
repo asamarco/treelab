@@ -9,7 +9,7 @@ import type { WritableDraft } from 'immer';
 import React, { Dispatch, SetStateAction } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "kanban" | "checklist" | "checkbox" | "spreadsheet" | "embed" | "markdown";
+export type FieldType = "text" | "number" | "date" | "dropdown" | "textarea" | "link" | "picture" | "table-header" | "dynamic-dropdown" | "attachment" | "xy-chart" | "query" | "kanban" | "calendar" | "checklist" | "checkbox" | "spreadsheet" | "embed" | "markdown";
 export type Theme = "light" | "dark" | "system";
 
 export interface Field {
@@ -131,23 +131,54 @@ function isPlainObject(value: unknown): value is Record<string, any> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function normalizeQueryDefinitions(raw: unknown): QueryDefinition[] {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(isPlainObject).map(q => ({
+        id: typeof q.id === 'string' ? q.id : '',
+        targetTemplateId: typeof q.targetTemplateId === 'string' ? q.targetTemplateId : null,
+        rules: (Array.isArray(q.rules) ? q.rules.filter(isPlainObject) : []) as QueryRule[],
+    }));
+}
+
+function normalizeFieldNames(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    return Array.from(new Set(raw.filter((name): name is string => typeof name === 'string' && name !== '')));
+}
+
 export function normalizeKanbanFieldValue(value: unknown): KanbanFieldValue {
     const raw = isPlainObject(value) ? value : {};
-    const queries = Array.isArray(raw.queries)
-        ? raw.queries.filter(isPlainObject).map(q => ({
-            id: typeof q.id === 'string' ? q.id : '',
-            targetTemplateId: typeof q.targetTemplateId === 'string' ? q.targetTemplateId : null,
-            rules: (Array.isArray(q.rules) ? q.rules.filter(isPlainObject) : []) as QueryRule[],
-        }))
-        : [];
-    const cardFieldNames = Array.isArray(raw.cardFieldNames)
-        ? Array.from(new Set(raw.cardFieldNames.filter((name): name is string => typeof name === 'string' && name !== '')))
-        : [];
     return {
         schemaVersion: 1,
-        queries,
+        queries: normalizeQueryDefinitions(raw.queries),
         groupByFieldName: typeof raw.groupByFieldName === 'string' ? raw.groupByFieldName : '',
-        cardFieldNames,
+        cardFieldNames: normalizeFieldNames(raw.cardFieldNames),
+    };
+}
+
+/**
+ * The stored value for a 'calendar' field type.
+ * Events are the nodes matched by queries, positioned by the date field named dateFieldName.
+ */
+export type CalendarView = 'month' | 'agenda';
+
+export interface CalendarFieldValue {
+    schemaVersion: 1;
+    queries: QueryDefinition[];
+    dateFieldName: string;
+    cardFieldNames?: string[];
+    defaultView?: CalendarView;
+    weekStartsOn?: 0 | 1;
+}
+
+export function normalizeCalendarFieldValue(value: unknown): Required<CalendarFieldValue> {
+    const raw = isPlainObject(value) ? value : {};
+    return {
+        schemaVersion: 1,
+        queries: normalizeQueryDefinitions(raw.queries),
+        dateFieldName: typeof raw.dateFieldName === 'string' ? raw.dateFieldName : '',
+        cardFieldNames: normalizeFieldNames(raw.cardFieldNames),
+        defaultView: raw.defaultView === 'agenda' ? 'agenda' : 'month',
+        weekStartsOn: raw.weekStartsOn === 0 ? 0 : 1,
     };
 }
 
