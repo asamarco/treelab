@@ -337,6 +337,12 @@ export interface TreeSetting {
 
 export const ARCHIVE_GROUP_NAME = "Archive";
 
+export interface NodeShortcut {
+    treeId: string;
+    key: string;
+    nodeId: string;
+}
+
 export interface User {
     id: string;
     _id?: any; // Mongoose internal
@@ -356,6 +362,7 @@ export interface User {
     lastLoginAt?: string;
     treeSettings?: TreeSetting[];
     customGroups?: string[];
+    nodeShortcuts?: NodeShortcut[];
 }
 
 export interface GlobalSettings {

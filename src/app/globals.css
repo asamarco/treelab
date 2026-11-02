@@ -230,6 +230,23 @@
   display: none !important;
 }
 
+@keyframes node-shortcut-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.node-shortcut-overlay {
+  animation: node-shortcut-overlay-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-shortcut-overlay {
+    animation: none;
+  }
+}
+
 @media (hover: hover) {
   body:not(.read-only-view) .tree-node-card:hover {
     background-color: hsl(var(--accent) / 0.3);

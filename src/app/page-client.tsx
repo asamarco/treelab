@@ -62,6 +62,9 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { NodeShortcutOverlay } from "@/components/tree/node-shortcut-overlay";
+import { useNodeShortcuts } from "@/hooks/use-node-shortcuts";
+import type { ShortcutKey } from "@/lib/node-shortcuts";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -263,8 +266,9 @@ export function TreePage() {
     lastDrilledNodeId,
     setLastDrilledNodeId,
   } = useTreeContext();
-  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isExplorerMode, setIsExplorerMode, isAnyModalOpen } = useUIContext();
+  const { setDialogState, setIsCompactView, setShowNodeOrder, dialogState, isCompactView, showNodeOrder, isTwoPanelMode, setIsTwoPanelMode, isExplorerMode, setIsExplorerMode, isAnyModalOpen, shortcutSlot, setShortcutSlot } = useUIContext();
   const isMobile = useIsMobile();
+  const { canUse: canUseShortcuts, shortcuts: treeShortcuts, resolveSlot, clearSlot } = useNodeShortcuts();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -406,7 +410,22 @@ export function TreePage() {
         return;
       }
 
-
+      if (/^[0-9]$/.test(event.key)) {
+        if (!canUseShortcuts || document.body.classList.contains('read-only-view')) return;
+        event.preventDefault();
+        const slot = event.key as ShortcutKey;
+        if (shortcutSlot === slot) {
+          setShortcutSlot(null);
+        } else if (resolveSlot(slot)) {
+          setShortcutSlot(slot);
+        } else if (treeShortcuts.some(shortcut => shortcut.key === slot)) {
+          clearSlot(slot);
+          toast({ title: `Slot ${slot} was cleared`, description: 'The node it pointed to no longer exists.' });
+        } else {
+          toast({ title: `Slot ${slot} is empty`, description: "Open a node's menu and choose Link → Assign shortcut to pin it here." });
+        }
+        return;
+      }
 
       switch (event.key) {
         case ' ':
@@ -446,7 +465,29 @@ export function TreePage() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode, setIsExplorerMode, tree, setDialogState]);
+  }, [setIsCompactView, setShowStarred, setShowNodeOrder, reloadActiveTree, isAnyModalOpen, currentUser, isMobile, setIsTwoPanelMode, setIsExplorerMode, tree, setDialogState, canUseShortcuts, shortcutSlot, setShortcutSlot, resolveSlot, clearSlot, treeShortcuts, toast]);
+
+  const activeTreeId = activeTree?.id;
+  useEffect(() => {
+    setShortcutSlot(null);
+  }, [activeTreeId, setShortcutSlot]);
+
+  useEffect(() => {
+    if (!shortcutSlot) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || isAnyModalOpen) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      if (document.querySelector('[role="menu"][data-state="open"], [role="listbox"][data-state="open"], [role="dialog"][data-state="open"]')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setShortcutSlot(null);
+    };
+    window.addEventListener('keydown', handleEscape, true);
+    return () => {
+      window.removeEventListener('keydown', handleEscape, true);
+    };
+  }, [shortcutSlot, isAnyModalOpen, setShortcutSlot]);
 
   const filteredTree = useMemo(() => {
     try {
@@ -1105,10 +1146,22 @@ export function TreePage() {
     </div>
   );
 
+  const shortcutNode = shortcutSlot ? resolveSlot(shortcutSlot) : null;
+  const shortcutParentId = shortcutNode ? findNodeAndParent(shortcutNode.id)?.parent?.id ?? null : null;
+  const isPublicView = typeof document !== 'undefined' && document.body.classList.contains('read-only-view');
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <GithubTokenBanner />
+      {shortcutSlot && shortcutNode && !isPublicView && (
+        <NodeShortcutOverlay
+          slotKey={shortcutSlot}
+          node={shortcutNode}
+          contextualParentId={shortcutParentId}
+          onClose={() => setShortcutSlot(null)}
+        />
+      )}
       <main className={cn("flex-1 px-4 sm:px-6 lg:px-8 pb-4 md:pb-8 flex flex-col", isTwoPanelMode && !isMobile && "pb-0 md:pb-0")}>
         <div className={cn("sticky z-20 bg-background/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-[10px] border-b", currentUser ? "top-16" : "top-0")}>
           {activeTree && (

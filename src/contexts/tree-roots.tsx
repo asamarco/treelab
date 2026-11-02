@@ -82,6 +82,8 @@ import {
 import { getStorageInfo, purgeUnusedFiles } from '@/lib/storage-service';
 import { readArchive } from "@/lib/archive";
 import { useAuthContext } from "./auth-context";
+import { updateUserSettings } from "@/lib/auth-service";
+import { getShortcutHintsForTree, remapShortcutHints, sanitizeNodeShortcuts } from "@/lib/node-shortcuts";
 import path from 'path';
 import { useDebouncedCallback } from "use-debounce";
 import { useGitSync } from "@/hooks/useGitSync";
@@ -175,7 +177,7 @@ function sanitizeExpandedNodeIds(ids: string[], tree: TreeNode[]): string[] {
 }
 
 export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRootsResult {
-  const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser } = useAuthContext();
+  const { currentUser, setLastActiveTreeId: setLastActiveTreeIdForUser, setNodeShortcuts } = useAuthContext();
   const [isDataLoaded, setIsDataLoaded] = useState(!!initialTree);
   const [isTreeDataLoading, setIsTreeDataLoading] = useState(!initialTree);
   const [isTeamsLoading, setIsTeamsLoading] = useState(false);
@@ -564,7 +566,7 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         }
       });
 
-      const { id, ...restOfTreeFile } = jsonData;
+      const { id, shortcuts: shortcutHints, ...restOfTreeFile } = jsonData;
       const newTreeData = {
         ...restOfTreeFile,
         title: jsonData.title || "Imported Tree",
@@ -583,6 +585,22 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
         await batchCreateNodes(nodesForDb);
       }
 
+      const importedShortcuts = remapShortcutHints(shortcutHints, idMap, treeId);
+      if (importedShortcuts.length > 0) {
+        const isCurrentUser = currentUser?.id === userToImportFor.id;
+        const existingShortcuts = currentUser?.id === userToImportFor.id ? currentUser.nodeShortcuts : userToImportFor.nodeShortcuts;
+        const mergedShortcuts = sanitizeNodeShortcuts([...(existingShortcuts ?? []), ...importedShortcuts]);
+        try {
+          if (isCurrentUser) {
+            setNodeShortcuts(mergedShortcuts);
+          } else {
+            await updateUserSettings({ nodeShortcuts: mergedShortcuts });
+          }
+        } catch (error) {
+          console.error("ERROR: Failed to save imported node shortcuts:", error);
+        }
+      }
+
       const finalTree = await loadTreeFile(treeId);
       if (finalTree) {
         setAllTrees((draft) => { draft.push(finalTree) });
@@ -591,8 +609,8 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
       }
       return null;
     },
-    [currentUser, allTrees, setAllTrees, setActiveTreeId]
-  );
+    [currentUser, allTrees, setAllTrees, setActiveTreeId, setNodeShortcuts]
+    );
 
   const deleteTree = async (id: string) => {
     if (!currentUser) return;
@@ -629,7 +647,12 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
     }
 
     try {
-      const treeJson = generateJsonForExport(treeToDuplicate.title, treeToDuplicate.tree, treeToDuplicate.templates);
+      const treeJson = generateJsonForExport(
+        treeToDuplicate.title,
+        treeToDuplicate.tree,
+        treeToDuplicate.templates,
+        getShortcutHintsForTree(currentUser.nodeShortcuts, treeId)
+      );
       treeJson.title = `${treeToDuplicate.title} - Copy`;
 
       await importTreeFromJson(treeJson, currentUser);
@@ -1407,7 +1430,12 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const exportNodesAsJson = (nodesToExport: TreeNode[], baseName: string) => {
     if (!activeTree || nodesToExport.length === 0) return;
-    const dataToExport = generateJsonForExport(baseName, nodesToExport, activeTree.templates);
+    const dataToExport = generateJsonForExport(
+      baseName,
+      nodesToExport,
+      activeTree.templates,
+      getShortcutHintsForTree(currentUser?.nodeShortcuts, activeTree.id)
+    );
     const data = JSON.stringify(dataToExport, null, 2);
     const blob = new Blob([data], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1422,8 +1450,13 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
 
   const exportNodesAsArchive = async (nodes: TreeNode[], baseName: string) => {
     if (!activeTree || !currentUser) return;
-    await createNodesArchive(nodes, activeTree.tree, activeTree.templates, baseName, (relativePath: string) =>
-      fetchFileAsBuffer(currentUser!.id, relativePath)
+    await createNodesArchive(
+      nodes,
+      activeTree.tree,
+      activeTree.templates,
+      baseName,
+      (relativePath: string) => fetchFileAsBuffer(currentUser!.id, relativePath),
+      getShortcutHintsForTree(currentUser.nodeShortcuts, activeTree.id)
     );
   };
 

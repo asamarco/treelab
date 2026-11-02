@@ -12,6 +12,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { TreeNode, Template, TreeFile, ConditionalRuleOperator } from "./types";
+import type { ShortcutHint } from "./node-shortcuts";
 import { format, parse, isValid, parseISO } from "date-fns";
 import path from 'path';
 
@@ -139,12 +140,14 @@ export const generateNodeName = (template: Template, data: Record<string, any>, 
  *   - `nodes`: {Array<Omit<TreeNode, 'children' | '_id'>>} A **flat array** of all nodes included in the export (root nodes and all their descendants). The hierarchical structure is maintained via the `parentIds` property on each node. The `children` array is explicitly removed from each node.
  *   - `templates`: {Template[]} The complete array of templates for this tree.
  *   - `rootNodeIds`: {string[]} An array of node IDs corresponding to the root nodes passed into `nodesToExport`. This is used to reconstruct the tree's top level.
+ *   - `shortcuts`: {ShortcutHint[]} Optional. Only present when at least one hint points into the exported nodes, sorted by key.
  */
 export const generateJsonForExport = (
   title: string,
   nodesToExport: TreeNode[],
-  allTemplates: Template[]
-): Partial<TreeFile> => {
+  allTemplates: Template[],
+  shortcuts?: ShortcutHint[]
+): Partial<TreeFile> & { shortcuts?: ShortcutHint[] } => {
   const flattenedNodes: Omit<TreeNode, 'children' | '_id'>[] = [];
   const visitedNodeIds = new Set<string>();
 
@@ -164,11 +167,17 @@ export const generateJsonForExport = (
   };
   getDescendantsAndSelf(nodesToExport);
 
+  const exportedNodeIds = new Set(flattenedNodes.map(n => n.id));
+  const exportedShortcuts = (shortcuts ?? [])
+    .filter(shortcut => exportedNodeIds.has(shortcut.nodeId))
+    .sort((a, b) => a.key.localeCompare(b.key));
+
   return {
     title: title,
     nodes: flattenedNodes,
     templates: allTemplates,
-    rootNodeIds: nodesToExport.map(n => n.id)
+    rootNodeIds: nodesToExport.map(n => n.id),
+    ...(exportedShortcuts.length > 0 ? { shortcuts: exportedShortcuts } : {}),
   };
 };
 

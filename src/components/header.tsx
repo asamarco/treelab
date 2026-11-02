@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview
  * Defines the main application header component, `AppHeader`.
@@ -27,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useTreeContext } from "@/contexts/tree-context";
 import { useUnsavedChanges } from "@/contexts/unsaved-changes-context";
+import { NodeShortcutsHeaderMenu } from "@/components/tree/node-shortcut-menus";
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -102,6 +102,7 @@ export function AppHeader() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+             <NodeShortcutsHeaderMenu />
              <div className="flex items-center gap-1 rounded-full p-1 bg-muted">
                 <Button variant={!isDarkMode ? 'secondary' : 'ghost'} size="icon" className="h-6 w-6 rounded-full" onClick={() => handleThemeChange(false)}>
                     <Sun className="h-4 w-4" />

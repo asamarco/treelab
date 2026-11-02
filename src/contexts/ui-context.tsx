@@ -9,6 +9,7 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { TreeNode } from "@/lib/types";
+import type { ShortcutKey } from "@/lib/node-shortcuts";
 
 export interface DialogState {
   isAddNodeOpen?: boolean;
@@ -48,6 +49,8 @@ interface UIContextType {
   ignoreClicksUntil: number;
   setIgnoreClicksUntil: (timestamp: number) => void;
   isAnyModalOpen: boolean;
+  shortcutSlot: ShortcutKey | null;
+  setShortcutSlot: (slot: ShortcutKey | null) => void;
 }
 
 export const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -77,6 +80,7 @@ export function UIProvider({
 
   const [dialogState, setDialogStateInternal] = useState<Partial<DialogState>>({});
   const [ignoreClicksUntil, setIgnoreClicksUntil] = useState(0);
+  const [shortcutSlot, setShortcutSlot] = useState<ShortcutKey | null>(null);
 
   // Use non-persistent state if initialStandardView is true (e.g. for consistent first impression on public pages)
   const isCompactView = initialStandardView ? isCompactViewLocal : isCompactViewPersistent;
@@ -117,6 +121,8 @@ export function UIProvider({
     ignoreClicksUntil,
     setIgnoreClicksUntil,
     isAnyModalOpen,
+    shortcutSlot,
+    setShortcutSlot,
   };
 
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;

@@ -36,7 +36,7 @@ export function QueryResultTable({
     sortConfig,
     onSortChange,
 }: QueryResultTableProps) {
-    const { getTemplateById, selectAndCenterNode, findNodeAndParent } = useTreeContext();
+    const { getTemplateById, selectAndCenterNode, findNodeAndParent, expandToNode } = useTreeContext();
     const { setDialogState, dialogState } = useUIContext();
 
     const clickTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -60,6 +60,7 @@ export function QueryResultTable({
 
             const parentInfo = findNodeAndParent ? findNodeAndParent(resultNode.id) : null;
             const instanceId = `${resultNode.id}_${parentInfo?.parent?.id || 'root'}`;
+            expandToNode(resultNode.id);
             const currentIds = dialogState.openNodeEditInstanceIds || [];
             if (!currentIds.includes(instanceId)) {
                 setDialogState({ openNodeEditInstanceIds: [...currentIds, instanceId] });

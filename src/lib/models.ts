@@ -141,6 +141,12 @@ const TreeSettingSchema = new Schema({
   order: { type: Number },
 }, { _id: false });
 
+const NodeShortcutSchema = new Schema({
+  treeId: { type: String, required: true, maxlength: 128 },
+  key: { type: String, required: true, match: /^[0-9]$/ },
+  nodeId: { type: String, required: true, maxlength: 128 },
+}, { _id: false });
+
 const UserSchema = new Schema<User>({
   _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
   username: { type: String, required: true, unique: true, index: true },
@@ -157,6 +163,7 @@ const UserSchema = new Schema<User>({
   lastLoginAt: { type: String },
   treeSettings: [TreeSettingSchema],
   customGroups: [String],
+  nodeShortcuts: [NodeShortcutSchema],
 });
 UserSchema.pre('save', function (next) {
   if (this.isNew) {

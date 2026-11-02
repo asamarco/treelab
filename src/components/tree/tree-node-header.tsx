@@ -40,6 +40,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { getConditionalStyle, hasAttachments } from "./tree-node-utils";
+import { NodeShortcutSubMenu } from "./node-shortcut-menus";
 import { COMPACT_ICON_CLASS, getCompactChevronWidthPx } from "./compact-layout";
 import { HtmlExportView } from "./html-export-view";
 import { useAuthContext } from "@/contexts/auth-context";
@@ -343,9 +344,20 @@ export function TreeNodeHeader({
             <DropdownMenuItem onSelect={handleCut}>
               <Scissors className="mr-2 h-4 w-4" /> Cut
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleCopyLink}>
-              <LinkIcon className="mr-2 h-4 w-4" /> Copy Link
-            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <LinkIcon className="mr-2 h-4 w-4" />
+                <span>Link</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onSelect={handleCopyLink}>
+                    <LinkIcon className="mr-2 h-4 w-4" /> Copy Link
+                  </DropdownMenuItem>
+                  <NodeShortcutSubMenu node={node} />
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger disabled={!clipboard.nodes}>
                 <ClipboardPaste className="mr-2 h-4 w-4" />
@@ -545,6 +557,8 @@ export function TreeNodeHeader({
                       <DropdownMenuItem onSelect={() => moveNodeOrder(node.id, 'down', contextualParentId)} disabled={contextualOrder === maxOrder}>
                         <ArrowDown className="mr-2 h-4 w-4" /> Move Down
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <NodeShortcutSubMenu node={node} />
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

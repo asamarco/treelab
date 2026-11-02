@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { User, GlobalSettings, GitSettings } from "@/lib/types";
+import { User, GlobalSettings, GitSettings, NodeShortcut } from "@/lib/types";
 import {
   fetchAllUsers,
   addUser as addUserOnServer,
@@ -186,6 +186,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
         twoPanelExpansionDepth: currentUser.twoPanelExpansionDepth,
         treeSettings: currentUser.treeSettings,
         customGroups: currentUser.customGroups,
+        nodeShortcuts: currentUser.nodeShortcuts,
       });
     }
   }, [isAuthRequired, currentUser]);
@@ -279,7 +280,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setCurrentUser(prev => prev ? { ...prev, twoPanelExpansionDepth: depth } : null);
   };
 
-  const persistGroupSettings = (settings: Pick<User, 'treeSettings' | 'customGroups'>) => {
+  const persistGroupSettings = (settings: Pick<User, 'treeSettings' | 'customGroups' | 'nodeShortcuts'>) => {
     updateUserSettings(settings).catch(error => console.error("ERROR: Failed to save group settings:", error));
   };
 
@@ -293,6 +294,12 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     if (!currentUser) return;
     setCurrentUser(prev => prev ? { ...prev, customGroups: groups } : null);
     if (!isAuthRequired) persistGroupSettings({ customGroups: groups });
+  };
+
+  const setNodeShortcuts = (shortcuts: NodeShortcut[]) => {
+    if (!currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, nodeShortcuts: shortcuts } : null);
+    if (!isAuthRequired) persistGroupSettings({ nodeShortcuts: shortcuts });
   };
 
   const setGlobalSettingsState = async (settings: GlobalSettings) => {
@@ -350,6 +357,7 @@ export function useAuth({ isAuthRequired, defaultUserId }: UseAuthProps) {
     setTwoPanelExpansionDepth,
     setTreeSettings,
     setCustomGroups,
+    setNodeShortcuts,
     revokeAllSessions,
     githubTokenStatus,
     checkGithubToken,

@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This utility file provides functions for creating and reading ZIP archives
@@ -11,6 +9,7 @@ import { saveAs } from 'file-saver';
 import { TreeFile, TreeNode, ArchiveData, AttachmentInfo, Template } from './types';
 import path from 'path';
 import { generateJsonForExport } from './utils';
+import type { ShortcutHint } from './node-shortcuts';
 
 /**
  * Builds a hierarchical path string for a given node instance.
@@ -95,17 +94,19 @@ function findFilePathsInTree(
  * @param templates All templates of the tree.
  * @param archiveName The base name for the downloaded ZIP file.
  * @param fetcher A function that can fetch a file's buffer based on its relative path.
+ * @param shortcuts Optional node shortcut hints to write into tree.json.
  */
 export async function createNodesArchive(
     nodesToExport: TreeNode[],
     allTreeNodes: TreeNode[],
     templates: Template[],
     archiveName: string,
-    fetcher: (relativePath: string) => Promise<Buffer>
+    fetcher: (relativePath: string) => Promise<Buffer>,
+    shortcuts?: ShortcutHint[]
 ): Promise<void> {
     const zip = new JSZip();
-    
-    const treeJsonData = generateJsonForExport(archiveName, nodesToExport, templates);
+
+    const treeJsonData = generateJsonForExport(archiveName, nodesToExport, templates, shortcuts);
     zip.file('tree.json', JSON.stringify(treeJsonData, null, 2));
     
     const nodeMap = new Map<string, TreeNode>();

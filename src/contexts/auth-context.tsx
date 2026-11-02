@@ -1,5 +1,3 @@
-
-
 /**
  * @fileoverview
  * This file defines the context for managing all UI state.
@@ -9,7 +7,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode, useState, useEffect, useMemo, useCallback } from "react";
-import { User, GlobalSettings, GitSettings } from "@/lib/types";
+import { User, GlobalSettings, GitSettings, NodeShortcut } from "@/lib/types";
 import { useAuth as useAuthHook } from "@/hooks/useAuth";
 
 type Theme = "light" | "dark" | "system";
@@ -45,6 +43,7 @@ interface AuthContextType {
   setTwoPanelExpansionDepth: (depth: number) => void;
   setTreeSettings: (settings: User['treeSettings']) => void;
   setCustomGroups: (groups: string[]) => void;
+  setNodeShortcuts: (shortcuts: NodeShortcut[]) => void;
   revokeAllSessions: () => Promise<void>;
 
   // GitHub PAT validation
@@ -87,6 +86,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId, isApiEna
     setTwoPanelExpansionDepth,
     setTreeSettings,
     setCustomGroups,
+    setNodeShortcuts,
     revokeAllSessions,
     githubTokenStatus,
     checkGithubToken,
@@ -148,6 +148,7 @@ export function AuthProvider({ children, isAuthRequired, defaultUserId, isApiEna
     setTwoPanelExpansionDepth,
     setTreeSettings,
     setCustomGroups,
+    setNodeShortcuts,
     revokeAllSessions,
     githubTokenStatus,
     checkGithubToken,
@@ -164,4 +165,3 @@ export function useAuthContext() {
   }
   return context;
 }
-

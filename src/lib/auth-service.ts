@@ -15,6 +15,7 @@ import { createSessionInServerAction, getSession } from './session';
 import crypto from 'crypto';
 import { unstable_noStore as noStore } from 'next/cache';
 import { toPlainObject, escapeRegExp, assertId } from './utils';
+import { sanitizeNodeShortcuts } from './node-shortcuts';
 
 // --- Password Hashing (Server-Side only) ---
 const hashPassword = (password: string, salt: string): Promise<string> => {
@@ -263,7 +264,7 @@ export async function resetUserPasswordByAdmin(userId: string, newPassword: stri
     await UserModel.findByIdAndUpdate(canonicalUserId, { passwordHash: newPasswordHash, salt: newSalt }).exec();
 }
 
-export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes' | 'showChildrenInEditForm' | 'twoPanelExpansionDepth' | 'treeSettings' | 'customGroups'>>): Promise<void> {
+export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 'lastActiveTreeId' | 'gitSettings' | 'dateFormat' | 'inactivityTimeoutMinutes' | 'showChildrenInEditForm' | 'twoPanelExpansionDepth' | 'treeSettings' | 'customGroups' | 'nodeShortcuts'>>): Promise<void> {
     const session = await getSession();
     if (!session?.userId) throw new Error("Authentication required.");
 
@@ -272,7 +273,7 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
     const allowedKeys: Array<keyof User> = [
         'theme', 'lastActiveTreeId', 'gitSettings', 'dateFormat',
         'inactivityTimeoutMinutes', 'showChildrenInEditForm',
-        'twoPanelExpansionDepth', 'treeSettings', 'customGroups'
+        'twoPanelExpansionDepth', 'treeSettings', 'customGroups', 'nodeShortcuts'
     ];
 
     const settingsToSave: Record<string, any> = {};
@@ -286,6 +287,10 @@ export async function updateUserSettings(settings: Partial<Pick<User, 'theme' | 
 
     if (settingsToSave.lastActiveTreeId) {
         assertId(settingsToSave.lastActiveTreeId, 'lastActiveTreeId');
+    }
+
+    if (settingsToSave.nodeShortcuts !== undefined) {
+        settingsToSave.nodeShortcuts = sanitizeNodeShortcuts(settingsToSave.nodeShortcuts);
     }
 
     // Check if gitSettings are being updated and if the PAT is present
