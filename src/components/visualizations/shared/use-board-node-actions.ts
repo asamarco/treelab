@@ -6,7 +6,7 @@ import { TreeNode } from "@/lib/types";
 import { generateNodeName } from "@/lib/utils";
 
 export function useBoardNodeActions(nodes: TreeNode[]) {
-  const { getTemplateById, updateNode, findNodeAndParent } = useTreeContext();
+  const { getTemplateById, updateNode, findNodeAndParent, expandToNode } = useTreeContext();
   const { setDialogState, dialogState } = useUIContext();
 
   const moveNode = (nodeId: string, patch: Record<string, string>) => {
@@ -24,6 +24,7 @@ export function useBoardNodeActions(nodes: TreeNode[]) {
   const editNode = (nodeId: string) => {
     const parentInfo = findNodeAndParent ? findNodeAndParent(nodeId) : null;
     const instanceId = `${nodeId}_${parentInfo?.parent?.id || "root"}`;
+    expandToNode(nodeId);
     const currentIds = dialogState.openNodeEditInstanceIds || [];
     if (!currentIds.includes(instanceId)) {
       setDialogState({ openNodeEditInstanceIds: [...currentIds, instanceId] });

@@ -199,7 +199,7 @@ function KanbanColumnView({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col flex-none rounded-md border bg-muted/40 p-2 gap-2 transition-colors",
+        "flex flex-col flex-none box-content rounded-md border bg-muted/40 p-2 gap-2 transition-colors",
         widthClass,
         isOver && "border-primary bg-accent",
       )}
