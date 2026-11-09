@@ -6,6 +6,7 @@ import { icons, Eye, X } from "lucide-react";
 import { TreeView } from "@/components/tree/tree-view";
 import { RenderWithLinks } from "@/components/tree/render-with-links";
 import { getConditionalStyle } from "@/components/tree/tree-node-utils";
+import { computeExpandedIds } from "@/lib/tree-expansion";
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,17 +35,7 @@ export function NodeShortcutOverlay({ slotKey, node, contextualParentId, onClose
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    const allIds = new Set<string>();
-    const traverse = (nodesToTraverse: TreeNode[], parentId: string | null, depth: number) => {
-      for (const item of nodesToTraverse) {
-        allIds.add(`${item.id}_${parentId || 'root'}`);
-        if (item.children && depth < expansionDepth) {
-          traverse(item.children, item.id, depth + 1);
-        }
-      }
-    };
-    traverse([node], contextualParentId, 0);
-    setExpandedIds(Array.from(allIds));
+    setExpandedIds(computeExpandedIds([{ node, contextualParentId }], expansionDepth));
     // Re-seed only when a different node is shown, so edits to the node do not reset expansion.
   }, [node.id, contextualParentId, expansionDepth]);
 

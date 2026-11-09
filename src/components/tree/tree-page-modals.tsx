@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import {
     Dialog,
@@ -46,6 +46,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Icon } from "../icon";
 import { icons } from "lucide-react";
 import { Separator } from "../ui/separator";
+import { Slider } from "../ui/slider";
+import { computeExpandedIds } from "@/lib/tree-expansion";
 
 
 interface TreePageModalsProps {
@@ -58,6 +60,8 @@ interface TreePageModalsProps {
     syncFromRepo: (treeFile: TreeFile, token: string) => Promise<{ success: boolean; message: string; }>;
     filteredTree?: TreeNode[];
 }
+
+const EXPLORER_FULL_LEVEL = 6;
 
 export function TreePageModals({
     activeTree,
@@ -117,6 +121,7 @@ export function TreePageModals({
 
     // Explorer Dialog State
     const [explorerExpandedNodeIds, setExplorerExpandedNodeIds] = useState<string[]>([]);
+    const [explorerLevel, setExplorerLevel] = useState(0);
     const [isExplorerFullscreen, setIsExplorerFullscreen] = useState(false);
 
     // Change Multiple Templates Dialog State
@@ -187,23 +192,27 @@ export function TreePageModals({
         return crumbs;
     }, [nodesForExplorer, findNodeAndParent, getTemplateById, filteredTree, allNodes]);
 
+    const explorerDisplayedIdsKey = nodesForExplorer.map(n => n.id).join(',');
+    const explorerNodesRef = useRef(nodesForExplorer);
     useEffect(() => {
-        if (dialogState.isExplorerOpen && nodesForExplorer.length > 0) {
-            const allIds = new Set<string>();
-            const expansionDepth = 0; // Only expand the clicked root node
-            const traverse = (nodes: TreeNode[], parentId: string | null, depth: number) => {
-                for (const node of nodes) {
-                    allIds.add(`${node.id}_${parentId || 'root'}`);
-                    // Limit auto-expansion depth based on user settings to balance performance
-                    if (node.children && depth < expansionDepth) {
-                        traverse(node.children, node.id, depth + 1);
-                    }
-                }
-            };
-            traverse(nodesForExplorer, null, 0);
-            setExplorerExpandedNodeIds(Array.from(allIds));
-        }
-    }, [dialogState.isExplorerOpen, nodesForExplorer, currentUser?.twoPanelExpansionDepth]);
+        explorerNodesRef.current = nodesForExplorer;
+    });
+
+    const explorerDefaultDepth = currentUser?.twoPanelExpansionDepth ?? 1;
+    useEffect(() => {
+        if (!dialogState.isExplorerOpen || explorerNodesRef.current.length === 0) return;
+        const items = explorerNodesRef.current.map(node => ({ node, contextualParentId: null }));
+        setExplorerExpandedNodeIds(computeExpandedIds(items, explorerDefaultDepth));
+        setExplorerLevel(Math.min(explorerDefaultDepth + 1, EXPLORER_FULL_LEVEL));
+    }, [dialogState.isExplorerOpen, explorerDisplayedIdsKey, explorerDefaultDepth]);
+
+    const explorerHasChildren = nodesForExplorer.some(node => node.children?.length > 0);
+
+    const applyExplorerLevel = (level: number) => {
+        const items = nodesForExplorer.map(node => ({ node, contextualParentId: null }));
+        setExplorerExpandedNodeIds(computeExpandedIds(items, level === EXPLORER_FULL_LEVEL ? Infinity : level - 1));
+        setExplorerLevel(level);
+    };
 
 
     const handleFetchHistory = useCallback(async () => {
@@ -527,6 +536,20 @@ export function TreePageModals({
                                 <Printer className="h-4 w-4" />
                                 <span className="hidden sm:inline sm:ml-2">Print</span>
                             </Button>
+                            <div className="flex items-center gap-2 w-28 sm:w-44" title="Expansion level">
+                                <Slider
+                                    min={0}
+                                    max={EXPLORER_FULL_LEVEL}
+                                    step={1}
+                                    value={[explorerLevel]}
+                                    onValueChange={([level]) => applyExplorerLevel(level)}
+                                    disabled={!explorerHasChildren}
+                                    aria-label="Expansion level"
+                                />
+                                <span className="w-16 shrink-0 text-xs text-muted-foreground tabular-nums">
+                                    {explorerLevel === 0 ? 'Collapsed' : explorerLevel === EXPLORER_FULL_LEVEL ? 'Full' : `Level ${explorerLevel}`}
+                                </span>
+                            </div>
                         </div>
                         <div className="flex items-center gap-1 sm:gap-2">
                             {nodesForExplorer.length === 1 && (

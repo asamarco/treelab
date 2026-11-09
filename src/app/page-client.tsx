@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Label } from "@/components/ui/label";
 import { getLatestCommitSha } from "@/lib/data-service";
+import { computeExpandedIds } from "@/lib/tree-expansion";
 import { Switch } from "@/components/ui/switch";
 import { AppHeader } from "@/components/header";
 import { GithubTokenBanner } from "@/components/github-token-banner";
@@ -657,21 +658,7 @@ export function TreePage() {
 
   useEffect(() => {
     if (isTwoPanelMode && nodesForDetails.length > 0) {
-      const allIds = new Set<string>();
-      const expansionDepth = currentUser?.twoPanelExpansionDepth ?? 1;
-      const traverse = (nodesToTraverse: TreeNode[], parentId: string | null, depth: number) => {
-        for (const node of nodesToTraverse) {
-          allIds.add(`${node.id}_${parentId || 'root'}`);
-          // Limit auto-expansion depth based on user settings to balance performance
-          if (node.children && depth < expansionDepth) {
-            traverse(node.children, node.id, depth + 1);
-          }
-        }
-      };
-      nodesForDetails.forEach(item => {
-        traverse([item.node], item.contextualParentId, 0);
-      });
-      setDetailsExpandedNodeIds(Array.from(allIds));
+      setDetailsExpandedNodeIds(computeExpandedIds(nodesForDetails, currentUser?.twoPanelExpansionDepth ?? 1));
     }
   }, [isTwoPanelMode, nodesForDetails, currentUser?.twoPanelExpansionDepth]);
 
