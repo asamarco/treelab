@@ -48,6 +48,7 @@ import { icons } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { Slider } from "../ui/slider";
 import { computeExpandedIds } from "@/lib/tree-expansion";
+import { resolveNodeDisplayName } from "@/lib/template-text";
 
 
 interface TreePageModalsProps {
@@ -170,7 +171,7 @@ export function TreePageModals({
     const explorerBreadcrumbs = useMemo(() => {
         if (nodesForExplorer.length !== 1) return [];
 
-        const crumbs: { id: string; name: string; icon?: string; color?: string; isRoot?: boolean }[] = [];
+        const pathNodes: TreeNode[] = [];
         let currentId = nodesForExplorer[0].id;
         const visited = new Set<string>();
         const searchTree = filteredTree || allNodes;
@@ -179,18 +180,20 @@ export function TreePageModals({
             visited.add(currentId);
             const info = findNodeAndParent(currentId, searchTree);
             if (!info) break;
-            const template = getTemplateById(info.node.templateId);
-            crumbs.unshift({
-                id: info.node.id,
-                name: info.node.name || "Untitled",
-                icon: template?.icon,
-                color: template?.color
-            });
+            pathNodes.unshift(info.node);
             currentId = info.parent?.id || '';
         }
 
-        return crumbs;
-    }, [nodesForExplorer, findNodeAndParent, getTemplateById, filteredTree, allNodes]);
+        return pathNodes.map((node, index) => {
+            const template = getTemplateById(node.templateId);
+            return {
+                id: node.id,
+                name: resolveNodeDisplayName(node, template, templates, pathNodes.slice(0, index), currentUser?.dateFormat),
+                icon: template?.icon,
+                color: template?.color
+            };
+        });
+    }, [nodesForExplorer, findNodeAndParent, getTemplateById, filteredTree, allNodes, templates, currentUser?.dateFormat]);
 
     const explorerDisplayedIdsKey = nodesForExplorer.map(n => n.id).join(',');
     const explorerNodesRef = useRef(nodesForExplorer);

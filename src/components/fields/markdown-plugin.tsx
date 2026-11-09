@@ -12,7 +12,7 @@ import { Field, TreeNode } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { TreeContext } from '@/contexts/tree-context';
 import { AuthContext } from '@/contexts/auth-context';
-import { resolveTemplateText } from '@/lib/template-text';
+import { getAncestorChain, resolveNodeDisplayName, resolveTemplateText } from '@/lib/template-text';
 
 // ---------------------------------------------------------------------------
 // Editor
@@ -123,8 +123,15 @@ const MarkdownViewerComponent = ({
                       children.length === 1 &&
                       typeof children[0] === 'string' &&
                       children[0] === href;
-                const resolvedName = isRawUri
-                  ? treeContext?.findNodeAndParent?.(nodeId)?.node.name
+                const linkedInfo = isRawUri && treeContext ? treeContext.findNodeAndParent(nodeId) : null;
+                const resolvedName = linkedInfo && treeContext
+                  ? resolveNodeDisplayName(
+                      linkedInfo.node,
+                      treeContext.getTemplateById(linkedInfo.node.templateId),
+                      treeContext.templates,
+                      () => getAncestorChain(nodeId, treeContext.findNodeAndParent),
+                      currentUser?.dateFormat,
+                    )
                   : undefined;
                 return (
                   <span

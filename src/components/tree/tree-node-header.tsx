@@ -510,7 +510,7 @@ export function TreeNodeHeader({
                                       });
                                     }}
                                   >
-                                    {segment.name}
+                                    {segment.displayName}
                                   </button>
                                   {segIndex < path.length - 1 && <span className="text-muted-foreground text-[10px]">&gt;</span>}
                                 </React.Fragment>

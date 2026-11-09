@@ -82,6 +82,7 @@ import {
 import { getStorageInfo, purgeUnusedFiles } from '@/lib/storage-service';
 import { readArchive } from "@/lib/archive";
 import { useAuthContext } from "./auth-context";
+import { resolveNodeDisplayName } from "@/lib/template-text";
 import { updateUserSettings } from "@/lib/auth-service";
 import { getShortcutHintsForTree, remapShortcutHints, sanitizeNodeShortcuts } from "@/lib/node-shortcuts";
 import path from 'path';
@@ -1710,28 +1711,34 @@ export function useTreeRoots({ initialTree }: UseTreeRootsProps = {}): UseTreeRo
   const getNodeInstancePaths = useCallback(
     (nodeId: string) => {
       if (!activeTree) return [];
-      const results: { name: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[][] = [];
+      const results: { name: string, displayName: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[][] = [];
+      const { templates } = activeTree;
+      const dateFormat = currentUser?.dateFormat;
 
-      const findPaths = (nodes: TreeNode[], currentPath: { name: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[], parentId: string | null) => {
+      const findPaths = (nodes: TreeNode[], currentPath: { name: string, displayName: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[], nodeChain: TreeNode[], parentId: string | null) => {
         for (const node of nodes) {
           const instanceId = `${node.id}_${parentId || 'root'}`;
           const ancestors = currentPath.map(p => p.instanceId);
-          const segment = { name: node.name, id: node.id, instanceId, ancestorInstanceIds: ancestors };
+          const segment = { name: node.name, displayName: node.name, id: node.id, instanceId, ancestorInstanceIds: ancestors };
           const newPath = [...currentPath, segment];
+          const newChain = [...nodeChain, node];
 
           if (node.id === nodeId) {
-            results.push(newPath);
+            results.push(newChain.map((n, i) => ({
+              ...newPath[i],
+              displayName: resolveNodeDisplayName(n, getTemplateById(n.templateId), templates, newChain.slice(0, i), dateFormat),
+            })));
           }
           if (node.children) {
-            findPaths(node.children, newPath, node.id);
+            findPaths(node.children, newPath, newChain, node.id);
           }
         }
       };
 
-      findPaths(activeTree.tree, [], null);
+      findPaths(activeTree.tree, [], [], null);
       return results;
     },
-    [activeTree]
+    [activeTree, getTemplateById, currentUser]
   );
 
   return {

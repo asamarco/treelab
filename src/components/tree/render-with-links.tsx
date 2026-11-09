@@ -1,5 +1,3 @@
-
-
 /**
  * NOTE: Literal HTML tags in node names and body-templates are no longer interpreted
  * as markup as of this change — use Markdown syntax instead (**bold**, _italic_, `code`, etc.).
@@ -38,7 +36,7 @@ import remarkGfm from 'remark-gfm';
 import { AuthContext } from '@/contexts/auth-context';
 import { formatDate } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { resolveTemplateText } from '@/lib/template-text';
+import { getAncestorChain, resolveNodeDisplayName, resolveTemplateText } from '@/lib/template-text';
 
 export { resolveTemplateText };
 
@@ -183,13 +181,22 @@ function renderParts(
   parts: string[],
   uiContext: any,
   treeContext: any,
+  dateFormat: string | undefined,
   handleJumpToNode: (e: React.MouseEvent, nodeId: string) => void,
 ) {
   return parts.map((part, index) => {
     if (part.startsWith('node://')) {
       const nodeId = part.substring(7);
       const linkedNodeInfo = treeContext?.findNodeAndParent(nodeId);
-      const nodeName = linkedNodeInfo ? linkedNodeInfo.node.name : 'Invalid Link';
+      const nodeName = linkedNodeInfo
+        ? resolveNodeDisplayName(
+            linkedNodeInfo.node,
+            treeContext.getTemplateById(linkedNodeInfo.node.templateId),
+            treeContext.templates,
+            () => getAncestorChain(nodeId, treeContext.findNodeAndParent),
+            dateFormat,
+          )
+        : 'Invalid Link';
       // If context is not available (e.g., during static export), render as plain text.
       if (!uiContext || !treeContext) return <span key={index} className="font-semibold">{nodeName}</span>;
       return <Button key={index} variant="link" className="p-0 h-auto" onClick={(e) => handleJumpToNode(e, nodeId)}>{nodeName}</Button>;
@@ -239,7 +246,7 @@ export function RenderWithLinks({ node, template, text, ancestorChain = [] }: Re
     const parts = line.split(URL_REGEX).filter(Boolean);
     return (
       <React.Fragment key={lineIndex}>
-        {renderParts(parts, uiContext, treeContext, handleJumpToNode)}
+        {renderParts(parts, uiContext, treeContext, dateFormat, handleJumpToNode)}
       </React.Fragment>
     );
   });

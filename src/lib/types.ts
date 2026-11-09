@@ -584,7 +584,7 @@ export interface UseTreeRootsResult {
     findNodeAndParent: (nodeId: string, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
     findNodeAndContextualParent: (nodeId: string | null, contextualParentId: string | null, nodes?: TreeNode[] | undefined) => { node: TreeNode; parent: TreeNode | null; } | null;
     selectAndCenterNode: (params: { nodeId?: string, instanceId?: string, ancestorInstanceIds?: string[] }) => void;
-    getNodeInstancePaths: (nodeId: string) => { name: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[][];
+    getNodeInstancePaths: (nodeId: string) => { name: string, displayName: string, id: string, instanceId: string, ancestorInstanceIds: string[] }[][];
     uploadAttachment: (relativePath: string, dataUri: string, fileName: string) => Promise<AttachmentInfo>;
     commitToRepo: (treeId: string, message: string, token: string, force?: boolean, treeFileToCommit?: TreeFile) => Promise<{ success: boolean; error?: string | undefined; commitSha?: string | undefined; }>;
     fetchRepoHistory: (treeFile: TreeFile, token: string) => Promise<GitCommit[]>;

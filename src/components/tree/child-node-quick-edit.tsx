@@ -25,6 +25,7 @@ import { generateNodeName } from "@/lib/utils";
 import { useTreeContext } from "@/contexts/tree-context";
 import { Maximize2 } from "lucide-react";
 import { Combobox } from "../ui/combobox";
+import { useNodeDisplayName } from "@/hooks/use-node-display-name";
 
 interface ChildNodeQuickEditProps {
     node: TreeNode;
@@ -39,6 +40,7 @@ export const ChildNodeQuickEdit = ({
     onSave,
     onFullEdit,
 }: ChildNodeQuickEditProps) => {
+    const displayName = useNodeDisplayName(node);
     const { tree } = useTreeContext();
     const [formData, setFormData] = useState<Record<string, any>>(() => {
         const initialData = { ...(node?.data || {}) };
@@ -111,7 +113,7 @@ export const ChildNodeQuickEdit = ({
     return (
         <div className="border rounded-md p-3 bg-card space-y-3 relative group">
             <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-sm truncate" title={node.name}>{node.name}</h4>
+                <h4 className="font-semibold text-sm truncate" title={displayName}>{displayName}</h4>
                 <div className="flex items-center gap-2">
                     <div className="text-xs text-muted-foreground">{template.name}</div>
                     <Button

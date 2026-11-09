@@ -240,8 +240,17 @@ export function resolveTemplateText(
           // resolved value IS a node:// URL, not from literal node:// text typed into the markdown source.
           if (/^node:\/\/[\w.:-]+$/.test(resolved)) {
             const nodeId = resolved.substring(7);
-            const linkedNodeInfo = options.findNodeAndParent?.(nodeId);
-            const nodeName = linkedNodeInfo ? linkedNodeInfo.node.name : 'Invalid Link';
+            const findNode = options.findNodeAndParent;
+            const linkedNodeInfo = findNode?.(nodeId);
+            const nodeName = linkedNodeInfo && findNode
+              ? resolveNodeDisplayName(
+                  linkedNodeInfo.node,
+                  allTemplates.find(t => t.id === linkedNodeInfo.node.templateId),
+                  allTemplates,
+                  () => getAncestorChain(nodeId, findNode),
+                  dateFormat,
+                )
+              : 'Invalid Link';
             const escapedName = nodeName.replace(/\\/g, '\\\\').replace(/\]/g, '\\]');
             segments.push(`[${escapedName}](${resolved})`);
           } else {
@@ -260,4 +269,42 @@ export function resolveTemplateText(
   }
 
   return resultLines;
+}
+
+/**
+ * Human-readable node name with its name template applied. Ancestors are only
+ * computed when the template actually references {parent:} or {ancestor:}.
+ */
+export function resolveNodeDisplayName(
+  node: TreeNode,
+  template: Template | undefined,
+  allTemplates: Template[],
+  ancestors: TreeNode[] | (() => TreeNode[]),
+  dateFormat: string | undefined,
+): string {
+  if (!template) return node.name;
+  const text = template.nameTemplate || node.name;
+  const needsAncestors = text.includes('{parent:') || text.includes('{ancestor:');
+  const chain = needsAncestors
+    ? (typeof ancestors === 'function' ? ancestors() : ancestors)
+    : [];
+  const lines = resolveTemplateText(text, node, template, allTemplates, chain, dateFormat);
+  const resolved = lines.join(' ').replace(/\s+/g, ' ').trim();
+  return resolved || node.name || 'Untitled';
+}
+
+/** Root -> immediate parent along the first parent of each node. Excludes the node itself. */
+export function getAncestorChain(
+  nodeId: string,
+  findNodeAndParent: (id: string) => { node: TreeNode; parent: TreeNode | null } | null,
+): TreeNode[] {
+  const chain: TreeNode[] = [];
+  const visited = new Set<string>([nodeId]);
+  let parent = findNodeAndParent(nodeId)?.parent ?? null;
+  while (parent && !visited.has(parent.id)) {
+    visited.add(parent.id);
+    chain.unshift(parent);
+    parent = findNodeAndParent(parent.id)?.parent ?? null;
+  }
+  return chain;
 }

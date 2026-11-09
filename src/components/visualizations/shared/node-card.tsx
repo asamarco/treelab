@@ -6,6 +6,7 @@ import { Icon } from "@/components/icon";
 import { getConditionalStyle } from "@/components/tree/tree-node-utils";
 import { formatCellValue } from "@/components/tree/query-field/format-cell-value";
 import { cn } from "@/lib/utils";
+import { useNodeDisplayName } from "@/hooks/use-node-display-name";
 
 const OPEN_CLICK_DELAY_MS = 250;
 
@@ -56,6 +57,7 @@ interface NodeTitleProps {
 
 export function NodeTitle({ node, template, isCompact, onClick, className }: NodeTitleProps) {
   const { icon, color } = getConditionalStyle(node, template);
+  const displayName = useNodeDisplayName(node);
   return (
     <>
       <Icon name={icon as any} className="h-4 w-4 shrink-0" style={{ color }} />
@@ -68,7 +70,7 @@ export function NodeTitle({ node, template, isCompact, onClick, className }: Nod
         )}
         onClick={onClick}
       >
-        {node.name}
+        {displayName}
       </button>
     </>
   );

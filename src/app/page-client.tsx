@@ -58,6 +58,7 @@ import { hasAttachments, getConditionalStyle } from "@/components/tree/tree-node
 import { Icon } from "@/components/icon";
 import { icons } from "lucide-react";
 import { cn, evaluateCondition, generateClientSideId } from "@/lib/utils";
+import { resolveNodeDisplayName } from "@/lib/template-text";
 import { useUIContext } from "@/contexts/ui-context";
 import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -529,6 +530,13 @@ export function TreePage() {
     return crumbs;
   }, [isMobile, isExplorerMode, explorerNodeId, tree, findNodeAndParent]);
 
+  const explorerBreadcrumbNames = useMemo(() => {
+    const templates = activeTree?.templates ?? [];
+    return explorerBreadcrumbs.map((crumb, index) =>
+      resolveNodeDisplayName(crumb, getTemplateById(crumb.templateId), templates, explorerBreadcrumbs.slice(0, index), currentUser?.dateFormat)
+    );
+  }, [explorerBreadcrumbs, activeTree?.templates, getTemplateById, currentUser?.dateFormat]);
+
   const handleExplorerNodeClick = useCallback((nodeId: string) => {
     if (isExplorerMode) {
       setExplorerNodeId(nodeId);
@@ -713,7 +721,7 @@ export function TreePage() {
                             onClick={() => !isLast && updateExplorerNodeId(crumb.id)}
                           >
                             <Icon name={(crumbIcon as keyof typeof icons) || 'FileText'} className="h-3.5 w-3.5 shrink-0" style={{ color: crumbColor || 'hsl(var(--primary))' }} />
-                            <span className="truncate max-w-[80px]">{crumb.name}</span>
+                            <span className="truncate max-w-[80px]">{explorerBreadcrumbNames[index]}</span>
                           </Button>
                         </React.Fragment>
                       );
@@ -798,7 +806,7 @@ export function TreePage() {
                       className={cn("h-6 px-1.5 text-xs truncate max-w-[80px]", isLast ? "font-semibold pointer-events-none" : "text-muted-foreground hover:text-foreground")}
                       onClick={() => !isLast && updateExplorerNodeId(crumb.id)}
                     >
-                      {crumb.name}
+                      {explorerBreadcrumbNames[actualIndex]}
                     </Button>
                     {!isLast && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                   </React.Fragment>
@@ -842,7 +850,7 @@ export function TreePage() {
                     onClick={() => !isLast && updateExplorerNodeId(crumb.id)}
                   >
                     <Icon name={(crumbIcon as keyof typeof icons) || 'FileText'} className="h-3.5 w-3.5 shrink-0" style={{ color: crumbColor || 'hsl(var(--primary))' }} />
-                    <span>{crumb.name}</span>
+                    <span>{explorerBreadcrumbNames[index]}</span>
                   </Button>
                 </React.Fragment>
               );

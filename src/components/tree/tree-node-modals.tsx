@@ -47,15 +47,18 @@ import { Icon } from "../icon";
 import { icons } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { ChildNodeQuickEdit } from "./child-node-quick-edit";
+import { useNodeDisplayName } from "@/hooks/use-node-display-name";
 import { cn } from "@/lib/utils";
 
 
 interface TreeNodeModalsProps {
   node: TreeNode;
   template: Template;
+  ancestorChain?: TreeNode[];
 }
 
-export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
+export function TreeNodeModals({ node, template, ancestorChain }: TreeNodeModalsProps) {
+  const displayName = useNodeDisplayName(node, ancestorChain);
   const { templates, getTemplateById, addChildNode, addSiblingNode, updateNode, changeNodeTemplate, clipboard, activeTree, setSelectedNodeIds, findNodeAndParent } = useTreeContext();
   const { currentUser, setShowChildrenInEditForm } = useAuthContext();
   const { toast } = useToast();
@@ -286,7 +289,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
             }
           }}
         >
-          <DialogHeader><DialogTitle><CornerDownRight className="inline-block mr-2 h-5 w-5" />Add New Node to "{node.name}"</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle><CornerDownRight className="inline-block mr-2 h-5 w-5" />Add New Node to "{displayName}"</DialogTitle></DialogHeader>
           <div className="flex-1 overflow-y-auto px-1">
             {renderAddDialogContent(handleSaveNewChild)}
           </div>
@@ -304,7 +307,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
             }
           }}
         >
-          <DialogHeader><DialogTitle><ListPlus className="inline-block mr-2 h-5 w-5" />Add Sibling After "{node.name}"</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle><ListPlus className="inline-block mr-2 h-5 w-5" />Add Sibling After "{displayName}"</DialogTitle></DialogHeader>
           <div className="flex-1 overflow-y-auto px-1">
             {renderAddDialogContent(handleSaveNewSibling)}
           </div>
@@ -323,7 +326,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
           }}
         >
           <DialogHeader className="flex flex-row items-center justify-between pr-6">
-            <DialogTitle>Edit Node: {node.name}</DialogTitle>
+            <DialogTitle>Edit Node: {displayName}</DialogTitle>
             {node.children && node.children.length > 0 && (
               <Button
                 variant="outline"
@@ -380,7 +383,7 @@ export function TreeNodeModals({ node, template }: TreeNodeModalsProps) {
       <Dialog open={openModal === 'changeTemplate'} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Template for "{node.name}"</DialogTitle>
+            <DialogTitle>Change Template for "{displayName}"</DialogTitle>
             <DialogDescription>Select a new template. Data for fields with the same name will be preserved.</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-2">

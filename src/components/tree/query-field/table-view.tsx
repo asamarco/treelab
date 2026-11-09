@@ -12,6 +12,7 @@ import { formatMergedCellValue } from "./format-cell-value";
 import { QUERY_PAGE_SIZE } from "./constants";
 import { MergedTableGroup, getColumnMergeKey } from "./merge-templates";
 import { cn } from "@/lib/utils";
+import { useNodeDisplayNames } from "@/hooks/use-node-display-name";
 
 export interface QueryResultTableProps {
     group: MergedTableGroup;
@@ -90,6 +91,7 @@ export function QueryResultTable({
     const pageStart = page * QUERY_PAGE_SIZE;
     const pageEnd = pageStart + QUERY_PAGE_SIZE;
     const pageNodes = group.nodes.slice(pageStart, pageEnd);
+    const displayNames = useNodeDisplayNames(group.nodes);
     const totalPages = Math.ceil(group.nodes.length / QUERY_PAGE_SIZE);
 
     const handleHeaderClick = (columnId: string) => {
@@ -124,7 +126,7 @@ export function QueryResultTable({
                         onDoubleClick={(e) => e.stopPropagation()}
                     >
                         <Icon name={resultIcon as any} className="h-4 w-4 shrink-0" style={{ color: resultColor }} />
-                        <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{resultNode.name}</span>
+                        <span className={cn("font-medium truncate", isCompactView ? "text-xs" : "text-sm")}>{displayNames.get(resultNode.id) ?? resultNode.name}</span>
                     </div>
                     <TooltipProvider>
                         <Tooltip>
@@ -218,7 +220,7 @@ export function QueryResultTable({
                                         <TableCell className={cn("font-medium", isCompactView && "py-1 px-2 text-xs")}>
                                             <div className="flex items-center gap-1.5">
                                                 <Icon name={rIcon as any} className="h-3.5 w-3.5 shrink-0" style={{ color: rColor }} />
-                                                <span className="truncate">{resultNode.name}</span>
+                                                <span className="truncate">{displayNames.get(resultNode.id) ?? resultNode.name}</span>
                                                 <TooltipProvider>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>

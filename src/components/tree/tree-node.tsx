@@ -253,6 +253,7 @@ function TreeNodeComponentInner({
           <TreeNodeModals
             node={node}
             template={{ id: '', name: 'Missing', fields: [], conditionalRules: [] } as any}
+            ancestorChain={ancestorChain}
           />
         )}
       </div>
@@ -362,6 +363,7 @@ function TreeNodeComponentInner({
         <TreeNodeModals
           node={node}
           template={template}
+          ancestorChain={ancestorChain}
         />
       )}
     </div>
