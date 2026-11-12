@@ -1142,7 +1142,6 @@ export function TreePage() {
   );
 
   const shortcutNode = shortcutSlot ? resolveSlot(shortcutSlot) : null;
-  const shortcutParentId = shortcutNode ? findNodeAndParent(shortcutNode.id)?.parent?.id ?? null : null;
   const isPublicView = typeof document !== 'undefined' && document.body.classList.contains('read-only-view');
 
   return (
@@ -1153,7 +1152,6 @@ export function TreePage() {
         <NodeShortcutOverlay
           slotKey={shortcutSlot}
           node={shortcutNode}
-          contextualParentId={shortcutParentId}
           onClose={() => setShortcutSlot(null)}
         />
       )}

@@ -468,7 +468,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Determines how many levels of descendants are automatically expanded in two-panel view and node Explorer.
+                    Determines how many levels of descendants are automatically expanded in two-panel view, Explorer, and node shortcut overlay.
                   </p>
                   <div className="pt-2 pb-2 px-1">
                     <Slider

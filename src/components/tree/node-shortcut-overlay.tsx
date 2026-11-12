@@ -19,11 +19,10 @@ import type { TreeNode } from "@/lib/types";
 interface NodeShortcutOverlayProps {
   slotKey: ShortcutKey;
   node: TreeNode;
-  contextualParentId: string | null;
   onClose: () => void;
 }
 
-export function NodeShortcutOverlay({ slotKey, node, contextualParentId, onClose }: NodeShortcutOverlayProps) {
+export function NodeShortcutOverlay({ slotKey, node, onClose }: NodeShortcutOverlayProps) {
   const { currentUser } = useAuthContext();
   const { getTemplateById } = useTreeContext();
   const { setDialogState } = useUIContext();
@@ -35,9 +34,9 @@ export function NodeShortcutOverlay({ slotKey, node, contextualParentId, onClose
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    setExpandedIds(computeExpandedIds([{ node, contextualParentId }], expansionDepth));
+    setExpandedIds(computeExpandedIds([{ node, contextualParentId: null }], expansionDepth));
     // Re-seed only when a different node is shown, so edits to the node do not reset expansion.
-  }, [node.id, contextualParentId, expansionDepth]);
+  }, [node.id, expansionDepth]);
 
   return createPortal(
     <section
