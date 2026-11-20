@@ -342,10 +342,10 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
 
     if ((event.key === 'v' || event.key === 'V') && !event.ctrlKey && !event.metaKey && !event.altKey) {
       event.preventDefault();
-      const targetIds = selectedNodeIds.length > 0 
-        ? selectedNodeIds.map(id => id.split('_')[0]) 
+      const targetIds = selectedNodeIds.length > 0
+        ? selectedNodeIds.map(id => id.split('_')[0])
         : (rootNodes.length > 0 ? [rootNodes[0].id] : []);
-      
+
       if (targetIds.length > 0) {
         setDialogState({ isExplorerOpen: true, nodeIdsForExplorer: targetIds });
       }
@@ -497,7 +497,7 @@ export function TreeView({ nodes, overrideExpandedIds, onExpandedChange, isCompa
           if (isCtrlPressed) {
             selectedNodeIds.forEach(instanceId => {
               const [nodeId, parentId] = instanceId.split('_');
-              expandAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
+              collapseAllFromNode([{ nodeId, parentId: parentId === 'root' ? null : parentId }]);
             });
           } else if (selectedNodeIds.length === 1) {
             setExpandedNodeIds((draft) => {
