@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "typecheck:test": "tsc -p tsconfig.test.json",
     "postinstall": "patch-package",
     "test": "playwright test",
-    "test:ui": "playwright test --ui"
+    "test:ui": "playwright test --ui",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",
@@ -72,18 +74,19 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.45.3",
+    "@tailwindcss/postcss": "^4.1.0",
     "@types/file-saver": "^2.0.7",
     "@types/mime-types": "^2.1.4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "knip": "^6.34.0",
     "patch-package": "^8.0.0",
     "postcss": "^8",
     "postcss-load-config": "^6.0.1",
-    "@tailwindcss/postcss": "^4.1.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   },
   "overrides": {
     "braces": "^3.0.3",
