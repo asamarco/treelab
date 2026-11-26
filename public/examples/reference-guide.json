@@ -1,25 +1,59 @@
 {
-  "title": "Treelab Reference Guide",
+  "title": "📚 Treelab Reference Guide",
   "nodes": [
     {
-      "id": "mlb3xjzp-8e0aq4xa2",
+      "id": "mwxp6pie-7yoz2iqn8",
+      "name": "Index",
+      "templateId": "mwxp6f4h-mucxqv5uu",
+      "data": {
+        "mwxp60lf-q2sb7jl0b": {
+          "schemaVersion": 1,
+          "queries": [
+            {
+              "id": "mwxp6ldf-7ck2rv1cc",
+              "targetTemplateId": "template_operation",
+              "rules": []
+            }
+          ],
+          "groupByFieldName": "Context",
+          "cardFieldNames": []
+        },
+        "mwxp5gba-g3q3s0tua": "Index"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "root"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-11-26T15:18:52.070Z",
+      "updatedAt": "2026-11-26T15:19:45.573Z"
+    },
+    {
+      "id": "mwgbo1ds-g84p8g5ky",
       "name": "I. Root / Tree Management",
       "templateId": "template_category",
       "data": {
         "field_name_cat": "I. Root / Tree Management"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [],
-      "order": [
-        0
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "root"
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "order": [
+        1,
+        -1
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-26T15:19:35.107Z"
     },
     {
-      "id": "mlb3xjzp-6l05ajwkh",
+      "id": "mwgbo1ds-t7ghb4fb6",
       "name": "Create New Root",
       "templateId": "template_operation",
       "data": {
@@ -28,40 +62,40 @@
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-a0kqy51ij",
-      "name": "Rename Root",
+      "id": "mwgbo1ds-dmopsxbjc",
+      "name": "Rename Root (Edit Tree)",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Rename Root",
-        "field_desc": "Change the title of an existing tree.",
+        "field_name_op": "Rename Root (Edit Tree)",
+        "field_desc": "Change the title of an existing tree (only the owner or a user with Admin permission can rename it) and assign it to one of your personal groups, including Archive.",
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-a541vrx0b",
+      "id": "mwgbo1ds-h71t6l0th",
       "name": "Delete Root",
       "templateId": "template_operation",
       "data": {
@@ -70,40 +104,61 @@
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-348hv843o",
-      "name": "Select Active Root",
+      "id": "mwgbo1ds-ncot3ofho",
+      "name": "Duplicate Tree",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Select Active Root",
-        "field_desc": "Switch between your different trees to work on them.",
+        "field_name_op": "Duplicate Tree",
+        "field_desc": "Create a copy of an existing tree using the Duplicate Tree button on its card.",
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-7l99ddii8",
+      "id": "mwgbo1ds-d2zet8akm",
+      "name": "Select Active Root",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Select Active Root",
+        "field_desc": "Switch between your different trees to work on them. Also available from the root selector in the Tree Page header.",
+        "field_context": "Manage Roots Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-g84p8g5ky"
+      ],
+      "order": [
+        4
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-dpejhdmmy",
       "name": "Import Tree",
       "templateId": "template_operation",
       "data": {
@@ -112,19 +167,19 @@
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
-        4
+        5
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-twjqkazf9",
+      "id": "mwgbo1ds-y8y1ic527",
       "name": "Load Example",
       "templateId": "template_operation",
       "data": {
@@ -133,221 +188,165 @@
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
-      ],
-      "order": [
-        5
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-v1bdwcyt3",
-      "name": "Git Integration (requires valid token in user settings)",
-      "templateId": "template_operation",
-      "data": {
-        "field_name_op": "Git Integration (requires valid token in user settings)",
-        "field_desc": "Link to GitHub Repo: Connect an existing tree to a GitHub repository.\nCreate & Link Repo: Create a new repository on GitHub and link the tree to it automatically.\nUnlink Repo: Disconnect a tree from its GitHub repository.\nCommit: Save the current state of the tree as a new version in its linked repository.\nSync: Pull the latest version from the remote repository.\nView History: Browse the commit history of a linked tree.\nRestore to Commit: Revert the tree back to a previous version from the history.",
-        "field_context": "Manage Roots Page"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         6
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-nzcz6bnbb",
-      "name": "Sharing",
+      "id": "mwgbo1ds-usurwtk7a",
+      "name": "Git Integration (requires valid token in user settings)",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Sharing",
-        "field_desc": "Share Tree: Grant another registered user access to one of your trees.\nRevoke Share: Remove a user's access to a shared tree.\nMake Public: Return an access link for a pubblicly-accessible read-only version of the tree.",
+        "field_name_op": "Git Integration (requires valid token in user settings)",
+        "field_desc": "Link to GitHub Repo: Connect an existing tree to a GitHub repository.\nCreate & Link Repo: Create a new repository on GitHub (optionally private) and link the tree to it automatically.\nUnlink Repo: Disconnect a tree from its GitHub repository.\nCommit: Save the current state of the tree as a new version in its linked repository.\nSync: Pull the latest version from the remote repository.\nView History: Browse the commit history of a linked tree.\nRestore to Commit: Revert the tree back to a previous version from the history.",
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         7
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-83r8jx9i1",
-      "name": "Reorder Roots",
+      "id": "mwgbo1ds-hftovy7ox",
+      "name": "Sharing",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Reorder Roots",
-        "field_desc": "Drag and drop your trees on the 'Manage Roots' page to change their display order.",
+        "field_name_op": "Sharing",
+        "field_desc": "Share Tree (People tab): Grant a registered user access to one of your trees, choosing permissions: Edit Nodes, Edit Templates, Admin (Admin includes the other two and allows renaming the tree).\nShare with Team (Teams tab): Grant a whole team access with the same permissions.\nCurrent Collaborators: Review who has access and adjust their permissions.\nRevoke Share: Remove a user's or team's access to a shared tree.",
         "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-8e0aq4xa2"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
         8
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-m8dwre01k",
-      "name": "IV. Template Management",
-      "templateId": "template_category",
-      "data": {
-        "field_name_cat": "IV. Template Management"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [],
-      "order": [
-        1
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-r2ugfrwyx",
-      "name": "Create/Edit Template",
+      "id": "mwgbo1ds-hg85ecbqf",
+      "name": "Public Link (Make Public)",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Create/Edit Template",
-        "field_desc": "Design the structure of your nodes, including fields, naming rules, icons, and conditional formatting.",
-        "field_context": "Templates Page"
+        "field_name_op": "Public Link (Make Public)",
+        "field_desc": "Make Public: Turn on the 'Make Public' switch in the Share dialog to get a link that lets anyone view a read-only copy of the tree.\nInitial View Mode: Choose how the link opens: Standard, Compact or Two-Panel.\nEnable Explorer View: Allow viewers to drill down into specific nodes.\nCopy Link: The chosen options are encoded in the link (view and explorer parameters).",
+        "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-m8dwre01k"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
-        0
+        9
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-fsbtzbrn7",
-      "name": "Delete Template",
+      "id": "mwgbo1ds-mde0pk0e7",
+      "name": "Public View (read-only)",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Delete Template",
-        "field_desc": "Remove a template (only possible if no nodes are using it).",
-        "field_context": "Templates Page"
+        "field_name_op": "Public View (read-only)",
+        "field_desc": "The public link opens a read-only version of the tree at /view/<id>, with a public-view banner. Exporting from this view requires being logged in.",
+        "field_context": "Public View"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-m8dwre01k"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
-        1
+        10
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-f4nk6ue7g",
-      "name": "Reorder Templates",
+      "id": "mwgbo1ds-akngrehnk",
+      "name": "Reorder Roots",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Reorder Templates",
-        "field_desc": "Drag and drop templates to change their display order in selection dialogs.",
-        "field_context": "Templates Page"
+        "field_name_op": "Reorder Roots",
+        "field_desc": "Drag and drop root cards to change their display order within the current view. Dropping a card onto a group pill moves it to that group instead.",
+        "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-m8dwre01k"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
-        2
+        11
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-t2ap7nskq",
-      "name": "Import/Export Template",
+      "id": "mwgbo1ds-l6igwy75p",
+      "name": "Root Groups",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Import/Export Template",
-        "field_desc": "Save or load a single template definition as a JSON file.",
-        "field_context": "Templates Page"
+        "field_name_op": "Root Groups",
+        "field_desc": "Organize your roots in personal groups: filter pills at the top of the page (All Roots, Ungrouped, your own groups).\nManage Groups: Create, rename or remove groups.\nAssign a root: Drag its card onto a group pill, or choose a Personal Group in Edit Tree.\nArchive: Special group for roots you want out of the way; archived roots are hidden from 'All Roots' and from the tree selector (Move to Archive).",
+        "field_context": "Manage Roots Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-m8dwre01k"
+        "mwgbo1ds-g84p8g5ky"
       ],
       "order": [
-        3
+        12
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-6q88byuvk",
-      "name": "Import/Export All Templates",
-      "templateId": "template_operation",
-      "data": {
-        "field_name_op": "Import/Export All Templates",
-        "field_desc": "Save or load all templates for the current tree as a single .zip archive.",
-        "field_context": "Templates Page"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [
-        "mlb3xjzp-m8dwre01k"
-      ],
-      "order": [
-        4
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-vx1ran919",
+      "id": "mwgbo1ds-r6zqexoxm",
       "name": "II. Node Management (within a Tree)",
       "templateId": "template_category",
       "data": {
         "field_name_cat": "II. Node Management (within a Tree)"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [],
-      "order": [
-        2
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "root"
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "order": [
+        2,
+        -1
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-438axf7q4",
+      "id": "mwgbo1ds-e836aqh9s",
       "name": "Add Root Node",
       "templateId": "template_operation",
       "data": {
@@ -356,40 +355,40 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-953u9pvq4",
+      "id": "mwgbo1ds-lvlv1xilu",
       "name": "Add Child Node",
       "templateId": "template_operation",
       "data": {
         "field_name_op": "Add Child Node",
-        "field_desc": "Add a new node as a child of an existing node.",
+        "field_desc": "Add a new node as a child of an existing node. The first 'Preferred Child Template' of the parent's template, if any, is preselected.",
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-9js3hlboa",
+      "id": "mwgbo1ds-518uv8jte",
       "name": "Add Sibling Node",
       "templateId": "template_operation",
       "data": {
@@ -398,19 +397,19 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-qt00ijm97",
+      "id": "mwgbo1ds-kiooa6a72",
       "name": "Edit Node",
       "templateId": "template_operation",
       "data": {
@@ -419,19 +418,19 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-cazskczp4",
+      "id": "mwgbo1ds-lyrgiwy9z",
       "name": "Delete Node",
       "templateId": "template_operation",
       "data": {
@@ -440,19 +439,19 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         4
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-3qj7ync8m",
+      "id": "mwgbo1ds-5p6bcrba7",
       "name": "Move Node (Drag & Drop)",
       "templateId": "template_operation",
       "data": {
@@ -461,19 +460,19 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         5
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-uj2mku7qh",
+      "id": "mwgbo1ds-0a83vuo3m",
       "name": "Move Node (Up/Down)",
       "templateId": "template_operation",
       "data": {
@@ -482,40 +481,40 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         6
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-awab1w75b",
+      "id": "mwgbo1ds-moyc71nra",
       "name": "Copy/Cut/Paste",
       "templateId": "template_operation",
       "data": {
         "field_name_op": "Copy/Cut/Paste",
-        "field_desc": "Copy: Copy a node (and all its children) to the clipboard.\nCut: Cut a specific instance of a node to move it elsewhere.\nPaste as Child/Sibling: Paste the copied/cut node relative to another node.\nPaste as Clone: Create a linked copy (a clone) of a node under another parent.",
+        "field_desc": "Copy: Copy a node (and all its children) to the clipboard.\nCut: Cut a specific instance of a node to move it elsewhere.\nPaste as Child/Sibling: Paste the copied/cut node relative to another node.\nPaste as Clone: Create a linked copy (a clone) of a node under another parent.\nPaste Template: Open the Add Node dialog with the template of the copied node preselected, to create a new node of the same type (the copied data is not pasted).",
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         7
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-79xb42tlp",
+      "id": "mwgbo1ds-p2xi7p9bl",
       "name": "Change Template",
       "templateId": "template_operation",
       "data": {
@@ -524,19 +523,40 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         8
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-k1phvvd85",
+      "id": "mwgbo1ds-pyzzuvz4h",
+      "name": "Edit Template",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Edit Template",
+        "field_desc": "Open the Template Designer on the selected node's template (from the node's right-click menu).",
+        "field_context": "Node Menu"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r6zqexoxm"
+      ],
+      "order": [
+        9
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-j73o1t85p",
       "name": "Star/Unstar",
       "templateId": "template_operation",
       "data": {
@@ -545,19 +565,19 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
-        9
+        10
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-p5ze64z2y",
+      "id": "mwgbo1ds-ykl4hz8q8",
       "name": "Expand/Collapse",
       "templateId": "template_operation",
       "data": {
@@ -566,19 +586,19 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
-        10
+        11
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-452chzlvt",
+      "id": "mwgbo1ds-ocj32j44r",
       "name": "Expand/Collapse All",
       "templateId": "template_operation",
       "data": {
@@ -587,19 +607,19 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
-        11
+        12
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-me5fn0v9j",
+      "id": "mwgbo1ds-jvad1vlz9",
       "name": "Copy Node Link",
       "templateId": "template_operation",
       "data": {
@@ -608,40 +628,61 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
-      ],
-      "order": [
-        12
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-fo4j7rxu0",
-      "name": "Preview Node",
-      "templateId": "template_operation",
-      "data": {
-        "field_name_op": "Preview Node",
-        "field_desc": "Open a dialog to view a node and its children in isolation.",
-        "field_context": "Node Menu"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
         13
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-appoienrj",
+      "id": "mwgbo1ds-zrozck78p",
+      "name": "Node Shortcuts (0-9)",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Node Shortcuts (0-9)",
+        "field_desc": "Assign: Pin a node to a number key from Node Menu > Link > Assign shortcut (and Clear shortcut to free the slot).\nUse: Press 0-9 to open a quick overlay with that node (it also offers 'Open in Explorer'); press the same key again or Esc to close it.\nOverview: The 'Node shortcuts' menu in the header lists all slots.\nScope: Slots are per user and per tree, and are carried along when a tree is exported and imported.",
+        "field_context": "Node Menu"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r6zqexoxm"
+      ],
+      "order": [
+        14
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-qwk9erdjl",
+      "name": "View in Explorer (Preview Node)",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "View in Explorer (Preview Node)",
+        "field_desc": "Open the Explorer dialog to view a node and its children in isolation. Use Previous Node, Parent Node and Next Node (and the breadcrumb) to move around; Print the view from the dialog.",
+        "field_context": "Node Menu"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r6zqexoxm"
+      ],
+      "order": [
+        15
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-o7ljt1lgo",
       "name": "Export Node",
       "templateId": "template_operation",
       "data": {
@@ -650,36 +691,99 @@
         "field_context": "Node Menu"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-vx1ran919"
+        "mwgbo1ds-r6zqexoxm"
       ],
       "order": [
-        14
+        16
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-loh6zsn12",
+      "id": "mwgbo1ds-kuvc8oums",
+      "name": "Node Context Menu (Right-click)",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Node Context Menu (Right-click)",
+        "field_desc": "Right-click a node to open a menu with: Edit Template, Change Template, Export As (JSON, HTML, Archive), Copy, Cut, Link (Copy Link, Assign shortcut), Paste (as child, sibling, clone, template) and Delete.",
+        "field_context": "Node Menu"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r6zqexoxm"
+      ],
+      "order": [
+        17
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-1k5a83o45",
+      "name": "Node Indicators",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Node Indicators",
+        "field_desc": "Star icon: the node is a favorite.\nPaperclip: the node has attachments.\nClone icon: the node is a clone; hover it to see all its other locations and click a location to jump to it.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r6zqexoxm"
+      ],
+      "order": [
+        18
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-ultftf32u",
       "name": "III. Bulk Node Operations (Multi-select)",
       "templateId": "template_category",
       "data": {
         "field_name_cat": "III. Bulk Node Operations (Multi-select)"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [],
       "order": [
-        3
+        2
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-lvoxrwu7z",
+      "id": "mwgbo1ds-601od00ec",
+      "name": "Select Nodes",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Select Nodes",
+        "field_desc": "Ctrl/Cmd+click: Add or remove a node from the selection.\nShift+click: Select a range of nodes.\nShift+Up/Down: Extend the selection with the keyboard.\nThe selection bar appears with the bulk actions; use 'Clear selection' to deselect.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-ultftf32u"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-bvbdtlvbe",
       "name": "Delete Selection",
       "templateId": "template_operation",
       "data": {
@@ -688,19 +792,19 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-loh6zsn12"
+        "mwgbo1ds-ultftf32u"
       ],
       "order": [
-        0
+        1
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-abd1z3fg9",
+      "id": "mwgbo1ds-5d3ybkcx6",
       "name": "Copy/Cut Selection",
       "templateId": "template_operation",
       "data": {
@@ -709,19 +813,40 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-loh6zsn12"
+        "mwgbo1ds-ultftf32u"
       ],
       "order": [
-        1
+        2
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-01zdx3zof",
+      "id": "mwgbo1ds-czfk7kz1j",
+      "name": "Edit Selection",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Edit Selection",
+        "field_desc": "Edit the fields of several selected nodes at once in a single form based on their common template.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-ultftf32u"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-tvkdgzvfe",
       "name": "Change Template for Selection",
       "templateId": "template_operation",
       "data": {
@@ -730,19 +855,19 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-loh6zsn12"
+        "mwgbo1ds-ultftf32u"
       ],
       "order": [
-        2
+        4
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-5331j9lx1",
+      "id": "mwgbo1ds-wwdcm515l",
       "name": "Expand/Collapse Selection",
       "templateId": "template_operation",
       "data": {
@@ -751,19 +876,40 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-loh6zsn12"
+        "mwgbo1ds-ultftf32u"
       ],
       "order": [
-        3
+        5
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-ddoadinbp",
+      "id": "mwgbo1ds-xcdsln7ly",
+      "name": "Preview Selection",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Preview Selection",
+        "field_desc": "Open the selected nodes together in the Explorer dialog (shortcut: v).",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-ultftf32u"
+      ],
+      "order": [
+        6
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-ivejacdj7",
       "name": "Export Selection",
       "templateId": "template_operation",
       "data": {
@@ -772,116 +918,389 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-loh6zsn12"
+        "mwgbo1ds-ultftf32u"
+      ],
+      "order": [
+        7
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-f350kvtpz",
+      "name": "IV. Template Management",
+      "templateId": "template_category",
+      "data": {
+        "field_name_cat": "IV. Template Management"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-dsn1k6ken",
+      "name": "Create/Edit Template",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Create/Edit Template",
+        "field_desc": "Design the structure of your nodes, including fields, naming rules, icons, and conditional formatting. Also reachable from a node via Edit Template.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-tnc1tv28n",
+      "name": "Field Types",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Field Types",
+        "field_desc": "Available field types: Text, Number, Date, Dropdown, Dynamic Dropdown, Text Area, Link, Checkbox, Checklist, Picture, Attachment, Table Header, Spreadsheet, XY Chart, Query, Kanban, Calendar, Embed, Markdown.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-5p8dwezpo",
+      "name": "Name and Body Templates",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Name and Body Templates",
+        "field_desc": "Node Name Template and Body Template build a node's title and body text from its fields.\nPlaceholders: {Field Name} inserts a field value; {count} and {count:N} insert child/descendant counts; {parent:Field}, {ancestor:Field:N} and {child:Field} insert values from related nodes.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-gduh6bvi3",
+      "name": "Field Layout and Appearance",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Field Layout and Appearance",
+        "field_desc": "Per field: Prefix and Postfix text, 'Same row as previous field' layout, dropdown options, and the column data type for Table Header fields.\nPer template: Default Icon and Default Accent Color, conditional rules that change icon/color when a field matches a value (operator + value), and Preferred Child Templates (the first one is preselected in Add Child).",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-otbcav0jb",
+      "name": "Delete Template",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Delete Template",
+        "field_desc": "Remove a template (only possible if no nodes are using it).",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
       ],
       "order": [
         4
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-iyxt9fufv",
+      "id": "mwgbo1ds-eonsd4837",
+      "name": "Reorder Templates",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Reorder Templates",
+        "field_desc": "Drag and drop templates to change their display order in selection dialogs.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        5
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-azkwysmb4",
+      "name": "Import/Export Template",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Import/Export Template",
+        "field_desc": "Save or load a single template definition as a JSON file.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        6
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-8m3jhr04l",
+      "name": "Import/Export All Templates",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Import/Export All Templates",
+        "field_desc": "Save or load all templates for the current tree as a single .zip archive.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        7
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-pf9yl5dkr",
+      "name": "Import Templates from Tree",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Import Templates from Tree",
+        "field_desc": "Copy selected templates from another of your trees into the current one.",
+        "field_context": "Templates Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-f350kvtpz"
+      ],
+      "order": [
+        8
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-obnw6rsoz",
       "name": "V. My Tree Interface",
       "templateId": "template_category",
       "data": {
         "field_name_cat": "V. My Tree Interface"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [],
       "order": [
         4
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-rvhrphkyx",
-      "name": "Undo/Redo",
+      "id": "mwgbo1ds-709e1f17t",
+      "name": "Filters",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Undo/Redo",
-        "field_desc": "Undo/redo the last node actions (creation/copy, deletion, update, movement)"
+        "field_name_op": "Filters",
+        "field_desc": "Basic filters: Template, Date Created range, Date Modified range, Has Attachments.\nAdvanced queries: Add query groups that target a template and match rules on one of its fields (with operators), on an ancestor, or on a descendant.",
+        "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
+        "mwgbo1ds-obnw6rsoz"
       ],
       "order": [
         0
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-xj4f8tukb",
-      "name": "Show numbering",
+      "id": "mwgbo1ds-m7u472gy4",
+      "name": "Favorites",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Show numbering",
-        "field_desc": "Toggle a number beside the node name indicating the order within its parent node."
+        "field_name_op": "Favorites",
+        "field_desc": "Toggle a filter to view only favorite nodes (with their parents and descendants). Shortcut: s.",
+        "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
+        "mwgbo1ds-obnw6rsoz"
       ],
       "order": [
         1
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-qlyz7ayk5",
-      "name": "Reload Tree",
+      "id": "mwgbo1ds-xvcrexdr0",
+      "name": "Undo/Redo",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Reload Tree",
-        "field_desc": "Forces reload of the tree from the database. It should never be needed."
+        "field_name_op": "Undo/Redo",
+        "field_desc": "Undo/redo the last node actions (creation/copy, deletion, update, movement). Shortcuts: Ctrl+Z / Ctrl+Y.",
+        "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
+        "mwgbo1ds-obnw6rsoz"
       ],
       "order": [
         2
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-5m7uomgxh",
-      "name": "Compact View/Normal view",
+      "id": "mwgbo1ds-1yffp75gm",
+      "name": "Show numbering",
       "templateId": "template_operation",
       "data": {
-        "field_name_op": "Compact View/Normal view",
-        "field_desc": "Toggles between two different tree appearances with different node area footprint."
+        "field_name_op": "Show numbering",
+        "field_desc": "Toggle a number beside the node name indicating the order within its parent node. Shortcut: o.",
+        "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
+        "mwgbo1ds-obnw6rsoz"
       ],
       "order": [
         3
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "id": "mlb3xjzp-785aeu5tb",
+      "id": "mwgbo1ds-v6kfe5n29",
+      "name": "Two-panel mode toggle",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Two-panel mode toggle",
+        "field_desc": "Changes between single and double panel layout. In two-panel mode the right panel shows the details of the selected node, expanded according to the Auto-Expansion Depth setting. Shortcut: p.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        4
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-jtbfnznpy",
+      "name": "Compact View/Normal view",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Compact View/Normal view",
+        "field_desc": "Toggles between two different tree appearances with different node area footprint. Shortcut: Space.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        5
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-6w85bt2ot",
+      "name": "Explorer view toggle",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Explorer view toggle",
+        "field_desc": "When enabled, clicking a node name drills into it: only that node and its descendants are shown, and a breadcrumb trail lets you navigate back up. The last drilled node is remembered for the tree. Shortcut: x.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        6
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-kpgiapx8k",
       "name": "Export",
       "templateId": "template_operation",
       "data": {
@@ -890,123 +1309,470 @@
         "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
-      ],
-      "order": [
-        4
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-v99vi8nqd",
-      "name": "Search for nodes",
-      "templateId": "template_operation",
-      "data": {
-        "field_name_op": "Search for nodes",
-        "field_desc": "Filters node containing the searched text in the name or in the body"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
-      ],
-      "order": [
-        5
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-28hjj05tt",
-      "name": "Filters",
-      "templateId": "template_operation",
-      "data": {
-        "field_name_op": "Filters",
-        "field_desc": "Conditional filtering of nodes based on type, creation/editing time, attachments"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
-      ],
-      "order": [
-        6
-      ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
-    },
-    {
-      "id": "mlb3xjzp-leoc3kifk",
-      "name": "Favorites",
-      "templateId": "template_operation",
-      "data": {
-        "field_name_op": "Favorites",
-        "field_desc": "Toggle a filter to view only favorite nodes (with their parents and descendants)"
-      },
-      "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "6986187c4832311da8b8e0bd",
-      "parentIds": [
-        "mlb3xjzp-iyxt9fufv"
+        "mwgbo1ds-obnw6rsoz"
       ],
       "order": [
         7
       ],
-      "createdAt": "2026-02-06T16:36:13.152Z",
-      "updatedAt": "2026-02-06T16:36:13.152Z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     },
     {
-      "name": "Node actions",
-      "templateId": "ml9zlmf0-0qg1752w2",
+      "id": "mwgbo1ds-2vetbyq6u",
+      "name": "Search for nodes",
+      "templateId": "template_operation",
       "data": {
-        "2026-02-05T21:46:13.488Z0.8936020819863519": "Node actions",
-        "2026-02-05T21:46:42.157Z0.029642597281973493": [
-          {
-            "id": "ml9zm3rc-n9yehy497",
-            "targetTemplateId": "template_operation",
-            "rules": [
-              {
-                "id": "ml9zm65h-9ded8fowu",
-                "type": "field",
-                "fieldId": "field_context",
-                "operator": "equals",
-                "value": "Tree Page"
-              }
-            ]
-          },
-          {
-            "id": "ml9zpe4g-hh29zi1sz",
-            "targetTemplateId": "template_operation",
-            "rules": [
-              {
-                "id": "ml9zphfc-r7gqq2od2",
-                "type": "field",
-                "fieldId": "field_context",
-                "operator": "equals",
-                "value": "Node menu"
-              }
-            ]
-          }
-        ]
+        "field_name_op": "Search for nodes",
+        "field_desc": "Filters node containing the searched text in the name or in the body",
+        "field_context": "Tree Page"
       },
       "isStarred": false,
-      "userId": "68a99c3dde9b3f9a34859ed8",
-      "treeId": "69850e360531b00e77adf9d6",
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
       "parentIds": [
-        "root"
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        8
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-a4bpuoezg",
+      "name": "Reload Tree",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Reload Tree",
+        "field_desc": "Press r to reload the tree from the server. On shared trees the tree also refreshes automatically (about every 5 seconds) when another user saves changes.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        9
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-2f13t6okn",
+      "name": "Git Sync Menu",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Git Sync Menu",
+        "field_desc": "For trees linked to GitHub: Commit Changes, View History (with Restore) and Sync from the Tree Page toolbar. Sync shows an update indicator when the remote has newer changes.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        10
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-8p1iip41p",
+      "name": "Mobile Layout",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Mobile Layout",
+        "field_desc": "On small screens the search field collapses to an icon and toolbar actions (filters, favorites, numbering, compact view, export, Git) move into a menu. Some keyboard shortcuts are disabled.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-obnw6rsoz"
+      ],
+      "order": [
+        11
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-gmcl5gkv6",
+      "name": "VI. Account, Teams & Administration",
+      "templateId": "template_category",
+      "data": {
+        "field_name_cat": "VI. Account, Teams & Administration"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [],
+      "order": [
+        5
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-7ph00rggm",
+      "name": "Appearance Settings",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Appearance Settings",
+        "field_desc": "Theme: Light, Dark or System.\nDate Format: Choose how dates are displayed.",
+        "field_context": "Settings Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-sq0fy2gay",
+      "name": "Auto-Expansion Depth",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Auto-Expansion Depth",
+        "field_desc": "Number of levels automatically expanded when a node is shown in the two-panel details pane and in the node shortcut overlay (0 to 5).",
+        "field_context": "Settings Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-qjtu0hv01",
+      "name": "Security Settings",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Security Settings",
+        "field_desc": "Change Password: Update your password.\nActive Sessions: Review your sessions and Revoke them.\nAutomatic Logout: Log out automatically after a period of inactivity.",
+        "field_context": "Settings Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-fgn5b57tx",
+      "name": "GitHub Personal Access Token",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "GitHub Personal Access Token",
+        "field_desc": "Save the GitHub token used by the Git integration (link, commit, sync, history).",
+        "field_context": "Settings Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-flqwiqj8b",
+      "name": "Personal Access Tokens (REST API)",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Personal Access Tokens (REST API)",
+        "field_desc": "Create tokens (name, optional expiry date) and revoke them to authenticate programmatic access to the REST API. Available only when the server runs with ENABLE_API=true.",
+        "field_context": "Settings Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        4
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-26T15:24:21.103Z"
+    },
+    {
+      "id": "mwgbo1ds-r3b29hddv",
+      "name": "REST API Documentation",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "REST API Documentation",
+        "field_desc": "Interactive documentation at /api/v1/docs (Redoc at /api/v1/redoc, OpenAPI at /api/v1/openapi) for the /api/v1 endpoints on trees, nodes and templates; requests are rate limited.",
+        "field_context": "Settings Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
       ],
       "order": [
         5
       ],
-      "createdAt": "2026-02-05T21:47:45.658Z",
-      "updatedAt": "2026-02-05T21:50:26.133Z",
-      "id": "mlb3yiud-n7hh9nu2z"
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-26T15:24:31.199Z"
+    },
+    {
+      "id": "mwgbo1ds-bpjjytmtz",
+      "name": "Manage Teams",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Manage Teams",
+        "field_desc": "Create Team / Rename Team: Teams can be shared trees with.\nMember Directory: Add members and Apply Membership Changes.\nTeam Leaders: Leaders are set when creating a team; leadership roles are managed by administrators only, a team must always keep at least one leader and leaders cannot be removed from membership.",
+        "field_context": "Teams Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        6
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-pv9vlyj2e",
+      "name": "User Management",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "User Management",
+        "field_desc": "Create New User, Reset Password, Set as Administrator, and manage team associations.",
+        "field_context": "Admin Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        7
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-c8l0epl1n",
+      "name": "Global Settings",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Global Settings",
+        "field_desc": "Allow Public Sign-ups, Maximum Upload File Size (MB), Branding (custom SVG logo).",
+        "field_context": "Admin Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        8
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-vs3k5vlte",
+      "name": "Storage Management",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Storage Management",
+        "field_desc": "Review Storage Usage by User and clean up orphaned files.",
+        "field_context": "Admin Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        9
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-l08h8rpm9",
+      "name": "Installable App (PWA)",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Installable App (PWA)",
+        "field_desc": "Treelab can be installed as a Progressive Web App from the browser.",
+        "field_context": "General"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        10
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1dt-po3yxeosy",
+      "name": "Single-user Mode",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Single-user Mode",
+        "field_desc": "When the server runs with REQUIRE_AUTHENTICATION=false, login is disabled and the app runs as a single user.",
+        "field_context": "General"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-gmcl5gkv6"
+      ],
+      "order": [
+        11
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1ds-r4rlafl2a",
+      "name": "VII. Keyboard Shortcuts",
+      "templateId": "template_category",
+      "data": {
+        "field_name_cat": "VII. Keyboard Shortcuts"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [],
+      "order": [
+        6
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1dt-sei26donj",
+      "name": "Tree View Shortcuts",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Tree View Shortcuts",
+        "field_desc": "Space: Compact view\ns: Favorites filter\no: Show node numbers\nr: Reload tree\np: Two-panel mode\nx: Explorer view\n(Space, o, p and x are disabled on mobile.)",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r4rlafl2a"
+      ],
+      "order": [
+        0
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1dt-xxhjwecy1",
+      "name": "Selected Node Shortcuts",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Selected Node Shortcuts",
+        "field_desc": "e: Edit node\nEnter: Add child\n+: Add sibling\ni / k: Move node up / down\n*: Star / unstar\nv: View in Explorer (Preview Selection)\nt: Change template for the selection\nDelete: Delete selection\nCtrl+C / Ctrl+X: Copy / cut\nCtrl+V: Paste as child\nCtrl+Alt+V: Paste as clone (child)\nCtrl+Z / Ctrl+Y: Undo / redo",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r4rlafl2a"
+      ],
+      "order": [
+        1
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1dt-i8ebdjztv",
+      "name": "Navigation Shortcuts",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Navigation Shortcuts",
+        "field_desc": "Up / Down: Move the selection\nShift+Up / Shift+Down: Extend the selection\nRight / Left: Expand / collapse the selected node\nCtrl+Right / Ctrl+Left: Expand all / collapse all descendants",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r4rlafl2a"
+      ],
+      "order": [
+        2
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
+    },
+    {
+      "id": "mwgbo1dt-hpvu8i6d",
+      "name": "Node Shortcuts 0-9",
+      "templateId": "template_operation",
+      "data": {
+        "field_name_op": "Node Shortcuts 0-9",
+        "field_desc": "0-9: Open the node pinned to that slot (see Node Shortcuts (0-9)). Press the same key again or Esc to close the overlay.",
+        "field_context": "Tree Page"
+      },
+      "isStarred": false,
+      "userId": "68c030420282933a22bb31ff",
+      "treeId": "6af845d5f80409d4f13c5fee",
+      "parentIds": [
+        "mwgbo1ds-r4rlafl2a"
+      ],
+      "order": [
+        3
+      ],
+      "createdAt": "2026-11-14T11:28:21.098Z",
+      "updatedAt": "2026-11-14T11:28:21.098Z"
     }
   ],
   "templates": [
@@ -1054,7 +1820,12 @@
             "Manage Roots Page",
             "Tree Page",
             "Templates Page",
-            "Node Menu"
+            "Node Menu",
+            "Settings Page",
+            "Teams Page",
+            "Admin Page",
+            "Public View",
+            "General"
           ]
         }
       ],
@@ -1064,21 +1835,21 @@
       "preferredChildTemplates": []
     },
     {
-      "id": "ml9zlmf0-0qg1752w2",
-      "name": "Query",
-      "icon": "SearchCode",
-      "color": "#3cbe6e",
+      "id": "mwxp6f4h-mucxqv5uu",
+      "name": "Kanban",
+      "icon": "Kanban",
+      "color": "#4acf9e",
       "fields": [
         {
-          "id": "2026-02-05T21:46:13.488Z0.8936020819863519",
+          "id": "mwxp5gba-g3q3s0tua",
           "name": "Name",
           "type": "text",
           "options": []
         },
         {
-          "id": "2026-02-05T21:46:42.157Z0.029642597281973493",
-          "name": "Matching nodes:",
-          "type": "query",
+          "id": "mwxp60lf-q2sb7jl0b",
+          "name": "Operations",
+          "type": "kanban",
           "options": []
         }
       ],
@@ -1089,11 +1860,47 @@
     }
   ],
   "rootNodeIds": [
-    "mlb3xjzp-8e0aq4xa2",
-    "mlb3xjzp-m8dwre01k",
-    "mlb3xjzp-vx1ran919",
-    "mlb3xjzp-loh6zsn12",
-    "mlb3xjzp-iyxt9fufv",
-    "mlb3yiud-n7hh9nu2z"
+    "mwxp6pie-7yoz2iqn8",
+    "mwgbo1ds-g84p8g5ky",
+    "mwgbo1ds-r6zqexoxm",
+    "mwgbo1ds-ultftf32u",
+    "mwgbo1ds-f350kvtpz",
+    "mwgbo1ds-obnw6rsoz",
+    "mwgbo1ds-gmcl5gkv6",
+    "mwgbo1ds-r4rlafl2a"
+  ],
+  "shortcuts": [
+    {
+      "key": "0",
+      "nodeId": "mwxp6pie-7yoz2iqn8"
+    },
+    {
+      "key": "1",
+      "nodeId": "mwgbo1ds-g84p8g5ky"
+    },
+    {
+      "key": "2",
+      "nodeId": "mwgbo1ds-r6zqexoxm"
+    },
+    {
+      "key": "3",
+      "nodeId": "mwgbo1ds-ultftf32u"
+    },
+    {
+      "key": "4",
+      "nodeId": "mwgbo1ds-f350kvtpz"
+    },
+    {
+      "key": "5",
+      "nodeId": "mwgbo1ds-obnw6rsoz"
+    },
+    {
+      "key": "6",
+      "nodeId": "mwgbo1ds-gmcl5gkv6"
+    },
+    {
+      "key": "7",
+      "nodeId": "mwgbo1ds-r4rlafl2a"
+    }
   ]
 }
